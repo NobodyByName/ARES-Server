@@ -3,6 +3,7 @@ using System.Text;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -72,6 +73,48 @@ public sealed class RaidSessionTests
         session.Input(30, 33, session.Raid.Doors.Doors[^1].Buttons[0]);
         session.Input(0, 40, 0x12345);
         Assert.Equal((0, 2), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
+    }
+
+    [Fact]
+    public void Focusing_a_usable_button_sends_a_frame_at_the_reported_position()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0])
+        {
+            session.Service(at);
+        }
+
+        ulong button = session.Raid.Doors.Doors[0].Buttons[0];
+        Vector3D there = new(450000.0, 600000.0, -38000.0);
+        session.Input(30, 33, focus: button);
+        session.Service(122.5);
+        Assert.Equal((button, 1), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
+
+        session.Input(33, 36, focus: button, position: there);
+        session.Service(123.0);
+        session.Input(36, 39, focus: button, position: there);
+        session.Service(123.5);
+        Assert.Equal(2, session.Channels.BlackboardFrames);
+
+        session.Input(39, 42, position: there);
+        session.Service(124.0);
+        Assert.Equal((0UL, 3), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
+    }
+
+    [Fact]
+    public void Focusing_a_button_whose_door_this_player_has_not_opened_sends_nothing()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0])
+        {
+            session.Service(at);
+        }
+
+        session.Input(30, 33, focus: session.Raid.Doors.Doors[^1].Buttons[0], position: new Vector3D(1.0, 2.0, 3.0));
+        session.Service(122.5);
+        Assert.Equal(1, session.Channels.BlackboardFrames);
     }
 
     [Fact]

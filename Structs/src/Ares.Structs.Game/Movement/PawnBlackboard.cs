@@ -28,6 +28,36 @@ public static class PawnBlackboard
     /// <summary>Field of the movement-state variable holding the quantized world Z position.</summary>
     public const int PositionZField = 30;
 
+    /// <summary>Field of the movement-state variable holding the quantized X velocity (Y and Z follow).</summary>
+    public const int VelocityXField = 1;
+
+    /// <summary>Field of the movement-state variable holding the quantized Y velocity.</summary>
+    public const int VelocityYField = 2;
+
+    /// <summary>Field of the movement-state variable holding the quantized Z velocity.</summary>
+    public const int VelocityZField = 3;
+
+    /// <summary>Quantized velocity per quantized position change over one tick.</summary>
+    public const double VelocityPerPositionStep = 0.979;
+
+    /// <summary>Field of the movement-state variable holding the character's facing (a rotation about the vertical axis).</summary>
+    public const int FacingField = 31;
+
+    /// <summary>Slot of the interactor-state variable (focused and current interaction, interaction phase).</summary>
+    public const int InteractorSlot = 9;
+
+    /// <summary>Field of the interactor-state variable holding its flags.</summary>
+    public const int InteractorFlagsField = 9;
+
+    /// <summary>
+    /// Interactor flag: the character may use its focused interaction. Only the server's simulation sets it;
+    /// the client's interaction does not start (and plays no animation) without it.
+    /// </summary>
+    public const ulong CanAccessFocusedInteractionFlag = 1;
+
+    /// <summary>Field of the interactor-state variable holding the focused interaction.</summary>
+    public const int FocusedInteractionField = 12;
+
     /// <summary>Simulation time units per tick.</summary>
     public const int TimePerTick = 20;
 

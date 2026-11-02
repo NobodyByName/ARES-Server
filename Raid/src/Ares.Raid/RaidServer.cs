@@ -136,6 +136,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["phase"] = channels.Phase.ToString(),
                 ["input_frame"] = channels.InputFrame,
                 ["input_decode_failures"] = channels.InputDecodeFailures,
+                ["blackboard_frames"] = channels.BlackboardFrames,
                 ["door_presses"] = channels.DoorPresses,
                 ["ignored_door_requests"] = channels.IgnoredDoorRequests,
                 ["unhandled_calls"] = calls,

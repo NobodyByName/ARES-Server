@@ -1,6 +1,7 @@
 using System.Globalization;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
@@ -25,6 +26,8 @@ internal sealed class ScriptedPlayer
     private readonly double[] _now = [100.0];
     private int _packet = SenderSeed;
     private int _clientSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
+    private ulong _focus;
+    private Vector3D? _position;
 
     public ScriptedPlayer()
     {
@@ -100,15 +103,16 @@ internal sealed class ScriptedPlayer
             [PropertyNames.LevelVisibilities] = levels.Select(object? (level, index) => new LevelVisibility(level.Package, level.Package, level.Visible, false, new VisibilityTransaction(index == 0 ? 1 : 0, level.Client))).ToArray(),
         });
 
-    public void Input(uint baseline, uint latest, ulong? press = null)
+    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null)
     {
-        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press));
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position)));
+        (_focus, _position) = (focus, position);
         Channels.Commit();
     }
 
     // The client's input history: a header and the last frames, every slot at its descriptor default
-    // (the latest frame optionally presses a button).
-    private static byte[] InputPayload(uint baseline, uint latest, ulong? press = null)
+    // (the new frames optionally report a position and focus a button, and the latest frame optionally presses one).
+    private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported)
     {
         BitWriter writer = new();
         writer.WriteBit(true);
@@ -132,12 +136,25 @@ internal sealed class ScriptedPlayer
             {
                 int descriptor = PendulumInput.SlotDescriptors[slot];
                 byte[] value = PendulumCodec.Default.DefaultValue(descriptor);
-                if (slot == PendulumInput.InteractionSlot && press is { } target && frame == latest)
+                switch (slot)
                 {
-                    value = PendulumCodec.Default.Value(descriptor, [
-                        new PendulumIntegerValue(PendulumInput.InteractionRequestField, PendulumInput.PressRequest),
-                        new PendulumIntegerValue(PendulumInput.InteractionTargetField, target),
-                    ]);
+                    case PendulumInput.InteractionSlot:
+                        List<PendulumValue> claim = [new PendulumIntegerValue(PendulumInput.InteractionFocusField, frame == baseline ? focus.Baseline : focus.Latest)];
+                        if (press is { } target && frame == latest)
+                        {
+                            claim.Add(new PendulumIntegerValue(PendulumInput.InteractionRequestField, PendulumInput.PressRequest));
+                            claim.Add(new PendulumIntegerValue(PendulumInput.InteractionTargetField, target));
+                        }
+
+                        value = PendulumCodec.Default.Value(descriptor, claim);
+                        break;
+                    case PendulumInput.PositionSlot when (frame == baseline ? reported.Baseline : reported.Latest) is { } at:
+                        value = PendulumCodec.Default.Value(descriptor, [
+                            Quantized(descriptor, PendulumInput.PositionXField, at.X),
+                            Quantized(descriptor, PendulumInput.PositionYField, at.Y),
+                            Quantized(descriptor, PendulumInput.PositionZField, at.Z),
+                        ]);
+                        break;
                 }
 
                 int size = (value.Length + 255) / 256;
@@ -147,6 +164,12 @@ internal sealed class ScriptedPlayer
 
             return slots;
         }
+    }
+
+    private static PendulumIntegerValue Quantized(int descriptor, int field, double world)
+    {
+        uint half = ((PendulumScalarField)PendulumRegistry.Descriptors[descriptor].Fields[field]).Maximum / 2;
+        return new PendulumIntegerValue(field, (ulong)(half + Math.Round(world * half / PawnBlackboard.PositionRange)));
     }
 
     // Join, possession, the map and the first door's cell visible, and the first input frames.

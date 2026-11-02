@@ -18,6 +18,30 @@ public static class PendulumInput
     /// <summary>Field of the interaction claim holding the target object id (0 for none).</summary>
     public const int InteractionTargetField = 2;
 
+    /// <summary>Field of the interaction claim holding the focused object, whose prompt shows (0 for none).</summary>
+    public const int InteractionFocusField = 3;
+
+    /// <summary>Slot of the input variable holding the character position the client predicted.</summary>
+    public const int PositionSlot = 3;
+
+    /// <summary>
+    /// Field of the position slot holding the quantized world X position (Y and Z follow):
+    /// quantized = Maximum/2 + round(world * (Maximum/2) / <see cref="PawnBlackboard.PositionRange"/>).
+    /// </summary>
+    public const int PositionXField = 7;
+
+    /// <summary>Field of the position slot holding the quantized world Y position.</summary>
+    public const int PositionYField = 8;
+
+    /// <summary>Field of the position slot holding the quantized world Z position.</summary>
+    public const int PositionZField = 9;
+
+    /// <summary>Slot of the input variable holding the control (camera) rotation.</summary>
+    public const int ControlRotationSlot = 4;
+
+    /// <summary>Field of the control-rotation slot holding the rotation; the character faces its heading.</summary>
+    public const int ControlRotationField = 0;
+
     /// <summary>Request of a button press. Other request values are not decoded yet.</summary>
     public const int PressRequest = 2;
 }

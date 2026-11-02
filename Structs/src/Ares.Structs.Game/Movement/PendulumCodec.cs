@@ -118,6 +118,26 @@ public sealed class PendulumCodec
         };
     }
 
+    /// <summary>Reads a quaternion field from a value buffer (the inverse of <see cref="Apply"/> for quaternions).</summary>
+    /// <param name="field">The field.</param>
+    /// <param name="buffer">The value bytes.</param>
+    /// <returns>The quaternion.</returns>
+    public static PendulumQuaternion Quaternion(PendulumQuaternionField field, byte[] buffer)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        ArgumentNullException.ThrowIfNull(buffer);
+        int at = field.Offset;
+        return new PendulumQuaternion(
+            (uint)Get(buffer, at, 4),
+            (uint)Get(buffer, at + 4, 4),
+            (uint)Get(buffer, at + 8, 4),
+            (uint)Get(buffer, at + 12, 4),
+            buffer[at + 16],
+            buffer[at + 17],
+            buffer[at + 18],
+            buffer[at + 19]);
+    }
+
     /// <summary>Reads a frame coded against <paramref name="previous"/>.</summary>
     /// <param name="reader">Source.</param>
     /// <param name="previous">The previous frame's slots by index (empty for none).</param>

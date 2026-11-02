@@ -398,22 +398,20 @@ public sealed class WorldState
         return new StableSubobjectContent(player.Correction, Replication.Encode(PlayerClasses.CorrectionComponentClass, values, Objects([])));
     }
 
-    /// <summary>The pawn's first blackboard frame, at the client's latest input frame.</summary>
-    /// <param name="player">The player.</param>
-    /// <param name="frame">The client's latest input frame.</param>
+    /// <summary>A pawn blackboard frame: a reset when there is no baseline, otherwise a delta from it.</summary>
+    /// <param name="baseline">Frame number of the previous frame (0 for a reset).</param>
+    /// <param name="frame">The frame number (a client input frame).</param>
+    /// <param name="state">The frame's state.</param>
+    /// <param name="previous">The previous frame's state (empty for a reset).</param>
     /// <returns>The pawn content.</returns>
-    public ActorContentBlock BlackboardReset(WorldPlayer player, uint frame)
-    {
-        ArgumentNullException.ThrowIfNull(player);
-        Vector3D location = Actor(player.Pawn).Location;
-        return Field(PlayerClasses.Pawn.Class, PropertyNames.BlackBoardReplicationPtr, writer =>
+    public ActorContentBlock BlackboardFrame(uint baseline, uint frame, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous) =>
+        Field(PlayerClasses.Pawn.Class, PropertyNames.BlackBoardReplicationPtr, writer =>
         {
             writer.WriteBit(true); // The server supports the delta-struct form.
             BitWriter body = new();
-            PawnBlackboardFrames.WriteReset(body, frame, location);
-            BlackboardUpdate.Write(writer, 0, frame, true, BlackboardUpdate.DefaultFlags, body.ToArray(), body.Length);
+            PawnBlackboardFrames.Write(body, state, previous);
+            BlackboardUpdate.Write(writer, baseline, frame, baseline == 0, BlackboardUpdate.DefaultFlags, body.ToArray(), body.Length);
         });
-    }
 
     /// <summary>Records that the client confirmed possessing its character.</summary>
     /// <param name="player">The player.</param>

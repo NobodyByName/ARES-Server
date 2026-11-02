@@ -1,3 +1,4 @@
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Movement;
 
@@ -21,14 +22,57 @@ public sealed class InputHistory
     private static readonly IReadOnlyList<PendulumField> s_claimFields =
         PendulumRegistry.Descriptors[PendulumInput.SlotDescriptors[PendulumInput.InteractionSlot]].Fields;
 
+    private static readonly IReadOnlyList<PendulumField> s_positionFields =
+        PendulumRegistry.Descriptors[PendulumInput.SlotDescriptors[PendulumInput.PositionSlot]].Fields;
+
+    private static readonly PendulumQuaternionField s_rotationField = (PendulumQuaternionField)
+        PendulumRegistry.Descriptors[PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]].Fields[PendulumInput.ControlRotationField];
+
     private Dictionary<uint, Dictionary<int, PendulumSlot>> _frames = new() { [0] = [] };
+
+    /// <summary>The object the client focuses in its latest frame (its prompt shows), or 0.</summary>
+    public ulong Focus { get; private set; }
 
     /// <summary>Latest frame received.</summary>
     private uint Latest { get; set; }
 
     /// <summary>A copy for speculative packet processing (frames are not changed after they are stored).</summary>
     /// <returns>The copy.</returns>
-    public InputHistory Copy() => new() { _frames = new Dictionary<uint, Dictionary<int, PendulumSlot>>(_frames), Latest = Latest };
+    public InputHistory Copy() => new() { _frames = new Dictionary<uint, Dictionary<int, PendulumSlot>>(_frames), Latest = Latest, Focus = Focus };
+
+    /// <summary>The character position the client predicted for a frame it sent.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The world position, or null when the frame is unknown or carries no position yet.</returns>
+    public Vector3D? Position(uint frame)
+    {
+        if (!_frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+            || !slots.TryGetValue(PendulumInput.PositionSlot, out PendulumSlot? slot)
+            || slot.DescriptorId != PendulumInput.SlotDescriptors[PendulumInput.PositionSlot])
+        {
+            return null;
+        }
+
+        int[] fields = [PendulumInput.PositionXField, PendulumInput.PositionYField, PendulumInput.PositionZField];
+        PendulumScalarField[] scalars = [.. fields.Select(field => (PendulumScalarField)s_positionFields[field])];
+        ulong[] values = [.. scalars.Select(field => PendulumCodec.Integer(field, slot.Value))];
+        if (values.Zip(scalars).All(pair => pair.First == pair.Second.Default))
+        {
+            return null;
+        }
+
+        double[] world = [.. values.Zip(scalars, (value, field) => (value - (field.Maximum / 2.0)) * PawnBlackboard.PositionRange / (field.Maximum / 2.0))];
+        return new Vector3D(world[0], world[1], world[2]);
+    }
+
+    /// <summary>The heading of the client's control rotation in a frame it sent (the character faces it).</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The heading in radians, or null when the frame is unknown.</returns>
+    public double? Yaw(uint frame) =>
+        _frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+        && slots.TryGetValue(PendulumInput.ControlRotationSlot, out PendulumSlot? slot)
+        && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]
+            ? PendulumRotations.Yaw(PendulumCodec.Quaternion(s_rotationField, slot.Value), s_rotationField)
+            : null;
 
     /// <summary>Reads a payload.</summary>
     /// <param name="payload">The payload.</param>
@@ -70,6 +114,11 @@ public sealed class InputHistory
             throw new InvalidPacketException("Unexpected input trailing data");
         }
 
+        if (header.Latest > Latest)
+        {
+            Focus = Claim(updates[header.Latest], PendulumInput.InteractionFocusField);
+        }
+
         Latest = Math.Max(Latest, header.Latest);
         foreach ((uint number, Dictionary<int, PendulumSlot> frame) in updates)
         {
@@ -82,14 +131,15 @@ public sealed class InputHistory
 
     private static InteractionRequest? Request(uint number, Dictionary<int, PendulumSlot> frame)
     {
-        if (!frame.TryGetValue(PendulumInput.InteractionSlot, out PendulumSlot? claim)
-            || claim.DescriptorId != PendulumInput.SlotDescriptors[PendulumInput.InteractionSlot])
-        {
-            return null;
-        }
-
-        int request = (int)PendulumCodec.Integer(s_claimFields[PendulumInput.InteractionRequestField], claim.Value);
-        ulong target = PendulumCodec.Integer(s_claimFields[PendulumInput.InteractionTargetField], claim.Value);
+        int request = (int)Claim(frame, PendulumInput.InteractionRequestField);
+        ulong target = Claim(frame, PendulumInput.InteractionTargetField);
         return request != 0 && target != 0 ? new InteractionRequest(number, target, request) : null;
     }
+
+    // A field of the frame's interaction claim (0 when the frame has none).
+    private static ulong Claim(Dictionary<int, PendulumSlot> frame, int field) =>
+        frame.TryGetValue(PendulumInput.InteractionSlot, out PendulumSlot? claim)
+        && claim.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.InteractionSlot]
+            ? PendulumCodec.Integer(s_claimFields[field], claim.Value)
+            : 0;
 }

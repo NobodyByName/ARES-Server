@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Movement;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
@@ -123,6 +124,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private uint? _inputAckSent;
     private ReliableKey[] _blackboardKeys = [];
     private uint _blackboardFrame;
+    private IReadOnlyDictionary<int, PendulumSlot> _blackboardState = new Dictionary<int, PendulumSlot>();
+    private ulong _blackboardFocus;
     private double? _asyncLoadAt;
     private int _asyncLoads;
     private ReliableKey[] _abilityKeys = [];
@@ -165,6 +168,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     /// <summary>Input payloads that could not be decoded (they never reject the packet carrying them).</summary>
     public int InputDecodeFailures { get; private set; }
+
+    /// <summary>The object the client focuses in its latest input frame (its prompt shows), or 0.</summary>
+    public ulong InputFocus => _input.Focus;
+
+    /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
+    public int BlackboardFrames { get; private set; }
 
     /// <summary>Door presses applied.</summary>
     public int DoorPresses { get; private set; }
@@ -340,11 +349,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         double now = _raid.Clock();
         foreach (InteractionRequest request in _requests)
         {
-            Door? door = _raid.Doors.ByButton(request.Target);
-            bool usable = request.Request == PendulumInput.PressRequest && door is not null && Phase == DeliveryPhase.Possessed
-                && !_failedDoors.Contains(door.Index) && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open
-                && _visibleLevels.Contains(door.Cell);
-            if (usable && _raid.DoorStates.Press(door!.Index, now))
+            Door? door = UsableDoor(request.Target);
+            if (request.Request == PendulumInput.PressRequest && door is not null && _raid.DoorStates.Press(door.Index, now))
             {
                 DoorPresses++;
             }
@@ -665,19 +671,56 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _inputAckSent = frame;
     }
 
-    // Only the first frame is sent: it starts the client's character simulation at the spawn, once level
-    // streaming has settled (otherwise the character falls through floors that are not loaded yet).
+    // The first frame starts the client's character simulation at the spawn, once level streaming has settled
+    // (otherwise the character falls through floors that are not loaded yet). The client applies each later
+    // frame as its full character state, so later frames carry the movement the client itself predicted
+    // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
+    // the latest input. They are sent when the usable focused button changes: the client's interaction (and
+    // its animation) only starts once the server says it may use the button.
     private void ServiceBlackboard(ReliableSender sender, double now)
     {
-        if (_blackboardFrame != 0 || InputFrame is not { } frame || frame is < PawnBlackboardFrames.FirstTick or > PawnBlackboardFrames.LastTick
-            || _visibleLevelsChangedAt is not { } changed || now - changed < LevelStreamingSettleSeconds || _blackboardKeys.Any(sender.Pending))
+        if (InputFrame is not { } latest || latest is < PawnBlackboardFrames.FirstTick or > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending))
         {
             return;
         }
 
-        _blackboardKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardReset(_player, frame)))];
-        _blackboardFrame = frame;
+        IReadOnlyDictionary<int, PendulumSlot> state;
+        uint frame = latest;
+        ulong focus = 0;
+        if (_blackboardFrame == 0)
+        {
+            if (_visibleLevelsChangedAt is not { } changed || now - changed < LevelStreamingSettleSeconds)
+            {
+                return;
+            }
+
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(Actor(_player.Pawn).Location), focus);
+        }
+        else
+        {
+            focus = UsableDoor(_input.Focus) is null ? 0 : _input.Focus;
+            frame = latest - 1;
+            if (focus == _blackboardFocus || frame <= _blackboardFrame
+                || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw)
+            {
+                return;
+            }
+
+            Vector3D step = new(position.X - before.X, position.Y - before.Y, position.Z - before.Z);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, step, yaw), focus);
+        }
+
+        _blackboardKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];
+        (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
+        BlackboardFrames++;
     }
+
+    // The door of a button the client may use: possessed, door replicated on this connection, cell visible.
+    private Door? UsableDoor(ulong button) =>
+        _raid.Doors.ByButton(button) is { } door && Phase == DeliveryPhase.Possessed && !_failedDoors.Contains(door.Index)
+        && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open && _visibleLevels.Contains(door.Cell)
+            ? door
+            : null;
 
     // Asks the client to finish loading the levels around it, while streaming still changes and before the
     // character simulation starts; the client decides what it loads.
