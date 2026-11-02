@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/Structs/">
+    <Project Path="Structs/src/Ares.Structs.Core/Ares.Structs.Core.csproj" />
+    <Project Path="Structs/src/Ares.Structs.Net/Ares.Structs.Net.csproj" />
+    <Project Path="Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
+    <Project Path="Structs/src/Ares.Structs.Backend/Ares.Structs.Backend.csproj" />
+    <Project Path="Structs/tests/Ares.Structs.Tests/Ares.Structs.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Common/">
+    <Project Path="Common/src/Ares.Common/Ares.Common.csproj" />
+    <Project Path="Common/src/Ares.Common.Security/Ares.Common.Security.csproj" />
+    <Project Path="Common/src/Ares.Common.Control/Ares.Common.Control.csproj" />
+    <Project Path="Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
+    <Project Path="Common/src/Ares.Common.Game/Ares.Common.Game.csproj" />
+    <Project Path="Common/tests/Ares.Common.Tests/Ares.Common.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Host/">
+    <Project Path="Host/src/Ares.Host.Services/Ares.Host.Services.csproj" />
+    <Project Path="Host/src/Ares.Host/Ares.Host.csproj" />
+    <Project Path="Host/tests/Ares.Host.Tests/Ares.Host.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Raid/">
+    <Project Path="Raid/src/Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
+    <Project Path="Raid/src/Ares.Raid.Replication/Ares.Raid.Replication.csproj" />
+    <Project Path="Raid/src/Ares.Raid.World/Ares.Raid.World.csproj" />
+    <Project Path="Raid/src/Ares.Raid/Ares.Raid.csproj" />
+    <Project Path="Raid/tests/Ares.Raid.Tests/Ares.Raid.Tests.csproj" />
+  </Folder>
+</Solution>

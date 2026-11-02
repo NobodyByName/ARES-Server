@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Structs.Backend</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Structs.Core/Ares.Structs.Core.csproj" />
+  </ItemGroup>
+
+</Project>

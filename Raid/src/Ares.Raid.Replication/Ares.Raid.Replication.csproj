@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Raid.Replication</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
+  </ItemGroup>
+
+</Project>

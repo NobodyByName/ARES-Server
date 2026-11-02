@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Common.Game</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Common/Ares.Common.csproj" />
+    <ProjectReference Include="../Ares.Common.Security/Ares.Common.Security.csproj" />
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Backend/Ares.Structs.Backend.csproj" />
+  </ItemGroup>
+
+</Project>

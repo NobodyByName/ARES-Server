@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Raid.Transport</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Net/Ares.Structs.Net.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Security/Ares.Common.Security.csproj" />
+  </ItemGroup>
+
+</Project>

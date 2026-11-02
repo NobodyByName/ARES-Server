@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Host</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ARES-Host</AssemblyName>
+    <Description>ARES-Host is the ARC Raiders backend: sign-in, main menu, party, matchmaking and raid assignment.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ares.Host.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Host.Services/Ares.Host.Services.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Raid</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ARES-Raid</AssemblyName>
+    <Description>ARES-Raid is the game-session server that runs ARC Raiders raids.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Raid.World/Ares.Raid.World.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
+  </ItemGroup>
+
+</Project>

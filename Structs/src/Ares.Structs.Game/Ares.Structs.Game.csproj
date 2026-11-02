@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Structs.Game</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Ares.Structs.Core/Ares.Structs.Core.csproj" />
+    <ProjectReference Include="../Ares.Structs.Net/Ares.Structs.Net.csproj" />
+  </ItemGroup>
+
+</Project>

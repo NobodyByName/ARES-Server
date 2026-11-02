@@ -1,0 +1,80 @@
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using System.Text.Json.Nodes;
+using Ares.Common;
+using Ares.Common.CommandLine;
+using Ares.Common.Control;
+using Ares.Common.Control.Server;
+using Ares.Common.Logging;
+using Ares.Raid;
+using Ares.Raid.Transport;
+using Ares.Raid.World;
+using Ares.Structs.Core;
+using Ares.Structs.Game.Network;
+
+RaidConfiguration configuration;
+try
+{
+    configuration = RaidConfiguration.Parse(args);
+}
+catch (HelpRequestedException)
+{
+    Console.WriteLine(RaidConfiguration.Usage);
+    return 0;
+}
+catch (VersionRequestedException)
+{
+    Console.WriteLine($"ARES-Raid {AresVersion.Current} (Steam build {GameBuild.SteamBuildId})");
+    return 0;
+}
+catch (CommandLineException error)
+{
+    Console.Error.WriteLine(RaidConfiguration.Usage);
+    Console.Error.WriteLine($"ARES-Raid: error: {error.Message}");
+    return 2;
+}
+
+JsonEventLog log = JsonEventLog.StandardOutput;
+long started = Stopwatch.GetTimestamp();
+
+using Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
+int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
+
+DamWorlds worlds = new(Clock, configuration.Lighting);
+RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock);
+HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
+RaidConnections connections = new(handshake, new RoutingAuthenticator(allocations), worlds, packet => UdpPadding.Remove(packet), Clock);
+
+WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+builder.Logging.SetMinimumLevel(LogLevel.Warning);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Listen(IPAddress.Loopback, configuration.ControlPort);
+});
+WebApplication app = builder.Build();
+app.MapAllocationApi(allocations, configuration.OperatorToken);
+await app.StartAsync().ConfigureAwait(false);
+
+log.Write(new JsonObject
+{
+    ["service"] = "ARES-Raid",
+    ["version"] = AresVersion.Current,
+    ["listening"] = $"{configuration.Bind}:{port}",
+    ["advertised"] = $"{configuration.AdvertiseHost}:{port}",
+    ["allocation_api"] = $"127.0.0.1:{configuration.ControlPort}",
+    ["network_version"] = GameBuild.NetworkChecksum,
+    ["lighting"] = configuration.Lighting ?? "weighted",
+});
+
+RaidServer server = new(socket, connections, log, Clock);
+CancellationToken stopping = app.Lifetime.ApplicationStopping;
+await Task.Factory.StartNew(() => server.Run(stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+await app.StopAsync().ConfigureAwait(false);
+return 0;
+
+double Clock() => 1 + Stopwatch.GetElapsedTime(started).TotalSeconds;

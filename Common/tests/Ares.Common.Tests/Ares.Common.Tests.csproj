@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <ProjectReference Include="../../src/Ares.Common/Ares.Common.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Security/Ares.Common.Security.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Control/Ares.Common.Control.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Game/Ares.Common.Game.csproj" />
+  </ItemGroup>
+
+</Project>

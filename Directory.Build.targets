@@ -1,0 +1,40 @@
+<Project>
+  <ItemGroup Condition="'$(AresIsTest)' == 'true'">
+    <PackageReference Include="xunit.v3" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Applications carry the repository license next to their binaries. -->
+  <ItemGroup Condition="'$(AresIsTest)' != 'true' and ('$(OutputType)' == 'Exe' or '$(OutputType)' == 'WinExe')">
+    <None Include="$(AresRepositoryRoot)LICENSE" Link="LICENSE" Visible="false" Pack="false"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!--
+    Component boundaries: a project may reference projects of its own component and of the
+    components in AresAllowedComponents only. Structs may not use third-party packages.
+  -->
+  <Target Name="AresCheckBoundaries"
+          BeforeTargets="CollectPackageReferences;ResolveProjectReferences"
+          Condition="'$(AresIsTest)' != 'true'">
+    <ItemGroup>
+      <_AresReference Include="@(ProjectReference->'%(FullPath)')" />
+      <_AresReference>
+        <RelativePath>$([MSBuild]::MakeRelative('$(AresRepositoryRoot)', '%(FullPath)').Replace('\', '/'))</RelativePath>
+      </_AresReference>
+      <_AresReference>
+        <Component>$([System.String]::Copy('%(RelativePath)').Substring(0, $([System.String]::Copy('%(RelativePath)').IndexOf('/'))))</Component>
+      </_AresReference>
+      <_AresDisallowedReference Include="@(_AresReference)"
+          Condition="'%(Component)' != '$(AresComponent)' and !$([System.String]::Copy(';$(AresAllowedComponents);').Contains(';%(Component);'))" />
+      <_AresThirdPartyPackage Include="@(PackageReference)"
+          Condition="'$(AresAllowPackages)' != 'true' and '%(PackageReference.IsImplicitlyDefined)' != 'true'" />
+    </ItemGroup>
+    <Error Condition="'$(AresComponent)' == ''"
+           Text="$(MSBuildProjectName) is not inside a component folder (Structs, Common, Host or Raid)." />
+    <Error Condition="'@(_AresDisallowedReference)' != ''"
+           Text="$(MSBuildProjectName) ($(AresComponent)) may not reference: @(_AresDisallowedReference->'%(RelativePath)', ', '). Allowed components: '$(AresAllowedComponents)'." />
+    <Error Condition="'@(_AresThirdPartyPackage)' != ''"
+           Text="$(MSBuildProjectName) ($(AresComponent)) must not use third-party packages: @(_AresThirdPartyPackage, ', ')." />
+  </Target>
+</Project>

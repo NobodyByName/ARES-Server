@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <AresComponent>Raid</AresComponent>
+    <!-- Components this one may depend on (semicolon-separated). -->
+    <AresAllowedComponents>Structs;Common</AresAllowedComponents>
+  </PropertyGroup>
+  <Import Project="../Directory.Build.props" />
+</Project>

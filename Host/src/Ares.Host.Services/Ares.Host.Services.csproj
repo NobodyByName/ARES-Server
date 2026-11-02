@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Host.Services</RootNamespace>
+  </PropertyGroup>
+
+  <!-- References to other components; Directory.Build.targets checks that they are allowed. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Backend/Ares.Structs.Backend.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common/Ares.Common.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Security/Ares.Common.Security.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Control/Ares.Common.Control.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Game/Ares.Common.Game.csproj" />
+  </ItemGroup>
+
+</Project>

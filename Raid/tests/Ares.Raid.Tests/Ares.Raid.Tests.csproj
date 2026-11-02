@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
+    <ProjectReference Include="../../src/Ares.Raid.Replication/Ares.Raid.Replication.csproj" />
+    <ProjectReference Include="../../src/Ares.Raid.World/Ares.Raid.World.csproj" />
+    <ProjectReference Include="../../src/Ares.Raid/Ares.Raid.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
+    <ProjectReference Include="../../src/Ares.Host.Services/Ares.Host.Services.csproj" />
+    <ProjectReference Include="../../src/Ares.Host/Ares.Host.csproj" />
+  </ItemGroup>
+
+  <!-- Common's allocation server, used as a fake Raid allocation API in the tests. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
+  </ItemGroup>
+
+</Project>

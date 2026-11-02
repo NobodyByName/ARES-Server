@@ -1,0 +1,161 @@
+using System.Globalization;
+using Ares.Raid.Transport;
+using Ares.Raid.World;
+using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Replication;
+using Ares.Structs.Game.World;
+using Ares.Structs.Net.Replication;
+using Ares.Structs.Net.Session;
+
+namespace Ares.Raid.Tests.World;
+
+// Plays one joined player against the world channels: acknowledges every packet at once and records the
+// bunches the server sends.
+internal sealed class ScriptedPlayer
+{
+    private const string MatchId = "0b7c6c7e-6a0e-4c43-9c1e-3f1b8a3f2d41";
+    private const int Seed = 123456789;
+    private const string Lighting = "Lighting.GreyMorning";
+
+    private const int SenderSeed = 300;
+    private const int ReceiverSeed = 500;
+
+    private readonly double[] _now = [100.0];
+    private int _packet = SenderSeed;
+    private int _clientSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
+
+    public ScriptedPlayer()
+    {
+        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
+        Worlds.Prepare(MatchId, [42]);
+        Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
+        Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new LoginViewport(7, 0), Io);
+    }
+
+    private static SessionPrincipal Principal { get; } = new(42, MatchId);
+
+    private DamWorlds Worlds { get; }
+
+    public RaidWorld Raid => Worlds.Current!;
+
+    public WorldPlayer Player => Raid.State.Player(Principal);
+
+    public ChannelIo Io { get; }
+
+    public PlayerChannels Channels { get; }
+
+    public List<string> Trace { get; } = [];
+
+    public List<ChannelBunch> Sent { get; } = [];
+
+    private double Now
+    {
+        get => _now[0];
+        set => _now[0] = value;
+    }
+
+    public void Flush(string label)
+    {
+        Trace.Add($"# {label}");
+        while (Io.Sender.Select(Now, 8000) is { Count: > 0 } keys)
+        {
+            foreach (ChannelBunch bunch in Io.Sender.Bunches(keys))
+            {
+                Sent.Add(bunch);
+                string close = bunch.CloseReason?.ToString(CultureInfo.InvariantCulture) ?? "None";
+                Trace.Add($"{bunch.Channel}|{bunch.Sequence}|{(bunch.Opened ? 1 : 0)}|{close}|{(bunch.PackageExports ? 1 : 0)}|{(bunch.MustBeMapped ? 1 : 0)}|{bunch.PayloadBits}|{Convert.ToHexStringLower(bunch.Payload.AsSpan(0, (int)((bunch.PayloadBits + 7) / 8)))}");
+            }
+
+            Io.Sender.Sent(_packet, keys, Now);
+            Channels.Acknowledge(Io, new NotificationHeader(1, _packet, [uint.MaxValue]));
+            _packet = (_packet + 1) & PacketSequence.Mask;
+        }
+    }
+
+    public void Service(double at)
+    {
+        Now = at;
+        Channels.Service(Io, at);
+        Flush($"service {at.ToString("0.0", CultureInfo.InvariantCulture)}");
+    }
+
+    // A reliable call from the client on its controller channel.
+    public void Call(string function, Dictionary<string, object?> parameters)
+    {
+        WorldPlayer player = Player;
+        RpcCodec calls = Raid.State.Replication.Calls(Raid.State.Objects([player.Controller, player.PlayerState, player.Pawn, Raid.State.GameState.Guid]));
+        ActorContentBlock block = calls.Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Server);
+        BitWriter writer = new();
+        block.Write(writer);
+        _clientSequence = (_clientSequence + 1) & (ChannelBunch.SequenceCount - 1);
+        Channels.Receive(Io, new ChannelBunch(2, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = _clientSequence });
+        Channels.Commit();
+    }
+
+    public void ReportVisible(params (string Package, bool Visible, bool Client)[] levels) =>
+        Call(FunctionNames.ServerUpdateMultipleLevelsVisibility, new Dictionary<string, object?>
+        {
+            [PropertyNames.LevelVisibilities] = levels.Select(object? (level, index) => new LevelVisibility(level.Package, level.Package, level.Visible, false, new VisibilityTransaction(index == 0 ? 1 : 0, level.Client))).ToArray(),
+        });
+
+    public void Input(uint baseline, uint latest, ulong? press = null)
+    {
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press));
+        Channels.Commit();
+    }
+
+    // The client's input history: a header and the last frames, every slot at its descriptor default
+    // (the latest frame optionally presses a button).
+    private static byte[] InputPayload(uint baseline, uint latest, ulong? press = null)
+    {
+        BitWriter writer = new();
+        writer.WriteBit(true);
+        writer.WriteBounded(baseline, PendulumFrames.BaselineRange);
+        PendulumFrames.WriteRelative(writer, latest, baseline);
+        Dictionary<int, PendulumSlot> previous = baseline == 0 ? [] : Slots(baseline);
+        for (uint frame = Math.Max(baseline + 1, latest - 2); frame <= latest; frame++)
+        {
+            Dictionary<int, PendulumSlot> current = Slots(frame);
+            PendulumCodec.Default.WriteFrame(writer, current.Values, previous);
+            previous = current;
+        }
+
+        return writer.ToArray();
+
+        Dictionary<int, PendulumSlot> Slots(uint frame)
+        {
+            Dictionary<int, PendulumSlot> slots = [];
+            int position = 0;
+            for (int slot = 0; slot < PendulumInput.SlotDescriptors.Count; slot++)
+            {
+                int descriptor = PendulumInput.SlotDescriptors[slot];
+                byte[] value = PendulumCodec.Default.DefaultValue(descriptor);
+                if (slot == PendulumInput.InteractionSlot && press is { } target && frame == latest)
+                {
+                    value = PendulumCodec.Default.Value(descriptor, [
+                        new PendulumIntegerValue(PendulumInput.InteractionRequestField, PendulumInput.PressRequest),
+                        new PendulumIntegerValue(PendulumInput.InteractionTargetField, target),
+                    ]);
+                }
+
+                int size = (value.Length + 255) / 256;
+                slots[slot] = new PendulumSlot(slot, position, size, descriptor, value);
+                position += size;
+            }
+
+            return slots;
+        }
+    }
+
+    // Join, possession, the map and the first door's cell visible, and the first input frames.
+    public void Possess()
+    {
+        Flush("start");
+        Call(FunctionNames.ServerAcknowledgePossession, new Dictionary<string, object?> { [PropertyNames.P] = Player.Pawn });
+        ReportVisible((DamMap.MapPackage, true, true), (Raid.Doors.Doors[0].Cell, true, false));
+        Flush("possession and visibility");
+        Input(0, 30);
+    }
+}

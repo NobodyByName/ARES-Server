@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <AresComponent>Structs</AresComponent>
+    <!-- Components this one may depend on (semicolon-separated). -->
+    <AresAllowedComponents></AresAllowedComponents>
+    <AresAllowPackages>false</AresAllowPackages>
+  </PropertyGroup>
+  <Import Project="../Directory.Build.props" />
+</Project>

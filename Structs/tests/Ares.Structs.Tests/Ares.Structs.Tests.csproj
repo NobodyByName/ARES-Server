@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ares.Structs.Core/Ares.Structs.Core.csproj" />
+    <ProjectReference Include="../../src/Ares.Structs.Net/Ares.Structs.Net.csproj" />
+    <ProjectReference Include="../../src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
+    <ProjectReference Include="../../src/Ares.Structs.Backend/Ares.Structs.Backend.csproj" />
+  </ItemGroup>
+
+</Project>
