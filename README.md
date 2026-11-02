@@ -1,8 +1,8 @@
 # ARES-Server
 
 Independent replacement servers for ARC Raiders: the backend a stock game client signs in to, and
-the game-session server that runs its raids. Players connect with ARES-Launcher (a separate
-repository) and their own, unmodified game.
+the game-session server that runs its raids. Players connect with
+[ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) (a separate repository) and their own, unmodified game.
 
 > **Unofficial project.** ARES is independent and is not affiliated with, endorsed by or sponsored
 > by Embark Studios. ARC Raiders and all related names and trademarks belong to their respective
@@ -75,8 +75,8 @@ dotnet run --project Host/src/Ares.Host -- --session-control-url http://127.0.0.
 ARES-Host also needs `archive-keys.txt`, the game's archive keys, in the directory it is started
 from; see [Archive keys](#archive-keys).
 
-Players then add the server `127.0.0.1` in ARES-Launcher (port 18080 is the default). To serve other
-machines, start ARES-Host with `--bind <address> --allow-network-clients
+Players then add the server `127.0.0.1` in [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) (port 18080 is
+the default). To serve other machines, start ARES-Host with `--bind <address> --allow-network-clients
 --public-origin http://<address>:18080` and ARES-Raid with `--bind <address> --advertise-host
 <address>`. All options: [Host](Host/README.md#options), [Raid](Raid/README.md#options).
 
