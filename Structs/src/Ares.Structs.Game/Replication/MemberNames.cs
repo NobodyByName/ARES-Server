@@ -187,6 +187,8 @@ public static class PropertyNames
     public const string EndABoneIndex = "EndABoneIndex";
     public const string EndAComponent = "EndAComponent";
     public const string EndALocation = "EndALocation";
+    public const string EndAttachmentActor = "EndAttachmentActor";
+    public const string EndAttachmentComponent = "EndAttachmentComponent";
     public const string EndBBoneIndex = "EndBBoneIndex";
     public const string EndBComponent = "EndBComponent";
     public const string EndBLocation = "EndBLocation";
@@ -324,6 +326,7 @@ public static class PropertyNames
     public const string KnockbackResistanceModifier = "KnockbackResistanceModifier";
     public const string KnockbackStrengthBias = "KnockbackStrengthBias";
     public const string LodIndex = "LODIndex";
+    public const string LadderHeight = "LadderHeight";
     public const string LastAccumulatedSettings = "LastAccumulatedSettings";
     public const string LastGoodPacketRealtime = "LastGoodPacketRealtime";
     public const string LastPreAdditiveVelocity = "LastPreAdditiveVelocity";
@@ -740,6 +743,7 @@ public static class PropertyNames
     public const string AffectsHud = "bAffectsHUD";
     public const string AffectsMovement = "bAffectsMovement";
     public const string AffectsTurning = "bAffectsTurning";
+    public const string AllowAutoClimbOffTop = "bAllowAutoClimbOffTop";
     public const string AllowMaskedMaterials = "bAllowMaskedMaterials";
     public const string ApplyToInstances = "bApplyToInstances";
     public const string BaseRelativePosition = "bBaseRelativePosition";
@@ -810,6 +814,7 @@ public static class PropertyNames
     public const string LockOutgoing = "bLockOutgoing";
     public const string Looping = "bLooping";
     public const string MyRepSimulatePhysics = "bMyRepSimulatePhysics";
+    public const string NeedsDynamicCalculations = "bNeedsDynamicCalculations";
     public const string NewShouldBeLoaded = "bNewShouldBeLoaded";
     public const string NewShouldBeVisible = "bNewShouldBeVisible";
     public const string NewShouldBlockOnLoad = "bNewShouldBlockOnLoad";

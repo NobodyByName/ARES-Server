@@ -24,6 +24,22 @@ public sealed class WorldDataTests
     }
 
     [Fact]
+    public void Ladders_climb_whole_cycles_and_end_below_their_top()
+    {
+        Assert.Equal(43, DamLadders.All.Count);
+        Assert.Equal(DamLadders.All.Count, DamLadders.All.Select(ladder => (ladder.Cell, ladder.Actor)).Distinct().Count());
+        Assert.True(Catalog.IsA(DamLadders.ActorClass, ClassPaths.Actor));
+        Assert.True(Catalog.IsA(DamLadders.InteractionClass, ClassPaths.SceneComponent));
+
+        // 973.67 holds seven 132 cm cycles (924); the climb ends 100 cm below that.
+        Assert.Equal(824.0, LadderLogic.LadderHeight(973.6699018106374, DamLadders.CycleHeight, DamLadders.EndInteractionDistance), 9);
+        Assert.Equal(956.0, LadderLogic.LadderHeight(1056.0, DamLadders.CycleHeight, DamLadders.EndInteractionDistance));
+        Assert.All(DamLadders.All, ladder => Assert.InRange(
+            LadderLogic.LadderHeight(ladder.SplineTop, DamLadders.CycleHeight, DamLadders.EndInteractionDistance), 0.0, ladder.SplineTop));
+        Assert.Throws<ArgumentOutOfRangeException>(() => LadderLogic.LadderHeight(500.0, 0.0, 100.0));
+    }
+
+    [Fact]
     public void Hud_is_a_reference_class_with_its_export_checksum()
     {
         Assert.True(Catalog.IsA(PlayerClasses.Hud, ClassPaths.Hud));

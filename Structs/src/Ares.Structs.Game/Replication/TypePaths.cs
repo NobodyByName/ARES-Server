@@ -15,6 +15,7 @@ public static class ClassPaths
     public const string BaseInteractionComponent = "/Script/Angelscript.BaseInteractionComponent";
     public const string BreachableDoorActor = "/Script/Angelscript.BreachableDoorActor";
     public const string CharacterCustomizationComponent = "/Script/Angelscript.CharacterCustomizationComponent";
+    public const string ClimbableLadder = "/Script/Angelscript.ClimbableLadder";
     public const string ConstructableDamageModelAttributeSet = "/Script/Angelscript.ConstructableDamageModelAttributeSet";
     public const string ConstructableServiceComponentBaseAs = "/Script/Angelscript.ConstructableServiceComponentBaseAS";
     public const string ConstructableStyleDriverComponentAs = "/Script/Angelscript.ConstructableStyleDriverComponentAS";
@@ -61,6 +62,8 @@ public static class ClassPaths
     public const string SimpleDoorActor = "/Script/Angelscript.SimpleDoorActor";
     public const string StandardInteractionComponent = "/Script/Angelscript.StandardInteractionComponent";
     public const string TetherSystem = "/Script/Angelscript.TetherSystem";
+    public const string TraversableLine = "/Script/Angelscript.TraversableLine";
+    public const string TraversableLineInterface = "/Script/Angelscript.TraversableLineInterface";
     public const string WorldItem = "/Script/Angelscript.WorldItem";
     public const string WorldItemBase = "/Script/Angelscript.WorldItemBase";
     public const string WorldItemInterface = "/Script/Angelscript.WorldItemInterface";
