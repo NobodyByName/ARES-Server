@@ -44,6 +44,7 @@ public sealed class RaidWorld
         Clock = worlds.Clock;
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
         ReplicationContext replication = worlds.Replication;
+        (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
         StaticActors =
         [
             new StaticWorldActor(LevelScriptChannel, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
@@ -52,7 +53,7 @@ public sealed class RaidWorld
                 [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
                 [PropertyNames.SelectedLighting] = new GameplayTag(lighting),
             })]),
-            DataLayers(replication, Imports.DataLayersGuid, lighting),
+            DataLayers(replication, Imports.DataLayersGuid, ActiveDataLayers, loadedLayers),
 
             // The game spawns these on both sides with stable names; replicating them gives the client its
             // usual simulated-proxy roles over them.
@@ -76,6 +77,9 @@ public sealed class RaidWorld
 
     /// <summary>Lighting tag.</summary>
     public string Lighting { get; }
+
+    /// <summary>Names of the active data layers: lighting, round content and those active from the start.</summary>
+    public IReadOnlyList<string> ActiveDataLayers { get; }
 
     /// <summary>Where the player spawns.</summary>
     public SpawnPlacement Spawn { get; }
@@ -107,21 +111,33 @@ public sealed class RaidWorld
     /// <summary>The Welcome that sends a client to this world.</summary>
     public static ControlWelcome Welcome { get; } = new(DamMap.MapPackage, DamMap.GameModeClass, "");
 
-    // The selected lighting layer and the layers active from the start are active; the other layers that
-    // start loaded stay loaded. Every Dam layer is a root layer, so the effective state is the target state.
-    private static StaticWorldActor DataLayers(ReplicationContext replication, ulong guid, string lighting)
+    // The selected lighting layer, the round's layers present on this map (locked doors, toxic swamp…) and
+    // the layers active from the start are active; the other layers that start loaded stay loaded.
+    private static (string[] Active, string[] Loaded) DataLayerNames(string lighting, RoundConfiguration round)
     {
         LightingScenario scenario = DamLighting.Scenarios.Single(row => row.Tag == lighting);
-        string[] selected = [.. DamDataLayers.All.Where(layer => layer.Asset[..layer.Asset.LastIndexOf('.')] == scenario.DataLayerPackage).Select(layer => layer.Name)];
-        if (selected.Length != 1)
+        string[] lightingLayers = [.. DamDataLayers.All.Where(layer => Package(layer) == scenario.DataLayerPackage).Select(layer => layer.Name)];
+        if (lightingLayers.Length != 1)
         {
             throw new WorldPreparationException("The lighting has no unique data layer");
         }
 
-        object?[] active = [.. selected.Concat(DamDataLayers.All.Where(layer => layer.InitialRuntimeState == DataLayerRuntimeState.Activated).Select(layer => layer.Name))
-            .Distinct().Order(StringComparer.Ordinal).Select(object? (name) => new NetworkName(name, 0))];
-        object?[] loaded = [.. DamDataLayers.All.Where(layer => layer.InitialRuntimeState == DataLayerRuntimeState.Loaded && !selected.Contains(layer.Name))
-            .Select(layer => layer.Name).Order(StringComparer.Ordinal).Select(object? (name) => new NetworkName(name, 0))];
+        HashSet<string> roundPackages = [.. round.DataLayers.Select(layer => layer.Package)];
+        string[] selected = [.. lightingLayers, .. DamDataLayers.All.Where(layer => roundPackages.Contains(Package(layer))).Select(layer => layer.Name)];
+        string[] active = [.. selected.Concat(DamDataLayers.All.Where(layer => layer.InitialRuntimeState == DataLayerRuntimeState.Activated).Select(layer => layer.Name))
+            .Distinct().Order(StringComparer.Ordinal)];
+        string[] loaded = [.. DamDataLayers.All.Where(layer => layer.InitialRuntimeState == DataLayerRuntimeState.Loaded && !selected.Contains(layer.Name))
+            .Select(layer => layer.Name).Order(StringComparer.Ordinal)];
+        return (active, loaded);
+
+        static string Package(DataLayer layer) => layer.Asset[..layer.Asset.LastIndexOf('.')];
+    }
+
+    // Every Dam layer is a root layer, so the effective state is the target state.
+    private static StaticWorldActor DataLayers(ReplicationContext replication, ulong guid, IReadOnlyList<string> activeNames, IReadOnlyList<string> loadedNames)
+    {
+        object?[] active = [.. activeNames.Select(object? (name) => new NetworkName(name, 0))];
+        object?[] loaded = [.. loadedNames.Select(object? (name) => new NetworkName(name, 0))];
         return new StaticWorldActor(DataLayersChannel, guid, DamMap.WorldDataLayersClass, [replication.Encode(DamMap.WorldDataLayersClass, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,

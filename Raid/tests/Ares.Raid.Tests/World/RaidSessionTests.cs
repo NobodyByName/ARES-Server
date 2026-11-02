@@ -14,7 +14,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace of the scripted session below.
-    private const string ReferenceTrace = "fff15efb738e9ebcbff3bba93a5de9794d92be374393f1b5163ac0b2315ded26";
+    private const string ReferenceTrace = "a47a4aa1f50c2ac0eaca1db16eaa3e6299ad9b6b6bd92ccd3f9c45fd3f201eac";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -189,6 +189,20 @@ public sealed class RaidSessionTests
         worlds.Release("a");
         Assert.False(worlds.AcceptingPlayers("a"));
         Assert.Throws<ArgumentException>(() => new DamWorlds(() => Now, "Lighting.Unknown"));
+    }
+
+    [Fact]
+    public void The_round_turns_on_its_map_layers()
+    {
+        DamWorlds worlds = new(() => 0, null, () => 7);
+        worlds.Prepare("a", [1]);
+        RaidWorld world = worlds.Current!;
+
+        // Keycard doors live in the locked-doors layer; without it their doorways are empty.
+        string[] packages = [.. DamDataLayers.All.Where(layer => world.ActiveDataLayers.Contains(layer.Name)).Select(layer => layer.Asset.Split('.')[0])];
+        Assert.Contains("/Game/Pioneer/Core/DataLayers/RoundConfiguration_LockedDoors_Standard", packages);
+        Assert.Contains("/Game/Pioneer/Core/DataLayers/RoundConfiguration_ToxicSwamp_Standard", packages);
+        Assert.DoesNotContain("/Game/Pioneer/Core/DataLayers/RoundConfiguration_LockedDoors_Open", packages);
     }
 
     [Fact]
