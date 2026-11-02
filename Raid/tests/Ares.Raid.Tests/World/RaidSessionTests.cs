@@ -14,7 +14,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace of the scripted session below.
-    private const string ReferenceTrace = "ee292b65eabbdf9c3f2a0b85abd14954f73213fadc36d1988e6c86c90b9216e4";
+    private const string ReferenceTrace = "fff15efb738e9ebcbff3bba93a5de9794d92be374393f1b5163ac0b2315ded26";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -26,7 +26,7 @@ public sealed class RaidSessionTests
             session.Service(at);
         }
 
-        session.Input(30, 33, session.Raid.Doors.Doors[0].Buttons[0]);
+        session.Input(30, 33, session.Door.Buttons[0]);
         foreach (double at in (double[])[122.5, 123.0, 125.0, 125.5])
         {
             session.Service(at);
@@ -35,7 +35,7 @@ public sealed class RaidSessionTests
         Assert.Equal(DeliveryPhase.Possessed, session.Channels.Phase);
         Assert.True(session.Player.PossessionAcknowledged);
         Assert.Equal((1, 0, 0), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests, session.Channels.InputDecodeFailures));
-        Assert.Equal((ushort)DoorOpenState.Open, session.Raid.DoorStates.Get(0).State);
+        Assert.Equal(DoorOpenState.Open, session.Raid.DoorStates.Get(session.Door.Index).State.Open);
         Assert.Equal(ReferenceTrace, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', session.Trace) + "\n"))));
     }
 
@@ -52,13 +52,13 @@ public sealed class RaidSessionTests
         int[] open = [.. session.Sent.Where(bunch => bunch is { Channel: >= 64, Opened: true }).Select(bunch => bunch.Channel)];
         Assert.NotEmpty(open);
         session.Channels.ActorChannelFailed(open[0]);
-        session.ReportVisible((session.Raid.Doors.Doors[0].Cell, false, false));
+        session.ReportVisible((session.Door.Cell, false, false));
         session.Flush("hidden");
         session.Service(123.0);
         Assert.Equal(open.Order(), session.Sent.Where(bunch => bunch.CloseReason == Bunches.LevelUnloaded).Select(bunch => bunch.Channel).Order());
 
         session.Sent.Clear();
-        session.ReportVisible((session.Raid.Doors.Doors[0].Cell, true, false));
+        session.ReportVisible((session.Door.Cell, true, false));
         session.Service(124.0);
         session.Service(124.5);
         Assert.DoesNotContain(session.Sent, bunch => bunch.Channel == open[0]);
@@ -66,11 +66,33 @@ public sealed class RaidSessionTests
     }
 
     [Fact]
+    public void A_barricaded_door_keeps_its_buttons_disabled_and_ignores_presses()
+    {
+        ScriptedPlayer session = new();
+        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        session.Possess();
+        session.ReportVisible((barricaded.Cell, true, false));
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
+        {
+            session.Service(at);
+        }
+
+        session.Input(30, 33, barricaded.Buttons[0]);
+        session.Service(123.5);
+
+        (DoorState state, int revision, _) = session.Raid.DoorStates.Get(barricaded.Index);
+        Assert.Contains(session.Sent, bunch => bunch is { Opened: true } && bunch.Channel == 64 + barricaded.Index);
+        Assert.Equal((0, 1), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
+        Assert.Equal((DoorOpenState.Closed, DoorSealState.Sealed, 0), (state.Open, state.Seal, revision));
+        Assert.Equal(CurrentInteractionState.Disabled, session.Raid.DoorStates.Buttons(barricaded.Index));
+    }
+
+    [Fact]
     public void A_press_on_a_door_this_player_has_not_opened_is_ignored()
     {
         ScriptedPlayer session = new();
         session.Possess();
-        session.Input(30, 33, session.Raid.Doors.Doors[^1].Buttons[0]);
+        session.Input(30, 33, session.HiddenDoor.Buttons[0]);
         session.Input(0, 40, 0x12345);
         Assert.Equal((0, 2), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
     }
@@ -85,7 +107,7 @@ public sealed class RaidSessionTests
             session.Service(at);
         }
 
-        ulong button = session.Raid.Doors.Doors[0].Buttons[0];
+        ulong button = session.Door.Buttons[0];
         Vector3D there = new(450000.0, 600000.0, -38000.0);
         session.Input(30, 33, focus: button);
         session.Service(122.5);
@@ -112,7 +134,7 @@ public sealed class RaidSessionTests
             session.Service(at);
         }
 
-        session.Input(30, 33, focus: session.Raid.Doors.Doors[^1].Buttons[0], position: new Vector3D(1.0, 2.0, 3.0));
+        session.Input(30, 33, focus: session.HiddenDoor.Buttons[0], position: new Vector3D(1.0, 2.0, 3.0));
         session.Service(122.5);
         Assert.Equal(1, session.Channels.BlackboardFrames);
     }

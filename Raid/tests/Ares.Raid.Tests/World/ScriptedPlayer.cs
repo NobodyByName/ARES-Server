@@ -45,6 +45,12 @@ internal sealed class ScriptedPlayer
 
     public WorldPlayer Player => Raid.State.Player(Principal);
 
+    // The first door a press can open; Possess makes its cell visible.
+    public Door Door => Raid.Doors.Doors.First(door => Raid.DoorStates.Usable(door.Index));
+
+    // A door a press could open, in a cell that stays hidden.
+    public Door HiddenDoor => Raid.Doors.Doors.Last(door => Raid.DoorStates.Usable(door.Index) && door.Cell != Door.Cell);
+
     public ChannelIo Io { get; }
 
     public PlayerChannels Channels { get; }
@@ -172,12 +178,12 @@ internal sealed class ScriptedPlayer
         return new PendulumIntegerValue(field, (ulong)(half + Math.Round(world * half / PawnBlackboard.PositionRange)));
     }
 
-    // Join, possession, the map and the first door's cell visible, and the first input frames.
+    // Join, possession, the map and the usable door's cell visible, and the first input frames.
     public void Possess()
     {
         Flush("start");
         Call(FunctionNames.ServerAcknowledgePossession, new Dictionary<string, object?> { [PropertyNames.P] = Player.Pawn });
-        ReportVisible((DamMap.MapPackage, true, true), (Raid.Doors.Doors[0].Cell, true, false));
+        ReportVisible((DamMap.MapPackage, true, true), (Door.Cell, true, false));
         Flush("possession and visibility");
         Input(0, 30);
     }

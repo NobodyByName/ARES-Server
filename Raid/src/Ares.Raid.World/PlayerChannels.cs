@@ -715,10 +715,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
         BlackboardFrames++;
     }
 
-    // The door of a button the client may use: possessed, door replicated on this connection, cell visible.
+    // The door of a button the client may use: possessed, door replicated on this connection, cell visible,
+    // and the door not barricaded, locked or without power.
     private Door? UsableDoor(ulong button) =>
         _raid.Doors.ByButton(button) is { } door && Phase == DeliveryPhase.Possessed && !_failedDoors.Contains(door.Index)
         && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open && _visibleLevels.Contains(door.Cell)
+        && _raid.DoorStates.Usable(door.Index)
             ? door
             : null;
 
@@ -813,11 +815,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
 
             int channel = FirstDoorChannel + door.Index;
-            (ushort value, int revision, double? until) = _raid.DoorStates.Get(door.Index);
+            (DoorState value, int revision, _) = _raid.DoorStates.Get(door.Index);
             switch (state)
             {
                 case DoorChannel.Exporting:
-                    (state, key) = (DoorChannel.Opening, sender.Queue(_raid.Doors.OpenBunch(door, channel, sender.NextSequence(channel), CurrentInteractionState.Idle, value)));
+                    (state, key) = (DoorChannel.Opening, sender.Queue(_raid.Doors.OpenBunch(door, channel, sender.NextSequence(channel), _raid.DoorStates.Buttons(door.Index), value)));
                     _doorRevisions[door.Index] = revision;
                     break;
                 case DoorChannel.Opening:
@@ -841,8 +843,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     break;
                 case DoorChannel.Open when revision != _doorRevisions.GetValueOrDefault(door.Index)
                     && (!_doorUpdates.TryGetValue(door.Index, out ReliableKey update) || !sender.Pending(update)):
-                    CurrentInteractionState buttons = until is null ? CurrentInteractionState.Idle : CurrentInteractionState.SuccessIdle;
-                    _doorUpdates[door.Index] = sender.Queue(_raid.Doors.UpdateBunch(door, channel, value, buttons));
+                    _doorUpdates[door.Index] = sender.Queue(_raid.Doors.UpdateBunch(door, channel, value, _raid.DoorStates.Buttons(door.Index)));
                     _doorRevisions[door.Index] = revision;
                     break;
             }

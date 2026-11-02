@@ -72,6 +72,26 @@ public sealed class WorldDataTests
     }
 
     [Fact]
+    public void Some_doors_start_barricaded_locked_open_or_without_power()
+    {
+        Assert.Equal(7, DamDoors.All.Count(door => door.StartAsSealed));
+        Assert.Equal(8, DamDoors.All.Count(door => door.StartAsLocked));
+        Assert.Equal(6, DamDoors.All.Count(door => door.StartAsOpened));
+        Assert.Equal(7, DamDoors.All.Count(door => !door.StartAsPowered));
+        Assert.Equal(0, DamDoors.All.Count(door => door is { StartAsSealed: true, StartAsLocked: true }));
+    }
+
+    [Fact]
+    public void Door_state_packs_like_the_door_script()
+    {
+        DoorState state = new(DoorOpenState.Closing, DoorSealState.Sealed, DoorLockState.Unlocked, DoorPowerState.Powered, DoorSwingDirection.Reverse);
+
+        Assert.Equal(0b01_010_010_001_011, state.Pack());
+        Assert.Equal(state, DoorState.Unpack(state.Pack()));
+        Assert.Equal(new DoorState(DoorOpenState.Closed, DoorSealState.Uninitialized, DoorLockState.Uninitialized, DoorPowerState.Uninitialized, DoorSwingDirection.Forward), DoorState.Unpack(0));
+    }
+
+    [Fact]
     public void Door_classes_and_interaction_state_match_the_schema()
     {
         Assert.True(Catalog.IsA(DamDoors.ActorClass, ClassPaths.Actor));

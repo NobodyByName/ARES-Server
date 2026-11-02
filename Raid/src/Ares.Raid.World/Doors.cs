@@ -85,16 +85,16 @@ public sealed class DoorCatalog
     /// <param name="channel">Channel index.</param>
     /// <param name="sequence">Reliable sequence number.</param>
     /// <param name="buttons">Button state.</param>
-    /// <param name="doorState">Replicated door state.</param>
+    /// <param name="doorState">Door state.</param>
     /// <returns>The bunch.</returns>
-    public ChannelBunch OpenBunch(Door door, int channel, int sequence, CurrentInteractionState buttons, ushort doorState)
+    public ChannelBunch OpenBunch(Door door, int channel, int sequence, CurrentInteractionState buttons, DoorState doorState)
     {
         ArgumentNullException.ThrowIfNull(door);
         ActorContentBlock actor = _replication.Encode(DamDoors.ActorClass, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
-            [PropertyNames.DoorState] = doorState,
+            [PropertyNames.DoorState] = doorState.Pack(),
         });
         return new StaticActorInitialization(new StaticActorReference(door.Guid), [actor]) { Components = ButtonContent(door, buttons) }.ToBunch(channel, sequence);
     }
@@ -102,13 +102,13 @@ public sealed class DoorCatalog
     /// <summary>Updates an open door channel.</summary>
     /// <param name="door">The door.</param>
     /// <param name="channel">Channel index.</param>
-    /// <param name="doorState">Replicated door state.</param>
+    /// <param name="doorState">Door state.</param>
     /// <param name="buttons">Button state.</param>
     /// <returns>The bunch.</returns>
-    public ChannelBunch UpdateBunch(Door door, int channel, ushort doorState, CurrentInteractionState buttons)
+    public ChannelBunch UpdateBunch(Door door, int channel, DoorState doorState, CurrentInteractionState buttons)
     {
         ArgumentNullException.ThrowIfNull(door);
-        ActorContentBlock actor = _replication.Encode(DamDoors.ActorClass, new Dictionary<string, object?> { [PropertyNames.DoorState] = doorState });
+        ActorContentBlock actor = _replication.Encode(DamDoors.ActorClass, new Dictionary<string, object?> { [PropertyNames.DoorState] = doorState.Pack() });
         IReadOnlyList<StaticSubobjectContent> components = ButtonContent(door, buttons);
         return Bunches.Actor(channel, writer =>
         {
@@ -128,35 +128,60 @@ public sealed class DoorCatalog
 }
 
 /// <summary>
-/// Door state of one raid, shared by its connections: a press starts the opening or closing animation,
-/// which completes after a fixed time. Changes carry a revision so each connection sends them once.
+/// Door state of one raid, shared by its connections. Each door starts as the map places it (open, locked,
+/// barricaded, powered). A press on a usable door starts the opening or closing animation, which completes
+/// after a fixed time. Changes carry a revision so each connection sends them once.
 /// </summary>
 public sealed class DoorStates
 {
     private const double AnimationSeconds = 2.0;
-    private const ushort OpenStateMask = 7;
 
-    private readonly Dictionary<int, (ushort State, int Revision, double? Until)> _states = [];
+    private readonly Dictionary<int, (DoorState State, int Revision, double? Until)> _states = [];
 
-    /// <summary>A door's replicated state, its revision and when its animation ends (null when idle).</summary>
+    /// <summary>Sets each door to its start state.</summary>
+    /// <param name="placements">The doors, by index.</param>
+    public DoorStates(IReadOnlyList<DoorPlacement> placements)
+    {
+        ArgumentNullException.ThrowIfNull(placements);
+        for (int index = 0; index < placements.Count; index++)
+        {
+            _states[index] = (StartState(placements[index]), 0, null);
+        }
+    }
+
+    /// <summary>A door's state, its revision and when its animation ends (null when idle).</summary>
     /// <param name="index">Door index.</param>
     /// <returns>The state.</returns>
-    public (ushort State, int Revision, double? Until) Get(int index) => _states.GetValueOrDefault(index, ((ushort)DoorOpenState.Closed, 0, null));
+    public (DoorState State, int Revision, double? Until) Get(int index) => _states[index];
 
-    /// <summary>Starts opening a closed door, or closing an open one; ignored while it moves.</summary>
+    /// <summary>Whether a door's open/close buttons work: not barricaded, locked or without power.</summary>
+    /// <param name="index">Door index.</param>
+    /// <returns>True when a press can open or close it.</returns>
+    public bool Usable(int index) =>
+        _states[index].State is { Seal: not (DoorSealState.Sealed or DoorSealState.SealedWithDoorBlocker), Lock: not DoorLockState.Locked, Power: not DoorPowerState.Unpowered };
+
+    /// <summary>State of a door's open/close buttons.</summary>
+    /// <param name="index">Door index.</param>
+    /// <returns>Disabled on unusable doors, SuccessIdle while the door moves, Idle otherwise.</returns>
+    public CurrentInteractionState Buttons(int index) =>
+        !Usable(index) ? CurrentInteractionState.Disabled
+        : _states[index].Until is null ? CurrentInteractionState.Idle
+        : CurrentInteractionState.SuccessIdle;
+
+    /// <summary>Starts opening a closed door, or closing an open one; ignored while it moves or when unusable.</summary>
     /// <param name="index">Door index.</param>
     /// <param name="now">Current time in seconds.</param>
     /// <returns>Whether the press was applied.</returns>
     public bool Press(int index, double now)
     {
-        (ushort state, int revision, double? until) = Get(index);
-        if (until is not null)
+        (DoorState state, int revision, double? until) = Get(index);
+        if (until is not null || !Usable(index))
         {
             return false;
         }
 
-        DoorOpenState next = (DoorOpenState)(state & OpenStateMask) == DoorOpenState.Closed ? DoorOpenState.Opening : DoorOpenState.Closing;
-        _states[index] = (WithOpenState(state, next), revision + 1, now + AnimationSeconds);
+        DoorOpenState next = state.Open == DoorOpenState.Closed ? DoorOpenState.Opening : DoorOpenState.Closing;
+        _states[index] = (state with { Open = next }, revision + 1, now + AnimationSeconds);
         return true;
     }
 
@@ -164,17 +189,23 @@ public sealed class DoorStates
     /// <param name="now">Current time in seconds.</param>
     public void Advance(double now)
     {
-        foreach ((int index, (ushort state, int revision, double? until)) in _states.ToArray())
+        foreach ((int index, (DoorState state, int revision, double? until)) in _states.ToArray())
         {
             if (until is not { } end || now < end)
             {
                 continue;
             }
 
-            DoorOpenState final = (DoorOpenState)(state & OpenStateMask) == DoorOpenState.Opening ? DoorOpenState.Open : DoorOpenState.Closed;
-            _states[index] = (WithOpenState(state, final), revision + 1, null);
+            DoorOpenState final = state.Open == DoorOpenState.Opening ? DoorOpenState.Open : DoorOpenState.Closed;
+            _states[index] = (state with { Open = final }, revision + 1, null);
         }
     }
 
-    private static ushort WithOpenState(ushort state, DoorOpenState open) => (ushort)((state & ~OpenStateMask) | (ushort)open);
+    // What the door script applies at BeginPlay from the placed door's start flags.
+    private static DoorState StartState(DoorPlacement placement) => new(
+        placement.StartAsOpened ? DoorOpenState.Open : DoorOpenState.Closed,
+        placement.StartAsSealed ? DoorSealState.Sealed : DoorSealState.Unsealed,
+        placement.StartAsLocked ? DoorLockState.Locked : DoorLockState.Unlocked,
+        placement.StartAsPowered ? DoorPowerState.Powered : DoorPowerState.Unpowered,
+        DoorSwingDirection.Forward);
 }

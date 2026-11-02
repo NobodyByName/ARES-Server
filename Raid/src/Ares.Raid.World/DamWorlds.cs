@@ -87,7 +87,7 @@ public sealed class RaidWorld
     public DoorCatalog Doors { get; }
 
     /// <summary>Door state of this raid.</summary>
-    public DoorStates DoorStates { get; } = new();
+    public DoorStates DoorStates { get; } = new(DamDoors.All);
 
     /// <summary>Server actors of this raid.</summary>
     public WorldState State { get; }
