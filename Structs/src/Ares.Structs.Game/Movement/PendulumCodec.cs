@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using Ares.Structs.Core.Serialization;
 
 namespace Ares.Structs.Game.Movement;
@@ -24,7 +25,8 @@ public sealed class PendulumCodec
     private const int QuaternionBytes = 21;
 
     private readonly IReadOnlyDictionary<int, PendulumDescriptor> _descriptors;
-    private readonly Dictionary<int, byte[]> _defaults = [];
+    // Shared by every user of Default, possibly on several threads.
+    private readonly ConcurrentDictionary<int, byte[]> _defaults = new();
     private readonly int _registryCount;
     private readonly PendulumFieldFlags _serialized;
     private readonly PendulumFieldFlags _delta;
@@ -288,19 +290,13 @@ public sealed class PendulumCodec
     private PendulumDescriptor Descriptor(int id) =>
         _descriptors.TryGetValue(id, out PendulumDescriptor? descriptor) ? descriptor : throw new InvalidPacketException("Unknown descriptor");
 
-    private byte[] DefaultOf(int id)
+    private byte[] DefaultOf(int id) => _defaults.GetOrAdd(id, key =>
     {
-        if (_defaults.TryGetValue(id, out byte[]? value))
-        {
-            return value;
-        }
-
-        PendulumDescriptor descriptor = Descriptor(id);
-        value = new byte[descriptor.Size];
+        PendulumDescriptor descriptor = Descriptor(key);
+        byte[] value = new byte[descriptor.Size];
         SetDefaults(descriptor.Fields, value);
-        _defaults[id] = value;
         return value;
-    }
+    });
 
     private static IEnumerable<PendulumSlot> Ordered(Dictionary<int, PendulumSlot> frame, ulong mask) =>
         frame.Values.Where(slot => IsSet(mask, slot.Slot)).OrderBy(slot => slot.Slot);
