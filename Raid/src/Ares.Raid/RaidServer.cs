@@ -142,6 +142,8 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["blackboard_frames"] = channels.BlackboardFrames,
                 ["door_presses"] = channels.DoorPresses,
                 ["ignored_door_requests"] = channels.IgnoredDoorRequests,
+                ["ladders_ready"] = channels.LaddersReady,
+                ["ladders_in_progress"] = channels.LaddersInProgress,
                 ["unhandled_calls"] = calls,
             });
         }

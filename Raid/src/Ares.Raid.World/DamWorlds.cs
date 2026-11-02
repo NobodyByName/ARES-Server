@@ -10,7 +10,7 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
 
-/// <summary>A prepared Dam raid: its seed, round, lighting, spawn, actors and doors.</summary>
+/// <summary>A prepared Dam raid: its seed, round, lighting, spawn, actors, doors and ladders.</summary>
 public sealed class RaidWorld
 {
     /// <summary>Channel of the level script actor.</summary>
@@ -41,6 +41,7 @@ public sealed class RaidWorld
         Spawn = Spawns.Place(starts[seed % starts.Count], 0);
         Imports = worlds.Imports;
         Doors = worlds.Doors;
+        Ladders = worlds.Ladders;
         Clock = worlds.Clock;
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
         ReplicationContext replication = worlds.Replication;
@@ -89,6 +90,9 @@ public sealed class RaidWorld
 
     /// <summary>The map doors.</summary>
     public DoorCatalog Doors { get; }
+
+    /// <summary>The map ladders.</summary>
+    public LadderCatalog Ladders { get; }
 
     /// <summary>Door state of this raid.</summary>
     public DoorStates DoorStates { get; } = new(DamDoors.All);
@@ -182,6 +186,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
         MapPaths paths = new();
         Doors = new DoorCatalog(Replication, paths);
+        Ladders = new LadderCatalog(Replication, paths);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>
@@ -207,6 +212,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal ReplicationContext Replication { get; }
 
     internal DoorCatalog Doors { get; }
+
+    internal LadderCatalog Ladders { get; }
 
     /// <inheritdoc />
     public void Prepare(string matchId, IReadOnlyList<long> players)

@@ -14,7 +14,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace of the scripted session below.
-    private const string ReferenceTrace = "a47a4aa1f50c2ac0eaca1db16eaa3e6299ad9b6b6bd92ccd3f9c45fd3f201eac";
+    private const string ReferenceTrace = "273ee0f6eeb718392fb5519e389918c71435be534a311f456ed4b8502604a947";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -49,7 +49,8 @@ public sealed class RaidSessionTests
             session.Service(at);
         }
 
-        int[] open = [.. session.Sent.Where(bunch => bunch is { Channel: >= 64, Opened: true }).Select(bunch => bunch.Channel)];
+        int ladders = 64 + session.Raid.Doors.Doors.Count;
+        int[] open = [.. session.Sent.Where(bunch => bunch is { Channel: >= 64, Opened: true } && bunch.Channel < ladders).Select(bunch => bunch.Channel)];
         Assert.NotEmpty(open);
         session.Channels.ActorChannelFailed(open[0]);
         session.ReportVisible((session.Door.Cell, false, false));

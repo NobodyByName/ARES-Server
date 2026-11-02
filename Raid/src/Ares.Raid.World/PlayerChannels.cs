@@ -71,7 +71,7 @@ public enum DeliveryPhase
 /// <summary>
 /// One player's actor channels after Join: exports and world actors first, then the player actors, their
 /// components and the restart; after possession, input acknowledgements, the first blackboard frame,
-/// level streaming requests, ability grants and the doors of visible cells.
+/// level streaming requests, ability grants, and the doors and ladders of visible cells.
 /// </summary>
 public sealed partial class PlayerChannels : IPlayerChannels
 {
@@ -80,7 +80,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private const int PawnChannel = 6;
     private const int FirstDoorChannel = 64;
     private const int MaxDoorsInFlight = 8;
-    private const double DoorStartDelay = 15.0;
+    private const int MaxLaddersInFlight = 8;
+
+    // Map actors sent before the character simulation settles crashed the client.
+    private const double MapActorStartDelay = 15.0;
     private const double LevelStreamingSettleSeconds = 5.0;
     private const double AsyncLoadInterval = 2.0;
     private const int AsyncLoadLimit = 30;
@@ -137,7 +140,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private Dictionary<int, ReliableKey> _doorUpdates = [];
     private HashSet<int> _failedDoors = [];
     private List<InteractionRequest> _requests = [];
-    private double? _doorsAllowedAt;
+    private double? _mapActorsAllowedAt;
+    private Dictionary<int, (LadderChannel State, ReliableKey? Key)> _ladders = [];
+    private HashSet<int> _failedLadders = [];
 
     /// <summary>Creates the channels of a joined player.</summary>
     /// <param name="raid">The raid.</param>
@@ -160,6 +165,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
         Closing,
     }
 
+    private enum LadderChannel
+    {
+        Closed,
+        Exporting,
+        Spawning,
+        NamingInteractions,
+        EnablingInteractions,
+        Open,
+    }
+
     /// <summary>Where the actor delivery stands.</summary>
     public DeliveryPhase Phase { get; private set; }
 
@@ -180,6 +195,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     /// <summary>Door requests ignored (not a press, door not open on this connection, or still moving).</summary>
     public int IgnoredDoorRequests { get; private set; }
+
+    /// <summary>Ladders whose climbable actor and interactions this client has.</summary>
+    public int LaddersReady => _ladders.Values.Count(ladder => ladder.State == LadderChannel.Open);
+
+    /// <summary>Ladders whose delivery started and has not finished.</summary>
+    public int LaddersInProgress => _ladders.Values.Count(ladder => ladder.State is not (LadderChannel.Closed or LadderChannel.Open));
 
     /// <summary>Client calls received and not handled yet, by name.</summary>
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
@@ -215,6 +236,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._doorUpdates = new Dictionary<int, ReliableKey>(_doorUpdates);
         copy._failedDoors = [.. _failedDoors];
         copy._requests = [.. _requests];
+        copy._ladders = new Dictionary<int, (LadderChannel, ReliableKey?)>(_ladders);
+        copy._failedLadders = [.. _failedLadders];
         return copy;
     }
 
@@ -242,9 +265,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     {
         ArgumentNullException.ThrowIfNull(io);
         ArgumentNullException.ThrowIfNull(bunch);
-        if (DoorIndex(bunch.Channel) is not null)
+        if (DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null)
         {
-            // The client owns no door; it only sends channel bookkeeping there.
+            // The client owns no door or ladder; it only sends channel bookkeeping there.
             return;
         }
 
@@ -326,6 +349,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
         ServiceDoors(io.Sender, now);
+        ServiceLadders(io.Sender, now);
     }
 
     /// <inheritdoc />
@@ -334,6 +358,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         if (DoorIndex(channel) is { } index)
         {
             _failedDoors.Add(index);
+        }
+        else if (LadderIndex(channel) is { } ladder)
+        {
+            _failedLadders.Add(ladder);
         }
     }
 
@@ -793,13 +821,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // channel with usable buttons, sends state changes, and closes the channel when the cell unloads.
     private void ServiceDoors(ReliableSender sender, double now)
     {
-        if (_blackboardFrame == 0)
-        {
-            return;
-        }
-
-        _doorsAllowedAt ??= now + DoorStartDelay;
-        if (now < _doorsAllowedAt)
+        if (!MapActorsAllowed(now))
         {
             return;
         }
@@ -852,6 +874,63 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
     }
 
+    // Gives the client the climbable actor of each ladder in the cells it reports visible: exports the class
+    // default and the placed ladder, spawns the actor attached to it, then names and enables its climb
+    // interactions. The actors stay when their cell unloads, as the game's own ladder actors do.
+    private void ServiceLadders(ReliableSender sender, double now)
+    {
+        if (!MapActorsAllowed(now))
+        {
+            return;
+        }
+
+        int firstChannel = FirstDoorChannel + _raid.Doors.Doors.Count;
+        int inFlight = _ladders.Values.Count(ladder => ladder.Key is { } key && sender.Pending(key));
+        foreach (Ladder ladder in _raid.Ladders.Ladders)
+        {
+            (LadderChannel state, ReliableKey? key) = _ladders.GetValueOrDefault(ladder.Index, (LadderChannel.Closed, null));
+            if (key is { } waiting && sender.Pending(waiting))
+            {
+                continue;
+            }
+
+            int channel = firstChannel + ladder.Index;
+            switch (state)
+            {
+                case LadderChannel.Closed when inFlight < MaxLaddersInFlight && _visibleLevels.Contains(ladder.Cell) && !_failedLadders.Contains(ladder.Index):
+                    (state, key) = (LadderChannel.Exporting, sender.Queue(_raid.Ladders.ExportBunch(ladder)));
+                    inFlight++;
+                    break;
+                case LadderChannel.Exporting:
+                    (state, key) = (LadderChannel.Spawning, sender.Queue(_raid.Ladders.OpenBunch(ladder, channel, sender.NextSequence(channel))));
+                    break;
+                case LadderChannel.Spawning:
+                    (state, key) = (LadderChannel.NamingInteractions, sender.Queue(_raid.Ladders.InteractionExportBunch(ladder)));
+                    break;
+                case LadderChannel.NamingInteractions:
+                    (state, key) = (LadderChannel.EnablingInteractions, sender.Queue(_raid.Ladders.InteractionBunch(ladder, channel)));
+                    break;
+                case LadderChannel.EnablingInteractions:
+                    (state, key) = (LadderChannel.Open, null);
+                    break;
+            }
+
+            _ladders[ladder.Index] = (state, key);
+        }
+    }
+
+    // Doors and ladders wait until the character simulation has started and settled.
+    private bool MapActorsAllowed(double now)
+    {
+        if (_blackboardFrame == 0)
+        {
+            return false;
+        }
+
+        _mapActorsAllowedAt ??= now + MapActorStartDelay;
+        return now >= _mapActorsAllowedAt;
+    }
+
     private static BitReader At(ChannelBunch item, long position)
     {
         BitReader reader = new(item.Payload, item.PayloadBits);
@@ -861,6 +940,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     private int? DoorIndex(int channel) =>
         channel - FirstDoorChannel is var index && index >= 0 && index < _raid.Doors.Doors.Count ? index : null;
+
+    private int? LadderIndex(int channel) =>
+        channel - FirstDoorChannel - _raid.Doors.Doors.Count is var index && index >= 0 && index < _raid.Ladders.Ladders.Count ? index : null;
 
     private IEnumerable<string> Calls(string classPath, ActorContentBlock block) =>
         _raid.State.Replication.Calls(_raid.State.Objects(_mapped)).ReadFields(classPath, block, RpcDirection.Server).Select(call => call.Field.Name);
