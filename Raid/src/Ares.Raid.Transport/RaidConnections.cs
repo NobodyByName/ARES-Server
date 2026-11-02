@@ -80,8 +80,14 @@ public sealed record ConnectionResult(byte[]? Reply, ConnectionEvent Event, stri
 /// </summary>
 public sealed class RaidConnections
 {
-    /// <summary>Largest packet.</summary>
+    /// <summary>
+    /// Largest packet: the engine's packet size, which bounds the whole datagram (envelope included; the client
+    /// drops larger ones) and codes bunch sizes.
+    /// </summary>
     public const int MaxPacketBytes = 1024;
+
+    // Envelope bits around the connection payload, rounded up to whole bytes.
+    private static readonly long s_envelopeBits = new ConnectionEnvelope(0, 0, [], 0).Encode(fromServer: true).Length * 8L;
 
     private const int InitialControlMessages = 256;
 
@@ -481,7 +487,7 @@ public sealed class RaidConnections
     {
         BitWriter writer = new();
         new ConnectionPacket(state.Window.NextHeader(), []).Write(writer, fromServer: true, MaxPacketBytes);
-        return (MaxPacketBytes * 8L) - writer.Length;
+        return (MaxPacketBytes * 8L) - s_envelopeBits - writer.Length;
     }
 
     private byte[] Encode(ConnectionState state, TransportConnection connection, IReadOnlyList<ReliableKey> selected, double now)
@@ -489,6 +495,11 @@ public sealed class RaidConnections
         BitWriter writer = new();
         new ConnectionPacket(state.Window.NextHeader(), state.Io.Sender.Bunches(selected)).Write(writer, fromServer: true, MaxPacketBytes);
         byte[] datagram = new ConnectionEnvelope(_handshake.SessionId, connection.ClientId, writer.ToArray(), writer.Length).Encode(fromServer: true);
+        if (datagram.Length > MaxPacketBytes)
+        {
+            throw new InvalidPacketException("Datagram larger than the client accepts");
+        }
+
         state.Io.Sender.Sent(state.Window.NextOutgoing, selected, now);
         if (state is { Login: { } login, ChallengeKey: { } challenge } && selected.Contains(challenge))
         {

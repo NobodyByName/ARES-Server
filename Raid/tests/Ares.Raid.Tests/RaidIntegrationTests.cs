@@ -44,6 +44,7 @@ public sealed class RaidIntegrationTests
         }
 
         Assert.Equal(DeliveryPhase.PossessionPending, Current(connections).Phase);
+        Assert.InRange(client.LargestDatagram, RaidConnections.MaxPacketBytes - 64, RaidConnections.MaxPacketBytes);
         Assert.Equal([2, 3, 6], client.Received.Where(bunch => bunch is { Opened: true, Channel: < 8 and not 4 and not 5 and not 7 }).Select(bunch => bunch.Channel).Order());
 
         RaidWorld raid = worlds.Current!;
@@ -86,6 +87,8 @@ public sealed class RaidIntegrationTests
         private int _seed;
 
         public List<ChannelBunch> Received { get; } = [];
+
+        public int LargestDatagram { get; private set; }
 
         public static byte[] Initial() =>
             new HandshakePacket(new StatelessPrefix(0, ClientId, false, 4, 4, (byte)HandshakeType.Initial, 0, GameBuild.NetworkChecksum), 0, 0, 0, new byte[20], new byte[8]).Encode();
@@ -156,6 +159,9 @@ public sealed class RaidIntegrationTests
                 return [];
             }
 
+            // The engine drops datagrams above its packet size.
+            Assert.InRange(reply.Length, 1, Mtu);
+            LargestDatagram = Math.Max(LargestDatagram, reply.Length);
             ConnectionEnvelope envelope = ConnectionEnvelope.Decode(reply, fromServer: true);
             ConnectionPacket packet = ConnectionPacket.Read(new BitReader(envelope.Payload, envelope.PayloadBits), fromServer: true, Mtu);
             _lastServer = packet.Notification.Sequence;
