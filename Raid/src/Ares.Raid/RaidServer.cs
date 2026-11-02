@@ -29,6 +29,9 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
         ConnectionEvent.DirectStreamReceived,
         ConnectionEvent.DirectStreamDropped,
         ConnectionEvent.ReplayedPacket,
+
+        // A client keeps sending after its connection was dropped; the traffic summary counts these.
+        ConnectionEvent.PacketBeforeHandshake,
     ];
 
     private readonly Dictionary<ConnectionEvent, int> _counts = [];
