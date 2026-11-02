@@ -28,6 +28,9 @@ public sealed partial class ValueCodec
     /// <summary>Gameplay tag struct.</summary>
     public const string GameplayTagStruct = "/Script/GameplayTags.GameplayTag";
 
+    /// <summary>Vector quantized to hundredths.</summary>
+    public const string QuantizedVector100Struct = "/Script/Engine.Vector_NetQuantize100";
+
     /// <summary>Character movement RPC bit containers.</summary>
     public static IReadOnlySet<string> MovementStructs { get; } =
         new HashSet<string>(StringComparer.Ordinal) { "/Script/Engine.CharacterServerMovePackedBits", "/Script/Engine.CharacterMoveResponsePackedBits" };
@@ -210,6 +213,9 @@ public sealed partial class ValueCodec
                 }
 
                 return;
+            case QuantizedVector100Struct:
+                QuantizedVector.Write(writer, value as Vector3D? ?? throw Invalid(), QuantizedVector.Hundredths);
+                return;
             case GameplayTagStruct:
                 string tag = (value as GameplayTag ?? throw Invalid()).Name;
                 CheckTag(tag.Equals("none", StringComparison.OrdinalIgnoreCase) ? "!" : tag);
@@ -234,6 +240,8 @@ public sealed partial class ValueCodec
                 return LevelVisibility.Read(reader);
             case VectorStruct:
                 return new Vector3D(ReadDouble(reader), ReadDouble(reader), ReadDouble(reader));
+            case QuantizedVector100Struct:
+                return QuantizedVector.Read(reader, QuantizedVector.Hundredths);
             case GameplayTagStruct:
                 if (reader.ReadBits(2) != 0)
                 {
