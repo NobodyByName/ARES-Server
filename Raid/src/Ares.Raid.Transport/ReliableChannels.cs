@@ -28,6 +28,23 @@ public sealed record OutgoingBunch(ReliableKey Key, ChannelBunch Bunch, long Wir
 
     /// <summary>Number of sends.</summary>
     public int Attempts { get; set; }
+
+    /// <summary>When it was first sent.</summary>
+    public double? FirstSentAt { get; set; }
+
+    /// <summary>Packets carrying it that the peer reported as not received.</summary>
+    public int Naks { get; set; }
+
+    /// <summary>Packets carrying it that left the packet history without an acknowledgement.</summary>
+    public int Evictions { get; set; }
+
+    /// <summary>A short description for diagnostics.</summary>
+    /// <param name="now">Current time in seconds.</param>
+    /// <returns>The description.</returns>
+    public string Describe(double now) =>
+        $"channel {Key.Channel} sequence {Key.Sequence} ({WireBits} bits, open {Bunch.Opened}, exports {Bunch.PackageExports}, "
+        + $"must-be-mapped {Bunch.MustBeMapped}, close {Bunch.CloseReason?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "none"}): "
+        + $"{Attempts} sends over {now - (FirstSentAt ?? now):0.0} s, {Naks} reported lost, {Evictions} unanswered";
 }
 
 /// <summary>Identifies a queued reliable bunch.</summary>
@@ -214,7 +231,7 @@ public sealed class ReliableSender
 
             if (record.Attempts >= MaxAttempts)
             {
-                throw new ReliableOverflowException("Reliable message retry limit exhausted");
+                throw new ReliableOverflowException($"Reliable message retry limit exhausted: {record.Describe(now)}");
             }
 
             if (record.WireBits > budgetBits)
@@ -264,6 +281,7 @@ public sealed class ReliableSender
         LastPacket = packetSequence;
         foreach (OutgoingBunch record in records)
         {
+            record.FirstSentAt ??= now;
             record.LastSentAt = now;
             record.LastPacket = packetSequence;
             record.RetryNow = false;
@@ -283,10 +301,13 @@ public sealed class ReliableSender
             _packetOrder.RemoveAt(0);
             foreach (ReliableKey key in _packets[oldest])
             {
-                if (_records.GetValueOrDefault(key) is { Acknowledged: false } record && record.LastPacket == oldest)
+                if (_records.GetValueOrDefault(key) is not { Acknowledged: false } record || record.LastPacket != oldest)
                 {
-                    record.RetryNow = true;
+                    continue;
                 }
+
+                record.RetryNow = true;
+                record.Evictions++;
             }
 
             _packets.Remove(oldest);
@@ -330,6 +351,7 @@ public sealed class ReliableSender
                 else if (!record.Acknowledged && record.LastPacket == packet)
                 {
                     record.RetryNow = true;
+                    record.Naks++;
                 }
             }
 
