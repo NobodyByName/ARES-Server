@@ -26,7 +26,8 @@ through the allocation contract in Common.
 
 A stock client goes from a fresh launch through sign-in, the main menu and normal Dam matchmaking
 into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets the default Raider,
-moves (walk, sprint, crouch, slide, jump) and uses door buttons, then leaves back to the main menu.
+moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
+the main menu.
 
 Limitations:
 
