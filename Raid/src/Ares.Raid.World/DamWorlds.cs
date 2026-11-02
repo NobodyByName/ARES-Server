@@ -180,7 +180,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
             GameReplication.Catalog,
             [KnownEnums.NetRole, KnownEnums.GamePhase, DamDoors.InteractionState],
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
-        Doors = new DoorCatalog(Replication);
+        MapPaths paths = new();
+        Doors = new DoorCatalog(Replication, paths);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>

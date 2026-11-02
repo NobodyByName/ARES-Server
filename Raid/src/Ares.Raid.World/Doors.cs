@@ -16,35 +16,25 @@ public sealed record Door(int Index, string Cell, ulong Guid, IReadOnlyList<ulon
 /// <summary>
 /// The regular Dam doors. The client loads them with their World Partition cells; their buttons stay
 /// disabled until the server replicates their state, so the server references each door by its map path
-/// (cell package, world, persistent level, actor and the two named buttons). The exports carry checksum 0,
-/// which the client does not check.
+/// (cell package, world, persistent level, actor and the two named buttons).
 /// </summary>
 public sealed class DoorCatalog
 {
-    private const ulong FirstGuid = 0x200001;
-
     private readonly ReplicationContext _replication;
     private readonly Dictionary<ulong, Door> _buttons = [];
 
-    /// <summary>Builds the door exports.</summary>
+    /// <summary>Names the doors.</summary>
     /// <param name="replication">Replication context (knows the interaction-state enum).</param>
-    public DoorCatalog(ReplicationContext replication)
+    /// <param name="paths">Map path ids.</param>
+    public DoorCatalog(ReplicationContext replication, MapPaths paths)
     {
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
-        List<StaticObjectExport> records = [];
-        Dictionary<string, ulong> levels = new(StringComparer.Ordinal);
+        ArgumentNullException.ThrowIfNull(paths);
         List<Door> doors = [];
-
         foreach (DoorPlacement placement in DamDoors.All)
         {
-            if (!levels.TryGetValue(placement.Cell, out ulong level))
-            {
-                level = Add(Add(Add(0, placement.Cell), DamMap.WorldName), DamMap.PersistentLevelName);
-                levels[placement.Cell] = level;
-            }
-
-            ulong actor = Add(level, placement.Actor);
-            Door door = new(doors.Count, placement.Cell, actor, [.. DamDoors.InteractionComponents.Select(name => Add(actor, name))]);
+            ulong actor = paths.MapObject(paths.Level(placement.Cell), placement.Actor);
+            Door door = new(doors.Count, placement.Cell, actor, [.. DamDoors.InteractionComponents.Select(name => paths.MapObject(actor, name))]);
             doors.Add(door);
             foreach (ulong button in door.Buttons)
             {
@@ -52,16 +42,8 @@ public sealed class DoorCatalog
             }
         }
 
-        Exports = new ObjectExports(records);
+        Exports = paths.Exports();
         Doors = doors;
-        return;
-
-        ulong Add(ulong outer, string path)
-        {
-            ulong guid = FirstGuid + (2 * (ulong)records.Count);
-            records.Add(new StaticObjectExport(guid, outer, path, 0, true));
-            return guid;
-        }
     }
 
     /// <summary>The door exports.</summary>
