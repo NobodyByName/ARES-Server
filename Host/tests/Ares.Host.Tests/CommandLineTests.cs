@@ -36,6 +36,18 @@ public sealed class CommandLineTests : IDisposable
         Parse(option, value, "--allow-network-clients");
     }
 
+    [Theory]
+    [InlineData("auto")]
+    [InlineData("interactive")]
+    [InlineData("plain")]
+    [InlineData("json")]
+    public void Console_mode_is_explicit(string mode)
+    {
+        HostConfiguration configuration = Parse("--console", mode, "--log-file", "backend.log");
+        Assert.Equal(mode, configuration.ConsoleMode);
+        Assert.Equal("backend.log", configuration.LogFile);
+    }
+
     [Fact]
     public void Host_does_not_start_without_the_archive_keys_file()
     {
@@ -69,6 +81,7 @@ public sealed class CommandLineTests : IDisposable
     [InlineData("--session-control-url", "http://127.0.0.1:17778")]
     [InlineData("--game-build", "abc")]
     [InlineData("--http-only", "x")]
+    [InlineData("--console", "invalid")]
     public void Invalid_options_are_rejected(string option, string value)
     {
         Assert.Throws<CommandLineException>(() => Parse(option, value));

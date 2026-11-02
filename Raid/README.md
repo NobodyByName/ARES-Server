@@ -44,3 +44,8 @@ Host reaches the allocation API with the same operator token (its `--session-con
 [repository README](../README.md#run) shows a complete setup with ARES-Host.
 
 Build, requirements, game updates and license: see the [repository README](../README.md).
+
+## Operator console
+
+This server has its own interactive console with readable logs and a fixed command row.
+Use `help`, `status`, `clear`, or `stop`. See [console controls and output modes](../README.md#operator-consoles).

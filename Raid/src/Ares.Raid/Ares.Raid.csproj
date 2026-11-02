@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Ares.Raid.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Ares.Raid.World/Ares.Raid.World.csproj" />
     <ProjectReference Include="../../../Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
   </ItemGroup>

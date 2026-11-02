@@ -18,15 +18,24 @@ public static class HostApplication
     /// <param name="time">Clock; the system clock by default.</param>
     /// <param name="allocatorHandler">Optional HTTP handler for the Raid allocation client (tests).</param>
     /// <param name="configureBuilder">Optional builder customisation (tests use an in-memory server).</param>
+    /// <param name="loggerProvider">Optional framework log destination.</param>
     public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, TimeProvider? time = null,
-        HttpMessageHandler? allocatorHandler = null, Action<WebApplicationBuilder>? configureBuilder = null)
+        HttpMessageHandler? allocatorHandler = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null)
     {
         time ??= TimeProvider.System;
         HostSettings settings = configuration.Settings;
 
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders();
-        builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+        if (loggerProvider is null)
+        {
+            builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+        }
+        else
+        {
+            builder.Logging.AddProvider(loggerProvider);
+        }
+
         builder.Logging.SetMinimumLevel(LogLevel.Warning);
         builder.WebHost.ConfigureKestrel(options =>
         {

@@ -35,7 +35,8 @@ catch (CommandLineException error)
     return 2;
 }
 
-JsonEventLog log = JsonEventLog.StandardOutput;
+using RaidConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
+JsonEventLog log = console.Log;
 long started = Stopwatch.GetTimestamp();
 
 using Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -49,14 +50,14 @@ RaidConnections connections = new(handshake, new RoutingAuthenticator(allocation
 
 WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
+builder.Logging.AddProvider(console);
 builder.Logging.SetMinimumLevel(LogLevel.Warning);
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.AddServerHeader = false;
     options.Listen(IPAddress.Loopback, configuration.ControlPort);
 });
-WebApplication app = builder.Build();
+await using WebApplication app = builder.Build();
 app.MapAllocationApi(allocations, configuration.OperatorToken);
 await app.StartAsync().ConfigureAwait(false);
 
@@ -73,8 +74,18 @@ log.Write(new JsonObject
 
 RaidServer server = new(socket, connections, log, Clock);
 CancellationToken stopping = app.Lifetime.ApplicationStopping;
-await Task.Factory.StartNew(() => server.Run(stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
-await app.StopAsync().ConfigureAwait(false);
+using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(stopping);
+Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);
+try
+{
+    await Task.Factory.StartNew(() => server.Run(stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
+}
+finally
+{
+    await consoleStopping.CancelAsync().ConfigureAwait(false);
+    await consoleTask.ConfigureAwait(false);
+    await app.StopAsync().ConfigureAwait(false);
+}
 return 0;
 
 double Clock() => 1 + Stopwatch.GetElapsedTime(started).TotalSeconds;

@@ -24,6 +24,8 @@ public sealed record RaidConfiguration
           --control-port <n>          Allocation API port, on loopback (required)
           --control-token-file <f>    Operator token shared with the Host (required)
           --lighting <tag>            Lighting of every raid (default: picked by the map's weights)
+          --log-file <path>           Append JSON events to a file while keeping the console interactive
+          --console <mode>            Console: auto, interactive, plain or json (default auto)
           --help                      Show this help
           --version                   Show the ARES version and supported game build
         """;
@@ -45,6 +47,12 @@ public sealed record RaidConfiguration
 
     /// <summary>Lighting of every raid, or null for a weighted pick.</summary>
     public string? Lighting { get; private init; }
+
+    /// <summary>Optional structured log file, independent of terminal output.</summary>
+    public string? LogFile { get; private init; }
+
+    /// <summary>Operator console mode.</summary>
+    public string ConsoleMode { get; private init; } = "auto";
 
     /// <summary>Parses and validates the command line.</summary>
     /// <param name="args">Arguments.</param>
@@ -69,7 +77,13 @@ public sealed record RaidConfiguration
         int controlPort = arguments.GetInt32("control-port", 0);
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
+        string consoleMode = arguments.GetString("console", "auto")!;
+        string? logFile = arguments.GetString("log-file");
         arguments.RejectUnknown();
+        if (consoleMode is not ("auto" or "interactive" or "plain" or "json"))
+        {
+            throw new CommandLineException("--console must be auto, interactive, plain or json");
+        }
 
         if (port is < 1 or > 65535 || controlPort is < 1 or > 65535 || port == controlPort)
         {
@@ -95,6 +109,8 @@ public sealed record RaidConfiguration
         {
             return new RaidConfiguration
             {
+                ConsoleMode = consoleMode,
+                LogFile = logFile,
                 Bind = bind,
                 Port = port,
                 AdvertiseHost = ConnectionHost.Validate(advertiseHost),

@@ -27,8 +27,9 @@ catch (CommandLineException error)
     return 2;
 }
 
-JsonEventLog log = JsonEventLog.StandardOutput;
-WebApplication app = HostApplication.Build(configuration, log);
+using HostConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
+JsonEventLog log = console.Log;
+await using WebApplication app = HostApplication.Build(configuration, log, loggerProvider: console);
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {
@@ -40,5 +41,15 @@ log.Write(new JsonObject
     ["matchmaking"] = configuration.SessionControlUrl is not null,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "unchecked",
 });
-await app.WaitForShutdownAsync().ConfigureAwait(false);
+using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(app.Lifetime.ApplicationStopping);
+Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);
+try
+{
+    await app.WaitForShutdownAsync().ConfigureAwait(false);
+}
+finally
+{
+    await consoleStopping.CancelAsync().ConfigureAwait(false);
+    await consoleTask.ConfigureAwait(false);
+}
 return 0;

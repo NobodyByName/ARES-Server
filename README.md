@@ -80,6 +80,39 @@ the default). To serve other machines, start ARES-Host with `--bind <address> --
 --public-origin http://<address>:18080` and ARES-Raid with `--bind <address> --advertise-host
 <address>`. All options: [Host](Host/README.md#options), [Raid](Raid/README.md#options).
 
+## Operator consoles
+
+Host and Raid each have their own console. In a terminal, logs appear above a fixed command row;
+Host shows matchmaking activity and Raid shows the player's loading phase. Events have timestamps
+and readable field names; warnings and errors stand out in color.
+
+Type `help` for commands, `status` for configuration and the latest reported activity, `clear` to
+clear the visible log history, or `stop` to shut down that server gracefully. `Ctrl+C` also stops
+it. Commands act only on the server whose console you are using. Gameplay commands are not
+implemented yet.
+
+Use Left/Right, Ctrl+Home/Ctrl+End, Backspace/Delete to edit; Up/Down recall commands and Escape
+clears the input. Home scrolls up one page through the latest 1,000 log events; End scrolls down
+one page. New events continue to arrive while browsing, and scrolling to the bottom resumes live
+output. The input row stays available while browsing logs.
+
+Both servers accept `--console <mode>`:
+
+| Mode | Behavior |
+| --- | --- |
+| `auto` (default) | Interactive in a terminal; readable line output when streams are redirected. |
+| `interactive` | Requests the terminal interface; falls back to readable output if no terminal is available. |
+| `plain` | Readable line output without cursor control or command input. |
+| `json` | One JSON object per event, suitable for log collectors and files; no command input. |
+
+Use `--log-file raid.log` to append structured JSON events to a file while keeping the console
+interactive. The file is flushed after each event; parent directories are created as needed.
+Alternatively, use `--console json > raid.log` for redirected output. In Rider, choose
+**Terminal mode → Enable pseudoterminal** for each server's run configuration. The terminal interface
+needs terminal input and output; plain stream redirection cannot provide a fixed input row.
+Disable Rider's **Save console output to file** and input redirection when using pseudoterminal
+mode; use `--log-file` to save events independently of the terminal.
+
 ## Archive keys
 
 ARES-Launcher builds each player's connection config from their own game files, which are

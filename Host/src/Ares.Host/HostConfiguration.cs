@@ -37,6 +37,8 @@ public sealed record HostConfiguration
           --motd <text>                     Message of the day for launcher server lists
           --game-build <digits>             Steam build id this server supports (default {GameBuild.SteamBuildId})
           --raid-capacity <n>               Concurrent raids this deployment hosts (default {HostSettings.DefaultRaidCapacity})
+          --log-file <path>                 Append JSON events to a file while keeping the console interactive
+          --console <mode>                  Console: auto, interactive, plain or json (default auto)
           --help                            Show this help
           --version                         Show the ARES version and supported game build
         """;
@@ -58,6 +60,12 @@ public sealed record HostConfiguration
 
     /// <summary>Operator token for <see cref="SessionControlUrl"/>.</summary>
     public string? OperatorToken { get; init; }
+
+    /// <summary>Optional structured log file, independent of terminal output.</summary>
+    public string? LogFile { get; private init; }
+
+    /// <summary>Operator console mode.</summary>
+    public string ConsoleMode { get; private init; } = "auto";
 
     /// <summary>Parses and validates the command line and reads the archive keys file.</summary>
     /// <exception cref="CommandLineException">Invalid usage, or missing or wrong archive keys.</exception>
@@ -94,7 +102,13 @@ public sealed record HostConfiguration
         string archiveKeysFile = arguments.GetString("archive-keys-file", DefaultArchiveKeysFile)!;
         string dataDirectory = arguments.GetString("data-dir")
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host");
+        string consoleMode = arguments.GetString("console", "auto")!;
+        string? logFile = arguments.GetString("log-file");
         arguments.RejectUnknown();
+        if (consoleMode is not ("auto" or "interactive" or "plain" or "json"))
+        {
+            throw new CommandLineException("--console must be auto, interactive, plain or json");
+        }
 
         if (port is < 1 or > 65535)
         {
@@ -170,6 +184,8 @@ public sealed record HostConfiguration
                 ArchiveKeys = archiveKeys,
                 DataDirectory = dataDirectory,
             },
+            ConsoleMode = consoleMode,
+            LogFile = logFile,
             Bind = bind,
             Port = port,
             AllowNetworkClients = allowNetwork,
