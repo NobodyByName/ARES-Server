@@ -375,7 +375,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         ServiceInputAcknowledgement(io.Sender);
-        ServiceBlackboard(io.Sender, now);
+        ServiceBlackboard(io.Sender);
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
         ServiceDoors(io.Sender, now);
@@ -819,7 +819,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
     // the latest input. They are sent when the usable focused button changes: the client's interaction (and
     // its animation) only starts once the server says it may use the button.
-    private void ServiceBlackboard(ReliableSender sender, double now)
+    private void ServiceBlackboard(ReliableSender sender)
     {
         if (InputFrame is not { } latest || latest is < PawnBlackboardFrames.FirstTick or > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending))
         {
@@ -831,11 +831,6 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ulong focus = 0;
         if (_blackboardFrame == 0)
         {
-            if (_visibleLevelsChangedAt is not { } changed || now - changed < LevelStreamingSettleSeconds)
-            {
-                return;
-            }
-
             WorldActor pawn = Actor(_player.Pawn);
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus);
         }

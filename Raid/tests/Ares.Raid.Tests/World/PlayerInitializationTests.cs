@@ -1,6 +1,8 @@
 using Ares.Raid.World;
+using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
@@ -112,6 +114,25 @@ public sealed class PlayerInitializationTests
         session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
         session.Flush("loaded again");
         Assert.Empty(session.Sent);
+    }
+
+    [Fact]
+    public void A_loaded_possessed_player_receives_its_first_simulation_frame_without_a_settling_delay()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        Assert.Equal(0, session.Channels.BlackboardFrames);
+        session.Sent.Clear();
+        session.Service(100);
+        Assert.Equal(1, session.Channels.BlackboardFrames);
+        uint frame = session.Channels.InputFrame!.Value;
+        ActorContentBlock expected = session.Raid.State.BlackboardFrame(0, frame,
+            PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0),
+            new Dictionary<int, PendulumSlot>());
+        ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);
+        ActorContentBlock actual = Block(first);
+        Assert.Equal(expected.PayloadBits, actual.PayloadBits);
+        Assert.Equal(expected.Payload, actual.Payload);
     }
 
     private static bool IsActorProperties(ChannelBunch bunch)
