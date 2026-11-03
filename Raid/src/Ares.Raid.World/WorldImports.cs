@@ -57,6 +57,12 @@ public sealed class WorldImports
             _classes[set.Class] = Add(outer, setName, catalog.Class(set.Class).Checksum);
         }
 
+        (string memberPackage, string memberName) = Split(PlayerClasses.SquadMember);
+        ulong memberOuter = _records.FirstOrDefault(record => record.OuterGuid == 0 && record.Path == memberPackage)?.Guid ?? Add(0, memberPackage, package);
+        (string _, string squadName) = Split(PlayerClasses.Squad.Archetype);
+        _archetypes[PlayerClasses.Squad.Class] = Add(memberOuter, squadName, catalog.Class(PlayerClasses.Squad.Class).Checksum);
+        _classes[PlayerClasses.SquadMember] = Add(memberOuter, memberName, catalog.Class(PlayerClasses.SquadMember).Checksum);
+
         Exports = new ObjectExports(_records);
     }
 

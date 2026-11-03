@@ -28,8 +28,17 @@ public enum DeliveryPhase
     /// <summary>Player actors can open.</summary>
     PlayerOpensReady,
 
+    /// <summary>Squad channel sent; waiting for its acknowledgement.</summary>
+    SquadOpenPending,
+
     /// <summary>Player actor channels sent; waiting for their acknowledgement.</summary>
     ActorOpensPending,
+
+    /// <summary>Squad member created; waiting for its acknowledgement.</summary>
+    SquadMemberPending,
+
+    /// <summary>Squad and game state roster sent; waiting for their acknowledgement.</summary>
+    SquadPropertiesPending,
 
     /// <summary>Player actor properties sent.</summary>
     PlayerPropertiesPending,
@@ -78,6 +87,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private const int ControllerChannel = 2;
     private const int PlayerStateChannel = 3;
     private const int PawnChannel = 6;
+    private const int SquadChannel = 48;
     private const int FirstDoorChannel = 64;
     private const int MaxDoorsInFlight = 8;
     private const int MaxLaddersInFlight = 8;
@@ -107,6 +117,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         FunctionNames.ServerUpdateLoginResult,
         FunctionNames.ServerSendClientTelemetryInfo,
         FunctionNames.ServerSurrender,
+        FunctionNames.ServerRequestSquadPlayersProfiles,
     };
 
     private readonly RaidWorld _raid;
@@ -221,7 +232,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         IEnumerable<ulong> roots = _raid.StaticActors.Select(actor => actor.Guid)
             .Concat(_raid.SpawnedActors.Select(actor => actor.Archetype))
             .Concat(_raid.SpawnedActors.SelectMany(actor => actor.RequiredGuids))
-            .Concat(_bindings.Select(binding => _raid.Imports.Archetypes[_raid.State.Actor(binding.Guid).ClassPath]));
+            .Concat(_bindings.Select(binding => _raid.Imports.Archetypes[_raid.State.Actor(binding.Guid).ClassPath]))
+            .Append(_raid.Imports.Archetypes[PlayerClasses.Squad.Class]);
         _keys = [.. roots.Distinct().Select(root => io.Sender.Queue(Bunches.Exports(_raid.Imports.Exports, [root])))];
         Phase = DeliveryPhase.ExportsPending;
     }
@@ -268,9 +280,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     {
         ArgumentNullException.ThrowIfNull(io);
         ArgumentNullException.ThrowIfNull(bunch);
-        if (DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null)
+        if (bunch.Channel == SquadChannel || DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null)
         {
-            // The client owns no door or ladder; it only sends channel bookkeeping there.
+            // The client owns no squad, door or ladder; it only sends channel bookkeeping there.
             return;
         }
 
@@ -426,6 +438,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.PlayerOpensReady;
                 return true;
             case DeliveryPhase.PlayerOpensReady:
+                WorldActor squad = Actor(_player.Squad);
+                ActorSpawn squadSpawn = new(squad.Guid, _raid.Imports.Archetypes[squad.ClassPath], 0, default);
+                _keys = [sender.Queue(new ActorInitialization(squadSpawn, null, []).ToBunch(SquadChannel, sender.NextSequence(SquadChannel), []))];
+                Phase = DeliveryPhase.SquadOpenPending;
+                return true;
+            case DeliveryPhase.SquadOpenPending when delivered:
                 _keys =
                 [
                     .. _bindings.Select(binding =>
@@ -440,11 +458,30 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 return true;
             case DeliveryPhase.ActorOpensPending when delivered:
                 // Each open completed (with retries): the client can resolve links between the actors.
-                _mapped = [.. _bindings.Select(binding => binding.Guid), .. _raid.SpawnedActors.Select(actor => actor.Guid)];
+                _mapped = [.. _bindings.Select(binding => binding.Guid), _player.Squad, .. _raid.SpawnedActors.Select(actor => actor.Guid)];
+                _keys = [sender.Queue(Bunches.Actor(SquadChannel, _raid.State.SquadMemberContent(_player, _mapped).Write))];
+                Phase = DeliveryPhase.SquadMemberPending;
+                return true;
+            case DeliveryPhase.SquadMemberPending when delivered:
+                _keys =
+                [
+                    sender.Queue(Bunches.Actor(SquadChannel, _raid.State.SquadContent(_player, _mapped))),
+                    sender.Queue(Bunches.Actor(RaidWorld.GameStateChannel, _raid.State.SquadRoster(_player, _mapped))),
+                ];
+                Phase = DeliveryPhase.SquadPropertiesPending;
+                return true;
+            case DeliveryPhase.SquadPropertiesPending when delivered:
                 _keys = [.. _raid.State.InitialProperties(_player, _mapped).Select(content => sender.Queue(Bunches.Actor(ChannelOf(content.Actor), content.Content)))];
                 Phase = DeliveryPhase.PlayerPropertiesPending;
                 return true;
             case DeliveryPhase.PlayerPropertiesPending when delivered:
+                if (_raid.Profiles.Count > 0)
+                {
+                    sender.Queue(Bunches.Actor(ControllerChannel, _raid.State.Replication.Calls(_raid.State.Objects(_mapped)).Call(
+                        PlayerClasses.PlayerController.Class, FunctionNames.ClientReceiveSquadPlayersProfiles,
+                        ProfileParameters(_raid.Profiles), RpcDirection.Client)));
+                }
+
                 Phase = DeliveryPhase.PlayerPropertiesDelivered;
                 return true;
             case DeliveryPhase.PlayerPropertiesDelivered:
@@ -558,6 +595,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Dictionary<string, object?> parameters = calls.ReadParameters(field, payload);
                 switch (name)
                 {
+                    case FunctionNames.ServerRequestSquadPlayersProfiles:
+                        IReadOnlyList<object?> requested = parameters[PropertyNames.TenancyUserIds] as IReadOnlyList<object?> ?? [];
+                        replies.Add((FunctionNames.ClientReceiveSquadPlayersProfiles, ProfileParameters(_raid.Profiles.IntersectBy(requested.OfType<TenancyUserId>(), profile => profile.TenancyUserId))));
+                        break;
                     case FunctionNames.ServerAcknowledgePossession:
                         ReceivePossession(parameters);
                         break;
@@ -577,6 +618,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
         }
     }
+
+    private static Dictionary<string, object?> ProfileParameters(IEnumerable<CompactPlayerProfile> profiles) => new()
+    {
+        [PropertyNames.Profiles] = profiles.Cast<object?>().ToArray(),
+    };
 
     private void ReceivePossession(Dictionary<string, object?> parameters)
     {

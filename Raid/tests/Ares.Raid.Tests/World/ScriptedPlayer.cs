@@ -31,10 +31,10 @@ internal sealed class ScriptedPlayer
     private ulong _focus;
     private Vector3D? _position;
 
-    public ScriptedPlayer()
+    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null)
     {
         Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
-        Worlds.Prepare(MatchId, [42]);
+        Worlds.Prepare(MatchId, [42], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
         Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new PlayerLogin(7, 0, UniqueId), Io);
     }

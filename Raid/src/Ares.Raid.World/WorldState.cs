@@ -39,6 +39,12 @@ public sealed record WorldPlayer(
     IReadOnlyList<ulong> AttributeSets,
     ulong Correction)
 {
+    /// <summary>The player's squad actor.</summary>
+    public ulong Squad { get; init; }
+
+    /// <summary>The replicated member inside the squad.</summary>
+    public ulong SquadMember { get; init; }
+
     /// <summary>Whether the client confirmed possessing its character.</summary>
     public bool PossessionAcknowledged { get; init; }
 }
@@ -168,16 +174,33 @@ public sealed class WorldState
             Add(PlayerClasses.PlayerController.Class, default, controllerValues);
             Add(PlayerClasses.PlayerState.Class, default, stateValues);
             Add(PlayerClasses.Pawn.Class, spawn, pawnValues);
-            foreach (ulong guid in (ulong[])[controller, playerState, pawn])
-            {
-                WorldActor actor = _actors[guid];
-                Replication.Encode(actor.ClassPath, actor.Properties, Objects([controller, playerState, pawn]));
-            }
-
             ulong appearance = Next();
             ulong abilitySystem = Next();
             ulong[] sets = [.. CharacterDefaults.AttributeSets.Select(_ => Next())];
-            WorldPlayer player = new(principal, controller, playerState, pawn, appearance, abilitySystem, sets, Next());
+            ulong correction = Next();
+            Dictionary<string, object?> squadValues = new()
+            {
+                [PropertyNames.Role] = (ulong)NetRole.Authority,
+                [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
+                [PropertyNames.SquadId] = MatchId,
+                [PropertyNames.IsGeneratedSquad] = false,
+            };
+            WorldActor squad = Add(PlayerClasses.Squad.Class, default, squadValues);
+            ulong member = Next();
+            squadValues[PropertyNames.Members] = new object?[] { member };
+            stateValues[PropertyNames.Squad] = squad.Guid;
+            stateValues[PropertyNames.SquadSlotIndex] = 0;
+            foreach (ulong guid in (ulong[])[controller, playerState, pawn])
+            {
+                WorldActor actor = _actors[guid];
+                Replication.Encode(actor.ClassPath, actor.Properties, Objects([controller, playerState, pawn, squad.Guid]));
+            }
+
+            WorldPlayer player = new(principal, controller, playerState, pawn, appearance, abilitySystem, sets, correction)
+            {
+                Squad = squad.Guid,
+                SquadMember = member,
+            };
             _players[principal.UserId] = player;
             return player;
         }
@@ -289,6 +312,48 @@ public sealed class WorldState
                 [PropertyNames.ServerMovementMode] = (ulong)MovementMode.Walking,
             }, RpcDirection.Client)),
         ];
+    }
+
+    /// <summary>Creates the member inside the player's squad after its player state is mapped.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="mapped">Mapped actors.</param>
+    /// <returns>The member's construction and initial properties.</returns>
+    public DynamicSubobjectContent SquadMemberContent(WorldPlayer player, IReadOnlyCollection<ulong> mapped)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return new DynamicSubobjectContent(player.SquadMember, _imports.Classes[PlayerClasses.SquadMember],
+            Replication.Encode(PlayerClasses.SquadMember, new Dictionary<string, object?>
+            {
+                [PropertyNames.UniqueId] = Actor(player.PlayerState).Properties[PropertyNames.UniqueId],
+                [PropertyNames.PlayerState] = player.PlayerState,
+            }, Objects(mapped)), null);
+    }
+
+    /// <summary>Links the squad's member after the member's construction is acknowledged.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="mapped">Mapped actors.</param>
+    /// <returns>The squad's initial properties.</returns>
+    public ActorContentBlock SquadContent(WorldPlayer player, IReadOnlyCollection<ulong> mapped)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        Dictionary<ulong, string> objects = Objects(mapped);
+        objects[player.SquadMember] = PlayerClasses.SquadMember;
+        WorldActor squad = Actor(player.Squad);
+        return Replication.Encode(squad.ClassPath, squad.Properties, objects);
+    }
+
+    /// <summary>Lists the player's squad and player state in the game state.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="mapped">Mapped actors.</param>
+    /// <returns>The game state roster.</returns>
+    public ActorContentBlock SquadRoster(WorldPlayer player, IReadOnlyCollection<ulong> mapped)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return Replication.Encode(GameState.ClassPath, new Dictionary<string, object?>
+        {
+            [PropertyNames.AllSquads] = new object?[] { player.Squad },
+            [PropertyNames.PlayerStates] = new object?[] { player.PlayerState },
+        }, Objects(mapped));
     }
 
     /// <summary>Exports naming the character's appearance component.</summary>
