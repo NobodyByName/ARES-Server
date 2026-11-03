@@ -76,6 +76,19 @@ public sealed class ReplicationWireTests
     }
 
     [Theory]
+    [InlineData(0.0, 90.0, 0.0, "0406000a0004", 47)]
+    [InlineData(90.0, 180.0, 270.0, "04060006000a00180018", 79)]
+    public void Spawn_rotations_use_presence_bits_and_compressed_short_axes(double pitch, double yaw, double roll, string encoded, long bits)
+    {
+        ActorSpawn spawn = new(2, 3, 0, default, new Rotator(pitch, yaw, roll));
+        BitWriter writer = new();
+        spawn.Write(writer);
+        Assert.Equal((encoded, bits), (Convert.ToHexStringLower(writer.ToArray()), writer.Length));
+        Assert.Equal(spawn, ActorSpawn.Read(new BitReader(Convert.FromHexString(encoded), bits)));
+        Assert.Throws<InvalidPacketException>(() => (spawn with { Rotation = new Rotator(0, double.NaN, 0) }).Write(new BitWriter()));
+    }
+
+    [Theory]
     [MemberData(nameof(ReplicationWireVectors.BadSpawns), MemberType = typeof(ReplicationWireVectors))]
     public void Malformed_spawns_are_rejected(string encoded, long bits, string reason)
     {

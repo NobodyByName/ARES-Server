@@ -32,13 +32,14 @@ public sealed record StaticActorReference(ulong Guid)
 
 /// <summary>
 /// Opening an actor channel for a newly spawned actor: its id, archetype, level, and location.
-/// Rotation, scale and velocity are sent as defaults (zero rotation, unit scale, no velocity).
+/// Rotation uses compressed short axes; scale and velocity use defaults (unit scale, no velocity).
 /// </summary>
 /// <param name="Guid">The actor's dynamic id.</param>
 /// <param name="Archetype">Static id of the archetype (class default object).</param>
 /// <param name="Level">Static id of the level, or 0 for the persistent level.</param>
 /// <param name="Location">Spawn location; zero is sent as "no location".</param>
-public sealed record ActorSpawn(ulong Guid, ulong Archetype, ulong Level, Vector3D Location)
+/// <param name="Rotation">Spawn rotation in degrees.</param>
+public sealed record ActorSpawn(ulong Guid, ulong Archetype, ulong Level, Vector3D Location, Rotator Rotation = default)
 {
     /// <summary>Writes the spawn.</summary>
     /// <param name="writer">Destination.</param>
@@ -46,7 +47,8 @@ public sealed record ActorSpawn(ulong Guid, ulong Archetype, ulong Level, Vector
     {
         ArgumentNullException.ThrowIfNull(writer);
         if (Guid < 2 || NetGuid.IsStatic(Guid) || Archetype < 3 || !NetGuid.IsStatic(Archetype) || Level == 1
-            || !double.IsFinite(Location.X) || !double.IsFinite(Location.Y) || !double.IsFinite(Location.Z))
+            || !double.IsFinite(Location.X) || !double.IsFinite(Location.Y) || !double.IsFinite(Location.Z)
+            || !double.IsFinite(Rotation.Pitch) || !double.IsFinite(Rotation.Yaw) || !double.IsFinite(Rotation.Roll))
         {
             throw new InvalidPacketException("Invalid actor spawn");
         }
@@ -65,7 +67,16 @@ public sealed record ActorSpawn(ulong Guid, ulong Archetype, ulong Level, Vector
             }
         }
 
-        writer.WriteBits(0, 3);
+        bool hasRotation = Rotation != default;
+        writer.WriteBit(hasRotation);
+        if (hasRotation)
+        {
+            WriteAxis(writer, Rotation.Pitch);
+            WriteAxis(writer, Rotation.Yaw);
+            WriteAxis(writer, Rotation.Roll);
+        }
+
+        writer.WriteBits(0, 2);
     }
 
     /// <summary>Reads a spawn that fills the whole reader.</summary>
@@ -88,15 +99,28 @@ public sealed record ActorSpawn(ulong Guid, ulong Archetype, ulong Level, Vector
             location = new Vector3D(ReadDouble(reader), ReadDouble(reader), ReadDouble(reader));
         }
 
-        if (reader.ReadBits(3) != 0 || reader.Remaining != 0)
+        Rotator rotation = reader.ReadBit() ? new Rotator(ReadAxis(reader), ReadAxis(reader), ReadAxis(reader)) : default;
+        if (reader.ReadBits(2) != 0 || reader.Remaining != 0)
         {
             throw new InvalidPacketException("Unsupported initial transform or trailing spawn data");
         }
 
-        ActorSpawn result = new(actor, archetype, level, location);
+        ActorSpawn result = new(actor, archetype, level, location, rotation);
         result.Write(new BitWriter());
         return result;
     }
+
+    private static void WriteAxis(BitWriter writer, double angle)
+    {
+        ushort compressed = (ushort)((int)Math.Floor(((angle % 360) * 65536 / 360) + 0.5) & 65535);
+        writer.WriteBit(compressed != 0);
+        if (compressed != 0)
+        {
+            writer.WriteBits(compressed, 16);
+        }
+    }
+
+    private static double ReadAxis(BitReader reader) => reader.ReadBit() ? reader.ReadBits(16) * 360.0 / 65536 : 0;
 
     private static double ReadDouble(BitReader reader) => BitConverter.UInt64BitsToDouble(reader.ReadBits(64));
 }
