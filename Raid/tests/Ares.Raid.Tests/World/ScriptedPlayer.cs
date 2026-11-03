@@ -205,6 +205,8 @@ internal sealed class ScriptedPlayer
     public void Possess()
     {
         Flush("start");
+        Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
+        Flush("initial levels loaded");
         Call(FunctionNames.ServerAcknowledgePossession, new Dictionary<string, object?> { [PropertyNames.P] = Player.Pawn });
         ReportVisible((DamMap.MapPackage, true, true), (Door.Cell, true, false));
         Flush("possession and visibility");

@@ -70,6 +70,15 @@ public enum DeliveryPhase
     /// <summary>Ability system delivered.</summary>
     AbilityDelivered,
 
+    /// <summary>Controller and player state delivered; waiting for the initial levels before creating the character.</summary>
+    InitialLevelsPending,
+
+    /// <summary>The character's channel opened after loading; waiting for acknowledgement.</summary>
+    PawnOpenPending,
+
+    /// <summary>The character's initial properties sent.</summary>
+    PawnPropertiesPending,
+
     /// <summary>Restart sent; waiting for the client to confirm possession.</summary>
     PossessionPending,
 
@@ -131,6 +140,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private HashSet<string> _visibleLevels = new(StringComparer.Ordinal);
     private double? _visibleLevelsChangedAt;
     private bool _possessionToCommit;
+    private bool _initialLevelsLoaded;
     private Dictionary<string, int> _ignoredCalls = new(StringComparer.Ordinal);
 
     private InputHistory _input = new();
@@ -321,6 +331,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             io.Sender.Queue(Bunches.Actor(ControllerChannel, calls.Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Client)));
         }
+
+        while (Advance(io.Sender))
+        {
+        }
     }
 
     /// <inheritdoc />
@@ -446,7 +460,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             case DeliveryPhase.SquadOpenPending when delivered:
                 _keys =
                 [
-                    .. _bindings.Select(binding =>
+                    .. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding =>
                     {
                         WorldActor actor = Actor(binding.Guid);
                         ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location, actor.Rotation);
@@ -459,7 +473,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 return true;
             case DeliveryPhase.ActorOpensPending when delivered:
                 // Each open completed (with retries): the client can resolve links between the actors.
-                _mapped = [.. _bindings.Select(binding => binding.Guid), _player.Squad, .. _raid.SpawnedActors.Select(actor => actor.Guid)];
+                _mapped = [.. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding => binding.Guid), _player.Squad, .. _raid.SpawnedActors.Select(actor => actor.Guid)];
                 _keys = [sender.Queue(Bunches.Actor(SquadChannel, _raid.State.SquadMemberContent(_player, _mapped).Write))];
                 Phase = DeliveryPhase.SquadMemberPending;
                 return true;
@@ -483,6 +497,21 @@ public sealed partial class PlayerChannels : IPlayerChannels
                         ProfileParameters(_raid.Profiles), RpcDirection.Client)));
                 }
 
+                Phase = DeliveryPhase.InitialLevelsPending;
+                return true;
+            case DeliveryPhase.InitialLevelsPending when _initialLevelsLoaded:
+                // Starting the character earlier lets its spawn animation finish behind the loading screen.
+                WorldActor pawn = Actor(_player.Pawn);
+                ActorSpawn pawnSpawn = new(pawn.Guid, _raid.Imports.Archetypes[pawn.ClassPath], 0, pawn.Location, pawn.Rotation);
+                _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, []).ToBunch(PawnChannel, sender.NextSequence(PawnChannel), []))];
+                Phase = DeliveryPhase.PawnOpenPending;
+                return true;
+            case DeliveryPhase.PawnOpenPending when delivered:
+                _mapped.Add(_player.Pawn);
+                _keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.PawnInitialProperties(_player, _mapped)))];
+                Phase = DeliveryPhase.PawnPropertiesPending;
+                return true;
+            case DeliveryPhase.PawnPropertiesPending when delivered:
                 Phase = DeliveryPhase.PlayerPropertiesDelivered;
                 return true;
             case DeliveryPhase.PlayerPropertiesDelivered:
@@ -599,6 +628,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     case FunctionNames.ServerRequestSquadPlayersProfiles:
                         IReadOnlyList<object?> requested = parameters[PropertyNames.TenancyUserIds] as IReadOnlyList<object?> ?? [];
                         replies.Add((FunctionNames.ClientReceiveSquadPlayersProfiles, ProfileParameters(_raid.Profiles.IntersectBy(requested.OfType<TenancyUserId>(), profile => profile.TenancyUserId))));
+                        break;
+                    case FunctionNames.ServerNotifyHasLoadedInitialLevels:
+                        _initialLevelsLoaded = true;
                         break;
                     case FunctionNames.ServerAcknowledgePossession:
                         ReceivePossession(parameters);
@@ -781,8 +813,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _worldTimeSentAt = now;
     }
 
-    // The first frame starts the client's character simulation at the spawn, once level streaming has settled
-    // (otherwise the character falls through floors that are not loaded yet). The client applies each later
+    // The first frame starts the client's character simulation at the spawn after the client confirmed its
+    // initial levels loaded and possession completed. The client applies each later
     // frame as its full character state, so later frames carry the movement the client itself predicted
     // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
     // the latest input. They are sent when the usable focused button changes: the client's interaction (and

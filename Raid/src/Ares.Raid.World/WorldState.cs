@@ -262,8 +262,9 @@ public sealed class WorldState
     }
 
     /// <summary>
-    /// The player actors' initial properties, without the controller's ready flag, and the HUD class right after
-    /// the controller's properties: the client builds its HUD before the player's start.
+    /// The controller and player-state properties and HUD assignment. Pawn creation follows loading; its
+    /// links and readiness follow component delivery
+    /// and the client's confirmation that its initial levels are loaded.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
@@ -274,7 +275,7 @@ public sealed class WorldState
         Dictionary<ulong, string> objects = Objects(mapped);
         string controllerClass = PlayerClasses.PlayerController.Class;
         List<(ulong Actor, ActorContentBlock Content)> contents = [];
-        foreach (ulong guid in (ulong[])[player.Controller, player.PlayerState, player.Pawn])
+        foreach (ulong guid in (ulong[])[player.Controller, player.PlayerState])
         {
             WorldActor actor = Actor(guid);
             Dictionary<string, object?> values = new(actor.Properties);
@@ -283,7 +284,14 @@ public sealed class WorldState
                 values.Remove(PropertyNames.Role);
                 values.Remove(PropertyNames.RemoteRole);
                 values.Remove(PropertyNames.SpawnLocation);
+                values.Remove(PropertyNames.Pawn);
                 values.Remove(PropertyNames.IsServerReady);
+            }
+
+            if (guid == player.PlayerState)
+            {
+                values.Remove(PropertyNames.PioneerCharacter);
+                values.Remove(PropertyNames.CurrentPawn);
             }
 
             contents.Add((guid, Replication.Encode(actor.ClassPath, values, objects)));
@@ -299,10 +307,23 @@ public sealed class WorldState
         return contents;
     }
 
+    /// <summary>The character's initial properties, before its controller link can establish possession.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="mapped">Actor ids the client has mapped.</param>
+    /// <returns>The character's properties.</returns>
+    public ActorContentBlock PawnInitialProperties(WorldPlayer player, IReadOnlyCollection<ulong> mapped)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        WorldActor pawn = Actor(player.Pawn);
+        Dictionary<string, object?> values = new(pawn.Properties);
+        values.Remove(PropertyNames.Controller);
+        return Replication.Encode(pawn.ClassPath, values, Objects(mapped));
+    }
+
     /// <summary>
     /// The calls and the last property that complete the player's start: the ability system's initialization
-    /// notice, the controller's ready flag, the restart with the pawn, and the pawn's walking movement mode at
-    /// its location.
+    /// notice, the pawn and ready flag together, the player-state links, a restart if needed, and the pawn's
+    /// walking movement mode at its location.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
@@ -317,9 +338,19 @@ public sealed class WorldState
         WorldActor pawn = Actor(player.Pawn);
         return
         [
+            (player.Pawn, Replication.Encode(pawnClass, new Dictionary<string, object?> { [PropertyNames.Controller] = player.Controller }, objects)),
             (player.Pawn, calls.Call(pawnClass, FunctionNames.ClientPostInitializeAbilitySystem, new Dictionary<string, object?>(), RpcDirection.Client)),
-            (player.Controller, Replication.Encode(controllerClass, new Dictionary<string, object?> { [PropertyNames.IsServerReady] = true }, objects)),
-            (player.Controller, calls.Call(controllerClass, FunctionNames.ClientRestart, new Dictionary<string, object?> { [PropertyNames.NewPawn] = player.Pawn }, RpcDirection.Client)),
+            (player.Controller, Replication.Encode(controllerClass, new Dictionary<string, object?>
+            {
+                [PropertyNames.Pawn] = player.Pawn,
+                [PropertyNames.IsServerReady] = true,
+            }, objects)),
+            (player.PlayerState, Replication.Encode(PlayerClasses.PlayerState.Class, new Dictionary<string, object?>
+            {
+                [PropertyNames.PioneerCharacter] = player.Pawn,
+                [PropertyNames.CurrentPawn] = player.Pawn,
+            }, objects)),
+            (player.Controller, calls.Call(controllerClass, FunctionNames.ClientRetryClientRestart, new Dictionary<string, object?> { [PropertyNames.NewPawn] = player.Pawn }, RpcDirection.Client)),
             (player.Pawn, calls.Call(pawnClass, FunctionNames.ClientAdjustPosition, new Dictionary<string, object?>
             {
                 [PropertyNames.Timestamp] = 1.0f,

@@ -16,7 +16,7 @@ public sealed class SquadTests
         ScriptedPlayer session = new();
         session.Flush("start");
         Assert.Single(session.Sent, bunch => bunch is { Channel: 48, Opened: true });
-
+        Assert.DoesNotContain(session.Sent, bunch => bunch.Channel == 6);
 
         WorldPlayer player = session.Player;
         Dictionary<ulong, string> objects = session.Raid.State.Objects([player.Controller, player.PlayerState, player.Pawn, player.Squad]);
@@ -42,6 +42,8 @@ public sealed class SquadTests
         Assert.Equal(player.Squad, state[PropertyNames.Squad]);
         Assert.Equal(0, state[PropertyNames.SquadSlotIndex]);
 
+        session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
+        session.Flush("loaded");
         Assert.True(session.Sent.FindIndex(bunch => bunch is { Channel: 48, Opened: true })
             < session.Sent.FindIndex(bunch => bunch is { Channel: 6, Opened: true }));
     }

@@ -38,18 +38,26 @@ public sealed class RaidIntegrationTests
         client.SendControl(new ControlNetspeed(50000), new ControlJoin());
 
         PlayerChannels player = Assert.IsType<PlayerChannels>(Assert.Single(connections.Players).Player);
+        for (int round = 0; round < 64 && Current(connections).Phase != DeliveryPhase.InitialLevelsPending; round++)
+        {
+            client.Acknowledge();
+        }
+
+        Assert.Equal(DeliveryPhase.InitialLevelsPending, Current(connections).Phase);
+        Assert.InRange(client.LargestDatagram, RaidConnections.MaxPacketBytes - 64, RaidConnections.MaxPacketBytes);
+        Assert.Equal([2, 3], client.Received.Where(bunch => bunch is { Opened: true, Channel: < 8 and not 4 and not 5 and not 7 }).Select(bunch => bunch.Channel).Order());
+
+        RaidWorld raid = worlds.Current!;
+        WorldPlayer actors = raid.State.Player(new SessionPrincipal(42, allocation.MatchId));
+        RpcCodec calls = raid.State.Replication.Calls(raid.State.Objects([actors.Controller, actors.PlayerState, actors.Pawn, raid.State.GameState.Guid]));
+        client.SendActor(2, calls.Call(PlayerClasses.PlayerController.Class, FunctionNames.ServerNotifyHasLoadedInitialLevels, new Dictionary<string, object?>(), RpcDirection.Server));
         for (int round = 0; round < 64 && Current(connections).Phase != DeliveryPhase.PossessionPending; round++)
         {
             client.Acknowledge();
         }
 
-        Assert.Equal(DeliveryPhase.PossessionPending, Current(connections).Phase);
-        Assert.InRange(client.LargestDatagram, RaidConnections.MaxPacketBytes - 64, RaidConnections.MaxPacketBytes);
         Assert.Equal([2, 3, 6], client.Received.Where(bunch => bunch is { Opened: true, Channel: < 8 and not 4 and not 5 and not 7 }).Select(bunch => bunch.Channel).Order());
-
-        RaidWorld raid = worlds.Current!;
-        WorldPlayer actors = raid.State.Player(new SessionPrincipal(42, allocation.MatchId));
-        RpcCodec calls = raid.State.Replication.Calls(raid.State.Objects([actors.Controller, actors.PlayerState, actors.Pawn, raid.State.GameState.Guid]));
+        Assert.Equal(DeliveryPhase.PossessionPending, Current(connections).Phase);
         ConnectionResult result = client.SendActor(2, calls.Call(PlayerClasses.PlayerController.Class, FunctionNames.ServerAcknowledgePossession, new Dictionary<string, object?> { [PropertyNames.P] = actors.Pawn }, RpcDirection.Server));
         Assert.Contains(result.Event, (ConnectionEvent[])[ConnectionEvent.ReplySent, ConnectionEvent.Acknowledged]);
         Assert.Equal(DeliveryPhase.Possessed, Current(connections).Phase);
@@ -122,7 +130,9 @@ public sealed class RaidIntegrationTests
         {
             BitWriter writer = new();
             block.Write(writer);
-            return SendReliable(new ChannelBunch(channel, writer.ToArray(), writer.Length) { Name = ChannelName.Actor });
+            ConnectionResult result = SendReliable(new ChannelBunch(channel, writer.ToArray(), writer.Length) { Name = ChannelName.Actor });
+            Read(result.Reply);
+            return result;
         }
 
         public void Acknowledge() => Read(Send([]).Reply);
