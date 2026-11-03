@@ -1,3 +1,5 @@
+using Ares.Common.Game.Inventory;
+
 namespace Ares.Raid.World;
 
 /// <summary>Prepares and releases the raid world for a reservation.</summary>
@@ -6,7 +8,8 @@ public interface IWorldLifecycle
     /// <summary>Prepares the world for a reservation; throws <see cref="WorldPreparationException"/> on failure.</summary>
     /// <param name="matchId">Match id of the reservation.</param>
     /// <param name="players">Reserved players.</param>
-    void Prepare(string matchId, IReadOnlyList<long> players);
+    /// <param name="loadouts">Inventory snapshots, or empty inventories when omitted.</param>
+    void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null);
 
     /// <summary>Releases the world of a reservation (expired or finished).</summary>
     /// <param name="matchId">Match id.</param>

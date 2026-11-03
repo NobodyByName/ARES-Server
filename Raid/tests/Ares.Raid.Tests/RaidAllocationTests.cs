@@ -1,6 +1,8 @@
 using Ares.Common.Control;
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Net.Control;
 using ScenarioNames = Ares.Structs.Backend.Matchmaking.ScenarioNames;
 
@@ -81,6 +83,36 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void Loadouts_are_frozen_per_reservation_and_changed_retries_are_rejected()
+    {
+        InventoryItem[] items = [new("carried", 42, 1, [], 0, 0, "", "v1", 0)];
+        AllocationRequest request = Request() with { Loadouts = [new PlayerLoadout(42, 7, items)] };
+        RaidAllocations allocations = Allocations();
+        string match = allocations.Reserve(request).Allocation!.MatchId;
+        items[0] = items[0] with { Amount = 2 };
+        Assert.Equal(1, Assert.Single(Assert.Single(_worlds.Loadouts!).Items).Amount);
+        Assert.Equal("session_allocation_conflict", allocations.Reserve(request).Error);
+        Assert.Equal(match, allocations.Reserve(request with { Loadouts = _worlds.Loadouts }).Allocation!.MatchId);
+
+        Assert.Equal("invalid_session_loadout", allocations.Reserve(request with { Loadouts = [new PlayerLoadout(43, 7, items)] }).Error);
+        Assert.Equal("invalid_session_loadout", allocations.Reserve(request with { Loadouts = [] }).Error);
+        Assert.Equal("session_allocation_conflict", allocations.Reserve(Request()).Error);
+    }
+
+    [Fact]
+    public void Prepared_worlds_retain_the_loadout_without_sharing_operator_mutations()
+    {
+        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        InventoryItem[] items = [new("carried", 42, 1, [], 0, 0, "", "v1", 0)];
+        PlayerLoadout[] loadouts = [new(42, 7, items)];
+        worlds.Prepare(Ticket, [42], loadouts);
+        items[0] = items[0] with { Amount = 2 };
+
+        Assert.Equal(1, Assert.Single(Assert.Single(worlds.Current!.Loadouts).Items).Amount);
+        Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], loadouts));
+    }
+
+    [Fact]
     public void Players_are_admitted_by_their_routing_credential_and_identity()
     {
         RaidAllocations allocations = Allocations();
@@ -118,9 +150,12 @@ public sealed class RaidAllocationTests
 
         public bool Fail { get; set; }
 
-        public void Prepare(string matchId, IReadOnlyList<long> players)
+        public IReadOnlyList<PlayerLoadout>? Loadouts { get; private set; }
+
+        public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null)
         {
             Prepared.Add(matchId);
+            Loadouts = loadouts;
             if (Fail)
             {
                 throw new WorldPreparationException("test");

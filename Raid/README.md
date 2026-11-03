@@ -15,6 +15,8 @@ Limitations:
 - One player and one raid at a time; Dam only.
 - Movement is trusted from the client; the server does not check it yet.
 - No combat, loot, death or match results yet.
+- Accepts a validated inventory snapshot per reserved player and retains it in the raid world.
+  The inventory UI, containers and equipped items are not replicated yet.
 
 Projects:
 

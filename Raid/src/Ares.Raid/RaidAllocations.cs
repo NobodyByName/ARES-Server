@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using ScenarioNames = Ares.Structs.Backend.Matchmaking.ScenarioNames;
@@ -55,6 +56,16 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             return AllocationResult.Failure(StatusCodes.Status400BadRequest, "unsupported_session_allocation");
         }
 
+        IReadOnlyList<PlayerLoadout> loadouts;
+        try
+        {
+            loadouts = InventorySnapshots.ForPlayers(request.PartyMemberIds, request.Loadouts);
+        }
+        catch (InvalidDataException)
+        {
+            return AllocationResult.Failure(StatusCodes.Status400BadRequest, "invalid_session_loadout");
+        }
+
         lock (_lock)
         {
             Maintain();
@@ -63,17 +74,19 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
                 return existing.TicketId != request.TicketId
                     ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached")
                     : !existing.Players.SequenceEqual(request.PartyMemberIds)
+                        || !existing.Loadouts.Zip(loadouts).All(pair => InventorySnapshots.Same(pair.First, pair.Second))
                         ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_allocation_conflict")
                         : AllocationResult.Success(Status(existing));
             }
 
-            Reservation candidate = new(request.TicketId, Guid.NewGuid().ToString(), [.. request.PartyMemberIds], RandomNumberGenerator.GetBytes(RoutingAuthenticator.TokenBytes))
+            Reservation candidate = new(request.TicketId, Guid.NewGuid().ToString(), [.. request.PartyMemberIds],
+                RandomNumberGenerator.GetBytes(RoutingAuthenticator.TokenBytes), loadouts)
             {
                 Deadline = _clock() + _timeout,
             };
             try
             {
-                _worlds.Prepare(candidate.MatchId, candidate.Players);
+                _worlds.Prepare(candidate.MatchId, candidate.Players, candidate.Loadouts);
             }
             catch (WorldPreparationException)
             {
@@ -146,10 +159,11 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             accepting ? AllocationStates.Available : AllocationStates.Waiting,
             accepting ? ServerInitializationStates.Ready : ServerInitializationStates.Initializing,
             PollingInterval,
-            _endpoint with { RoutingToken = Convert.ToBase64String(item.RoutingToken) });
+            _endpoint with { RoutingToken = Convert.ToBase64String(item.RoutingToken) },
+            [.. item.Loadouts.Select(InventorySnapshots.Receipt)]);
     }
 
-    private sealed record Reservation(string TicketId, string MatchId, long[] Players, byte[] RoutingToken)
+    private sealed record Reservation(string TicketId, string MatchId, long[] Players, byte[] RoutingToken, IReadOnlyList<PlayerLoadout> Loadouts)
     {
         public double Deadline { get; set; }
     }

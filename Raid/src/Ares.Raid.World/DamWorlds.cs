@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Structs.Core.Serialization;
@@ -25,10 +26,11 @@ public sealed class RaidWorld
     /// <summary>First channel of the global actors.</summary>
     private const int FirstGlobalChannel = 8;
 
-    internal RaidWorld(DamWorlds worlds, string matchId, IReadOnlyList<long> players, int seed, string lighting)
+    internal RaidWorld(DamWorlds worlds, string matchId, IReadOnlyList<long> players, int seed, string lighting, IReadOnlyList<PlayerLoadout> loadouts)
     {
         MatchId = matchId;
         Players = players;
+        Loadouts = loadouts;
         Seed = seed;
         RoundConfiguration round = DamRounds.All[seed % DamRounds.All.Count];
         Lighting = lighting;
@@ -72,6 +74,9 @@ public sealed class RaidWorld
 
     /// <summary>Reserved players.</summary>
     public IReadOnlyList<long> Players { get; }
+
+    /// <summary>The frozen loadout per player; inventory replication is not implemented yet.</summary>
+    public IReadOnlyList<PlayerLoadout> Loadouts { get; }
 
     /// <summary>Session seed.</summary>
     public int Seed { get; }
@@ -216,7 +221,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal LadderCatalog Ladders { get; }
 
     /// <inheritdoc />
-    public void Prepare(string matchId, IReadOnlyList<long> players)
+    public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null)
     {
         ArgumentNullException.ThrowIfNull(matchId);
         ArgumentNullException.ThrowIfNull(players);
@@ -225,11 +230,22 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
             throw new WorldPreparationException("The Dam supports one reserved player");
         }
 
+        IReadOnlyList<PlayerLoadout> snapshots;
+        try
+        {
+            snapshots = InventorySnapshots.ForPlayers(players, loadouts);
+        }
+        catch (InvalidDataException error)
+        {
+            throw new WorldPreparationException(error.Message);
+        }
+
         lock (_lock)
         {
             if (_current is { } current)
             {
-                if (current.MatchId != matchId || !current.Players.SequenceEqual(players))
+                if (current.MatchId != matchId || !current.Players.SequenceEqual(players)
+                    || !current.Loadouts.Zip(snapshots).All(pair => InventorySnapshots.Same(pair.First, pair.Second)))
                 {
                     throw new WorldPreparationException("Another reservation owns this server");
                 }
@@ -238,7 +254,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
             }
 
             int seed = _random();
-            _current = new RaidWorld(this, matchId, [.. players], seed, _lighting ?? PickLighting(_random()));
+            _current = new RaidWorld(this, matchId, [.. players], seed, _lighting ?? PickLighting(_random()), snapshots);
         }
     }
 
