@@ -24,5 +24,6 @@ public enum PropertyKind
     UInt16Property,
     UInt32Property,
     UInt64Property,
+    Utf8StrProperty,
     WeakObjectProperty,
 }

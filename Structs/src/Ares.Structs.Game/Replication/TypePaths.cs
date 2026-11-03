@@ -25,6 +25,8 @@ public static class ClassPaths
     public const string EmbarkHud = "/Script/Angelscript.EmbarkHUD";
     public const string EmbarkLobbyGameState = "/Script/Angelscript.EmbarkLobbyGameState";
     public const string EmbarkPlayerState = "/Script/Angelscript.EmbarkPlayerState";
+    public const string InventoryComponent = "/Script/Angelscript.InventoryComponent";
+    public const string ItemBase = "/Script/Angelscript.ItemBase";
     public const string PioPendulumQueryGlobalActor = "/Script/Angelscript.PioPendulumQueryGlobalActor";
     public const string PioneerActorAttributeSet = "/Script/Angelscript.PioneerActorAttributeSet";
     public const string PioneerActorHealthComponentAttributeSet = "/Script/Angelscript.PioneerActorHealthComponentAttributeSet";
@@ -92,6 +94,9 @@ public static class ClassPaths
     public const string EmbarkGlobalActor = "/Script/EmbarkGlobalActorInterface.EmbarkGlobalActor";
     public const string EmbarkCharacterMovementGlobalActorBase = "/Script/EmbarkMovement.EmbarkCharacterMovementGlobalActorBase";
     public const string EmbarkPawnMovementComponent = "/Script/EmbarkMovement.EmbarkPawnMovementComponent";
+    public const string ActorComponentReplicatedSubobjects = "/Script/EmbarkReplicatedSubobjects.ActorComponentReplicatedSubobjects";
+    public const string ReplicatedSubobject = "/Script/EmbarkReplicatedSubobjects.ReplicatedSubobject";
+    public const string ReplicatedSubobjectWithPreSave = "/Script/EmbarkReplicatedSubobjects.ReplicatedSubobjectWithPreSave";
     public const string BpObjectInterpolator = "/Script/EmbarkStateInterpolator.BPObjectInterpolator";
     public const string LinearBufferStateInterpolator = "/Script/EmbarkStateInterpolator.LinearBufferStateInterpolator";
     public const string ObjectInterpolator = "/Script/EmbarkStateInterpolator.ObjectInterpolator";
@@ -128,6 +133,7 @@ public static class ClassPaths
     public const string AttributeSet = "/Script/GameplayAbilities.AttributeSet";
     public const string GameplayTasksComponent = "/Script/GameplayTasks.GameplayTasksComponent";
     public const string EmbarkBlackBoardCorrectionComponent = "/Script/PendulumRuntime.EmbarkBlackBoardCorrectionComponent";
+    public const string ItemBaseType = "/Script/PioneerGameplay.Item_BaseType";
     public const string PioneerCharacterBase = "/Script/PioneerGameplay.PioneerCharacterBase";
     public const string PioneerCharacterMovementGlobalActorBase = "/Script/PioneerGameplay.PioneerCharacterMovementGlobalActorBase";
     public const string PioneerLevelScriptActorBase = "/Script/PioneerGameplay.PioneerLevelScriptActorBase";
@@ -155,6 +161,7 @@ public static class StructPaths
     public const string PlayerLocationEord = "/Script/Angelscript.PlayerLocationEORD";
     public const string PlayerMatchmakingOptions = "/Script/Angelscript.PlayerMatchmakingOptions";
     public const string PlayerRevivedEventEord = "/Script/Angelscript.PlayerRevivedEventEORD";
+    public const string RepBeingUsedData = "/Script/Angelscript.RepBeingUsedData";
     public const string RequiredItemInfo = "/Script/Angelscript.RequiredItemInfo";
     public const string RespawnInfo = "/Script/Angelscript.RespawnInfo";
     public const string ServerStatus = "/Script/Angelscript.ServerStatus";
@@ -165,6 +172,7 @@ public static class StructPaths
     public const string TetherLink = "/Script/Angelscript.TetherLink";
     public const string TetherWrapPath = "/Script/Angelscript.TetherWrapPath";
     public const string TraceDataArr = "/Script/Angelscript.TraceDataArr";
+    public const string VisualThrownItemActor = "/Script/Angelscript.VisualThrownItemActor";
     public const string WorldItemAttachmentData = "/Script/Angelscript.WorldItemAttachmentData";
     public const string XpBasedReward = "/Script/Angelscript.XPBasedReward";
     public const string XpBasedRewards = "/Script/Angelscript.XPBasedRewards";
@@ -175,6 +183,8 @@ public static class StructPaths
     public const string Guid = "/Script/CoreUObject.Guid";
     public const string Quat = "/Script/CoreUObject.Quat";
     public const string Rotator = "/Script/CoreUObject.Rotator";
+    public const string SoftObjectPath = "/Script/CoreUObject.SoftObjectPath";
+    public const string TopLevelAssetPath = "/Script/CoreUObject.TopLevelAssetPath";
     public const string Transform = "/Script/CoreUObject.Transform";
     public const string Vector = "/Script/CoreUObject.Vector";
     public const string Vector2D = "/Script/CoreUObject.Vector2D";
@@ -246,6 +256,8 @@ public static class StructPaths
     public const string GameplayTag = "/Script/GameplayTags.GameplayTag";
     public const string GameplayTagContainer = "/Script/GameplayTags.GameplayTagContainer";
     public const string VoiceChannelInfo = "/Script/OnlineSubsystemAngelscript.VoiceChannelInfo";
+    public const string ItemContainerHandle = "/Script/PioneerGameplay.ItemContainerHandle";
+    public const string ItemContainerSlot = "/Script/PioneerGameplay.ItemContainerSlot";
     public const string ObfuscatedString = "/Script/SidecarUnreal.ObfuscatedString";
 }
 
@@ -259,7 +271,11 @@ public static class EnumPaths
     public const string EGamePhase = "/Script/Angelscript.EGamePhase";
     public const string EInteractionAccess = "/Script/Angelscript.EInteractionAccess";
     public const string EInteractionPromptSpatialType = "/Script/Angelscript.EInteractionPromptSpatialType";
+    public const string EInventoryItemContainer = "/Script/Angelscript.EInventoryItemContainer";
+    public const string EItemEndUseReason = "/Script/Angelscript.EItemEndUseReason";
+    public const string EItemUseEffectPositionSource = "/Script/Angelscript.EItemUseEffectPositionSource";
     public const string ELatejoinState = "/Script/Angelscript.ELatejoinState";
+    public const string ELoadoutSlot = "/Script/Angelscript.ELoadoutSlot";
     public const string EPlayerAnimEvents = "/Script/Angelscript.EPlayerAnimEvents";
     public const string EPlayerRelationEord = "/Script/Angelscript.EPlayerRelationEORD";
     public const string EPlayerStateStatus = "/Script/Angelscript.EPlayerStateStatus";
