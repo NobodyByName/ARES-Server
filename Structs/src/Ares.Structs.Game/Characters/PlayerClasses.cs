@@ -14,6 +14,12 @@ public static class PlayerClasses
     /// <summary>The player state.</summary>
     public static ArchetypeClass PlayerState { get; } = new("/Game/Pioneer/Core/Blueprints/Player/BP_PioneerPlayerState.BP_PioneerPlayerState_C", "/Game/Pioneer/Core/Blueprints/Player/BP_PioneerPlayerState.Default__BP_PioneerPlayerState_C");
 
+    /// <summary>The player's squad actor.</summary>
+    public static ArchetypeClass Squad { get; } = new("/Script/EmbarkGameplay.EmbarkSquad", "/Script/EmbarkGameplay.Default__EmbarkSquad");
+
+    /// <summary>The replicated member subobject inside a squad.</summary>
+    public const string SquadMember = "/Script/EmbarkGameplay.EmbarkSquadMember";
+
     /// <summary>HUD class the server assigns to the client.</summary>
     public const string Hud = "/Game/Pioneer/Core/UI/BP_PioneerHUD.BP_PioneerHUD_C";
 

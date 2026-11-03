@@ -22,7 +22,7 @@ public sealed class ReplicationValueTests
     public void Signed_bytes_use_eight_bits_and_preserve_the_sign(int value, byte encoded)
     {
         ValueCodec codec = Values();
-        PropertyDefinition property = new("Test.SignedByte", PropertyKind.Int8Property, "int8", PropertyFlags.None);
+        PropertyDefinition property = Catalog.Property(StructPaths.QuantizedVectorInt8 + ".X");
         BitWriter writer = new();
         codec.Write(writer, property, (sbyte)value);
         Assert.Equal(8, writer.Length);
