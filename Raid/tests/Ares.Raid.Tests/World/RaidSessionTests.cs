@@ -40,6 +40,17 @@ public sealed class RaidSessionTests
     }
 
     [Fact]
+    public void Calls_on_components_the_server_does_not_simulate_are_counted_not_rejected()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        session.ComponentCall(2, session.Player.Controller, "PingManager");
+        session.ComponentCall(6, session.Player.Pawn, "InventoryComponent");
+        Assert.Equal((1, 1), (session.Channels.IgnoredCalls["path:PingManager"], session.Channels.IgnoredCalls["path:InventoryComponent"]));
+        Assert.Throws<InvalidPacketException>(() => session.ComponentCall(2, session.Player.Pawn, "PingManager"));
+    }
+
+    [Fact]
     public void Doors_close_when_their_cell_is_hidden_and_failed_doors_are_not_offered_again()
     {
         ScriptedPlayer session = new();

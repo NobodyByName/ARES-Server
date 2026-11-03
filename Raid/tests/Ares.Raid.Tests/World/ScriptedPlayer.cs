@@ -27,6 +27,7 @@ internal sealed class ScriptedPlayer
     private readonly double[] _now = [100.0];
     private int _packet = SenderSeed;
     private int _clientSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
+    private int _pawnSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
     private ulong _focus;
     private Vector3D? _position;
 
@@ -103,6 +104,25 @@ internal sealed class ScriptedPlayer
         block.Write(writer);
         _clientSequence = (_clientSequence + 1) & (ChannelBunch.SequenceCount - 1);
         Channels.Receive(Io, new ChannelBunch(2, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = _clientSequence });
+        Channels.Commit();
+    }
+
+    // A reliable call from the client on a component of its controller (channel 2) or character (any other
+    // channel) that the client names by path (the server has not replicated it).
+    public void ComponentCall(int channel, ulong outer, string component)
+    {
+        BitWriter writer = new();
+        writer.WriteBit(false);
+        writer.WriteBit(false);
+        NetGuid.Write(writer, 1);
+        writer.WriteByte(1);
+        NetGuid.Write(writer, outer);
+        writer.WriteString(component, 256);
+        writer.WritePacked(8);
+        writer.WriteByte(0x5a);
+        ref int sequence = ref channel == 2 ? ref _clientSequence : ref _pawnSequence;
+        sequence = (sequence + 1) & (ChannelBunch.SequenceCount - 1);
+        Channels.Receive(Io, new ChannelBunch(channel, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = sequence });
         Channels.Commit();
     }
 

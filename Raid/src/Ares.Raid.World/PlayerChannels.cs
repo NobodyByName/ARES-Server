@@ -289,7 +289,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             ulong actor = Array.Find(_bindings, binding => binding.Channel == item.Channel).Guid;
             if (actor == _player.Controller)
             {
-                ReceiveControllerCalls(reader, item.Sequence is not null, replies);
+                ReceiveControllerCalls(item, reader, replies);
             }
             else if (actor == _player.Pawn && Phase == DeliveryPhase.Possessed)
             {
@@ -496,12 +496,18 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
     }
 
-    private void ReceiveControllerCalls(BitReader reader, bool reliable, List<(string, Dictionary<string, object?>)> replies)
+    private void ReceiveControllerCalls(ChannelBunch item, BitReader reader, List<(string, Dictionary<string, object?>)> replies)
     {
         RpcCodec calls = _raid.State.Replication.Calls(_raid.State.Objects(_mapped));
         string controllerClass = PlayerClasses.PlayerController.Class;
+        bool reliable = item.Sequence is not null;
         while (reader.Remaining > 0)
         {
+            if (Phase == DeliveryPhase.Possessed && SkipComponentCalls(item, reader, _player.Controller))
+            {
+                continue;
+            }
+
             foreach ((NetField field, ActorFieldPayload payload) in calls.ReadFields(controllerClass, ActorContentBlock.Read(reader), RpcDirection.Server))
             {
                 string name = field.Name;
@@ -635,43 +641,54 @@ public sealed partial class PlayerChannels : IPlayerChannels
     {
         while (reader.Remaining > 0)
         {
-            string classPath;
-            ActorContentBlock block;
-            BitReader peek = At(item, reader.Position + 1);
-            if (peek.ReadBit())
+            if (SkipComponentCalls(item, reader, _player.Pawn))
             {
-                block = ActorContentBlock.Read(reader);
-                classPath = PlayerClasses.Pawn.Class;
-            }
-            else if (NetGuid.Read(At(item, reader.Position + 2)) == PathReference)
-            {
-                ClientSubobjectReference reference = ClientSubobjectReference.Read(reader);
-                if (reference.Outer != _player.Pawn || !ComponentNamePattern().IsMatch(reference.Name.TrimEnd('\0')))
-                {
-                    throw new InvalidPacketException("Unsupported client component reference");
-                }
-
-                Count($"path:{reference.Name.TrimEnd('\0')}");
                 continue;
             }
-            else
-            {
-                StableSubobjectContent content = StableSubobjectContent.ReadFromClient(reader);
-                if (content.Guid != _player.AbilitySystem)
-                {
-                    Count($"subobject:{content.Guid}");
-                    continue;
-                }
 
-                block = content.Content;
-                classPath = CharacterDefaults.AbilitySystem.Class;
-            }
-
-            foreach (string name in Calls(classPath, block))
+            foreach (string name in Calls(PlayerClasses.Pawn.Class, ActorContentBlock.Read(reader)))
             {
                 Count(name);
             }
         }
+    }
+
+    // Reads the next block when it targets one of the actor's components rather than the actor: calls on the
+    // ability system are decoded and counted; components the server does not simulate yet (named by path,
+    // such as the controller's ping manager) are counted by name. Returns false for the actor's own content.
+    private bool SkipComponentCalls(ChannelBunch item, BitReader reader, ulong outer)
+    {
+        if (At(item, reader.Position + 1).ReadBit())
+        {
+            return false;
+        }
+
+        if (NetGuid.Read(At(item, reader.Position + 2)) == PathReference)
+        {
+            ClientSubobjectReference reference = ClientSubobjectReference.Read(reader);
+            string name = reference.Name.TrimEnd('\0');
+            if (reference.Outer != outer || !ComponentNamePattern().IsMatch(name))
+            {
+                throw new InvalidPacketException("Unsupported client component reference");
+            }
+
+            Count($"path:{name}");
+            return true;
+        }
+
+        StableSubobjectContent content = StableSubobjectContent.ReadFromClient(reader);
+        if (content.Guid != _player.AbilitySystem || outer != _player.Pawn)
+        {
+            Count($"subobject:{content.Guid}");
+            return true;
+        }
+
+        foreach (string name in Calls(CharacterDefaults.AbilitySystem.Class, content.Content))
+        {
+            Count(name);
+        }
+
+        return true;
     }
 
     private void ServiceInputAcknowledgement(ReliableSender sender)
