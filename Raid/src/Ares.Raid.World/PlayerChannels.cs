@@ -451,7 +451,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
                         WorldActor actor = Actor(binding.Guid);
                         ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location, actor.Rotation);
                         PlayerControllerOpen? open = binding.Guid == _player.Controller ? _login.ControllerOpen() : null;
-                        return sender.Queue(new ActorInitialization(spawn, open, []).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
+                        IReadOnlyList<ActorContentBlock> content = binding.Guid == _player.Controller ? [_raid.State.ControllerOpeningProperties(_player)] : [];
+                        return sender.Queue(new ActorInitialization(spawn, open, content).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
                     }),
                 ];
                 Phase = DeliveryPhase.ActorOpensPending;

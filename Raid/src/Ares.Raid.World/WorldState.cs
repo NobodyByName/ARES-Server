@@ -148,6 +148,7 @@ public sealed class WorldState
                 [PropertyNames.RemoteRole] = (ulong)NetRole.AutonomousProxy,
                 [PropertyNames.Pawn] = pawn,
                 [PropertyNames.PlayerState] = playerState,
+                [PropertyNames.SpawnLocation] = spawn,
                 [$"{PropertyNames.GameModeInfo}.{PropertyNames.Identifier}"] = new GameplayTag(DamMap.GameModeTag),
                 [$"{PropertyNames.GameModeInfo}.{PropertyNames.Location}"] = new GameplayTag(DamMap.LocationTag),
                 [PropertyNames.IsServerReady] = true,
@@ -245,6 +246,21 @@ public sealed class WorldState
         }
     }
 
+    /// <summary>The controller's roles and planned spawn location, applied before its BeginPlay.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The opening properties.</returns>
+    public ActorContentBlock ControllerOpeningProperties(WorldPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        WorldActor controller = Actor(player.Controller);
+        return Replication.Encode(controller.ClassPath, new Dictionary<string, object?>
+        {
+            [PropertyNames.Role] = controller.Properties[PropertyNames.Role],
+            [PropertyNames.RemoteRole] = controller.Properties[PropertyNames.RemoteRole],
+            [PropertyNames.SpawnLocation] = controller.Properties[PropertyNames.SpawnLocation],
+        }, Objects([]));
+    }
+
     /// <summary>
     /// The player actors' initial properties, without the controller's ready flag, and the HUD class right after
     /// the controller's properties: the client builds its HUD before the player's start.
@@ -264,7 +280,9 @@ public sealed class WorldState
             Dictionary<string, object?> values = new(actor.Properties);
             if (guid == player.Controller)
             {
-                // Its change handler attaches the HUD to the pawn: sent with the start calls.
+                values.Remove(PropertyNames.Role);
+                values.Remove(PropertyNames.RemoteRole);
+                values.Remove(PropertyNames.SpawnLocation);
                 values.Remove(PropertyNames.IsServerReady);
             }
 

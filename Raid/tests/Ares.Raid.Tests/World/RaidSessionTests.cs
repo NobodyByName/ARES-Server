@@ -14,7 +14,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace of the scripted session below.
-    private const string ReferenceTrace = "6b33f90ae9c7d7417405743c9a8be81fddbfc2d47c787800475ba053250e46c0";
+    private const string ReferenceTrace = "9021960f5342553d0cb5332704575e94d2848a6203c67a417770cd0067d44aa8";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
