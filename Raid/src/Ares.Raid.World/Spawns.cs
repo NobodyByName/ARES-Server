@@ -9,7 +9,12 @@ namespace Ares.Raid.World;
 /// <param name="Slot">Spawn point of a group start (null for a single start).</param>
 /// <param name="Location">Capsule center.</param>
 /// <param name="Rotation">Rotation.</param>
-public sealed record SpawnPlacement(string Start, int? Slot, Vector3D Location, Quaternion Rotation);
+public sealed record SpawnPlacement(string Start, int? Slot, Vector3D Location, Quaternion Rotation)
+{
+    /// <summary>Authored horizontal facing, in degrees.</summary>
+    public double Yaw => Math.Atan2(2 * ((Rotation.W * Rotation.Z) + (Rotation.X * Rotation.Y)),
+        1 - (2 * ((Rotation.Y * Rotation.Y) + (Rotation.Z * Rotation.Z)))) * 180 / Math.PI;
+}
 
 /// <summary>The Dam player starts a round may use, and where their spawn points are in the world.</summary>
 public static class Spawns

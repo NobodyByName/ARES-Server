@@ -3,6 +3,7 @@ using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -303,7 +304,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     {
         ArgumentNullException.ThrowIfNull(login);
         RaidWorld raid = Raid(principal) ?? throw new InvalidPacketException("The raid ended");
-        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location), login);
+        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location, new Rotator(0, raid.Spawn.Yaw, 0)), login);
         channels.Start(io);
         return channels;
     }

@@ -18,7 +18,8 @@ namespace Ares.Raid.World;
 /// <param name="ClassPath">Its class.</param>
 /// <param name="Location">Spawn location.</param>
 /// <param name="Properties">Initial property values by member path.</param>
-public sealed record WorldActor(ulong Guid, string ClassPath, Vector3D Location, IReadOnlyDictionary<string, object?> Properties);
+/// <param name="Rotation">Spawn rotation in degrees.</param>
+public sealed record WorldActor(ulong Guid, string ClassPath, Vector3D Location, IReadOnlyDictionary<string, object?> Properties, Rotator Rotation = default);
 
 /// <summary>A player's server actors and components.</summary>
 /// <param name="Principal">The player.</param>
@@ -120,8 +121,9 @@ public sealed class WorldState
     /// <param name="principal">The player.</param>
     /// <param name="uniqueId">The unique id the player logged in with; its player state carries it.</param>
     /// <param name="spawn">Spawn location for a new player.</param>
+    /// <param name="rotation">Authored spawn rotation for a new player.</param>
     /// <returns>The player.</returns>
-    public WorldPlayer PlayerFor(SessionPrincipal principal, UniqueNetId uniqueId, Vector3D spawn)
+    public WorldPlayer PlayerFor(SessionPrincipal principal, UniqueNetId uniqueId, Vector3D spawn, Rotator rotation = default)
     {
         ArgumentNullException.ThrowIfNull(principal);
         ArgumentNullException.ThrowIfNull(uniqueId);
@@ -173,7 +175,7 @@ public sealed class WorldState
 
             Add(PlayerClasses.PlayerController.Class, default, controllerValues);
             Add(PlayerClasses.PlayerState.Class, default, stateValues);
-            Add(PlayerClasses.Pawn.Class, spawn, pawnValues);
+            Add(PlayerClasses.Pawn.Class, spawn, pawnValues, rotation);
             ulong appearance = Next();
             ulong abilitySystem = Next();
             ulong[] sets = [.. CharacterDefaults.AttributeSets.Select(_ => Next())];
@@ -530,9 +532,9 @@ public sealed class WorldState
         return new ActorContentBlock(writer.ToArray(), writer.Length, false);
     }
 
-    private WorldActor Add(string classPath, Vector3D location, Dictionary<string, object?> properties)
+    private WorldActor Add(string classPath, Vector3D location, Dictionary<string, object?> properties, Rotator rotation = default)
     {
-        WorldActor actor = new(Next(), classPath, location, properties);
+        WorldActor actor = new(Next(), classPath, location, properties, rotation);
         _actors[actor.Guid] = actor;
         return actor;
     }

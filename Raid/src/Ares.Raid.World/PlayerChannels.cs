@@ -449,7 +449,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     .. _bindings.Select(binding =>
                     {
                         WorldActor actor = Actor(binding.Guid);
-                        ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location);
+                        ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location, actor.Rotation);
                         PlayerControllerOpen? open = binding.Guid == _player.Controller ? _login.ControllerOpen() : null;
                         return sender.Queue(new ActorInitialization(spawn, open, []).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
                     }),
@@ -803,7 +803,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 return;
             }
 
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(Actor(_player.Pawn).Location), focus);
+            WorldActor pawn = Actor(_player.Pawn);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus);
         }
         else
         {
