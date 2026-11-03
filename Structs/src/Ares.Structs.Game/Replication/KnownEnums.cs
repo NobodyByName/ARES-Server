@@ -11,16 +11,25 @@ public enum NetRole : byte
     Authority = 3,
 }
 
-/// <summary>Raid game phase (<c>EGamePhase</c>). Only the phase used before a raid starts is decoded.</summary>
+/// <summary>Raid game phase (<c>EGamePhase</c>).</summary>
 public enum GamePhase : byte
 {
-    Unknown0 = 0,
-    Unknown1 = 1,
-    Unknown2 = 2,
-    Unknown3 = 3,
+    /// <summary>The raid's first phase, when players arrive.</summary>
+    PreGame = 0,
+
+    EarlyGame = 1,
+    MidGame = 2,
+    LateGame = 3,
 
     /// <summary>The raid has not been initialized yet.</summary>
     NotInitialized = 4,
+}
+
+/// <summary>Match states of the engine's game state (<c>MatchState</c> names).</summary>
+public static class MatchStates
+{
+    /// <summary>The match is being played.</summary>
+    public const string InProgress = "InProgress";
 }
 
 /// <summary>Character movement mode (<c>EMovementMode</c>).</summary>
@@ -44,8 +53,8 @@ public static class KnownEnums
 
     /// <summary>
     /// Game phases. The script enum's largest value is NOT_INITIALIZED (4); it and an appended
-    /// native maximum (5) both need three bits. Names of the other values are not decoded.
+    /// native maximum (5) both need three bits.
     /// </summary>
     public static EnumDefinition GamePhase { get; } =
-        new(EnumPaths.EGamePhase, 4, ["Unknown0", "Unknown1", "Unknown2", "Unknown3", "NOT_INITIALIZED"]);
+        new(EnumPaths.EGamePhase, 4, ["PreGame", "EarlyGame", "MidGame", "LateGame", "NOT_INITIALIZED"]);
 }
