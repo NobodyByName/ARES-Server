@@ -3,6 +3,7 @@ using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Identity;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Routing;
 using Ares.Host.Services.Social;
@@ -49,12 +50,16 @@ public static class HostApplication
             ? null
             : new SessionAllocatorClient(configuration.SessionControlUrl, configuration.OperatorToken!, allocatorHandler);
         AccountStore accounts = new(settings.DataDirectory, time);
+        InventoryStore inventory = new(settings.DataDirectory);
+        inventory.EnsureStarterStorage(time.GetUtcNow());
+        inventory.EnsureStarterLoadout(time.GetUtcNow());
+        builder.Services.AddSingleton(inventory);
         ProfileFactory profiles = new(accounts, time);
-        IdentityService identity = new(settings, profiles, time);
+        IdentityService identity = new(settings, profiles, time, inventory);
         BackendGate gate = new();
         PartyService party = new(gate, profiles, log, time);
-        MatchmakingService matchmaking = new(gate, party, profiles, allocator, log);
-        BackendRoutes routes = new(identity, profiles, accounts, party, matchmaking);
+        MatchmakingService matchmaking = new(gate, party, profiles, allocator, log, inventory);
+        BackendRoutes routes = new(identity, profiles, accounts, party, matchmaking, inventory, time);
         RequestDispatcher dispatcher = new(settings, routes, matchmaking, log, time);
 
         WebApplication app = builder.Build();

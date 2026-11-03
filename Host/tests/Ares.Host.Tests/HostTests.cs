@@ -5,12 +5,16 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Status;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Ares.Host.Tests;
 
@@ -138,6 +142,102 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Persisted_inventory_is_authenticated_and_the_selected_tree_crosses_the_allocation_api()
+    {
+        InventoryStore inventory = _host!.Services.GetRequiredService<InventoryStore>();
+        long revision = inventory.Snapshot.Revision;
+        inventory.Import(new InventoryImport(
+            [new InventoryItem("carried", 5000000001, 2, [], 0, 0, "", "v1", 0), new InventoryItem("stash", 5000000001, 3, [], 0, 0, "", "v1", 0)],
+            [new ItemDescription(5000000001, "test", 10, true, false, [], [])], ["carried"]), revision);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _client!.GetAsync("/v1/pioneer/inventory", TestContext.Current.CancellationToken)).StatusCode);
+        string bearer = await SignIn();
+        using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
+        read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
+        JsonElement items = await Json(await _client.SendAsync(read, TestContext.Current.CancellationToken));
+        Assert.Equal(2, items.GetProperty("items").GetArrayLength());
+        JsonElement definitions = await GetJson("/v1/pioneer/game-data");
+        Assert.Contains(definitions.GetProperty("items-description").GetProperty("itemDescriptions").EnumerateArray(),
+            item => item.GetProperty("gameAssetId").GetInt64() == 5000000001);
+
+        await Post("/v1/shared/social/party/v2/create", new { });
+        string ticket = (await Json(await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer))).GetProperty("ticketId").GetString()!;
+        await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
+        Assert.Equal("carried", Assert.Single(Assert.Single(_raid.LastRequest!.Loadouts!).Items).InstanceId);
+        Assert.Equal(inventory.Snapshot.UserId, _raid.LastRequest.Loadouts![0].UserId);
+        Assert.Equal(ticket, new InventoryStore(_dataDirectory).ReservedTicketId);
+        Assert.Throws<InvalidOperationException>(() => inventory.Import(new InventoryImport([], [], []), inventory.Snapshot.Revision));
+
+        _raid.Forget();
+        await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer);
+        Assert.Null(inventory.ReservedTicketId);
+        Assert.Equal(2, inventory.Snapshot.Items.Count);
+    }
+
+    [Fact]
+    public async Task Menu_transfers_require_identity_and_return_persisted_changes()
+    {
+        const string Path = "/v1/pioneer/v1/batch-operation";
+        string bearer = await SignIn();
+        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryItem duck = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        string stash = store.Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId;
+        InventoryItem backpack = store.Snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.BackpackAssetId);
+        string destination = backpack.Slots[0];
+        object body = new
+        {
+            requestId = "stock-menu-request",
+            operations = new[] { new { discriminator = "setParents", itemInstanceId = duck.InstanceId, parentInstanceIds = new[] { destination } } },
+        };
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Post(Path, body)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post(Path, new { requestId = "malformed", operations = new[] { new { discriminator = "unknown" } } }, bearer)).StatusCode);
+        JsonElement response = await Json(await Post(Path, body, bearer));
+        Assert.Equal(3, response.GetProperty("changeset").GetProperty("items").GetProperty("updated").GetArrayLength());
+        InventoryStore persisted = new(_dataDirectory);
+        Assert.Contains(duck.InstanceId, persisted.Snapshot.Items.Single(item => item.InstanceId == destination).Slots);
+        long revision = persisted.Snapshot.Revision;
+        Assert.Equal(HttpStatusCode.OK, (await Post(Path, body, bearer)).StatusCode);
+        Assert.Equal(revision, new InventoryStore(_dataDirectory).Snapshot.Revision);
+        object stockBody = new
+        {
+            requestId = "",
+            operations = new[] { new { discriminator = "setParents", itemInstanceId = duck.InstanceId, parentInstanceIds = new[] { stash } } },
+        };
+        Assert.Equal(179, JsonSerializer.SerializeToUtf8Bytes(stockBody).Length);
+        Assert.Equal(HttpStatusCode.OK, (await Post(Path, stockBody, bearer)).StatusCode);
+        revision = store.Snapshot.Revision;
+        Assert.Equal(HttpStatusCode.OK, (await Post(Path, stockBody, bearer)).StatusCode);
+        Assert.Equal(revision, store.Snapshot.Revision);
+        Assert.Contains(duck.InstanceId, new InventoryStore(_dataDirectory).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
+    }
+
+    [Fact]
+    public async Task A_new_host_serves_the_duck_storage_and_changes_the_manifest_when_definitions_change()
+    {
+        string bearer = await SignIn();
+        using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
+        read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
+        JsonElement inventory = await Json(await _client!.SendAsync(read, TestContext.Current.CancellationToken));
+        JsonElement duck = Assert.Single(inventory.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
+        Assert.Equal(1, duck.GetProperty("amount").GetInt64());
+
+        JsonElement data = await GetJson("/v1/pioneer/game-data");
+        JsonElement definitions = data.GetProperty("items-description").GetProperty("itemDescriptions");
+        JsonElement duckDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
+        Assert.Equal("GameItem", duckDefinition.GetProperty("itemType").GetString());
+        Assert.Equal(15, duckDefinition.GetProperty("maxAmount").GetInt64());
+        Assert.Equal("noSlot", duckDefinition.GetProperty("slotConfig").GetProperty("discriminator").GetString());
+        JsonElement containerDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.StashContainerAssetId);
+        Assert.Equal(StorageItems.StashSlotCount, containerDefinition.GetProperty("slotConfig").GetProperty("numberOfSlots").GetInt64());
+
+        JsonElement before = await Json(await Post("/v1/shared/manifest", new { }));
+        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        store.Import(new InventoryImport([], [], []), store.Snapshot.Revision);
+        JsonElement after = await Json(await Post("/v1/shared/manifest", new { }));
+        Assert.NotEqual(before.GetProperty("partitioning_hash").GetString(), after.GetProperty("partitioning_hash").GetString());
+        Assert.NotEqual(before.GetProperty("non_partitioning_hash").GetString(), after.GetProperty("non_partitioning_hash").GetString());
+    }
+
+    [Fact]
     public async Task Party_changes_are_delivered_as_notifications()
     {
         await Post("/v1/shared/social/party/v2/create", new { });
@@ -214,7 +314,8 @@ public sealed class HostTests : IAsyncLifetime
         {
             LastRequest = request;
             _allocation ??= new Allocation(request.TicketId, Guid.NewGuid().ToString("D"), request.ScenarioName, request.PartyMemberIds,
-                AllocationStates.Available, ServerInitializationStates.Ready, 2.0, new GameServerEndpoint("raid", "127.0.0.1", 7777, "", "", false, "LOCAL"));
+                AllocationStates.Available, ServerInitializationStates.Ready, 2.0, new GameServerEndpoint("raid", "127.0.0.1", 7777, "", "", false, "LOCAL"),
+                request.Loadouts?.Select(InventorySnapshots.Receipt).ToArray());
             return AllocationResult.Success(_allocation);
         }
 

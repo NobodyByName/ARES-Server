@@ -1,8 +1,11 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common;
+using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
+using Ares.Host.Services.Inventory;
 using Ares.Structs.Core;
 
 namespace Ares.Host;
@@ -56,6 +59,8 @@ internal sealed class HostConsole : ILoggerProvider
     }
 
     public JsonEventLog Log { get; }
+
+    internal InventoryStore? Inventory { get; set; }
 
     public async Task RunAsync(Action stop, CancellationToken cancellationToken)
     {
@@ -175,6 +180,8 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("status  Show Host configuration and latest activity");
                     AddLine("clear   Clear this console's log view");
                     AddLine("stop    Gracefully stop ARES-Host");
+                    AddLine("inventory  Show stored items and the loadout reservation");
+                    AddLine("inventory import <path>  Replace an idle inventory from a JSON file");
                     break;
                 case "status":
                     AddLine($@"ARES-Host {AresVersion.Current} | Steam build {GameBuild.SteamBuildId} | uptime {DateTimeOffset.Now - _started:hh\:mm\:ss}");
@@ -193,10 +200,45 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("Stopping ARES-Host...");
                     stop();
                     break;
+                case "inventory":
+                    if (Inventory is { } inventory)
+                    {
+                        InventorySnapshot snapshot = inventory.Snapshot;
+                        AddLine($"Inventory revision {snapshot.Revision}: {snapshot.Items.Count} items, {snapshot.LoadoutRoots.Count} loadout roots");
+                        AddLine($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
+                    }
+                    else
+                    {
+                        AddLine("Inventory is unavailable.");
+                    }
+
+                    break;
+                case not null when name.StartsWith("inventory import ", StringComparison.OrdinalIgnoreCase):
+                    ImportInventory(name["inventory import ".Length..].Trim().Trim('"'));
+                    break;
                 default:
                     AddLine("Unknown command. Type help for commands.");
                     break;
             }
+        }
+    }
+
+    private void ImportInventory(string path)
+    {
+        if (Inventory is not { } inventory)
+        {
+            AddLine("Inventory is unavailable.");
+            return;
+        }
+
+        try
+        {
+            inventory.ImportFile(path, inventory.Snapshot.Revision);
+            AddLine($"Imported {inventory.Snapshot.Items.Count} items at revision {inventory.Snapshot.Revision}. Start a fresh client to refresh item definitions.");
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or OverflowException)
+        {
+            AddLine($"Inventory import rejected: {SafeText(error.Message)}");
         }
     }
 

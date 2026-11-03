@@ -1,6 +1,7 @@
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Identity;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Social;
 using Ares.Structs.Backend;
@@ -30,7 +31,8 @@ public sealed class BackendRoutes
     private readonly Dictionary<string, BackendRoute> _routes = new(StringComparer.Ordinal);
 
     /// <summary>Registers all routes against the services.</summary>
-    public BackendRoutes(IdentityService identity, ProfileFactory profiles, AccountStore accounts, PartyService party, MatchmakingService matchmaking)
+    public BackendRoutes(IdentityService identity, ProfileFactory profiles, AccountStore accounts, PartyService party, MatchmakingService matchmaking,
+        InventoryStore inventory, TimeProvider time)
     {
         // Identity and bootstrap.
         Add("POST /oauth2/token", identity.SignIn());
@@ -77,9 +79,12 @@ public sealed class BackendRoutes
         _routes["POST /v1/shared/player/activity"] = new BackendRoute(async (_, token) => ServiceReply.Ok(await matchmaking.ActivityAsync(token).ConfigureAwait(false)), RequiresIdentity: true);
 
         // Progression: empty state for a fresh account.
-        Add("GET /v1/pioneer/game-data", BackendContent.GameData);
+        Add("GET /v1/pioneer/game-data", _ => inventory.GameData());
         Add("GET /v1/pioneer/quests", new QuestsResponse([]));
-        Add("GET /v1/pioneer/inventory", new InventoryResponse([]));
+        _routes["GET /v1/pioneer/inventory"] = new BackendRoute((_, _) =>
+            Task.FromResult(ServiceReply.Ok(new InventoryResponse(inventory.Snapshot.Items))), RequiresIdentity: true);
+        _routes["POST /v1/pioneer/v1/batch-operation"] = new BackendRoute((request, _) =>
+            Task.FromResult(inventory.Commit(request.Read<InventoryOperationsRequest>(), time.GetUtcNow())), RequiresIdentity: true);
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));
         Add("POST /v1/pioneer/projects/list", new ProjectsResponse([]));
         Add("GET /v1/pioneer/levels/list", new LevelsResponse(BackendContent.Levels));

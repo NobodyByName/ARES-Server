@@ -74,12 +74,10 @@ public static class BackendContent
         PersistentPlayerKeyNames.Graduated,
     ];
 
-    /// <summary>Synthetic manifest ids and hashes.</summary>
+    /// <summary>Synthetic fallback manifest id.</summary>
     public static class Manifest
     {
         public const long DefaultId = 1;
-        public const string PartitioningHash = "ares-host-empty";
-        public const string NonPartitioningHash = "ares-host-bootstrap";
     }
 
     /// <summary>Synthetic EOS organisation and product identifiers.</summary>

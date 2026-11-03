@@ -5,6 +5,7 @@ using System.Text.Json;
 using Ares.Common.Game.Identity;
 using Ares.Common.Security;
 using Ares.Host.Services.Content;
+using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Bootstrap;
 using Ares.Structs.Backend.Eos;
@@ -15,7 +16,7 @@ using Ares.Structs.Core;
 namespace Ares.Host.Services.Identity;
 
 /// <summary>Synthetic sign-in, EOS and bootstrap replies for the local account.</summary>
-public sealed class IdentityService(HostSettings settings, ProfileFactory profiles, TimeProvider time)
+public sealed class IdentityService(HostSettings settings, ProfileFactory profiles, TimeProvider time, InventoryStore inventory)
 {
     /// <summary>
     /// Random per-run key for tokens Host never checks: identity tokens issued without an operator key,
@@ -58,8 +59,9 @@ public sealed class IdentityService(HostSettings settings, ProfileFactory profil
         long now = time.GetUtcNow().ToUnixTimeSeconds();
         long id = request.ManifestId is { } manifestId and not 0 ? manifestId : BackendContent.Manifest.DefaultId;
         string buildId = request.BuildId ?? GameBuild.BuildIdentifier;
+        string contentHash = inventory.DefinitionHash();
         return new ManifestResponse(id, buildId, request.PlaytestId ?? 0,
-            BackendContent.Manifest.PartitioningHash, BackendContent.Manifest.NonPartitioningHash,
+            contentHash, contentHash,
             new UnknownManifestBody(), new UnknownManifestBody(), now, now - 3600, now + 86400);
     }
 

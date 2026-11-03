@@ -1,10 +1,36 @@
 using System.Text.Json.Nodes;
+using Ares.Host.Services.Inventory;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Host.Tests;
 
 public sealed class ConsoleTests
 {
+    [Fact]
+    public void Inventory_import_reads_the_operator_file_and_survives_a_restart()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"ares-console-inventory-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string path = Path.Combine(directory, "Empty Inventory.json");
+            File.WriteAllText(path, """{"items":[],"definitions":[],"loadoutRoots":[]}""");
+            using StringWriter output = new();
+            using HostConsole console = new("plain", output);
+            console.Inventory = new InventoryStore(directory);
+            console.ExecuteCommand($"inventory import \"{path}\"", () => { });
+            console.ExecuteCommand("inventory", () => { });
+
+            Assert.Equal(1, new InventoryStore(directory).Snapshot.Revision);
+            Assert.Contains("Imported 0 items at revision 1", output.ToString(), StringComparison.Ordinal);
+            Assert.Contains("Reserved ticket: none", output.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact]
     public void Readable_logs_keep_event_fields_and_escape_terminal_controls()
     {

@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
+using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Identity;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Social;
 using Ares.Structs.Backend.Matchmaking;
 using GameServerStates = Ares.Structs.Backend.Matchmaking.GameServerStates;
@@ -16,7 +18,8 @@ namespace Ares.Host.Services.Matchmaking;
 /// server while the client polls, relay the game server, and cancel. Without a configured
 /// Raid, tickets stay <c>MATCHING</c>.
 /// </summary>
-public sealed class MatchmakingService(BackendGate gate, PartyService party, ProfileFactory profiles, SessionAllocatorClient? allocator, JsonEventLog log)
+public sealed class MatchmakingService(BackendGate gate, PartyService party, ProfileFactory profiles, SessionAllocatorClient? allocator, JsonEventLog log,
+    InventoryStore inventory)
 {
     /// <summary>Seconds between client polls.</summary>
     private const double PollingInterval = 2.0;
@@ -71,6 +74,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             }
             catch (AllocationExpiredException)
             {
+                inventory.Release(_assignment.TicketId);
                 _assignmentExpired = true;
             }
             catch (AllocationUnavailableException)
@@ -95,7 +99,8 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         string region = !string.IsNullOrEmpty(request.PreferredRegion) ? request.PreferredRegion
             : !string.IsNullOrEmpty(request.Region) ? request.Region : "europe";
         long user = party.LeaderLocked;
-        _ticket = new MatchTicket(Guid.NewGuid().ToString("D"), PollingInterval, region, MatchStates.Matching, 0, [user], [user], scenario.Name);
+        _ticket = new MatchTicket(inventory.ReservedTicketId ?? Guid.NewGuid().ToString("D"), PollingInterval, region, MatchStates.Matching, 0, [user], [user], scenario.Name);
+        _cancelledTicketId = null;
         _assignment = null;
         _revision++;
         log.Write("local_matchmaking", "started");
@@ -127,6 +132,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         {
             // The client treats EXPIRED as a failed allocation. Never keep returning a stale
             // endpoint after the Raid server lost the reservation.
+            inventory.Release(_assignment.TicketId);
             _assignmentExpired = true;
             return ServiceReply.Ok(new GameServerStatusResponse(GameServerStates.Expired, _assignment.MatchId, PollingInterval, ServerInitializationStates.Failure));
         }
@@ -213,7 +219,16 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         Allocation? allocation;
         try
         {
-            allocation = await allocator.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds), cancellationToken).ConfigureAwait(false);
+            PlayerLoadout loadout = inventory.Reserve(_ticket.TicketId);
+            allocation = await allocator.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds, [loadout]), cancellationToken).ConfigureAwait(false);
+        }
+        catch (InvalidOperationException)
+        {
+            return ServiceReply.Error(409, "inventory_reserved");
+        }
+        catch (AllocationConflictException)
+        {
+            return ServiceReply.Error(409, "session_allocation_conflict");
         }
         catch (AllocationUnavailableException)
         {
@@ -222,6 +237,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
 
         if (allocation is null)
         {
+            inventory.Release(_ticket.TicketId);
             return ServiceReply.Ok(_ticket);
         }
 

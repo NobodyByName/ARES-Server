@@ -3,6 +3,7 @@ using Ares.Common;
 using Ares.Common.CommandLine;
 using Ares.Common.Logging;
 using Ares.Host;
+using Ares.Host.Services.Inventory;
 using Ares.Structs.Core;
 
 HostConfiguration configuration;
@@ -30,6 +31,7 @@ catch (CommandLineException error)
 using HostConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
 JsonEventLog log = console.Log;
 await using WebApplication app = HostApplication.Build(configuration, log, loggerProvider: console);
+console.Inventory = app.Services.GetRequiredService<InventoryStore>();
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {

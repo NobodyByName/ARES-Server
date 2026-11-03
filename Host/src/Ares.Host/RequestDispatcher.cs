@@ -155,6 +155,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
         ];
         JsonArray bodyKeys = [];
         JsonObject bodyTypes = [];
+        JsonObject stringLengths = [];
         JsonObject? nestedKeys = null;
         if (json is { } value)
         {
@@ -163,6 +164,11 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             {
                 bodyKeys.Add(property.Name);
                 bodyTypes[property.Name] = JsonTypeName(property.Value);
+                if (property.Value.ValueKind == JsonValueKind.String && property.Value.GetString() is { } text)
+                {
+                    stringLengths[property.Name] = text.Length;
+                }
+
                 if (property.Value.ValueKind == JsonValueKind.Object)
                 {
                     nestedKeys[property.Name] = new JsonArray(property.Value.EnumerateObject()
@@ -190,6 +196,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             ["query_keys"] = new JsonArray(queryKeys.Select(key => (JsonNode?)key).ToArray()),
             ["body_keys"] = bodyKeys,
             ["body_types"] = bodyTypes,
+            ["string_lengths"] = stringLengths,
             ["content_type"] = request.ContentType,
             ["bytes"] = bytes,
             ["declared_bytes"] = declared,
