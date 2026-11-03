@@ -70,4 +70,23 @@ public sealed class BackendJsonTests
             [.. document.RootElement.EnumerateObject().Select(property => property.Name)]);
         Assert.Equal(0, document.RootElement.GetProperty("items").GetProperty("created").GetArrayLength());
     }
+
+    [Fact]
+    public void Inventory_writes_full_items_and_deletes_by_instance_id()
+    {
+        const string ItemJson = """{"instanceId":"root","gameAssetId":5000000001,"amount":4000000000,"slots":["child"],"durability":0.5,"maxDurability":1,"lockedInRound":"","etag":"version","updatedAt":1760000000000}""";
+        InventoryItem item = JsonSerializer.Deserialize<InventoryItem>(ItemJson, BackendJson.Options)!;
+        using JsonDocument serialized = JsonDocument.Parse(JsonSerializer.Serialize(new InventoryResponse([item]), BackendJson.Options));
+        JsonElement result = serialized.RootElement.GetProperty("items")[0];
+        Assert.Equal(5000000001, result.GetProperty("gameAssetId").GetInt64());
+        Assert.Equal(4000000000, result.GetProperty("amount").GetInt64());
+        Assert.Equal("child", result.GetProperty("slots")[0].GetString());
+        Assert.Equal(0.5, result.GetProperty("durability").GetDouble());
+        Assert.Equal(1760000000000, result.GetProperty("updatedAt").GetInt64());
+        Assert.Equal(9, result.EnumerateObject().Count());
+
+        using JsonDocument changes = JsonDocument.Parse(JsonSerializer.Serialize(new ItemChanges([item], [], ["deleted-instance"]), BackendJson.Options));
+        Assert.Equal("root", changes.RootElement.GetProperty("created")[0].GetProperty("instanceId").GetString());
+        Assert.Equal("deleted-instance", changes.RootElement.GetProperty("deleted")[0].GetString());
+    }
 }

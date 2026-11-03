@@ -4,7 +4,8 @@ namespace Ares.Structs.Backend.Progression;
 
 /// <summary>
 /// Changes to a player's server-side state, returned by every reconcile/claim route.
-/// Element types are not decoded yet; ARES currently always sends empty changesets.
+/// Inventory changes contain full created/updated items and the instance ids of deleted items.
+/// Other element types are not decoded yet.
 /// </summary>
 public sealed record Changeset(
     [property: JsonPropertyName("items")] ItemChanges Items,
@@ -25,9 +26,9 @@ public sealed record Changeset(
 }
 
 public sealed record ItemChanges(
-    [property: JsonPropertyName("created")] IReadOnlyList<UnknownItem> Created,
-    [property: JsonPropertyName("updated")] IReadOnlyList<UnknownItem> Updated,
-    [property: JsonPropertyName("deleted")] IReadOnlyList<UnknownItem> Deleted);
+    [property: JsonPropertyName("created")] IReadOnlyList<InventoryItem> Created,
+    [property: JsonPropertyName("updated")] IReadOnlyList<InventoryItem> Updated,
+    [property: JsonPropertyName("deleted")] IReadOnlyList<string> Deleted);
 
 public sealed record QuestChanges(
     [property: JsonPropertyName("created")] IReadOnlyList<UnknownQuest> Created,
@@ -81,15 +82,13 @@ public sealed record LevelState(
 public sealed record QuestsResponse([property: JsonPropertyName("quests")] IReadOnlyList<UnknownQuest> Quests);
 
 /// <summary>Response of <c>GET /v1/pioneer/inventory</c>.</summary>
-public sealed record InventoryResponse([property: JsonPropertyName("items")] IReadOnlyList<UnknownItem> Items);
+public sealed record InventoryResponse([property: JsonPropertyName("items")] IReadOnlyList<InventoryItem> Items);
 
 /// <summary>Response of <c>GET /v1/pioneer/codex/entries/list</c>.</summary>
 public sealed record CodexEntriesResponse([property: JsonPropertyName("entries")] IReadOnlyList<UnknownCodexEntry> Entries);
 
 /// <summary>Response of <c>POST /v1/pioneer/projects/list</c>.</summary>
 public sealed record ProjectsResponse([property: JsonPropertyName("projects")] IReadOnlyList<UnknownProject> Projects);
-
-public sealed record UnknownItem;
 
 public sealed record UnknownQuest;
 

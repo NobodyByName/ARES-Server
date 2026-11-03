@@ -40,13 +40,26 @@ public sealed record ItemDescriptionTable(
 
 /// <summary>Server-side definition of an item type.</summary>
 public sealed record ItemDescription(
-    [property: JsonPropertyName("gameAssetId")] int GameAssetId,
+    [property: JsonPropertyName("gameAssetId")] long GameAssetId,
     [property: JsonPropertyName("itemType")] string ItemType,
-    [property: JsonPropertyName("maxAmount")] int MaxAmount,
+    [property: JsonPropertyName("maxAmount")] long MaxAmount,
     [property: JsonPropertyName("stackable")] bool Stackable,
     [property: JsonPropertyName("unique")] bool Unique,
     [property: JsonPropertyName("tags")] IReadOnlyList<string> Tags,
-    [property: JsonPropertyName("groupIDs")] IReadOnlyList<int> GroupIds);
+    [property: JsonPropertyName("groupIDs")] IReadOnlyList<long> GroupIds)
+{
+    /// <summary>Asset id of the base item, or zero when this definition has no base.</summary>
+    [JsonPropertyName("baseGameAssetId")]
+    public long BaseGameAssetId { get; init; }
+
+    /// <summary>The item's quality level.</summary>
+    [JsonPropertyName("qualityLevel")]
+    public long QualityLevel { get; init; }
+
+    /// <summary>Child-slot layout, when available.</summary>
+    [JsonPropertyName("slotConfig"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ItemSlotConfiguration? SlotConfig { get; init; }
+}
 
 public sealed record LevelGroupTable([property: JsonPropertyName("groups")] IReadOnlyList<LevelGroup> Groups);
 
