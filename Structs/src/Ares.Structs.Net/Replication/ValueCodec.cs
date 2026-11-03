@@ -13,7 +13,8 @@ namespace Ares.Structs.Net.Replication;
 /// for numbers; <see cref="ulong"/> for bytes, enums, objects and classes (object and class ids must be
 /// mapped); <see cref="string"/>; <see cref="NetworkName"/>; <see cref="Vector3D"/>;
 /// <see cref="GameplayTag"/>; <see cref="UniqueNetId"/>; <see cref="LevelVisibility"/>;
-/// <see cref="VisibilityTransaction"/>; <see cref="PackedMovementBits"/>; and lists of level visibilities.
+/// <see cref="VisibilityTransaction"/>; <see cref="PackedMovementBits"/>; <see cref="TenancyUserId"/>;
+/// <see cref="CompactPlayerProfile"/>; and lists of level visibilities, tenancy ids or profiles.
 /// </summary>
 public sealed partial class ValueCodec
 {
@@ -32,6 +33,12 @@ public sealed partial class ValueCodec
     /// <summary>Player unique id struct.</summary>
     public const string UniqueNetIdStruct = "/Script/Engine.UniqueNetIdRepl";
 
+    /// <summary>Tenancy user id struct path.</summary>
+    public const string TenancyUserIdStruct = "/Script/EmbarkCore.TenancyUserId";
+
+    /// <summary>Compact player profile struct path.</summary>
+    public const string CompactPlayerProfileStruct = "/Script/EmbarkGameplay.CompactPlayerProfile";
+
     /// <summary>Vector quantized to hundredths.</summary>
     public const string QuantizedVector100Struct = "/Script/Engine.Vector_NetQuantize100";
 
@@ -40,7 +47,7 @@ public sealed partial class ValueCodec
         new HashSet<string>(StringComparer.Ordinal) { "/Script/Engine.CharacterServerMovePackedBits", "/Script/Engine.CharacterMoveResponsePackedBits" };
 
     private const string ObjectClass = "/Script/CoreUObject.Object";
-    private const int MaxLevelReports = 128;
+    private const int MaxArrayElements = 128;
     private const int MaxTagLength = 1024;
 
     private readonly Dictionary<string, ulong> _enumMaxima = new(StringComparer.Ordinal);
@@ -105,11 +112,11 @@ public sealed partial class ValueCodec
             case PropertyKind.StructProperty:
                 WriteStruct(writer, property, value);
                 return;
-            case PropertyKind.ArrayProperty when IsLevelReportArray(property):
+            case PropertyKind.ArrayProperty when IsSupportedArray(property):
                 IReadOnlyList<object?> reports = value as IReadOnlyList<object?> ?? throw Invalid();
-                if (reports.Count > MaxLevelReports)
+                if (reports.Count > MaxArrayElements)
                 {
-                    throw new InvalidPacketException("Too many level visibility reports");
+                    throw new InvalidPacketException("Too many array elements");
                 }
 
                 writer.WriteBits((uint)reports.Count, 16);
@@ -161,11 +168,11 @@ public sealed partial class ValueCodec
         {
             case PropertyKind.StructProperty:
                 return ReadStruct(reader, property);
-            case PropertyKind.ArrayProperty when IsLevelReportArray(property):
+            case PropertyKind.ArrayProperty when IsSupportedArray(property):
                 int count = (int)reader.ReadBits(16);
-                if (count > MaxLevelReports)
+                if (count > MaxArrayElements)
                 {
-                    throw new InvalidPacketException("Too many level visibility reports");
+                    throw new InvalidPacketException("Too many array elements");
                 }
 
                 PropertyDefinition inner = Catalog.Property(property.Inner!);
@@ -226,6 +233,12 @@ public sealed partial class ValueCodec
                 writer.WriteBits(0, 2);
                 new NetworkName(tag.Length == 0 ? "None" : tag, 0).Write(writer);
                 return;
+            case TenancyUserIdStruct:
+                (value as TenancyUserId ?? throw Invalid()).Write(writer);
+                return;
+            case CompactPlayerProfileStruct:
+                (value as CompactPlayerProfile ?? throw Invalid()).Write(writer);
+                return;
             case UniqueNetIdStruct:
                 (value as UniqueNetId ?? throw Invalid()).Write(writer);
                 return;
@@ -264,6 +277,10 @@ public sealed partial class ValueCodec
                 string tag = name.Text.Equals("none", StringComparison.OrdinalIgnoreCase) ? "" : name.Text;
                 CheckTag(tag);
                 return new GameplayTag(tag);
+            case TenancyUserIdStruct:
+                return TenancyUserId.Read(reader);
+            case CompactPlayerProfileStruct:
+                return CompactPlayerProfile.Read(reader);
             case UniqueNetIdStruct:
                 return UniqueNetId.Read(reader);
             case { } path when MovementStructs.Contains(path):
@@ -343,8 +360,8 @@ public sealed partial class ValueCodec
         return double.IsFinite(value) ? value : throw new InvalidPacketException("Non-finite number");
     }
 
-    private bool IsLevelReportArray(PropertyDefinition property) =>
-        property.Inner is { } inner && Catalog.Property(inner).TypePath == LevelVisibilityStruct;
+    private bool IsSupportedArray(PropertyDefinition property) =>
+        property.Inner is { } inner && Catalog.Property(inner).TypePath is LevelVisibilityStruct or TenancyUserIdStruct or CompactPlayerProfileStruct;
 
     private (int Width, ulong Maximum) EnumRange(PropertyDefinition property)
     {
