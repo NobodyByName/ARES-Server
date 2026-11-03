@@ -18,7 +18,7 @@ public sealed class RaidWorld
     private const int LevelScriptChannel = 4;
 
     /// <summary>Channel of the game state.</summary>
-    private const int GameStateChannel = 5;
+    public const int GameStateChannel = 5;
 
     /// <summary>Channel of the world data layers actor.</summary>
     private const int DataLayersChannel = 7;
@@ -45,6 +45,7 @@ public sealed class RaidWorld
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
         Clock = worlds.Clock;
+        StartedAt = Clock();
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
         ReplicationContext replication = worlds.Replication;
         (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
@@ -116,6 +117,14 @@ public sealed class RaidWorld
 
     /// <summary>Monotonic clock in seconds.</summary>
     public Func<double> Clock { get; }
+
+    /// <summary>The raid's world time (seconds since it was prepared) at a clock reading.</summary>
+    /// <param name="now">Clock reading.</param>
+    /// <returns>World time in seconds.</returns>
+    public double WorldSeconds(double now) => Math.Max(0, now - StartedAt);
+
+    // When the raid was prepared, on Clock: the start of its world time.
+    private double StartedAt { get; }
 
     /// <summary>The Welcome that sends a client to this world.</summary>
     public static ControlWelcome Welcome { get; } = new(DamMap.MapPackage, DamMap.GameModeClass, "");

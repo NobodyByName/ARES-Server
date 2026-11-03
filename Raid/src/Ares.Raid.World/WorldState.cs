@@ -55,7 +55,7 @@ public sealed class WorldState
     private readonly Dictionary<long, WorldPlayer> _players = [];
     private ulong _nextGuid = 2;
 
-    /// <summary>Creates the world with its game state, which has begun play.</summary>
+    /// <summary>Creates the world with its game state: begun play, match in progress, raid in its first phase.</summary>
     /// <param name="replication">Replication context of the world.</param>
     /// <param name="imports">The world's static exports.</param>
     /// <param name="matchId">Match id of the reservation.</param>
@@ -78,7 +78,8 @@ public sealed class WorldState
             [PropertyNames.MaxSquadSize] = 1,
             [PropertyNames.NumExpectedPlayersToJoin] = 1,
             [PropertyNames.LocationTag] = new GameplayTag(DamMap.LocationTag),
-            [PropertyNames.GamePhase] = (ulong)GamePhase.NotInitialized,
+            [PropertyNames.MatchState] = new NetworkName(MatchStates.InProgress, 0),
+            [PropertyNames.GamePhase] = (ulong)GamePhase.PreGame,
         });
         Replication.Encode(state.ClassPath, state.Properties, Objects([]));
         GameState = state;
@@ -102,6 +103,12 @@ public sealed class WorldState
         _imports.Archetypes[GameState.ClassPath],
         [.. _imports.Classes.Values],
         [Replication.Encode(GameState.ClassPath, GameState.Properties, Objects([GameState.Guid]))]);
+
+    /// <summary>The game state's world time: clients derive the server's clock from it.</summary>
+    /// <param name="seconds">The raid's world time in seconds.</param>
+    /// <returns>The game state content.</returns>
+    public ActorContentBlock WorldTime(double seconds) =>
+        Replication.Encode(GameState.ClassPath, new Dictionary<string, object?> { [PropertyNames.ReplicatedWorldTimeSecondsDouble] = seconds }, Objects([]));
 
     /// <summary>A player's actors, created at <paramref name="spawn"/> on first use.</summary>
     /// <param name="principal">The player.</param>

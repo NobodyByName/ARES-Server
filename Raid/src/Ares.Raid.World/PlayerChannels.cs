@@ -88,6 +88,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private const double AsyncLoadInterval = 2.0;
     private const int AsyncLoadLimit = 30;
     private const int TelemetryBitLimit = 256;
+    private const double WorldTimeInterval = 1.0;
     private const int AbilityExportsPerBunch = 3;
     private const ulong FirstAbilityGuid = 0x100001;
     private const ulong PathReference = 1;
@@ -134,6 +135,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private ReliableKey[] _abilityKeys = [];
     private ulong[]? _abilityDefaults;
     private bool _abilitiesGranted;
+    private ReliableKey? _worldTimeKey;
+    private double? _worldTimeSentAt;
 
     private Dictionary<int, (DoorChannel State, ReliableKey? Key)> _doors = [];
     private Dictionary<int, int> _doorRevisions = [];
@@ -339,6 +342,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     public void Service(ChannelIo io, double now)
     {
         ArgumentNullException.ThrowIfNull(io);
+        ServiceWorldTime(io.Sender, now);
         if (Phase != DeliveryPhase.Possessed)
         {
             return;
@@ -714,6 +718,20 @@ public sealed partial class PlayerChannels : IPlayerChannels
         StableSubobjectContent content = _raid.State.CorrectionContent(_player, frame, _inputAckSent is null);
         _inputAckKeys = [sender.Queue(Bunches.Actor(ControllerChannel, content.Write))];
         _inputAckSent = frame;
+    }
+
+    // The game state's world time, once its channel is open and then every second: the client's server clock
+    // (raid timers, cooldowns) follows it.
+    private void ServiceWorldTime(ReliableSender sender, double now)
+    {
+        if (Phase < DeliveryPhase.PlayerOpensReady || (_worldTimeKey is { } key && sender.Pending(key))
+            || (_worldTimeSentAt is { } sent && now - sent < WorldTimeInterval))
+        {
+            return;
+        }
+
+        _worldTimeKey = sender.Queue(Bunches.Actor(RaidWorld.GameStateChannel, _raid.State.WorldTime(_raid.WorldSeconds(now))));
+        _worldTimeSentAt = now;
     }
 
     // The first frame starts the client's character simulation at the spawn, once level streaming has settled
