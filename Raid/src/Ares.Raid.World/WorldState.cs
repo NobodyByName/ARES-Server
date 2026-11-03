@@ -213,35 +213,46 @@ public sealed class WorldState
         }
     }
 
-    /// <summary>The player actors' initial properties, without the controller's ready flag.</summary>
+    /// <summary>
+    /// The player actors' initial properties, without the controller's ready flag, and the HUD class right after
+    /// the controller's properties: the client builds its HUD before the player's start.
+    /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
-    /// <returns>Content by actor.</returns>
+    /// <returns>Content by actor, in order.</returns>
     public IReadOnlyList<(ulong Actor, ActorContentBlock Content)> InitialProperties(WorldPlayer player, IReadOnlyCollection<ulong> mapped)
     {
         ArgumentNullException.ThrowIfNull(player);
         Dictionary<ulong, string> objects = Objects(mapped);
-        return
-        [
-            .. new[] { player.Controller, player.PlayerState, player.Pawn }.Select(guid =>
+        string controllerClass = PlayerClasses.PlayerController.Class;
+        List<(ulong Actor, ActorContentBlock Content)> contents = [];
+        foreach (ulong guid in (ulong[])[player.Controller, player.PlayerState, player.Pawn])
+        {
+            WorldActor actor = Actor(guid);
+            Dictionary<string, object?> values = new(actor.Properties);
+            if (guid == player.Controller)
             {
-                WorldActor actor = Actor(guid);
-                Dictionary<string, object?> values = new(actor.Properties);
-                if (guid == player.Controller)
-                {
-                    // Its change handler attaches the HUD to the pawn: sent with the calls below.
-                    values.Remove(PropertyNames.IsServerReady);
-                }
+                // Its change handler attaches the HUD to the pawn: sent with the start calls.
+                values.Remove(PropertyNames.IsServerReady);
+            }
 
-                return (guid, Replication.Encode(actor.ClassPath, values, objects));
-            }),
-        ];
+            contents.Add((guid, Replication.Encode(actor.ClassPath, values, objects)));
+            if (guid == player.Controller)
+            {
+                contents.Add((guid, Replication.Calls(objects).Call(controllerClass, FunctionNames.ClientSetHud, new Dictionary<string, object?>
+                {
+                    [PropertyNames.NewHudClass] = _imports.Classes[PlayerClasses.Hud],
+                }, RpcDirection.Client)));
+            }
+        }
+
+        return contents;
     }
 
     /// <summary>
-    /// The calls and the last property that complete the player's start: the HUD class, the ability system's
-    /// initialization notice, the controller's ready flag, the restart with the pawn, and the pawn's walking
-    /// movement mode at its location.
+    /// The calls and the last property that complete the player's start: the ability system's initialization
+    /// notice, the controller's ready flag, the restart with the pawn, and the pawn's walking movement mode at
+    /// its location.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
@@ -256,7 +267,6 @@ public sealed class WorldState
         WorldActor pawn = Actor(player.Pawn);
         return
         [
-            (player.Controller, calls.Call(controllerClass, FunctionNames.ClientSetHud, new Dictionary<string, object?> { [PropertyNames.NewHudClass] = _imports.Classes[PlayerClasses.Hud] }, RpcDirection.Client)),
             (player.Pawn, calls.Call(pawnClass, FunctionNames.ClientPostInitializeAbilitySystem, new Dictionary<string, object?>(), RpcDirection.Client)),
             (player.Controller, Replication.Encode(controllerClass, new Dictionary<string, object?> { [PropertyNames.IsServerReady] = true }, objects)),
             (player.Controller, calls.Call(controllerClass, FunctionNames.ClientRestart, new Dictionary<string, object?> { [PropertyNames.NewPawn] = player.Pawn }, RpcDirection.Client)),
