@@ -1,4 +1,5 @@
 using Ares.Common.Game.Inventory;
+using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
 
@@ -9,7 +10,8 @@ public interface IWorldLifecycle
     /// <param name="matchId">Match id of the reservation.</param>
     /// <param name="players">Reserved players.</param>
     /// <param name="loadouts">Inventory snapshots, or empty inventories when omitted.</param>
-    void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null);
+    /// <param name="profiles">Public squad profiles, or null when omitted.</param>
+    void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null);
 
     /// <summary>Releases the world of a reservation (expired or finished).</summary>
     /// <param name="matchId">Match id.</param>

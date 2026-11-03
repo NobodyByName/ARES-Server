@@ -8,6 +8,8 @@ using Ares.Host.Services.Identity;
 using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Social;
 using Ares.Structs.Backend.Matchmaking;
+using Ares.Structs.Backend.Profiles;
+using Ares.Structs.Net.Replication;
 using GameServerStates = Ares.Structs.Backend.Matchmaking.GameServerStates;
 using ServerInitializationStates = Ares.Structs.Backend.Matchmaking.ServerInitializationStates;
 
@@ -220,7 +222,10 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         try
         {
             PlayerLoadout loadout = inventory.Reserve(_ticket.TicketId);
-            allocation = await allocator.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds, [loadout]), cancellationToken).ConfigureAwait(false);
+            EmbarkProfile profile = profiles.Create();
+            CompactPlayerProfile compact = new(new TenancyUserId((ulong)profile.TenancyUserId), profile.DisplayName.Name, profile.DisplayName.Discriminator,
+                profile.ThirdPartyUserId, profile.ThirdPartyLastSeenAccountName);
+            allocation = await allocator.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds, [loadout], [compact]), cancellationToken).ConfigureAwait(false);
         }
         catch (InvalidOperationException)
         {

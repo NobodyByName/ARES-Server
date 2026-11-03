@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ares.Common.Game.Inventory;
+using Ares.Structs.Net.Replication;
 
 namespace Ares.Common.Control;
 
@@ -9,8 +10,9 @@ namespace Ares.Common.Control;
 /// <param name="ScenarioName">Matchmaking scenario, e.g. the Dam scenario.</param>
 /// <param name="PartyMemberIds">Tenancy user ids of the players in the party.</param>
 /// <param name="Loadouts">Optional inventory snapshot per player; omitted requests use empty loadouts.</param>
+/// <param name="Profiles">Optional public squad profiles, one per player.</param>
 public sealed record AllocationRequest(string TicketId, string ScenarioName, IReadOnlyList<long> PartyMemberIds,
-    IReadOnlyList<PlayerLoadout>? Loadouts = null);
+    IReadOnlyList<PlayerLoadout>? Loadouts = null, IReadOnlyList<CompactPlayerProfile>? Profiles = null);
 
 /// <summary>Host → Raid: poll a reservation.</summary>
 /// <param name="MatchId">The match id returned by the reservation.</param>

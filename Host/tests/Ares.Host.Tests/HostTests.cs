@@ -12,6 +12,7 @@ using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Status;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
+using Ares.Structs.Net.Replication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -262,6 +263,23 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal("New Name", profile.GetProperty("display_name").GetProperty("name").GetString());
         Assert.Contains(keys.GetProperty("persistentPlayerKeys").EnumerateArray(), key => key.GetProperty("key").GetString() == "UI.Test");
         Assert.True(File.Exists(Path.Combine(_dataDirectory, "account-state.json")));
+    }
+
+    [Fact]
+    public async Task The_current_display_name_crosses_the_allocation_api_as_a_squad_profile()
+    {
+        string bearer = await SignIn();
+        JsonElement renamed = await Json(await Put("/v1/shared/profile/display-name", new { displayName = "Squad Raider" }));
+        await Post("/v1/shared/social/party/v2/create", new { });
+        string ticket = (await Json(await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer))).GetProperty("ticketId").GetString()!;
+        await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
+
+        CompactPlayerProfile profile = Assert.Single(_raid.LastRequest!.Profiles!);
+        Assert.Equal((ulong)renamed.GetProperty("tenancy_user_id").GetInt64(), profile.TenancyUserId.Value);
+        Assert.Equal("Squad Raider", profile.DisplayName);
+        Assert.Equal(renamed.GetProperty("display_name").GetProperty("discriminator").GetString(), profile.DisplayNameDiscriminator);
+        Assert.Equal(renamed.GetProperty("third_party_user_id").GetString(), profile.ThirdPartyUserId);
+        Assert.Equal(renamed.GetProperty("third_party_last_seen_account_name").GetString(), profile.ThirdPartyLastSeenAccountName);
     }
 
     private async Task<string> SignIn()

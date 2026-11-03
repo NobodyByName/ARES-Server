@@ -4,6 +4,7 @@ using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Net.Control;
+using Ares.Structs.Net.Replication;
 using ScenarioNames = Ares.Structs.Backend.Matchmaking.ScenarioNames;
 
 namespace Ares.Raid.Tests;
@@ -113,6 +114,31 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void Profiles_are_frozen_and_conflicting_or_invalid_retries_are_rejected()
+    {
+        CompactPlayerProfile profile = new(new TenancyUserId(42), "Raider", "1234", "platform", "Raider");
+        CompactPlayerProfile[] profiles = [profile];
+        AllocationRequest request = Request() with { Profiles = profiles };
+        RaidAllocations allocations = Allocations();
+        Assert.Equal(200, allocations.Reserve(request).StatusCode);
+        profiles[0] = profile with { DisplayName = "Changed" };
+        Assert.Equal(profile, Assert.Single(_worlds.Profiles!));
+        Assert.Equal("session_allocation_conflict", allocations.Reserve(request).Error);
+        Assert.Equal(200, allocations.Reserve(request with { Profiles = [profile] }).StatusCode);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [] }).Error);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [null!] }).Error);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { TenancyUserId = null! }] }).Error);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { DisplayName = null! }] }).Error);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { TenancyUserId = new TenancyUserId(43) }] }).Error);
+        Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { DisplayName = "bad\0name" }] }).Error);
+
+        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        worlds.Prepare(Ticket, [42], profiles: [profile]);
+        Assert.Equal(profile, Assert.Single(worlds.Current!.Profiles));
+        Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], profiles: profiles));
+    }
+
+    [Fact]
     public void Players_are_admitted_by_their_routing_credential_and_identity()
     {
         RaidAllocations allocations = Allocations();
@@ -152,10 +178,13 @@ public sealed class RaidAllocationTests
 
         public IReadOnlyList<PlayerLoadout>? Loadouts { get; private set; }
 
-        public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null)
+        public IReadOnlyList<CompactPlayerProfile>? Profiles { get; private set; }
+
+        public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)
         {
             Prepared.Add(matchId);
             Loadouts = loadouts;
+            Profiles = profiles;
             if (Fail)
             {
                 throw new WorldPreparationException("test");

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Ares.Common.Endpoints;
+using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
 using Ares.Common.Security;
 
@@ -42,6 +43,11 @@ public sealed class SessionAllocatorClient : IDisposable
         if (request.Loadouts is not null)
         {
             request = request with { Loadouts = InventorySnapshots.ForPlayers(request.PartyMemberIds, request.Loadouts) };
+        }
+
+        if (request.Profiles is not null)
+        {
+            request = request with { Profiles = SquadProfiles.ForPlayers(request.PartyMemberIds, request.Profiles) };
         }
 
         Allocation? reply = await PostAsync(AllocationApi.ReservePath, request, cancellationToken).ConfigureAwait(false);

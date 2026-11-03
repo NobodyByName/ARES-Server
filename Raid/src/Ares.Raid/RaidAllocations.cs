@@ -2,9 +2,11 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Net.Replication;
 using ScenarioNames = Ares.Structs.Backend.Matchmaking.ScenarioNames;
 
 namespace Ares.Raid;
@@ -66,6 +68,16 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             return AllocationResult.Failure(StatusCodes.Status400BadRequest, "invalid_session_loadout");
         }
 
+        IReadOnlyList<CompactPlayerProfile> profiles;
+        try
+        {
+            profiles = SquadProfiles.ForPlayers(request.PartyMemberIds, request.Profiles);
+        }
+        catch (InvalidDataException)
+        {
+            return AllocationResult.Failure(StatusCodes.Status400BadRequest, "invalid_session_profiles");
+        }
+
         lock (_lock)
         {
             Maintain();
@@ -74,19 +86,20 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
                 return existing.TicketId != request.TicketId
                     ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached")
                     : !existing.Players.SequenceEqual(request.PartyMemberIds)
+                        || !existing.Profiles.SequenceEqual(profiles)
                         || !existing.Loadouts.Zip(loadouts).All(pair => InventorySnapshots.Same(pair.First, pair.Second))
                         ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_allocation_conflict")
                         : AllocationResult.Success(Status(existing));
             }
 
             Reservation candidate = new(request.TicketId, Guid.NewGuid().ToString(), [.. request.PartyMemberIds],
-                RandomNumberGenerator.GetBytes(RoutingAuthenticator.TokenBytes), loadouts)
+                RandomNumberGenerator.GetBytes(RoutingAuthenticator.TokenBytes), loadouts, profiles)
             {
                 Deadline = _clock() + _timeout,
             };
             try
             {
-                _worlds.Prepare(candidate.MatchId, candidate.Players, candidate.Loadouts);
+                _worlds.Prepare(candidate.MatchId, candidate.Players, candidate.Loadouts, candidate.Profiles.Count == 0 ? null : candidate.Profiles);
             }
             catch (WorldPreparationException)
             {
@@ -163,7 +176,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             [.. item.Loadouts.Select(InventorySnapshots.Receipt)]);
     }
 
-    private sealed record Reservation(string TicketId, string MatchId, long[] Players, byte[] RoutingToken, IReadOnlyList<PlayerLoadout> Loadouts)
+    private sealed record Reservation(string TicketId, string MatchId, long[] Players, byte[] RoutingToken, IReadOnlyList<PlayerLoadout> Loadouts, IReadOnlyList<CompactPlayerProfile> Profiles)
     {
         public double Deadline { get; set; }
     }
