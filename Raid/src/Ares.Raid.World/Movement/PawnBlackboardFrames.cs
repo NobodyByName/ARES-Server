@@ -55,12 +55,9 @@ public static class PawnBlackboardFrames
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionXField, Quantize(motion.Position.X)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionYField, Quantize(motion.Position.Y)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionZField, Quantize(motion.Position.Z)));
-                    if (motion.Step != default)
-                    {
-                        values.Add(Velocity(PawnBlackboard.VelocityXField, motion.Step.X));
-                        values.Add(Velocity(PawnBlackboard.VelocityYField, motion.Step.Y));
-                        values.Add(Velocity(PawnBlackboard.VelocityZField, motion.Step.Z));
-                    }
+                    values.Add(Velocity(PawnBlackboard.VelocityXField, motion.Step.X));
+                    values.Add(Velocity(PawnBlackboard.VelocityYField, motion.Step.Y));
+                    values.Add(Velocity(PawnBlackboard.VelocityZField, motion.Step.Z));
 
                     if (motion.Yaw is { } yaw)
                     {

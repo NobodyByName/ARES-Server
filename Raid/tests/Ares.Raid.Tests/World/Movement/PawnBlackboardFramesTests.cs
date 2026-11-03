@@ -54,6 +54,18 @@ public sealed class PawnBlackboardFramesTests
     }
 
     [Fact]
+    public void A_stationary_spawn_has_no_velocity_on_any_axis()
+    {
+        PendulumSlot movement = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0)[PawnBlackboard.MovementStateSlot];
+        IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
+        foreach (int index in (int[])[PawnBlackboard.VelocityXField, PawnBlackboard.VelocityYField, PawnBlackboard.VelocityZField])
+        {
+            PendulumScalarField axis = (PendulumScalarField)fields[index];
+            Assert.Equal(axis.Default, PendulumCodec.Integer(axis, movement.Value));
+        }
+    }
+
+    [Fact]
     public void Ticks_outside_the_simulation_range_are_rejected() =>
         Assert.Throws<InvalidPacketException>(() => PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick - 1, new PawnMotion(s_spawn), 0));
 }
