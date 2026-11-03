@@ -13,6 +13,23 @@ public sealed class ReplicationValueTests
     private static ValueCodec Values(IReadOnlyDictionary<ulong, string>? mappedObjects = null) =>
         new(Catalog, [KnownEnums.NetRole, KnownEnums.GamePhase], mappedObjects);
 
+    [Theory]
+    [InlineData(-128, 0x80)]
+    [InlineData(-1, 0xff)]
+    [InlineData(0, 0x00)]
+    [InlineData(1, 0x01)]
+    [InlineData(127, 0x7f)]
+    public void Signed_bytes_use_eight_bits_and_preserve_the_sign(int value, byte encoded)
+    {
+        ValueCodec codec = Values();
+        PropertyDefinition property = new("Test.SignedByte", PropertyKind.Int8Property, "int8", PropertyFlags.None);
+        BitWriter writer = new();
+        codec.Write(writer, property, (sbyte)value);
+        Assert.Equal(8, writer.Length);
+        Assert.Equal(new[] { encoded }, writer.ToArray());
+        Assert.Equal((sbyte)value, Assert.IsType<sbyte>(codec.Read(new BitReader([encoded], 8), property)));
+    }
+
     [Fact]
     public void Property_blocks_match_the_reference_for_every_class()
     {

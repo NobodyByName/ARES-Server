@@ -11,6 +11,7 @@ public enum PropertyKind
     EnumProperty,
     FieldPathProperty,
     FloatProperty,
+    Int8Property,
     Int16Property,
     Int64Property,
     IntProperty,

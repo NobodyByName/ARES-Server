@@ -9,7 +9,7 @@ namespace Ares.Structs.Net.Replication;
 /// <summary>
 /// Property values shared by property layouts and network function parameters. Values are typed by
 /// property kind: <see cref="bool"/>; <see cref="float"/>, <see cref="double"/>, <see cref="int"/>,
-/// <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="short"/>, <see cref="ushort"/>
+/// <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="sbyte"/>, <see cref="short"/>, <see cref="ushort"/>
 /// for numbers; <see cref="ulong"/> for bytes, enums, objects and classes (object and class ids must be
 /// mapped); <see cref="string"/>; <see cref="NetworkName"/>; <see cref="Vector3D"/>;
 /// <see cref="GameplayTag"/>; <see cref="UniqueNetId"/>; <see cref="LevelVisibility"/>;
@@ -295,6 +295,9 @@ public sealed partial class ValueCodec
             case (PropertyKind.UInt64Property, ulong number):
                 writer.WriteBits(number, 64);
                 return;
+            case (PropertyKind.Int8Property, sbyte number):
+                writer.WriteBits((byte)number, 8);
+                return;
             case (PropertyKind.Int16Property, short number):
                 writer.WriteBits((ushort)number, 16);
                 return;
@@ -323,6 +326,8 @@ public sealed partial class ValueCodec
                 return (long)reader.ReadBits(64);
             case PropertyKind.UInt64Property:
                 return reader.ReadBits(64);
+            case PropertyKind.Int8Property:
+                return (sbyte)(byte)reader.ReadBits(8);
             case PropertyKind.Int16Property:
                 return (short)(ushort)reader.ReadBits(16);
             case PropertyKind.UInt16Property:
@@ -360,7 +365,7 @@ public sealed partial class ValueCodec
 
     private static int StorageBits(PropertyKind kind) => kind switch
     {
-        PropertyKind.ByteProperty => 8,
+        PropertyKind.ByteProperty or PropertyKind.Int8Property => 8,
         PropertyKind.UInt16Property or PropertyKind.Int16Property => 16,
         PropertyKind.IntProperty or PropertyKind.UInt32Property => 32,
         _ => 64,
