@@ -436,7 +436,7 @@ public sealed class RaidConnections
                 state.Login = _authenticator.BeginHello(hello.EncryptionToken, routingToken);
                 return null;
             case ControlLogin login when state.Login is { Authenticated: false } pending:
-                state.Viewport = LoginViewport.FromLogin(login);
+                state.PlayerLogin = PlayerLogin.FromLogin(login);
                 pending.LoginFingerprint = SHA256.HashData(bunch.Payload);
                 _authenticator.Complete(pending, login);
                 return null;
@@ -470,9 +470,9 @@ public sealed class RaidConnections
 
     private void StartPlayer(ConnectionState state)
     {
-        if (state is { Travel.Joined: true, Player: null, Login: { } login, Viewport: { } viewport })
+        if (state is { Travel.Joined: true, Player: null, Login: { } login, PlayerLogin: { } playerLogin })
         {
-            state.Player = _world.StartPlayer(login.Principal, viewport, state.Io);
+            state.Player = _world.StartPlayer(login.Principal, playerLogin, state.Io);
         }
     }
 
@@ -548,7 +548,7 @@ public sealed class RaidConnections
 
         public ReliableKey? ChallengeKey { get; set; }
 
-        public LoginViewport? Viewport { get; set; }
+        public PlayerLogin? PlayerLogin { get; set; }
 
         public WorldTravel? Travel { get; set; }
 
@@ -578,7 +578,7 @@ public sealed class RaidConnections
             LastSentAt = LastSentAt,
             Login = Login?.Copy(),
             ChallengeKey = ChallengeKey,
-            Viewport = Viewport,
+            PlayerLogin = PlayerLogin,
             Travel = Travel?.Copy(),
             WelcomeKey = WelcomeKey,
             Player = Player?.Copy(),

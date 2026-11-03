@@ -18,10 +18,10 @@ public interface IRaidWorld
 
     /// <summary>Starts the player's world channels after the client joined the map.</summary>
     /// <param name="principal">The player.</param>
-    /// <param name="viewport">The login's viewport options.</param>
+    /// <param name="login">What the player's login gives its actors.</param>
     /// <param name="io">The connection's channels.</param>
     /// <returns>The player's channel state.</returns>
-    IPlayerChannels StartPlayer(SessionPrincipal principal, LoginViewport viewport, ChannelIo io);
+    IPlayerChannels StartPlayer(SessionPrincipal principal, PlayerLogin login, ChannelIo io);
 }
 
 /// <summary>

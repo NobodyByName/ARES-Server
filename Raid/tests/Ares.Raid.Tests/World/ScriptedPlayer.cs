@@ -7,6 +7,7 @@ using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
+using Ares.Structs.Net.Control;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -34,10 +35,12 @@ internal sealed class ScriptedPlayer
         Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
         Worlds.Prepare(MatchId, [42]);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
-        Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new LoginViewport(7, 0), Io);
+        Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new PlayerLogin(7, 0, UniqueId), Io);
     }
 
     private static SessionPrincipal Principal { get; } = new(42, MatchId);
+
+    private static UniqueNetId UniqueId { get; } = new(5, "42", "", false, false);
 
     private DamWorlds Worlds { get; }
 

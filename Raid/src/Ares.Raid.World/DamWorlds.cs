@@ -283,10 +283,11 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Raid(principal) is null ? null : RaidWorld.Welcome;
 
     /// <inheritdoc />
-    public IPlayerChannels StartPlayer(SessionPrincipal principal, LoginViewport viewport, ChannelIo io)
+    public IPlayerChannels StartPlayer(SessionPrincipal principal, PlayerLogin login, ChannelIo io)
     {
+        ArgumentNullException.ThrowIfNull(login);
         RaidWorld raid = Raid(principal) ?? throw new InvalidPacketException("The raid ended");
-        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, raid.Spawn.Location), viewport);
+        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location), login);
         channels.Start(io);
         return channels;
     }

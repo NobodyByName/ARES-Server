@@ -110,7 +110,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     private readonly RaidWorld _raid;
     private readonly WorldPlayer _player;
-    private readonly LoginViewport _viewport;
+    private readonly PlayerLogin _login;
     private readonly (int Channel, ulong Guid)[] _bindings;
 
     private ReliableKey[] _keys = [];
@@ -147,12 +147,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Creates the channels of a joined player.</summary>
     /// <param name="raid">The raid.</param>
     /// <param name="player">The player's actors.</param>
-    /// <param name="viewport">The login's viewport options.</param>
-    public PlayerChannels(RaidWorld raid, WorldPlayer player, LoginViewport viewport)
+    /// <param name="login">What the player's login gives its actors.</param>
+    public PlayerChannels(RaidWorld raid, WorldPlayer player, PlayerLogin login)
     {
         _raid = raid ?? throw new ArgumentNullException(nameof(raid));
         _player = player ?? throw new ArgumentNullException(nameof(player));
-        _viewport = viewport ?? throw new ArgumentNullException(nameof(viewport));
+        _login = login ?? throw new ArgumentNullException(nameof(login));
         _bindings = [(ControllerChannel, player.Controller), (PlayerStateChannel, player.PlayerState), (PawnChannel, player.Pawn)];
     }
 
@@ -428,7 +428,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     {
                         WorldActor actor = Actor(binding.Guid);
                         ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location);
-                        PlayerControllerOpen? open = binding.Guid == _player.Controller ? _viewport.ControllerOpen() : null;
+                        PlayerControllerOpen? open = binding.Guid == _player.Controller ? _login.ControllerOpen() : null;
                         return sender.Queue(new ActorInitialization(spawn, open, []).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
                     }),
                 ];

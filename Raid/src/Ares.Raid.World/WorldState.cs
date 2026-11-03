@@ -7,6 +7,7 @@ using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
+using Ares.Structs.Net.Control;
 using Ares.Structs.Net.GameplayTags;
 using Ares.Structs.Net.Replication;
 
@@ -104,11 +105,13 @@ public sealed class WorldState
 
     /// <summary>A player's actors, created at <paramref name="spawn"/> on first use.</summary>
     /// <param name="principal">The player.</param>
+    /// <param name="uniqueId">The unique id the player logged in with; its player state carries it.</param>
     /// <param name="spawn">Spawn location for a new player.</param>
     /// <returns>The player.</returns>
-    public WorldPlayer PlayerFor(SessionPrincipal principal, Vector3D spawn)
+    public WorldPlayer PlayerFor(SessionPrincipal principal, UniqueNetId uniqueId, Vector3D spawn)
     {
         ArgumentNullException.ThrowIfNull(principal);
+        ArgumentNullException.ThrowIfNull(uniqueId);
         lock (_lock)
         {
             if (principal.MatchId != MatchId)
@@ -140,6 +143,7 @@ public sealed class WorldState
                 [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
                 [PropertyNames.Owner] = controller,
                 [PropertyNames.PlayerId] = _players.Count,
+                [PropertyNames.UniqueId] = uniqueId,
                 [PropertyNames.PioneerCharacter] = pawn,
                 [PropertyNames.CurrentPawn] = pawn,
             };

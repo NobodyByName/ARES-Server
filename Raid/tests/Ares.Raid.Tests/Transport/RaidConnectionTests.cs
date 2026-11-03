@@ -40,7 +40,7 @@ public sealed class RaidConnectionTests
 
         client.SendControl(new ControlNetspeed(50000), new ControlJoin());
         FakePlayer player = Assert.Single(_world.Players);
-        Assert.Equal((s_player, 7U), (player.Principal, player.Viewport.HandshakeId));
+        Assert.Equal((s_player, 7U, "42"), (player.Principal, player.Login.HandshakeId, player.Login.UniqueId.Contents));
         Assert.Equal(1, connections.Count);
 
         client.SendControl(new ControlActorChannelFailure(9));
@@ -120,22 +120,22 @@ public sealed class RaidConnectionTests
 
         public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Ready ? s_welcome : null;
 
-        public IPlayerChannels StartPlayer(SessionPrincipal principal, LoginViewport viewport, ChannelIo io)
+        public IPlayerChannels StartPlayer(SessionPrincipal principal, PlayerLogin login, ChannelIo io)
         {
-            FakePlayer player = new(principal, viewport, this);
+            FakePlayer player = new(principal, login, this);
             return player;
         }
     }
 
-    private sealed class FakePlayer(SessionPrincipal principal, LoginViewport viewport, FakeWorld world) : IPlayerChannels
+    private sealed class FakePlayer(SessionPrincipal principal, PlayerLogin login, FakeWorld world) : IPlayerChannels
     {
         public SessionPrincipal Principal { get; } = principal;
 
-        public LoginViewport Viewport { get; } = viewport;
+        public PlayerLogin Login { get; } = login;
 
         public List<int> Failures { get; private init; } = [];
 
-        public IPlayerChannels Copy() => new FakePlayer(Principal, Viewport, world) { Failures = [.. Failures] };
+        public IPlayerChannels Copy() => new FakePlayer(Principal, Login, world) { Failures = [.. Failures] };
 
         public void Acknowledge(ChannelIo io, NotificationHeader header) => io.Sender.Acknowledge(header);
 

@@ -27,20 +27,27 @@ public static class LoginOptions
     }
 }
 
-/// <summary>Viewport options of a login, bound to the player controller when it opens.</summary>
+/// <summary>
+/// What a login gives the player's actors: viewport options for the player controller when it opens, and the
+/// player's unique id for its player state.
+/// </summary>
 /// <param name="HandshakeId">Handshake id option.</param>
 /// <param name="LocalPlayerId">Local player id option.</param>
-public sealed partial record LoginViewport(uint HandshakeId, int LocalPlayerId)
+/// <param name="UniqueId">The unique id the client logged in with.</param>
+public sealed partial record PlayerLogin(uint HandshakeId, int LocalPlayerId, UniqueNetId UniqueId)
 {
-    /// <summary>Reads the viewport options of a login URL; missing options are 0.</summary>
+    /// <summary>Reads a login; missing viewport options are 0.</summary>
     /// <param name="login">The login.</param>
-    /// <returns>The viewport.</returns>
-    public static LoginViewport FromLogin(ControlLogin login)
+    /// <returns>The player login.</returns>
+    public static PlayerLogin FromLogin(ControlLogin login)
     {
         ArgumentNullException.ThrowIfNull(login);
         Dictionary<string, string> options = LoginOptions.Parse(login.Url) ?? throw new InvalidPacketException("Duplicate login option");
 
-        return new LoginViewport((uint)Number(options, "handshakeid", 0, uint.MaxValue), (int)Number(options, "localplayerid", int.MinValue, int.MaxValue));
+        return new PlayerLogin(
+            (uint)Number(options, "handshakeid", 0, uint.MaxValue),
+            (int)Number(options, "localplayerid", int.MinValue, int.MaxValue),
+            login.UniqueId);
     }
 
     /// <summary>The player controller's opening fields (primary player only).</summary>
