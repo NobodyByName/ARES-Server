@@ -1,5 +1,6 @@
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.Game.Inventory;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 
@@ -63,6 +64,27 @@ public sealed class AllocationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_loadout_conflict_is_not_reported_as_full_capacity()
+    {
+        using SessionAllocatorClient client = Client(Token);
+        _raid.Conflict = true;
+        await Assert.ThrowsAsync<AllocationConflictException>(() =>
+            client.ReserveAsync(new AllocationRequest(s_ticket, "TheDam", [42]), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task A_peer_must_acknowledge_the_exact_loadout()
+    {
+        using SessionAllocatorClient client = Client(Token);
+        AllocationRequest request = new(s_ticket, "TheDam", [42], [new PlayerLoadout(42, 7, [])]);
+        _raid.OmitLoadouts = true;
+        await Assert.ThrowsAsync<AllocationUnavailableException>(() => client.ReserveAsync(request, TestContext.Current.CancellationToken));
+        _raid.OmitLoadouts = false;
+        Allocation reserved = (await client.ReserveAsync(request, TestContext.Current.CancellationToken))!;
+        Assert.Equal(InventorySnapshots.Receipt(request.Loadouts![0]), Assert.Single(reserved.Loadouts!));
+    }
+
+    [Fact]
     public async Task Inconsistent_replies_are_rejected()
     {
         using SessionAllocatorClient client = Client(Token);
@@ -94,6 +116,10 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
         public bool Proxy { get; set; }
 
+        public bool Conflict { get; set; }
+
+        public bool OmitLoadouts { get; set; }
+
         public void Forget()
         {
             _allocation = null;
@@ -101,6 +127,11 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
         public AllocationResult Reserve(AllocationRequest request)
         {
+            if (Conflict)
+            {
+                return AllocationResult.Failure(409, "session_allocation_conflict");
+            }
+
             if (Full)
             {
                 return AllocationResult.Failure(409, "session_capacity_reached");
@@ -108,7 +139,8 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
             _allocation = new Allocation(request.TicketId, Guid.NewGuid().ToString("D"), request.ScenarioName, request.PartyMemberIds,
                 AllocationStates.Available, ServerInitializationStates.Ready, 2.0,
-                new GameServerEndpoint("raid", "127.0.0.1", 7777, "", Convert.ToBase64String(new byte[16]), Proxy, "LOCAL"));
+                new GameServerEndpoint("raid", "127.0.0.1", 7777, "", Convert.ToBase64String(new byte[16]), Proxy, "LOCAL"),
+                OmitLoadouts ? null : request.Loadouts?.Select(InventorySnapshots.Receipt).ToArray());
             return AllocationResult.Success(_allocation);
         }
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Ares.Common.Game.Inventory;
 
 namespace Ares.Common.Control;
 
@@ -7,7 +8,9 @@ namespace Ares.Common.Control;
 /// <param name="TicketId">The matchmaking ticket (canonical UUID).</param>
 /// <param name="ScenarioName">Matchmaking scenario, e.g. the Dam scenario.</param>
 /// <param name="PartyMemberIds">Tenancy user ids of the players in the party.</param>
-public sealed record AllocationRequest(string TicketId, string ScenarioName, IReadOnlyList<long> PartyMemberIds);
+/// <param name="Loadouts">Optional inventory snapshot per player; omitted requests use empty loadouts.</param>
+public sealed record AllocationRequest(string TicketId, string ScenarioName, IReadOnlyList<long> PartyMemberIds,
+    IReadOnlyList<PlayerLoadout>? Loadouts = null);
 
 /// <summary>Host → Raid: poll a reservation.</summary>
 /// <param name="MatchId">The match id returned by the reservation.</param>
@@ -22,6 +25,7 @@ public sealed record AllocationStatusRequest(string MatchId);
 /// <param name="ServerInitializationState">See <see cref="ServerInitializationStates"/>.</param>
 /// <param name="PollingInterval">Seconds the client should wait between status polls.</param>
 /// <param name="Gameserver">Where players connect.</param>
+/// <param name="Loadouts">Receipts for the loadouts accepted by Raid, absent for older allocation services.</param>
 public sealed record Allocation(
     string TicketId,
     string MatchId,
@@ -30,7 +34,8 @@ public sealed record Allocation(
     string State,
     string ServerInitializationState,
     double PollingInterval,
-    GameServerEndpoint Gameserver);
+    GameServerEndpoint Gameserver,
+    IReadOnlyList<LoadoutReceipt>? Loadouts = null);
 
 /// <summary>The player-reachable raid endpoint of an allocation.</summary>
 /// <param name="Name">Raid server name.</param>
@@ -89,7 +94,7 @@ public static class AllocationApi
     public const string StatusPath = "/allocations/status";
 
     /// <summary>Largest request or response body, in bytes.</summary>
-    public const int MaximumBodyBytes = 16384;
+    public const int MaximumBodyBytes = 262144;
 
     /// <summary>camelCase JSON; missing or null required members are rejected.</summary>
     public static JsonSerializerOptions JsonOptions { get; } = new()

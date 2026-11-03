@@ -53,7 +53,7 @@ public static class AllocationEndpoints
 {
     /// <summary>
     /// Adds <c>POST /allocations/reserve</c> and <c>POST /allocations/status</c>. Every call must carry
-    /// <c>Authorization: Bearer {operatorToken}</c>; bodies are limited to 16 KiB of JSON.
+    /// <c>Authorization: Bearer {operatorToken}</c>; bodies are limited to 256 KiB of JSON.
     /// </summary>
     public static IEndpointRouteBuilder MapAllocationApi(this IEndpointRouteBuilder endpoints, IAllocationService service, string operatorToken)
     {

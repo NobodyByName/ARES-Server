@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../Ares.Common/Ares.Common.csproj" />
     <ProjectReference Include="../Ares.Common.Security/Ares.Common.Security.csproj" />
+    <ProjectReference Include="../Ares.Common.Game/Ares.Common.Game.csproj" />
   </ItemGroup>
 
 </Project>

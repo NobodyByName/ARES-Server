@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Ares.Common.Endpoints;
+using Ares.Common.Game.Inventory;
 using Ares.Common.Security;
 
 namespace Ares.Common.Control;
@@ -38,11 +39,23 @@ public sealed class SessionAllocatorClient : IDisposable
     /// <exception cref="AllocationUnavailableException">Raid unreachable, rejected the request or replied inconsistently.</exception>
     public async Task<Allocation?> ReserveAsync(AllocationRequest request, CancellationToken cancellationToken = default)
     {
+        if (request.Loadouts is not null)
+        {
+            request = request with { Loadouts = InventorySnapshots.ForPlayers(request.PartyMemberIds, request.Loadouts) };
+        }
+
         Allocation? reply = await PostAsync(AllocationApi.ReservePath, request, cancellationToken).ConfigureAwait(false);
         if (reply is not null && (reply.TicketId != request.TicketId || reply.ScenarioName != request.ScenarioName
             || !reply.PartyMemberIds.SequenceEqual(request.PartyMemberIds)))
         {
             throw new AllocationUnavailableException("Session allocation does not match the ticket");
+        }
+
+        if (reply is not null && request.Loadouts is not null && (reply.Loadouts is null
+            || !request.Loadouts.Select(InventorySnapshots.Receipt).OrderBy(receipt => receipt.UserId)
+                .SequenceEqual(reply.Loadouts.OrderBy(receipt => receipt.UserId))))
+        {
+            throw new AllocationUnavailableException("Raid did not acknowledge the requested loadout");
         }
 
         return reply;
@@ -55,7 +68,9 @@ public sealed class SessionAllocatorClient : IDisposable
     {
         Allocation? reply = await PostAsync(AllocationApi.StatusPath, new AllocationStatusRequest(allocation.MatchId), cancellationToken).ConfigureAwait(false);
         if (reply is null || reply.MatchId != allocation.MatchId || reply.TicketId != allocation.TicketId
-            || reply.ScenarioName != allocation.ScenarioName || !reply.PartyMemberIds.SequenceEqual(allocation.PartyMemberIds))
+            || reply.ScenarioName != allocation.ScenarioName || !reply.PartyMemberIds.SequenceEqual(allocation.PartyMemberIds)
+            || (allocation.Loadouts is not null && (reply.Loadouts is null
+                || !allocation.Loadouts.OrderBy(receipt => receipt.UserId).SequenceEqual(reply.Loadouts.OrderBy(receipt => receipt.UserId)))))
         {
             throw new AllocationUnavailableException("Session allocation identity changed");
         }
@@ -91,7 +106,19 @@ public sealed class SessionAllocatorClient : IDisposable
             switch (response.StatusCode)
             {
                 case HttpStatusCode.Conflict when path == AllocationApi.ReservePath:
-                    return null;
+                    AllocationError? error;
+                    try
+                    {
+                        error = JsonSerializer.Deserialize<AllocationError>(await ReadLimitedAsync(response.Content, cancellationToken).ConfigureAwait(false), AllocationApi.JsonOptions);
+                    }
+                    catch (Exception failure) when (failure is JsonException or IOException or TaskCanceledException)
+                    {
+                        throw new AllocationUnavailableException("Invalid allocation conflict response");
+                    }
+
+                    return error?.Error == "session_capacity_reached"
+                        ? null
+                        : throw new AllocationConflictException("Session allocation conflicts with an existing reservation");
                 case HttpStatusCode.NotFound when path == AllocationApi.StatusPath:
                     throw new AllocationExpiredException("Session allocation no longer exists");
                 default:
@@ -120,7 +147,13 @@ public sealed class SessionAllocatorClient : IDisposable
 
     private static ByteArrayContent JsonContent<T>(T body)
     {
-        ByteArrayContent content = new(JsonSerializer.SerializeToUtf8Bytes(body, AllocationApi.JsonOptions));
+        byte[] data = JsonSerializer.SerializeToUtf8Bytes(body, AllocationApi.JsonOptions);
+        if (data.Length > AllocationApi.MaximumBodyBytes)
+        {
+            throw new AllocationUnavailableException("Session allocation request is too large");
+        }
+
+        ByteArrayContent content = new(data);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
         return content;
     }
@@ -160,6 +193,14 @@ public sealed class SessionAllocatorClient : IDisposable
             || !double.IsFinite(reply.PollingInterval) || reply.PollingInterval is < 0.1 or > 30)
         {
             throw new InvalidDataException("Invalid allocation membership or polling interval");
+        }
+
+        if (reply.Loadouts is { } loadouts && (loadouts.Count != reply.PartyMemberIds.Count
+            || loadouts.Any(receipt => receipt is not { Revision: >= 0, Sha256.Length: 64 }
+                || receipt.Sha256.Any(character => character is not (>= '0' and <= '9' or >= 'a' and <= 'f')))
+            || !loadouts.Select(receipt => receipt.UserId).Order().SequenceEqual(reply.PartyMemberIds.Order())))
+        {
+            throw new InvalidDataException("Invalid allocation loadout receipt");
         }
 
         GameServerEndpoint endpoint = reply.Gameserver;
@@ -205,6 +246,9 @@ public sealed class SessionAllocatorClient : IDisposable
 
 /// <summary>The allocation service could not be used.</summary>
 public class AllocationUnavailableException(string message) : Exception(message);
+
+/// <summary>The ticket already has a reservation with different players or loadout data.</summary>
+public sealed class AllocationConflictException(string message) : AllocationUnavailableException(message);
 
 /// <summary>The reservation no longer exists (e.g. Raid restarted).</summary>
 public sealed class AllocationExpiredException(string message) : AllocationUnavailableException(message);
