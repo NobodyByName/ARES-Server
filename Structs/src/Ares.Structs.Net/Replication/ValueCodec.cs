@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Net.Control;
 using Ares.Structs.Net.GameplayTags;
 
 namespace Ares.Structs.Net.Replication;
@@ -11,8 +12,8 @@ namespace Ares.Structs.Net.Replication;
 /// <see cref="uint"/>, <see cref="long"/>, <see cref="ulong"/>, <see cref="short"/>, <see cref="ushort"/>
 /// for numbers; <see cref="ulong"/> for bytes, enums, objects and classes (object and class ids must be
 /// mapped); <see cref="string"/>; <see cref="NetworkName"/>; <see cref="Vector3D"/>;
-/// <see cref="GameplayTag"/>; <see cref="LevelVisibility"/>; <see cref="VisibilityTransaction"/>;
-/// <see cref="PackedMovementBits"/>; and lists of level visibilities.
+/// <see cref="GameplayTag"/>; <see cref="UniqueNetId"/>; <see cref="LevelVisibility"/>;
+/// <see cref="VisibilityTransaction"/>; <see cref="PackedMovementBits"/>; and lists of level visibilities.
 /// </summary>
 public sealed partial class ValueCodec
 {
@@ -27,6 +28,9 @@ public sealed partial class ValueCodec
 
     /// <summary>Gameplay tag struct.</summary>
     public const string GameplayTagStruct = "/Script/GameplayTags.GameplayTag";
+
+    /// <summary>Player unique id struct.</summary>
+    public const string UniqueNetIdStruct = "/Script/Engine.UniqueNetIdRepl";
 
     /// <summary>Vector quantized to hundredths.</summary>
     public const string QuantizedVector100Struct = "/Script/Engine.Vector_NetQuantize100";
@@ -222,6 +226,9 @@ public sealed partial class ValueCodec
                 writer.WriteBits(0, 2);
                 new NetworkName(tag.Length == 0 ? "None" : tag, 0).Write(writer);
                 return;
+            case UniqueNetIdStruct:
+                (value as UniqueNetId ?? throw Invalid()).Write(writer);
+                return;
             case { } path when MovementStructs.Contains(path):
                 (value as PackedMovementBits ?? throw Invalid()).Write(writer);
                 return;
@@ -257,6 +264,8 @@ public sealed partial class ValueCodec
                 string tag = name.Text.Equals("none", StringComparison.OrdinalIgnoreCase) ? "" : name.Text;
                 CheckTag(tag);
                 return new GameplayTag(tag);
+            case UniqueNetIdStruct:
+                return UniqueNetId.Read(reader);
             case { } path when MovementStructs.Contains(path):
                 return PackedMovementBits.Read(reader);
             default:

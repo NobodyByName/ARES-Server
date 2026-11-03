@@ -1,6 +1,7 @@
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Replication;
+using Ares.Structs.Net.Control;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Structs.Tests.Game;
@@ -111,6 +112,18 @@ public sealed class ReplicationValueTests
         catch (InvalidPacketException)
         {
             return false;
+        }
+    }
+
+    [Fact]
+    public void A_player_state_unique_id_round_trips()
+    {
+        PropertyCodec codec = new(Values());
+        PropertyLayout layout = new(Catalog, PlayerClasses.PlayerState.Class);
+        foreach (UniqueNetId id in (UniqueNetId[])[new UniqueNetId(5, "42", "", false, false), new UniqueNetId(31, "0a1b", "Steam", true, false), UniqueNetId.Empty])
+        {
+            ActorContentBlock block = codec.Encode(layout, new Dictionary<string, object?> { [PropertyNames.UniqueId] = id });
+            Assert.Equal(id, codec.Decode(layout, block, swapActorRoles: false)[PropertyNames.UniqueId]);
         }
     }
 
