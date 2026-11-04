@@ -50,6 +50,8 @@ Limitations:
 ## Requirements
 
 - The .NET 10 SDK (version in `global.json`) to build, test and run from source.
+- An independent MongoDB replica set for Host and its persistence/integration tests (tested with MongoDB 8.0).
+  See [Host configuration](Host/README.md#database).
 - No game installation is needed to build or test. Players need the supported game build.
 - Developed and tested on Linux. Every platform ARC Raiders supports is a goal; Windows has not been
   tested yet.
@@ -58,7 +60,7 @@ Limitations:
 
 ```sh
 dotnet build                          # build everything (warnings are errors)
-dotnet test                           # run the tests
+dotnet test                           # run the tests; Host tests require MongoDB
 dotnet format --verify-no-changes     # check code style
 ```
 
@@ -82,6 +84,9 @@ cp Host/ares-host.conf.dist ares-host.conf
 #   session-control-url = http://127.0.0.1:17778
 #   session-control-token-file = operator-token
 #   auth-key-file = identity-key
+#   mongodb-uri-file = mongodb-uri
+#   mongodb-database = ares_host
+# Put the operator-owned MongoDB connection URI in the private mongodb-uri file.
 
 dotnet run --project Host/src/Ares.Host
 ```

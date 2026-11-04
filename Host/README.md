@@ -57,7 +57,7 @@ are case-sensitive. Optional outer double quotes preserve surrounding spaces. `#
 backslashes within values are literal; there are no inline comments, escape sequences or
 variable expansion. Booleans use `true` or `false`. Unknown keys, repeated keys, malformed lines
 and invalid effective values stop startup. Empty optional paths disable that setting; empty
-`public-origin`, `game-build` and `data-dir` select their documented defaults. Archive keys remain
+`public-origin` and `game-build` select their documented defaults. Archive keys remain
 required, even on first launch; Host leaves the generated file available if key loading fails.
 
 Select another existing file with:
@@ -93,66 +93,52 @@ From the repository root:
 dotnet run --project Host/src/Ares.Host -- --help
 ```
 
-The configuration keys match the existing long options (`port`, `bind`, `data-dir`,
+The configuration keys match the existing long options (`port`, `bind`,
 `server-name`, `motd`, `game-build`, `raid-capacity`, `public-origin`, `allow-network-clients`,
 `session-control-url`, `session-control-token-file`, `auth-key-file`, `archive-keys-file`,
-`console`, `log-file`). `config`, `help` and `version` are command-line options only.
+`console`, `log-file`, `mongodb-uri`, `mongodb-uri-file`, `mongodb-database`). `config`, `help` and `version` are command-line options only.
 
 ## Operator console
 
 This server has its own interactive console with readable logs and a fixed command row.
 Use `help`, `status`, `clear`, or `stop`. See [console controls and output modes](../README.md#operator-consoles).
 
+## Database
+
+Host connects to an operator-managed MongoDB replica set. Configure `mongodb-uri` and
+`mongodb-database` in `ares-host.conf`. A private file selected by `mongodb-uri-file` takes
+precedence over `mongodb-uri`; use it for connections containing credentials. The generated
+configuration contains a localhost URI and the database name `ares_host`.
+
+Host creates and validates player documents in the configured database. Use MongoDB Compass
+to browse documents and `mongosh` for terminal access.
+
 ## Inventory
 
-An empty local account receives one standard rubber duck in a basic stash with 64 slots. This
-starter grant is saved once; restarting Host or signing in again does not grant another duck.
-Existing non-empty inventories are preserved, and clearing/importing inventory after the grant
-does not trigger it again.
+Player documents store owned items in `inventory.stash.items` and `inventory.loadout`.
+The loadout has single augment, shield, main weapon and secondary weapon fields, plus backpack,
+QuickUse and Safe Pocket containers. Items share a single type containing the instance ID,
+technical name, quantity, condition and optional container position.
+Stash and single equipment items have no position. Backpack, QuickUse and Safe Pocket containers
+store positioned items; their capacities are derived from shared loadout definitions. Empty equipment fields are null.
+Empty slots, the frame/container tree and carried roots are generated for the client with stable IDs.
+Host builds client definitions from the shared game data.
 
-The starter stash also receives an empty standard player loadout, including a ten-slot backpack,
-quick-use slots, a safe pocket and equipment slots. Existing starter saves gain this layout once,
-preserving their stash items and instance IDs. Clearing/importing inventory afterward does not
-repeat the layout grant.
+A fresh stash receives the starter duck. Purchased stash capacity preserves initialization state
+when items are removed.
 
-The menu commits pending moves when Storage closes. Host authenticates the batch, checks the
-destination's allowed items and capacity, and saves the entire batch atomically. A rejected batch
-changes nothing. Recent nonempty request IDs are persisted so retries cannot reapply a completed
-move. The stock menu's empty request ID is also accepted; repeating the same move is a no-op.
-Moves preserve item identity, amount and durability. Inventory reserved for matchmaking is locked.
-Splitting, merging, crafting, recycling and other economy operations are not supported.
+The menu commits moves when Storage closes. Host authenticates the batch, validates destinations
+and capacity, and commits it atomically. Moving within stash is a no-op; stash display order is
+derived. Moving between stash and carried slots preserves identity, quantity and durability.
+Recent request receipts prevent duplicate application after retries/restarts. Split/merge,
+crafting, recycling, currency purchases and post-raid settlement remain unimplemented.
 
-Items, item definitions, selected loadout roots and the pending reservation are stored in
-`inventory-state.json` under the configured `data-dir`. The save identifies the supported game build. Malformed
-saves or saves from a different game build cause startup to fail instead of resetting the account.
+Use `inventory` in the console to see owned stack count, capacities, revision and the pending raid
+ticket. `inventory import <path>` reads a player inventory object and replaces the idle inventory
+using its current revision.
 
-In the interactive console, `inventory` shows the revision, item count and reserved ticket.
-`inventory import <path>` replaces an inventory that has no outstanding loadout reservation.
-Quote paths containing spaces. Import files contain:
-
-```json
-{
-  "items": [],
-  "definitions": [],
-  "loadoutRoots": []
-}
-```
-
-Each item uses the backend's `instanceId`, `gameAssetId`, `amount`, `slots`, `durability`,
-`maxDurability`, `lockedInRound`, `etag` and `updatedAt` fields. `slots` lists child instance IDs;
-`loadoutRoots` selects complete root trees for Raid. Other trees stay in the Host inventory.
-Imported items must have an empty `lockedInRound`. Each item needs a definition in `definitions`
-or the built-in tables; definition fields are described by `ItemDescription` in Structs.Backend.
-Imports reject missing references, multiple parents, cycles, duplicate IDs and invalid amounts.
-The limit is 256 item instances and a 1 MiB import file. Use definitions compatible with the
-supported game; provisioning does not establish that an item renders correctly in the client.
-Start a fresh client after changing definitions.
-
-Host freezes the selected trees before allocating a raid. Raid acknowledges their player,
-revision and content hash. A lost reply retains the reservation, including across a Host restart;
-retrying uses the saved ticket and loadout. When Raid confirms that its allocation no longer
-exists, Host releases the reservation without changing item contents. Raid can change placement inside
-the active raid, but Host retains the original reserved tree: post-raid placement and inventory gains/losses
-need result settlement before they can persist. Loot and death are not enabled. Both servers must support
-the loadout acknowledgement contract. Raid currently accepts the standard frame and rubber duck;
-unsupported loadouts fail preparation.
+Raid handoffs are stored separately in `raidReservations`. Host freezes the carried inventory and
+retains its ticket across restarts or lost replies. Raid acknowledges the player, revision and
+content hash. Release removes the handoff when Raid confirms it is gone; it does not apply a raid
+result. Raid still accepts the standard frame and rubber duck only. Loot, death, equipment use
+and inventory gains/losses need their remaining gameplay/settlement implementations.
