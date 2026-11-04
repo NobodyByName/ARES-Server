@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ares.Common.Game.Inventory;
+using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
@@ -95,6 +96,105 @@ public sealed class InventoryTests
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare("inventory", [42], [loadout with { Items = items }]));
         Assert.Null(worlds.Current);
     }
+
+    [Fact]
+    public void Whole_stack_moves_preserve_identity_and_amount_without_changing_previous_snapshots()
+    {
+        PlayerLoadout loadout = StandardLoadout();
+        RaidInventory inventory = new(loadout);
+        IReadOnlyList<ItemContainerState> before = inventory.Containers;
+        ContainerItem? duck = before[inventory.Backpack].Items[3];
+        Assert.True(inventory.Apply(Swap(inventory.Backpack, 3, inventory.Backpack, 7)));
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[3]);
+        Assert.Equal(duck, inventory.Containers[inventory.Backpack].Items[7]);
+        Assert.Equal(duck, before[inventory.Backpack].Items[3]);
+        Assert.Null(before[inventory.Backpack].Items[7]);
+        Assert.True(inventory.Apply(Swap(inventory.Backpack, 7, inventory.Belt, 0)));
+        Assert.Equal(duck, inventory.Containers[inventory.Belt].Items[0]);
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[7]);
+        Assert.Equal(4, inventory.Containers.SelectMany(container => container.Items).Sum(item => item?.Amount ?? 0));
+        Assert.Equal(4, loadout.Items.Single(item => item.InstanceId == s_duckId.ToString("D")).Amount);
+    }
+
+    [Fact]
+    public void Invalid_handles_destinations_and_unsupported_operations_correct_without_changing_contents()
+    {
+        RaidInventory inventory = new(StandardLoadout());
+        ContainerItem?[] original = [.. inventory.Containers.SelectMany(container => container.Items)];
+        InventoryCommand valid = Swap(inventory.Backpack, 3, inventory.Backpack, 7);
+        InventoryCommand[] invalid =
+        [
+            Swap(inventory.Backpack, 3, inventory.Loadout, 0),
+            Swap(inventory.Backpack, 3, 99, 0),
+            Swap(inventory.Backpack, 3, inventory.Backpack, 99),
+            Swap(inventory.Backpack, 0, inventory.Backpack, 7),
+            valid with { From = valid.From with { Parent = valid.From.Parent with { Revision = 1 } } },
+            valid with { To = valid.To with { Parent = valid.To.Parent with { Revision = 1 } } },
+            valid with { Type = InventoryCommandType.DropItem },
+        ];
+        foreach (InventoryCommand command in invalid)
+        {
+            uint version = inventory.Version;
+            Assert.False(inventory.Apply(command));
+            Assert.Equal(version + 1, inventory.Version);
+            Assert.Equal(original, inventory.Containers.SelectMany(container => container.Items));
+        }
+    }
+
+    [Fact]
+    public void Move_input_is_applied_once_and_the_correction_covers_the_request_before_client_replay()
+    {
+        ScriptedPlayer session = new(loadout: StandardLoadout());
+        session.Possess();
+        session.Input(30, 33, position: session.Raid.Spawn.Location);
+        session.Service(100);
+        Assert.Equal(1, session.Channels.BlackboardFrames);
+        session.Input(33, 34, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7));
+        Assert.Equal(1, session.Channels.InventoryMoves);
+        session.Service(100.1);
+        Assert.Equal(1, session.Channels.BlackboardFrames);
+        session.Input(34, 35, position: session.Raid.Spawn.Location);
+        session.Service(100.2);
+        Assert.Equal(2, session.Channels.BlackboardFrames);
+        Assert.Equal(1, session.Channels.InventoryMoves);
+        Assert.Equal(0, session.Channels.RejectedInventoryRequests);
+        session.Input(34, 35, position: session.Raid.Spawn.Location);
+        Assert.Equal(1, session.Channels.InventoryMoves);
+        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+        session.Input(35, 36, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 7, session.Raid.Inventory.Loadout, 0));
+        session.Input(36, 37, position: session.Raid.Spawn.Location);
+        session.Service(100.3);
+        Assert.Equal(3, session.Channels.BlackboardFrames);
+        Assert.Equal(1, session.Channels.RejectedInventoryRequests);
+        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+        Assert.All(session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items, Assert.Null);
+    }
+
+    [Fact]
+    public void Discarded_packet_copies_and_malformed_input_do_not_apply_inventory_requests()
+    {
+        ScriptedPlayer session = new(loadout: StandardLoadout());
+        session.Possess();
+        InventoryCommand command = Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7);
+        byte[] payload = ScriptedPlayer.InventoryPayload(30, 31, command);
+        IPlayerChannels speculative = session.Channels.Copy();
+        Assert.True(speculative.ObserveDirect(PendulumInput.DirectStreamKind, payload));
+        Assert.Equal(1U, session.Raid.Inventory.Version);
+        Assert.Null(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+
+        Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, [.. payload, 0xFF]));
+        session.Channels.Commit();
+        Assert.Equal(1, session.Channels.InputDecodeFailures);
+        Assert.Equal(1U, session.Raid.Inventory.Version);
+        Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, payload));
+        session.Channels.Commit();
+        Assert.Equal(1, session.Channels.InventoryMoves);
+        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+    }
+
+    private static InventoryCommand Swap(int fromContainer, ushort fromSlot, int toContainer, ushort toSlot) => new(InventoryCommandType.SwapItems,
+        new ItemContainerSlot(new ItemContainerHandle(fromContainer, 0), fromSlot),
+        new ItemContainerSlot(new ItemContainerHandle(toContainer, 0), toSlot), 0, new ItemContainerHandle(-1, ushort.MaxValue));
 
     internal static PlayerLoadout StandardLoadout()
     {

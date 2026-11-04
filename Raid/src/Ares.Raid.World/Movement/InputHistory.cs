@@ -1,5 +1,6 @@
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Raid.World.Movement;
@@ -9,6 +10,11 @@ namespace Ares.Raid.World.Movement;
 /// <param name="Target">The pressed object (a button id).</param>
 /// <param name="Request">The request.</param>
 public readonly record struct InteractionRequest(uint Frame, ulong Target, int Request);
+
+/// <summary>An inventory request associated with the input frame that performed it.</summary>
+/// <param name="Frame">Input frame.</param>
+/// <param name="Command">The requested operation.</param>
+public readonly record struct InventoryRequest(uint Frame, InventoryCommand Command);
 
 /// <summary>
 /// A connection's client input history. Each payload carries the newest frames coded against a frame the
@@ -76,14 +82,14 @@ public sealed class InputHistory
 
     /// <summary>Reads a payload.</summary>
     /// <param name="payload">The payload.</param>
-    /// <returns>Its latest frame (null when it carries none) and the new interaction requests.</returns>
-    public (uint? Latest, IReadOnlyList<InteractionRequest> Requests) Read(byte[] payload)
+    /// <returns>Its latest frame (null when it carries none), new interaction requests and new inventory requests.</returns>
+    public (uint? Latest, IReadOnlyList<InteractionRequest> Requests, IReadOnlyList<InventoryRequest> Inventory) Read(byte[] payload)
     {
         ArgumentNullException.ThrowIfNull(payload);
         BitReader reader = new(payload);
         if (PendulumInputHeader.Read(reader) is not { } header)
         {
-            return (null, []);
+            return (null, [], []);
         }
 
         if (header.Baseline >= header.Latest)
@@ -96,6 +102,7 @@ public sealed class InputHistory
             : throw new InvalidPacketException("Input coded against an unknown frame");
         Dictionary<uint, Dictionary<int, PendulumSlot>> updates = [];
         List<InteractionRequest> requests = [];
+        List<InventoryRequest> inventory = [];
         uint first = Math.Max(header.Baseline + 1, header.Latest >= FramesPerPayload - 1 ? header.Latest - (FramesPerPayload - 1) : 0);
         for (uint number = first; number <= header.Latest; number++)
         {
@@ -105,6 +112,12 @@ public sealed class InputHistory
             if (number > Latest && Request(number, frame) is { } request)
             {
                 requests.Add(request);
+            }
+
+            if (number > Latest && frame.TryGetValue(InventoryInput.Slot, out PendulumSlot? input)
+                && InventoryCommand.Read(input) is { } command)
+            {
+                inventory.Add(new InventoryRequest(number, command));
             }
         }
 
@@ -126,7 +139,7 @@ public sealed class InputHistory
         }
 
         _frames = _frames.Where(entry => entry.Key == 0 || entry.Key + KeptFrames >= Latest).ToDictionary();
-        return (header.Latest, requests);
+        return (header.Latest, requests, inventory);
     }
 
     private static InteractionRequest? Request(uint number, Dictionary<int, PendulumSlot> frame)

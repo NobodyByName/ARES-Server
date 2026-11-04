@@ -10,6 +10,7 @@ namespace Ares.Raid.World.Inventory;
 public sealed class RaidInventory
 {
     private readonly Dictionary<string, int> _handles = new(StringComparer.Ordinal);
+    private readonly HashSet<(int Container, int Slot)> _duckSlots = [];
 
     /// <summary>Prepares the standard loadout, preserving carried item identities and amounts.</summary>
     /// <param name="loadout">The frozen loadout accepted by this raid.</param>
@@ -65,9 +66,9 @@ public sealed class RaidInventory
         equipped[InventoryBlackboard.ArmorSlot] = Branch(LoadoutItems.ArmorSlotAssetId).Single();
         equipped[InventoryBlackboard.MeleeSlot] = Branch(LoadoutItems.MeleeSlotAssetId).Single();
         Add(nameof(Loadout), equipped);
-        Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId));
-        Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId));
-        Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId));
+        Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId), LoadoutItems.BackpackSlotAssetId);
+        Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId), LoadoutItems.BeltSlotAssetId);
+        Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId), LoadoutItems.SafePocketSlotAssetId);
         Add(nameof(Auxiliary), []);
         Containers = containers.AsReadOnly();
         try
@@ -79,11 +80,24 @@ public sealed class RaidInventory
             throw new WorldPreparationException(error.Message);
         }
 
-        void Add(string name, IReadOnlyList<ContainerItem?> contents)
+        return;
+
+        void Add(string name, IReadOnlyList<ContainerItem?> contents, long? branchAsset = null)
         {
             int handle = containers.Count;
             _handles.Add(name, handle);
             containers.Add(new ItemContainerState(handle, Array.AsReadOnly<ContainerItem?>([.. contents])));
+            if (branchAsset is not { } asset || definitions[asset].SlotConfig is not SingleItemSlot branch
+                || definitions[branch.DefaultSlotAssetId].SlotConfig is not ItemSlotArray array
+                || definitions[array.SlotAssetId].SlotConfig is not SingleItemSlot slot || !slot.AllowedSlotAssetIds.Contains(StorageItems.RubberDuckAssetId))
+            {
+                return;
+            }
+
+            for (int index = 0; index < contents.Count; index++)
+            {
+                _duckSlots.Add((handle, index));
+            }
         }
 
         IReadOnlyList<ContainerItem?> Branch(long asset)
@@ -155,10 +169,56 @@ public sealed class RaidInventory
     /// <summary>Auxiliary container handle.</summary>
     public int Auxiliary => _handles[nameof(Auxiliary)];
 
-    /// <summary>The immutable initial containers.</summary>
-    public IReadOnlyList<ItemContainerState> Containers { get; }
+    /// <summary>The current containers; previous snapshots are never changed.</summary>
+    public IReadOnlyList<ItemContainerState> Containers { get; private set; }
 
-    /// <summary>The initial container state carried in each pawn frame.</summary>
-    public PendulumVariable Blackboard { get; }
+    /// <summary>The current container state carried in each pawn frame.</summary>
+    public PendulumVariable Blackboard { get; private set; }
 
+    /// <summary>Container update counter, including corrections for rejected requests.</summary>
+    public uint Version { get; private set; } = 1;
+
+    /// <summary>Applies a whole-stack swap, or corrects the client's prediction when it is invalid.</summary>
+    /// <param name="command">The requested operation.</param>
+    /// <returns>Whether the swap was accepted.</returns>
+    public bool Apply(InventoryCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        bool applied = Swap(command);
+        Version++;
+        Blackboard = ItemContainerState.Encode(Containers, Version);
+        return applied;
+    }
+
+    private bool Swap(InventoryCommand command)
+    {
+        ItemContainerSlot from = command.From;
+        ItemContainerSlot to = command.To;
+        if (command.Type != InventoryCommandType.SwapItems || !Valid(from) || !Valid(to)
+            || Containers[from.Parent.Id].Items[from.Index] is not { } source)
+        {
+            return false;
+        }
+
+        ContainerItem? destination = Containers[to.Parent.Id].Items[to.Index];
+        if (!Allows(to, source) || (destination is not null && !Allows(from, destination)))
+        {
+            return false;
+        }
+
+        ContainerItem?[] sourceItems = [.. Containers[from.Parent.Id].Items];
+        ContainerItem?[] destinationItems = from.Parent == to.Parent ? sourceItems : [.. Containers[to.Parent.Id].Items];
+        sourceItems[from.Index] = destination;
+        destinationItems[to.Index] = source;
+        ItemContainerState[] containers = [.. Containers];
+        containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(sourceItems) };
+        containers[to.Parent.Id] = containers[to.Parent.Id] with { Items = Array.AsReadOnly(destinationItems) };
+        Containers = Array.AsReadOnly(containers);
+        return true;
+    }
+
+    private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
+        && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;
+
+    private bool Allows(ItemContainerSlot slot, ContainerItem item) => item.AssetIndex == InventoryBlackboard.RubberDuckIndex && _duckSlots.Contains((slot.Parent.Id, slot.Index));
 }

@@ -170,6 +170,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private Dictionary<int, ReliableKey> _doorUpdates = [];
     private HashSet<int> _failedDoors = [];
     private List<InteractionRequest> _requests = [];
+    private List<InventoryRequest> _inventoryRequests = [];
+    private uint _inventoryFrame;
+    private uint _inventoryVersion = 1;
     private double? _mapActorsAllowedAt;
     private Dictionary<int, (LadderChannel State, ReliableKey? Key)> _ladders = [];
     private HashSet<int> _failedLadders = [];
@@ -226,6 +229,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Door requests ignored (not a press, door not open on this connection, or still moving).</summary>
     public int IgnoredDoorRequests { get; private set; }
 
+    /// <summary>Whole-stack inventory swaps accepted.</summary>
+    public int InventoryMoves { get; private set; }
+
+    /// <summary>Inventory requests rejected and corrected.</summary>
+    public int RejectedInventoryRequests { get; private set; }
+
     /// <summary>Ladders whose climbable actor and interactions this client has.</summary>
     public int LaddersReady => _ladders.Values.Count(ladder => ladder.State == LadderChannel.Open);
 
@@ -267,6 +276,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._doorUpdates = new Dictionary<int, ReliableKey>(_doorUpdates);
         copy._failedDoors = [.. _failedDoors];
         copy._requests = [.. _requests];
+        copy._inventoryRequests = [.. _inventoryRequests];
         copy._ladders = new Dictionary<int, (LadderChannel, ReliableKey?)>(_ladders);
         copy._failedLadders = [.. _failedLadders];
         return copy;
@@ -353,13 +363,14 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
         try
         {
-            (uint? latest, IReadOnlyList<InteractionRequest> requests) = _input.Read(payload);
+            (uint? latest, IReadOnlyList<InteractionRequest> requests, IReadOnlyList<InventoryRequest> inventory) = _input.Read(payload);
             if (latest is { } frame && (InputFrame is null || frame > InputFrame))
             {
                 InputFrame = frame;
             }
 
             _requests.AddRange(requests);
+            _inventoryRequests.AddRange(inventory);
         }
         catch (InvalidPacketException)
         {
@@ -425,6 +436,24 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         _requests.Clear();
+        if (Phase == DeliveryPhase.Possessed)
+        {
+            foreach (InventoryRequest request in _inventoryRequests)
+            {
+                if (_raid.Inventory.Apply(request.Command))
+                {
+                    InventoryMoves++;
+                }
+                else
+                {
+                    RejectedInventoryRequests++;
+                }
+
+                _inventoryFrame = Math.Max(_inventoryFrame, request.Frame);
+            }
+        }
+
+        _inventoryRequests.Clear();
     }
 
     [GeneratedRegex("^/Game/[A-Za-z_0-9/]+$")]
@@ -852,7 +881,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             focus = UsableDoor(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
-            if (focus == _blackboardFocus || frame <= _blackboardFrame
+            bool inventoryChanged = _inventoryVersion != _raid.Inventory.Version;
+            if ((!inventoryChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw)
             {
                 return;
@@ -864,6 +894,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
         _blackboardKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];
         (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
+        _inventoryVersion = _raid.Inventory.Version;
         BlackboardFrames++;
     }
 

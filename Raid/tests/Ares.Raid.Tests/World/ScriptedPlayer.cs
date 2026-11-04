@@ -5,6 +5,7 @@ using Ares.Raid.World;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -31,6 +32,7 @@ internal sealed class ScriptedPlayer
     private int _pawnSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
     private ulong _focus;
     private Vector3D? _position;
+    private readonly Dictionary<uint, InventoryCommand> _inventoryInputs = [];
 
     public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null)
     {
@@ -133,16 +135,24 @@ internal sealed class ScriptedPlayer
             [PropertyNames.LevelVisibilities] = levels.Select(object? (level, index) => new LevelVisibility(level.Package, level.Package, level.Visible, false, new VisibilityTransaction(index == 0 ? 1 : 0, level.Client))).ToArray(),
         });
 
-    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null)
+    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null, InventoryCommand? inventory = null)
     {
-        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position)));
+        if (inventory is not null)
+        {
+            _inventoryInputs[latest] = inventory;
+        }
+
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs));
         (_focus, _position) = (focus, position);
         Channels.Commit();
     }
 
+    public static byte[] InventoryPayload(uint baseline, uint latest, InventoryCommand command) =>
+        InputPayload(baseline, latest, null, (0, 0), (null, null), new Dictionary<uint, InventoryCommand> { [latest] = command });
+
     // The client's input history: a header and the last frames, every slot at its descriptor default
     // (the new frames optionally report a position and focus a button, and the latest frame optionally presses one).
-    private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported)
+    private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported, Dictionary<uint, InventoryCommand> inventory)
     {
         BitWriter writer = new();
         writer.WriteBit(true);
@@ -168,6 +178,17 @@ internal sealed class ScriptedPlayer
                 byte[] value = PendulumCodec.Default.DefaultValue(descriptor);
                 switch (slot)
                 {
+                    case InventoryInput.Slot when inventory.TryGetValue(frame, out InventoryCommand? command):
+                        value = PendulumCodec.Default.Value(descriptor, [
+                            new PendulumIntegerValue(InventoryInput.CommandField, (ulong)command.Type),
+                            new PendulumIntegerValue(InventoryInput.FromContainerField, (uint)command.From.Parent.Id ^ 0x80000000U),
+                            new PendulumIntegerValue(InventoryInput.ToContainerField, (uint)command.To.Parent.Id ^ 0x80000000U),
+                            new PendulumIntegerValue(InventoryInput.FromRevisionField, command.From.Parent.Revision),
+                            new PendulumIntegerValue(InventoryInput.ToRevisionField, command.To.Parent.Revision),
+                            new PendulumIntegerValue(InventoryInput.FromSlotField, command.From.Index),
+                            new PendulumIntegerValue(InventoryInput.ToSlotField, command.To.Index),
+                        ]);
+                        break;
                     case PendulumInput.InteractionSlot:
                         List<PendulumValue> claim = [new PendulumIntegerValue(PendulumInput.InteractionFocusField, frame == baseline ? focus.Baseline : focus.Latest)];
                         if (press is { } target && frame == latest)
