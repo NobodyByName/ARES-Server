@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Ares.Host.Tests" />
+    <EmbeddedResource Include="../../ares-host.conf.dist" LogicalName="Ares.Host.ares-host.conf.dist" />
+    <Content Include="../../ares-host.conf.dist" Link="ares-host.conf.dist" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -76,17 +76,26 @@ openssl rand 32 > identity-key
 dotnet run --project Raid/src/Ares.Raid -- --advertise-host 127.0.0.1 --control-port 17778 \
   --control-token-file operator-token
 
-dotnet run --project Host/src/Ares.Host -- --session-control-url http://127.0.0.1:17778 \
-  --session-control-token-file operator-token --auth-key-file identity-key
+# Create your editable Host configuration from the documented template.
+cp Host/ares-host.conf.dist ares-host.conf
+# Set these values in ares-host.conf:
+#   session-control-url = http://127.0.0.1:17778
+#   session-control-token-file = operator-token
+#   auth-key-file = identity-key
+
+dotnet run --project Host/src/Ares.Host
 ```
 
-ARES-Host also needs `archive-keys.txt`, the game's archive keys, in the directory it is started
-from; see [Archive keys](#archive-keys).
+ARES-Host loads `ares-host.conf` from the working directory and creates it on first launch if
+missing. Edit it and restart Host to apply changes. Use `--config <path>` to select an existing
+file; existing arguments still override its settings. See [Host configuration](Host/README.md#configuration).
+Host also needs `archive-keys.txt`, the game's archive keys, beside the configuration file;
+see [Archive keys](#archive-keys).
 
 Players then add the server `127.0.0.1` in [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) (port 18080 is
-the default). To serve other machines, start ARES-Host with `--bind <address> --allow-network-clients
---public-origin http://<address>:18080` and ARES-Raid with `--bind <address> --advertise-host
-<address>`. All options: [Host](Host/README.md#options), [Raid](Raid/README.md#options).
+the default). To serve other machines, set Host's `bind = <address>`, `allow-network-clients = true`
+and `public-origin = http://<address>:18080`, and start ARES-Raid with `--bind <address>
+--advertise-host <address>`. All settings: [Host](Host/README.md#configuration), [Raid](Raid/README.md#options).
 
 ## Operator consoles
 
@@ -125,8 +134,8 @@ mode; use `--log-file` to save events independently of the terminal.
 
 ARES-Launcher builds each player's connection config from their own game files, which are
 encrypted. Reading them needs two keys of the game: the pak key and the container key. ARES does
-not include them. The operator puts them in `archive-keys.txt` in the directory ARES-Host is started
-from (`--archive-keys-file` names another path), and ARES-Host hands them to launchers at
+not include them. The operator puts them in `archive-keys.txt` beside `ares-host.conf`
+(`archive-keys-file` names another path), and ARES-Host hands them to launchers at
 `GET /ares/v1/archive-keys` (no sign-in, like the status page). ARES-Host does not start without
 them. `archive-keys.txt` is git-ignored; never commit it.
 

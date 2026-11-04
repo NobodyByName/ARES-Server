@@ -1,0 +1,190 @@
+using System.Net;
+using Ares.Common.CommandLine;
+using Ares.Host.Services;
+using Ares.Structs.Core;
+
+namespace Ares.Host.Tests;
+
+public sealed class ConfigurationFileTests : IDisposable
+{
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "ares-host-config-" + Guid.NewGuid().ToString("N"));
+
+    public ConfigurationFileTests()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(Path.Combine(_directory, "archive-keys.txt"), ArchiveKeysTests.DummyFile);
+    }
+
+    public void Dispose() => Directory.Delete(_directory, recursive: true);
+
+    [Fact]
+    public void First_launch_creates_a_documented_file_with_the_existing_defaults()
+    {
+        HostConfiguration configuration = Parse();
+        string path = Path.Combine(_directory, HostConfigurationFile.DefaultName);
+        Assert.Equal(path, configuration.ConfigurationFile);
+        Assert.Contains("# NETWORK", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Equal(IPAddress.Loopback, configuration.Bind);
+        Assert.Equal(18080, configuration.Port);
+        Assert.False(configuration.AllowNetworkClients);
+        Assert.Equal("http://127.0.0.1:18080", configuration.Settings.PublicOrigin);
+        Assert.Equal(HostSettings.DefaultServerName, configuration.Settings.ServerName);
+        Assert.Empty(configuration.Settings.Motd);
+        Assert.Equal(GameBuild.SteamBuildId.ToString(System.Globalization.CultureInfo.InvariantCulture), configuration.Settings.GameBuild);
+        Assert.Equal(HostSettings.DefaultRaidCapacity, configuration.Settings.RaidCapacity);
+        Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host"), configuration.Settings.DataDirectory);
+        Assert.Null(configuration.SessionControlUrl);
+        Assert.Null(configuration.OperatorToken);
+        Assert.Null(configuration.Settings.IdentityKey);
+        Assert.Null(configuration.LogFile);
+        Assert.Equal("auto", configuration.ConsoleMode);
+        Assert.Equal(ArchiveKeysTests.DummySha256, configuration.Settings.ArchiveKeys.Fingerprint());
+    }
+
+    [Fact]
+    public void Generated_file_is_left_for_editing_even_when_archive_keys_are_missing()
+    {
+        File.Delete(Path.Combine(_directory, "archive-keys.txt"));
+        Assert.Throws<CommandLineException>(() => Parse());
+        Assert.True(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
+    }
+
+    [Fact]
+    public void File_configures_all_settings_and_resolves_paths_from_its_own_directory()
+    {
+        File.WriteAllText(Path.Combine(_directory, "operator-token"), new string('a', 64));
+        File.WriteAllBytes(Path.Combine(_directory, "identity-key"), new byte[32]);
+        Write("""
+            # Full-line comment
+            port = 19090
+            bind = 0.0.0.0
+            allow-network-clients = true
+            public-origin = http://192.0.2.4:19090
+            server-name = " My server "
+            motd = "Dam #1 = ready"
+            game-build = 12345
+            raid-capacity = 2
+            data-dir = "data with spaces"
+            archive-keys-file = archive-keys.txt
+            auth-key-file = identity-key
+            session-control-url = http://127.0.0.1:17778
+            session-control-token-file = operator-token
+            console = json
+            log-file = logs/host.log
+            """);
+
+        HostConfiguration configuration = Parse("--config", Path.Combine(_directory, HostConfigurationFile.DefaultName));
+        Assert.Equal(19090, configuration.Port);
+        Assert.Equal(IPAddress.Any, configuration.Bind);
+        Assert.True(configuration.AllowNetworkClients);
+        Assert.Equal("http://192.0.2.4:19090", configuration.Settings.PublicOrigin);
+        Assert.Equal(" My server ", configuration.Settings.ServerName);
+        Assert.Equal("Dam #1 = ready", configuration.Settings.Motd);
+        Assert.Equal("12345", configuration.Settings.GameBuild);
+        Assert.Equal(2, configuration.Settings.RaidCapacity);
+        Assert.Equal(Path.Combine(_directory, "data with spaces"), configuration.Settings.DataDirectory);
+        Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
+        Assert.Equal(new string('a', 64), configuration.OperatorToken);
+        Assert.Equal(new Uri("http://127.0.0.1:17778"), configuration.SessionControlUrl);
+        Assert.Equal("json", configuration.ConsoleMode);
+        Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
+    }
+
+    [Fact]
+    public void Existing_file_is_not_rewritten_and_cli_overrides_remain_relative_to_working_directory()
+    {
+        const string Content = "# Keep my comments\nport = 19090\nserver-name = Original\nlog-file = logs/original.log\n";
+        Write(Content);
+        HostConfiguration configuration = Parse("--port", "19091", "--server-name", "Override", "--log-file", "override.log");
+        Assert.Equal(19091, configuration.Port);
+        Assert.Equal("http://127.0.0.1:19091", configuration.Settings.PublicOrigin);
+        Assert.Equal("Override", configuration.Settings.ServerName);
+        Assert.Equal("override.log", configuration.LogFile);
+        Assert.Equal(Content, File.ReadAllText(configuration.ConfigurationFile!));
+    }
+
+    [Fact]
+    public void Cli_flag_can_opt_into_network_clients()
+    {
+        Write("allow-network-clients = false\nbind = 0.0.0.0");
+        Assert.Throws<CommandLineException>(() => Parse());
+        Assert.True(Parse("--allow-network-clients").AllowNetworkClients);
+    }
+
+    [Fact]
+    public void Explicit_missing_file_is_an_error_and_is_not_created()
+    {
+        string missing = Path.Combine(_directory, "missing.conf");
+        Assert.Contains("Cannot load", Assert.Throws<CommandLineException>(() => Parse("--config", missing)).Message, StringComparison.Ordinal);
+        Assert.False(File.Exists(missing));
+        Assert.False(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
+    }
+
+    [Theory]
+    [InlineData("--help", typeof(HelpRequestedException))]
+    [InlineData("--version", typeof(VersionRequestedException))]
+    public void Informational_options_do_not_read_or_create_files(string option, Type exceptionType)
+    {
+        Assert.Throws(exceptionType, () => Parse("--config", "missing.conf", option));
+        Assert.False(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
+    }
+
+    [Theory]
+    [InlineData("porrt = 18080", "unknown setting")]
+    [InlineData("port = 18080\nport = 18081", ":2: repeated setting")]
+    [InlineData("port 18080", ":1: expected key = value")]
+    [InlineData("motd = \"oops", ":1: unclosed quoted value")]
+    [InlineData("allow-network-clients = yes", "expects true or false")]
+    [InlineData("port = abc", "expects an integer")]
+    [InlineData("port = 65536", "1-65535")]
+    [InlineData("bind = localhost", "must be an IP address")]
+    [InlineData("bind = 0.0.0.0", "requires --allow-network-clients")]
+    [InlineData("public-origin = http://192.0.2.4:18080", "requires --allow-network-clients")]
+    [InlineData("public-origin = http://127.0.0.1:9999", "must be http://host")]
+    [InlineData("raid-capacity = -1", "Invalid --raid-capacity")]
+    [InlineData("game-build = abc", "Invalid --server-name/--motd/--game-build")]
+    [InlineData("console = invalid", "must be auto")]
+    [InlineData("session-control-url = http://127.0.0.1:17778", "requires both")]
+    [InlineData("archive-keys-file =", "must not be empty")]
+    [InlineData("config = another.conf", "unknown setting")]
+    public void Bad_files_fail_explicitly(string content, string expected)
+    {
+        Write(content);
+        Assert.Contains(expected, Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Backslashes_and_environment_placeholders_are_literal()
+    {
+        Write("""
+            motd = "C:\servers\new ${ARES_HOST} %USERNAME% #1"
+            """);
+        Assert.Equal(@"C:\servers\new ${ARES_HOST} %USERNAME% #1", Parse().Settings.Motd);
+    }
+
+    [Fact]
+    public void Relative_config_selection_and_file_paths_use_the_selected_directory()
+    {
+        string folder = Path.Combine(_directory, "other");
+        Directory.CreateDirectory(folder);
+        File.Copy(Path.Combine(_directory, "archive-keys.txt"), Path.Combine(folder, "archive-keys.txt"));
+        File.WriteAllText(Path.Combine(folder, "custom.conf"), "data-dir = data\nlog-file = host.log");
+        HostConfiguration configuration = Parse("--config", "other/custom.conf");
+        Assert.Equal(Path.Combine(folder, "data"), configuration.Settings.DataDirectory);
+        Assert.Equal(Path.Combine(folder, "host.log"), configuration.LogFile);
+        Assert.False(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
+    }
+
+    [Fact]
+    public void Validation_uses_effective_values_after_overrides_but_still_rejects_unknown_keys()
+    {
+        Write("port = broken\nallow-network-clients = broken");
+        Assert.Equal(18081, Parse("--port", "18081", "--allow-network-clients").Port);
+        Write("port = broken\nporrt = 18080");
+        Assert.Contains("unknown setting", Assert.Throws<CommandLineException>(() => Parse("--port", "18081")).Message, StringComparison.Ordinal);
+    }
+
+    private HostConfiguration Parse(params string[] args) => HostConfiguration.Parse(args, ArchiveKeysTests.DummySha256, _directory);
+
+    private void Write(string text) => File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), text);
+}

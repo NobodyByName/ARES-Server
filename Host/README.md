@@ -19,39 +19,84 @@ Limitations:
   duck and supports whole-stack drag moves. Equipment, additional item types, loot and result settlement
   are not implemented yet.
 - One raid at a time.
-- Plain HTTP. Serving other machines needs `--allow-network-clients`; connection trust is not
+- Plain HTTP. Serving other machines needs `allow-network-clients = true`; connection trust is not
   verified.
 
 The log records requests without authentication headers or request bodies.
 
-## Options
+## Configuration
+
+Start Host without a long argument list:
 
 ```sh
-dotnet run --project src/Ares.Host -- --help
+dotnet run --project Host/src/Ares.Host
 ```
 
-```
-  --port <n>                        Listen port (default 18080)
-  --bind <ip>                       Listen address (default 127.0.0.1); non-loopback requires --allow-network-clients
-  --public-origin <http://host:port>  Origin players configure; also the token issuer (default http://127.0.0.1:<port>)
-  --allow-network-clients           Serve players beyond this machine (plain HTTP; trust unverified)
-  --data-dir <dir>                  Persistent Host data (default: per-user application data/ARES-Host)
-  --session-control-url <url>       Raid allocation API (loopback HTTP or HTTPS)
-  --session-control-token-file <f>  Operator token shared with Raid
-  --auth-key-file <f>               Identity signing key, 32-4096 bytes (default: none; tokens are not checked)
-  --archive-keys-file <f>           Game archive keys for ARES-Launcher, required (default archive-keys.txt; see README)
-  --server-name <text>              Shown in launcher server lists (default ARES-Host)
-  --motd <text>                     Message of the day for launcher server lists
-  --game-build <digits>             Steam build id this server supports (default 26159202)
-  --raid-capacity <n>               Concurrent raids this deployment hosts (default 1)
-  --version                         Show the ARES version and supported game build
+Run this command from the repository root. On first launch, Host creates `ares-host.conf` in the
+working directory from the bundled [reference template](ares-host.conf.dist), then loads it.
+Edit the file and restart Host to apply changes. Existing files and comments are left untouched;
+new settings omitted from an older file use built-in defaults. The `.conf.dist` file is shipped
+beside the executable for reference and is never loaded as configuration.
+
+The format follows Minecraft's simple `key = value` settings, with a commented distribution
+template inspired by AzerothCore/TrinityCore. A minimal local setup with Raid allocation is:
+
+```properties
+# Paths are relative to this configuration file.
+archive-keys-file = "archive-keys.txt"
+session-control-url = http://127.0.0.1:17778
+session-control-token-file = "operator-token"
+auth-key-file = "identity-key"
+server-name = "My ARES server"
+motd = "Welcome to Dam"
 ```
 
-Without `--session-control-url`, matchmaking never finds a raid. ARES-Host does not start without
-the game's archive keys ([Archive keys](../README.md#archive-keys)). The
-[repository README](../README.md#run) shows a complete setup with ARES-Raid.
+All settings are documented in [ares-host.conf.dist](ares-host.conf.dist), including their defaults
+and limits. Use one setting per line. Blank lines and full-line `#` comments are accepted; keys
+are case-sensitive. Optional outer double quotes preserve surrounding spaces. `#`, `=` and
+backslashes within values are literal; there are no inline comments, escape sequences or
+variable expansion. Booleans use `true` or `false`. Unknown keys, repeated keys, malformed lines
+and invalid effective values stop startup. Empty optional paths disable that setting; empty
+`public-origin`, `game-build` and `data-dir` select their documented defaults. Archive keys remain
+required, even on first launch; Host leaves the generated file available if key loading fails.
+
+Select another existing file with:
+
+```sh
+dotnet run --project Host/src/Ares.Host -- --config /path/to/ares-host.conf
+```
+
+An explicitly selected file must exist; Host never creates it. Relative paths **inside the file**
+resolve from the file's directory, including the default `archive-keys.txt`. Absolute paths are
+accepted. Keep tokens and keys in separate private files: configuration stores only their paths.
+`ares-host.conf` is git-ignored; keep any custom-named operator configurations private too.
+
+Existing command-line settings still work as overrides, with precedence **arguments → file →
+built-in defaults**. Command-line paths retain their existing working-directory interpretation.
+`--allow-network-clients` enables access regardless of the file's boolean value; to disable it,
+set `allow-network-clients = false` in the file and omit that flag. `--help` lists all overrides;
+`--help` and `--version` neither load nor create a configuration file.
+
+For LAN access, set `bind = 0.0.0.0`, `allow-network-clients = true` and
+`public-origin = http://<server-address>:18080` (matching `port`). Without
+`session-control-url` and `session-control-token-file`, matchmaking never finds a raid.
+ARES-Host also needs the game's archive keys ([Archive keys](../README.md#archive-keys)).
+The [repository README](../README.md#run) shows a complete setup with ARES-Raid.
 
 Build, requirements, game updates and license: see the [repository README](../README.md).
+
+## Options
+
+From the repository root:
+
+```sh
+dotnet run --project Host/src/Ares.Host -- --help
+```
+
+The configuration keys match the existing long options (`port`, `bind`, `data-dir`,
+`server-name`, `motd`, `game-build`, `raid-capacity`, `public-origin`, `allow-network-clients`,
+`session-control-url`, `session-control-token-file`, `auth-key-file`, `archive-keys-file`,
+`console`, `log-file`). `config`, `help` and `version` are command-line options only.
 
 ## Operator console
 
@@ -78,7 +123,7 @@ Moves preserve item identity, amount and durability. Inventory reserved for matc
 Splitting, merging, crafting, recycling and other economy operations are not supported.
 
 Items, item definitions, selected loadout roots and the pending reservation are stored in
-`inventory-state.json` under `--data-dir`. The save identifies the supported game build. Malformed
+`inventory-state.json` under the configured `data-dir`. The save identifies the supported game build. Malformed
 saves or saves from a different game build cause startup to fail instead of resetting the account.
 
 In the interactive console, `inventory` shows the revision, item count and reserved ticket.

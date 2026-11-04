@@ -37,6 +37,7 @@ log.Write(new JsonObject
 {
     ["service"] = "ARES-Host",
     ["version"] = AresVersion.Current,
+    ["configuration_file"] = configuration.ConfigurationFile,
     ["listening"] = $"{configuration.Bind}:{configuration.Port}",
     ["public_origin"] = configuration.Settings.PublicOrigin,
     ["network_clients"] = configuration.AllowNetworkClients,

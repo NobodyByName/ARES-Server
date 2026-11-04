@@ -9,13 +9,13 @@ using Ares.Structs.Core;
 
 namespace Ares.Host;
 
-/// <summary>Everything Host needs to start, read from the command line.</summary>
+/// <summary>Everything Host needs to start, read from its configuration file and command-line overrides.</summary>
 public sealed record HostConfiguration
 {
     /// <summary>Listen port when <c>--port</c> is not given; the launcher assumes the same port.</summary>
     private const int DefaultPort = 18080;
 
-    /// <summary>Archive keys file when <c>--archive-keys-file</c> is not given, relative to the working directory.</summary>
+    /// <summary>Default archive keys file, relative to the configuration file.</summary>
     private const string DefaultArchiveKeysFile = "archive-keys.txt";
 
     /// <summary>Command-line help.</summary>
@@ -23,6 +23,11 @@ public sealed record HostConfiguration
         Usage: ARES-Host [options]
 
         ARES backend: synthetic identity, accounts, party and matchmaking. Unknown routes fail explicitly.
+
+          --config <path>                   Existing configuration file (default ares-host.conf; auto-created)
+
+        Settings below override the file. File paths are relative to the configuration file;
+        command-line paths are relative to the working directory. Restart Host to apply edits.
 
           --port <n>                        Listen port (default {DefaultPort})
           --bind <ip>                       Listen address (default 127.0.0.1); non-loopback requires --allow-network-clients
@@ -42,6 +47,9 @@ public sealed record HostConfiguration
           --help                            Show this help
           --version                         Show the ARES version and supported game build
         """;
+
+    /// <summary>Absolute path of the loaded configuration file.</summary>
+    public string? ConfigurationFile { get; private init; }
 
     /// <summary>Validated service settings.</summary>
     public required HostSettings Settings { get; init; }
@@ -67,7 +75,7 @@ public sealed record HostConfiguration
     /// <summary>Operator console mode.</summary>
     public string ConsoleMode { get; private init; } = "auto";
 
-    /// <summary>Parses and validates the command line and reads the archive keys file.</summary>
+    /// <summary>Loads configuration, applies command-line overrides, validates settings and reads key files.</summary>
     /// <exception cref="CommandLineException">Invalid usage, or missing or wrong archive keys.</exception>
     public static HostConfiguration Parse(IReadOnlyList<string> args)
     {
@@ -75,7 +83,7 @@ public sealed record HostConfiguration
     }
 
     /// <summary><see cref="Parse(IReadOnlyList{string})"/> with the expected archive keys fingerprint given (tests use dummy keys).</summary>
-    internal static HostConfiguration Parse(IReadOnlyList<string> args, string archiveKeysSha256)
+    internal static HostConfiguration Parse(IReadOnlyList<string> args, string archiveKeysSha256, string? workingDirectory = null)
     {
         CommandLineArguments arguments = CommandLineArguments.Parse(args, new HashSet<string> { "allow-network-clients", "help", "version" });
         if (arguments.HelpRequested)
@@ -88,23 +96,25 @@ public sealed record HostConfiguration
             throw new VersionRequestedException();
         }
 
-        int port = arguments.GetInt32("port", DefaultPort);
-        string bindText = arguments.GetString("bind", "127.0.0.1")!;
-        bool allowNetwork = arguments.Has("allow-network-clients");
-        string? publicOrigin = arguments.GetString("public-origin");
-        string serverName = arguments.GetString("server-name", HostSettings.DefaultServerName)!;
-        string motd = arguments.GetString("motd", "")!;
-        string gameBuild = arguments.GetString("game-build", GameBuild.SteamBuildId.ToString(CultureInfo.InvariantCulture))!;
-        int raidCapacity = arguments.GetInt32("raid-capacity", HostSettings.DefaultRaidCapacity);
-        string? controlUrl = arguments.GetString("session-control-url");
-        string? controlTokenFile = arguments.GetString("session-control-token-file");
-        string? authKeyFile = arguments.GetString("auth-key-file");
-        string archiveKeysFile = arguments.GetString("archive-keys-file", DefaultArchiveKeysFile)!;
-        string dataDirectory = arguments.GetString("data-dir")
+        HostConfigurationFile file = HostConfigurationFile.Load(arguments, workingDirectory ?? Environment.CurrentDirectory);
+        int port = file.GetInt32("port", DefaultPort);
+        string bindText = file.GetString("bind", "127.0.0.1")!;
+        bool allowNetwork = file.GetBoolean("allow-network-clients");
+        string? publicOrigin = EmptyToNull(file.GetString("public-origin"));
+        string serverName = file.GetString("server-name", HostSettings.DefaultServerName)!;
+        string motd = file.GetString("motd", "")!;
+        string gameBuild = EmptyToNull(file.GetString("game-build")) ?? GameBuild.SteamBuildId.ToString(CultureInfo.InvariantCulture);
+        int raidCapacity = file.GetInt32("raid-capacity", HostSettings.DefaultRaidCapacity);
+        string? controlUrl = EmptyToNull(file.GetString("session-control-url"));
+        string? controlTokenFile = file.GetPath("session-control-token-file");
+        string? authKeyFile = file.GetPath("auth-key-file");
+        string archiveKeysFile = file.GetPath("archive-keys-file", DefaultArchiveKeysFile)
+            ?? throw new CommandLineException("archive-keys-file must not be empty");
+        string dataDirectory = file.GetPath("data-dir")
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host");
-        string consoleMode = arguments.GetString("console", "auto")!;
-        string? logFile = arguments.GetString("log-file");
-        arguments.RejectUnknown();
+        string consoleMode = file.GetString("console", "auto")!;
+        string? logFile = file.GetPath("log-file");
+        file.RejectUnknown();
         if (consoleMode is not ("auto" or "interactive" or "plain" or "json"))
         {
             throw new CommandLineException("--console must be auto, interactive, plain or json");
@@ -173,6 +183,7 @@ public sealed record HostConfiguration
 
         return new HostConfiguration
         {
+            ConfigurationFile = file.Path,
             Settings = new HostSettings
             {
                 ServerName = serverName,
@@ -193,6 +204,8 @@ public sealed record HostConfiguration
             OperatorToken = operatorToken,
         };
     }
+
+    private static string? EmptyToNull(string? value) => value == "" ? null : value;
 
     private static ArchiveKeys ReadArchiveKeys(string path, string expectedSha256)
     {

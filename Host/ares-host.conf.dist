@@ -1,0 +1,47 @@
+# ARES-Host configuration
+# First launch creates ares-host.conf in the working directory. Edit it and restart Host.
+# This .conf.dist file is a reference template; it is never loaded as configuration.
+# Use --config <path> to select an existing file. Command-line options override file values.
+# Syntax: key = value, one per line; blank lines and full-line # comments are allowed.
+# Optional outer double quotes preserve surrounding spaces. No escapes, interpolation or
+# inline comments: #, = and backslashes inside a value are literal (including Windows paths).
+# Relative file/directory paths are relative to this configuration file.
+# Empty optional values use the defaults described below. Unknown/repeated keys are errors.
+
+# NETWORK
+# Listen port: 1-65535. The launcher defaults to 18080.
+port = 18080
+bind = 127.0.0.1
+# Explicit opt-in for a non-loopback bind or public origin (plain HTTP; trust unverified).
+allow-network-clients = false
+# Empty: http://127.0.0.1:<port>. Otherwise http://host:<port>, without a path.
+public-origin =
+
+# SERVER LIST
+# Name: at most 64 characters. Message: at most 200 characters.
+server-name = "ARES-Host"
+motd = ""
+# Empty: the Steam build supported by this ARES release.
+game-build =
+# Advertised concurrent raid capacity: 0-10000; currently only one raid is implemented.
+raid-capacity = 1
+
+# STORAGE AND KEYS
+# Empty: per-user application data/ARES-Host (preserves existing account data).
+data-dir =
+# Required: obtain the game's archive keys as described in README.md, never commit them.
+archive-keys-file = "archive-keys.txt"
+# Optional identity signing key file (32-4096 bytes). Empty: identity tokens are unchecked.
+auth-key-file =
+
+# RAID ALLOCATION
+# Set both values to enable matchmaking. Empty: matchmaking stays in MATCHING.
+# The API must use loopback HTTP or HTTPS. Keep tokens in a separate private file.
+session-control-url =
+session-control-token-file =
+
+# CONSOLE AND LOGGING
+# auto, interactive, plain or json. auto selects interactive output in a terminal.
+console = auto
+# Empty: no log file. Otherwise append JSON events alongside console output.
+log-file =

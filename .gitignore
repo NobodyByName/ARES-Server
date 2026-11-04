@@ -11,3 +11,6 @@ TestResults/
 archive-keys.txt
 operator-token
 identity-key
+
+# Operator-specific Host configuration (the reference template is tracked).
+ares-host.conf

@@ -5,6 +5,7 @@ namespace Ares.Host.Tests;
 public sealed class CommandLineTests : IDisposable
 {
     private readonly string _keysFile = Path.GetTempFileName();
+    private readonly string _configFile = Path.GetTempFileName();
 
     public CommandLineTests()
     {
@@ -14,6 +15,7 @@ public sealed class CommandLineTests : IDisposable
     public void Dispose()
     {
         File.Delete(_keysFile);
+        File.Delete(_configFile);
     }
 
     [Fact]
@@ -53,16 +55,16 @@ public sealed class CommandLineTests : IDisposable
     {
         string missing = _keysFile + ".missing";
 
-        Assert.Contains("not found", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse(["--archive-keys-file", missing])).Message,
+        Assert.Contains("not found", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse(["--config", _configFile, "--archive-keys-file", missing])).Message,
             StringComparison.Ordinal);
-        Assert.Contains("archive-keys.txt", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse([])).Message,
+        Assert.Contains("archive-keys.txt", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse(["--config", _configFile])).Message,
             StringComparison.Ordinal);
     }
 
     [Fact]
     public void Archive_keys_must_be_well_formed_and_match_the_supported_build()
     {
-        Assert.Contains("do not match", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse(["--archive-keys-file", _keysFile])).Message,
+        Assert.Contains("do not match", Assert.Throws<CommandLineException>(() => HostConfiguration.Parse(["--config", _configFile, "--archive-keys-file", _keysFile])).Message,
             StringComparison.Ordinal);
         File.WriteAllText(_keysFile, "pak-key = 00");
         Assert.Contains("hex digits", Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
@@ -90,6 +92,6 @@ public sealed class CommandLineTests : IDisposable
     /// <summary>Parses with the dummy keys file, so only the given options can fail.</summary>
     private HostConfiguration Parse(params string[] args)
     {
-        return HostConfiguration.Parse([.. args, "--archive-keys-file", _keysFile], ArchiveKeysTests.DummySha256);
+        return HostConfiguration.Parse(["--config", _configFile, .. args, "--archive-keys-file", _keysFile], ArchiveKeysTests.DummySha256);
     }
 }
