@@ -10,13 +10,19 @@ Hosts one Dam raid at a time for the player Host reserves it for. A stock client
 handshake and login, loads Dam with its lighting, is given its default Raider, moves (walk, sprint,
 crouch, slide, jump) and uses door buttons, then leaves back to the main menu.
 
+The standard inventory containers and carried rubber duck are replicated from Host's reserved loadout.
+Whole-stack drag moves between compatible slots are validated by Raid and remain visible after closing
+and reopening inventory. Movement continues normally after these updates. Inventory and map screens
+show their shared tabs, background and backplate.
+
 Limitations:
 
 - One player and one raid at a time; Dam only.
 - Movement is trusted from the client; the server does not check it yet.
 - No combat, loot, death or match results yet.
-- Accepts a validated inventory snapshot per reserved player and retains it in the raid world.
-  The inventory UI, containers and equipped items are not replicated yet.
+- In-raid placement changes are not settled back to Host after the raid.
+- Equipment subobjects, additional item types, splitting, merging, quick moves, dropping and item use
+  are not implemented yet.
 
 Projects:
 

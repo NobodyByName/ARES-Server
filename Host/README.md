@@ -15,8 +15,9 @@ Limitations:
 - Identity is synthetic: every player uses one local account. There is no real sign-in or
   separate per-player progress. Inventory is stored for this local account only.
 - Main-menu storage starts with one rubber duck and an empty standard player loadout. Moving whole
-  items between compatible empty slots is supported. Raid inventory UI/equipment replication,
-  loot and result settlement are not implemented yet.
+  items between compatible empty slots is supported. Raid displays the standard containers and carried
+  duck and supports whole-stack drag moves. Equipment, additional item types, loot and result settlement
+  are not implemented yet.
 - One raid at a time.
 - Plain HTTP. Serving other machines needs `--allow-network-clients`; connection trust is not
   verified.
@@ -105,6 +106,8 @@ Start a fresh client after changing definitions.
 Host freezes the selected trees before allocating a raid. Raid acknowledges their player,
 revision and content hash. A lost reply retains the reservation, including across a Host restart;
 retrying uses the saved ticket and loadout. When Raid confirms that its allocation no longer
-exists, Host releases the reservation without changing item contents. This preserves carried
-items for the current read-only handoff; inventory gains/losses need result settlement before
-loot or death can be enabled. Both servers must support the loadout acknowledgement contract.
+exists, Host releases the reservation without changing item contents. Raid can change placement inside
+the active raid, but Host retains the original reserved tree: post-raid placement and inventory gains/losses
+need result settlement before they can persist. Loot and death are not enabled. Both servers must support
+the loadout acknowledgement contract. Raid currently accepts the standard frame and rubber duck;
+unsupported loadouts fail preparation.

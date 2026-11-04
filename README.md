@@ -29,13 +29,20 @@ into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets th
 moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
 the main menu.
 
+Host persists the local account's stash and selected loadout. The standard player containers and
+rubber duck appear in the raid inventory, and whole-stack drag moves between compatible slots are
+validated by Raid. Inventory and map screens show their shared menu frame.
+Placement changes remain inside the active raid; post-raid inventory settlement
+is not implemented.
+
 Limitations:
 
 - One player and one raid at a time; Dam only.
-- Identity is synthetic: every player uses one local account, with no real sign-in and no
-  per-player progress or inventory yet.
+- Identity is synthetic: every player uses one local account, with no real sign-in or separate
+  player accounts and progression yet.
 - Movement is trusted from the client; the server does not check it yet.
 - No combat, loot, death or match results yet.
+- Equipment, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
   been tested yet.
