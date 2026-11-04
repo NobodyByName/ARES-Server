@@ -19,8 +19,7 @@ namespace Ares.Host.Services.Identity;
 public sealed class IdentityService(HostSettings settings, ProfileFactory profiles, TimeProvider time, InventoryStore inventory)
 {
     /// <summary>
-    /// Random per-run key for tokens Host never checks: identity tokens issued without an operator key,
-    /// third-party access tokens and EOS tokens.
+    /// Per-run signing key for synthetic third-party and EOS tokens, and identity tokens in open mode.
     /// </summary>
     private static readonly byte[] s_unverifiedKey = RandomNumberGenerator.GetBytes(32);
 
@@ -65,7 +64,7 @@ public sealed class IdentityService(HostSettings settings, ProfileFactory profil
             new UnknownManifestBody(), new UnknownManifestBody(), now, now - 3600, now + 86400);
     }
 
-    /// <summary>Reply of <c>POST /v1/shared/build/v2/latest</c>: never an update.</summary>
+    /// <summary>Reports the requested build as current for <c>POST /v1/shared/build/v2/latest</c>.</summary>
     public static LatestBuildResponse LatestBuild(LatestBuildRequest request)
     {
         return new LatestBuildResponse(request.BuildId ?? "", UpdateAvailable: false);

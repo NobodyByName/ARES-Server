@@ -13,7 +13,7 @@ namespace Ares.Host;
 /// <summary>Everything Host needs to start, read from its configuration file and command-line overrides.</summary>
 public sealed record HostConfiguration
 {
-    /// <summary>Listen port when <c>--port</c> is not given; the launcher assumes the same port.</summary>
+    /// <summary>Default listen port shared with the launcher.</summary>
     private const int DefaultPort = 18080;
 
     /// <summary>Default archive keys file, relative to the configuration file.</summary>
@@ -85,7 +85,7 @@ public sealed record HostConfiguration
         return Parse(args, GameBuild.ArchiveKeysSha256);
     }
 
-    /// <summary><see cref="Parse(IReadOnlyList{string})"/> with the expected archive keys fingerprint given (tests use dummy keys).</summary>
+    /// <summary>Loads configuration and verifies archive keys against the supplied fingerprint.</summary>
     internal static HostConfiguration Parse(IReadOnlyList<string> args, string archiveKeysSha256, string? workingDirectory = null)
     {
         CommandLineArguments arguments = CommandLineArguments.Parse(args, new HashSet<string> { "allow-network-clients", "help", "version" });

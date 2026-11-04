@@ -3,8 +3,7 @@ using Ares.Structs.Backend.Identity;
 namespace Ares.Host.Services.Content;
 
 /// <summary>
-/// The single synthetic account every client is signed in as. No real account data:
-/// a Steam id of "0" is invalid by design, so it can never resolve to a real profile.
+/// The synthetic account identity used for every local sign-in.
 /// </summary>
 public static class LocalPlayer
 {

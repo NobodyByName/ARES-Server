@@ -5,8 +5,7 @@ using Ares.Structs.Backend.Telemetry;
 namespace Ares.Host.Services.Telemetry;
 
 /// <summary>
-/// Turns UI telemetry into log rows. Only values matching known UI tag, level and error-code
-/// formats are kept; arbitrary payload strings are never logged.
+/// Projects event IDs and recognized UI tag, level and error-code values into log rows.
 /// </summary>
 public static partial class UiTelemetryLog
 {

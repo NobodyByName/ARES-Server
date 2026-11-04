@@ -91,7 +91,7 @@ public sealed class CommandLineTests : IDisposable
         Assert.Throws<CommandLineException>(() => Parse(option, value));
     }
 
-    /// <summary>Parses with the dummy keys file, so only the given options can fail.</summary>
+    /// <summary>Parses options using the test configuration and archive keys.</summary>
     private HostConfiguration Parse(params string[] args)
     {
         return HostConfiguration.Parse(["--config", _configFile, .. args, "--archive-keys-file", _keysFile], ArchiveKeysTests.DummySha256);

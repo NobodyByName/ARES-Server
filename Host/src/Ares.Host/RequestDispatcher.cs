@@ -19,7 +19,7 @@ using Microsoft.Extensions.Primitives;
 namespace Ares.Host;
 
 /// <summary>
-/// Handles every request: logs its shape (never tokens, cookies, query values or bodies), serves
+/// Handles every request: logs request metadata, serves
 /// the public status, health and telemetry endpoints, dispatches backend routes and answers
 /// anything unknown with HTTP 501.
 /// </summary>

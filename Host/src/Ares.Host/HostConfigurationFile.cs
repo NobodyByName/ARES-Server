@@ -112,7 +112,7 @@ internal sealed class HostConfigurationFile
             return null;
         }
 
-        // Preserve the existing working-directory convention for command-line overrides.
+        // Resolve command-line paths from the working directory.
         if (_arguments.Has(name))
         {
             return value;

@@ -111,7 +111,7 @@ internal sealed class HostConsole : ILoggerProvider
         }
         catch (Exception error) when (error is IOException or InvalidOperationException)
         {
-            // Losing terminal input must not stop the service.
+            // Keep the service running when terminal input closes.
             lock (_gate)
             {
                 LeaveTerminal();

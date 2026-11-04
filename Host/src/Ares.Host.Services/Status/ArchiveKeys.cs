@@ -7,7 +7,7 @@ namespace Ares.Host.Services.Status;
 
 /// <summary>
 /// The game's archive keys, supplied by the operator. ARES-Launcher needs them to read the player's
-/// own game files and fetches them from <see cref="Path"/>. They are not part of ARES.
+/// own game files and fetches them from <see cref="Path"/>.
 /// </summary>
 /// <param name="PakKey">The 32-byte pak key.</param>
 /// <param name="ContainerKey">The eight container key words.</param>

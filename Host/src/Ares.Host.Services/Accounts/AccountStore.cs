@@ -228,7 +228,7 @@ public sealed record AccountProfileOverrides(
     [property: JsonPropertyName("displayName"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName,
     [property: JsonPropertyName("displayNameCooldownEndsAt"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? DisplayNameCooldownEndsAt)
 {
-    /// <summary>No overrides: the default name and a fresh cooldown.</summary>
+    /// <summary>The default display name and initial rename cooldown.</summary>
     public static AccountProfileOverrides None { get; } = new(null, null);
 }
 
@@ -243,7 +243,7 @@ public sealed record AccountStateDocument(
     [property: JsonPropertyName("persistentPlayerKeys")] IReadOnlyDictionary<string, StoredKey>? PersistentPlayerKeys,
     [property: JsonPropertyName("revision")] long Revision)
 {
-    /// <summary>No stored keys.</summary>
+    /// <summary>The initial persistent-key collection.</summary>
     public static IReadOnlyDictionary<string, StoredKey> NoKeys { get; } = new Dictionary<string, StoredKey>();
 
     /// <summary>A new account.</summary>

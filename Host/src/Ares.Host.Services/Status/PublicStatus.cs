@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 namespace Ares.Host.Services.Status;
 
 /// <summary>
-/// The public status document launchers ping (like a game-server list ping). No authentication
-/// and no player data. Protocol 1; ARES-Launcher keeps its own copy of this contract.
+/// Unauthenticated launcher discovery response containing server metadata and raid counts.
+/// Protocol 1; ARES-Launcher keeps its own copy of this contract.
 /// </summary>
 public sealed record PublicStatus(
     [property: JsonPropertyName("protocol")] int Protocol,
