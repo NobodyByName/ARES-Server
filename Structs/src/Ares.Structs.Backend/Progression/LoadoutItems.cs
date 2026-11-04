@@ -15,6 +15,24 @@ public static class LoadoutItems
     /// <summary>Asset id of Backpack.</summary>
     public const long BackpackAssetId = -900626342L;
 
+    /// <summary>Asset id of Firearm1Slot.</summary>
+    public const long Firearm1SlotAssetId = -891583501L;
+
+    /// <summary>Asset id of Firearm2Slot.</summary>
+    public const long Firearm2SlotAssetId = 789222533L;
+
+    /// <summary>Asset id of ArmorSlot.</summary>
+    public const long ArmorSlotAssetId = 1333996162L;
+
+    /// <summary>Asset id of MeleeSlot.</summary>
+    public const long MeleeSlotAssetId = -588056456L;
+
+    /// <summary>Asset id of BeltSlot.</summary>
+    public const long BeltSlotAssetId = 1687384280L;
+
+    /// <summary>Asset id of SafePocketSlot.</summary>
+    public const long SafePocketSlotAssetId = -451662226L;
+
     /// <summary>Item definitions and their allowed child slots.</summary>
     public static IReadOnlyList<ItemDescription> Definitions { get; } =
     [
