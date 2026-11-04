@@ -37,9 +37,6 @@ public sealed record HostSettings
     /// <summary>Game archive keys served to ARES-Launcher, supplied by the operator.</summary>
     public required ArchiveKeys ArchiveKeys { get; init; }
 
-    /// <summary>Directory holding persistent Host data (account settings).</summary>
-    public required string DataDirectory { get; init; }
-
     /// <summary>MongoDB URI; operators can supply credentials through a private URI file.</summary>
     public required string MongoDbUri { get; init; }
 

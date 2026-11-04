@@ -34,7 +34,6 @@ public sealed record HostConfiguration
           --bind <ip>                       Listen address (default 127.0.0.1); non-loopback requires --allow-network-clients
           --public-origin <http://host:port>  Origin players configure; also the token issuer (default http://127.0.0.1:<port>)
           --allow-network-clients           Serve players beyond this machine (plain HTTP; trust unverified)
-          --data-dir <dir>                  Persistent Host data (default: per-user application data/ARES-Host)
           --mongodb-uri <uri>               MongoDB connection URI
           --mongodb-uri-file <path>         Private URI file; takes precedence over mongodb-uri
           --mongodb-database <name>         Database for this Host/private server (default ares_host)
@@ -114,8 +113,6 @@ public sealed record HostConfiguration
         string? authKeyFile = file.GetPath("auth-key-file");
         string archiveKeysFile = file.GetPath("archive-keys-file", DefaultArchiveKeysFile)
             ?? throw new CommandLineException("archive-keys-file must not be empty");
-        string dataDirectory = file.GetPath("data-dir")
-            ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host");
         string? mongoUriFile = file.GetPath("mongodb-uri-file");
         string mongoDatabase = file.GetString("mongodb-database", "ares_host")!;
         string? mongoUri = EmptyToNull(file.GetString("mongodb-uri"));
@@ -226,7 +223,6 @@ public sealed record HostConfiguration
                 PublicOrigin = origin.TrimEnd('/'),
                 IdentityKey = identityKey,
                 ArchiveKeys = archiveKeys,
-                DataDirectory = dataDirectory,
                 MongoDbUri = mongoUri,
                 MongoDbDatabase = mongoDatabase,
             },

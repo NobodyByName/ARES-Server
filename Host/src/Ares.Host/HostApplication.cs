@@ -53,7 +53,7 @@ public static class HostApplication
         try
         {
             database.Initialize();
-            accounts = new AccountStore(settings.DataDirectory, time);
+            accounts = new AccountStore(database, time);
             inventory = new InventoryStore(database);
             inventory.InitializeLayout(time.GetUtcNow());
         }

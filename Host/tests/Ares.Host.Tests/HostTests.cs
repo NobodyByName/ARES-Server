@@ -16,6 +16,8 @@ using Ares.Structs.Net.Replication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Ares.Host.Tests;
 
@@ -43,7 +45,6 @@ public sealed class HostTests : IAsyncLifetime
                 PublicOrigin = "http://127.0.0.1:18080",
                 IdentityKey = [.. "identity-key-identity-key-identity-key"u8],
                 ArchiveKeys = ArchiveKeys.Parse(ArchiveKeysTests.DummyFile),
-                DataDirectory = _database.Directory,
                 MongoDbUri = TestDatabase.ConnectionUri,
                 MongoDbDatabase = _database.Name,
                 RouteDelayScale = 0,
@@ -65,6 +66,16 @@ public sealed class HostTests : IAsyncLifetime
         await _host!.DisposeAsync();
         await _raidApp!.DisposeAsync();
         _database.Dispose();
+    }
+
+    [Fact]
+    public async Task Invalid_persisted_data_returns_503_without_resetting_the_player()
+    {
+        await _database.Players.UpdateOneAsync(FilterDefinition<BsonDocument>.Empty,
+            Builders<BsonDocument>.Update.Set("inventoryVersion", -1L), cancellationToken: TestContext.Current.CancellationToken);
+        HttpResponseMessage response = await _client!.GetAsync("/v1/shared/profile", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(-1, _database.Player["inventoryVersion"].AsInt64);
     }
 
     [Fact]
@@ -265,7 +276,7 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, badName.StatusCode);
         Assert.Equal("New Name", profile.GetProperty("display_name").GetProperty("name").GetString());
         Assert.Contains(keys.GetProperty("persistentPlayerKeys").EnumerateArray(), key => key.GetProperty("key").GetString() == "UI.Test");
-        Assert.True(File.Exists(Path.Combine(_database.Directory, "account-state.json")));
+        Assert.Equal("New Name", _database.Player["account"]["profile"]["displayName"].AsString);
     }
 
     [Fact]

@@ -64,7 +64,6 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Empty(configuration.Settings.Motd);
         Assert.Equal(GameBuild.SteamBuildId.ToString(System.Globalization.CultureInfo.InvariantCulture), configuration.Settings.GameBuild);
         Assert.Equal(HostSettings.DefaultRaidCapacity, configuration.Settings.RaidCapacity);
-        Assert.Equal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host"), configuration.Settings.DataDirectory);
         Assert.Null(configuration.SessionControlUrl);
         Assert.Null(configuration.OperatorToken);
         Assert.Null(configuration.Settings.IdentityKey);
@@ -96,7 +95,6 @@ public sealed class ConfigurationFileTests : IDisposable
             motd = "Dam #1 = ready"
             game-build = 12345
             raid-capacity = 2
-            data-dir = "data with spaces"
             archive-keys-file = archive-keys.txt
             auth-key-file = identity-key
             session-control-url = http://127.0.0.1:17778
@@ -114,7 +112,6 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal("Dam #1 = ready", configuration.Settings.Motd);
         Assert.Equal("12345", configuration.Settings.GameBuild);
         Assert.Equal(2, configuration.Settings.RaidCapacity);
-        Assert.Equal(Path.Combine(_directory, "data with spaces"), configuration.Settings.DataDirectory);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new string('a', 64), configuration.OperatorToken);
         Assert.Equal(new Uri("http://127.0.0.1:17778"), configuration.SessionControlUrl);
@@ -200,9 +197,8 @@ public sealed class ConfigurationFileTests : IDisposable
         string folder = Path.Combine(_directory, "other");
         Directory.CreateDirectory(folder);
         File.Copy(Path.Combine(_directory, "archive-keys.txt"), Path.Combine(folder, "archive-keys.txt"));
-        File.WriteAllText(Path.Combine(folder, "custom.conf"), "data-dir = data\nlog-file = host.log" + MongoConfiguration);
+        File.WriteAllText(Path.Combine(folder, "custom.conf"), "log-file = host.log" + MongoConfiguration);
         HostConfiguration configuration = Parse("--config", "other/custom.conf");
-        Assert.Equal(Path.Combine(folder, "data"), configuration.Settings.DataDirectory);
         Assert.Equal(Path.Combine(folder, "host.log"), configuration.LogFile);
         Assert.False(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
     }

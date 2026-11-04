@@ -4,13 +4,14 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ares.Host.Services.Content;
+using Ares.Host.Services.Persistence;
 using Ares.Structs.Backend.Accounts;
 
 namespace Ares.Host.Services.Accounts;
 
 /// <summary>
-/// The local account's persistent settings (display name, persistent player keys), stored as
-/// <c>account-state.json</c> in the Host data directory. Writes are atomic.
+/// The local account's persistent settings (display name, persistent player keys), stored in
+/// MongoDB. Writes are atomic and check the version read by the operation.
 /// </summary>
 public sealed class AccountStore
 {
@@ -23,15 +24,17 @@ public sealed class AccountStore
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
-    private readonly string _path;
+    private readonly HostDatabase _database;
+    private long _version;
     private readonly TimeProvider _time;
     private readonly Lock _lock = new();
 
-    /// <summary>Creates a store in <paramref name="dataDirectory"/>.</summary>
-    public AccountStore(string dataDirectory, TimeProvider time)
+    /// <summary>Creates an account store backed by the Host database.</summary>
+    public AccountStore(HostDatabase database, TimeProvider time)
     {
-        _path = Path.Combine(dataDirectory, "account-state.json");
+        _database = database;
         _time = time;
+        _ = Read();
     }
 
     /// <summary>Display-name overrides, or null for the defaults.</summary>
@@ -165,36 +168,28 @@ public sealed class AccountStore
 
     private AccountStateDocument Read()
     {
-        if (!File.Exists(_path))
+        (AccountStateDocument state, long version) = _database.Read<AccountStateDocument>(LocalPlayer.TenancyUserId, "account", SerializationOptions);
+        _version = version;
+        return Validate(state);
+    }
+
+    private static AccountStateDocument Validate(AccountStateDocument state)
+    {
+        if (state.Revision < 0 || state.Profile is { DisplayName: { } name } && !IsValidDisplayName(name)
+            || state.Profile?.DisplayNameCooldownEndsAt is < 0
+            || state.PersistentPlayerKeys?.Any(pair => pair.Key.Length is < 1 or > 256
+                || pair.Value is not { Value.Length: <= 8192, ETag.Length: > 0 }) == true)
         {
-            return AccountStateDocument.Empty;
+            throw new InvalidDataException("Invalid account document");
         }
 
-        return JsonSerializer.Deserialize<AccountStateDocument>(File.ReadAllBytes(_path), SerializationOptions) ?? AccountStateDocument.Empty;
+        return state;
     }
 
     private void Save(AccountStateDocument state)
     {
-        string directory = Path.GetDirectoryName(_path)!;
-        if (OperatingSystem.IsWindows())
-        {
-            Directory.CreateDirectory(directory);
-        }
-        else
-        {
-            Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
-        }
-
-        string temporary = Path.Combine(directory, ".account-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(state, SerializationOptions) + "\n");
-            File.Move(temporary, _path, overwrite: true);
-        }
-        finally
-        {
-            File.Delete(temporary);
-        }
+        _database.Save(LocalPlayer.TenancyUserId, "account", Validate(state), _version, SerializationOptions);
+        _version = checked(_version + 1);
     }
 }
 
@@ -212,7 +207,7 @@ public sealed record StoredKey(
     [property: JsonPropertyName("value")] string Value,
     [property: JsonPropertyName("etag")] string ETag);
 
-/// <summary>The <c>account-state.json</c> file. Members may be missing from older or hand-edited files.</summary>
+/// <summary>The persistent account section of a player document.</summary>
 public sealed record AccountStateDocument(
     [property: JsonPropertyName("profile")] AccountProfileOverrides? Profile,
     [property: JsonPropertyName("persistentPlayerKeys")] IReadOnlyDictionary<string, StoredKey>? PersistentPlayerKeys,

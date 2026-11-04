@@ -22,7 +22,7 @@ public sealed class CommandLineTests : IDisposable
     [Fact]
     public void Defaults_listen_on_loopback()
     {
-        HostConfiguration configuration = Parse("--data-dir", "/tmp/x");
+        HostConfiguration configuration = Parse();
 
         Assert.Equal("http://127.0.0.1:18080", configuration.Settings.PublicOrigin);
         Assert.Equal("http://127.0.0.1:18080/", configuration.Settings.Issuer);
@@ -84,6 +84,7 @@ public sealed class CommandLineTests : IDisposable
     [InlineData("--session-control-url", "http://127.0.0.1:17778")]
     [InlineData("--game-build", "abc")]
     [InlineData("--http-only", "x")]
+    [InlineData("--data-dir", "/tmp/x")]
     [InlineData("--console", "invalid")]
     public void Invalid_options_are_rejected(string option, string value)
     {
