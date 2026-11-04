@@ -1,4 +1,5 @@
 using System.Globalization;
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Structs.Core.Geometry;
@@ -31,10 +32,10 @@ internal sealed class ScriptedPlayer
     private ulong _focus;
     private Vector3D? _position;
 
-    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null)
+    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null)
     {
         Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
-        Worlds.Prepare(MatchId, [42], profiles: profiles);
+        Worlds.Prepare(MatchId, [42], loadouts: loadout is null ? null : [loadout], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
         Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new PlayerLogin(7, 0, UniqueId), Io);
     }

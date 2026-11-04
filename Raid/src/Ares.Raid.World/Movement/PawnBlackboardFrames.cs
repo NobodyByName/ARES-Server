@@ -33,8 +33,9 @@ public static class PawnBlackboardFrames
     /// <param name="tick">Simulation tick (an input frame of the client).</param>
     /// <param name="motion">Character movement.</param>
     /// <param name="focus">Interaction the character may use (its focused button), or 0 for none.</param>
+    /// <param name="inventory">The player's container state.</param>
     /// <returns>The slots by index.</returns>
-    public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus)
+    public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null)
     {
         if (tick is < FirstTick or > LastTick)
         {
@@ -42,8 +43,9 @@ public static class PawnBlackboardFrames
         }
 
         Dictionary<int, PendulumSlot> slots = [];
-        foreach (PendulumVariable variable in PawnBlackboard.InitialState)
+        foreach (PendulumVariable initial in PawnBlackboard.InitialState)
         {
+            PendulumVariable variable = inventory is not null && initial.Slot == inventory.Slot ? inventory : initial;
             List<PendulumValue> values = [.. variable.Values];
             switch (variable.Slot)
             {

@@ -52,6 +52,12 @@ public enum DeliveryPhase
     /// <summary>Appearance content sent.</summary>
     AppearanceContentPending,
 
+    /// <summary>Inventory component exported; waiting for acknowledgement.</summary>
+    InventoryExportsPending,
+
+    /// <summary>Inventory handles sent; waiting for acknowledgement.</summary>
+    InventoryContentPending,
+
     /// <summary>Appearance delivered.</summary>
     PlayerLinksReady,
 
@@ -524,6 +530,14 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.AppearanceContentPending;
                 return true;
             case DeliveryPhase.AppearanceContentPending when delivered:
+                _keys = [sender.Queue(Bunches.Exports(_raid.State.InventoryExports(_player), [_player.Inventory]))];
+                Phase = DeliveryPhase.InventoryExportsPending;
+                return true;
+            case DeliveryPhase.InventoryExportsPending when delivered:
+                _keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InventoryContent(_player, _raid.Inventory).Write))];
+                Phase = DeliveryPhase.InventoryContentPending;
+                return true;
+            case DeliveryPhase.InventoryContentPending when delivered:
                 Phase = DeliveryPhase.PlayerLinksReady;
                 return true;
             case DeliveryPhase.PlayerLinksReady:
@@ -832,7 +846,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         if (_blackboardFrame == 0)
         {
             WorldActor pawn = Actor(_player.Pawn);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus, _raid.Inventory.Blackboard);
         }
         else
         {
@@ -845,7 +859,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
 
             Vector3D step = new(position.X - before.X, position.Y - before.Y, position.Z - before.Z);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, step, yaw), focus);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, step, yaw), focus, _raid.Inventory.Blackboard);
         }
 
         _blackboardKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];

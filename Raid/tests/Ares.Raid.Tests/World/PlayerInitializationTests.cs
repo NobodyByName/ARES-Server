@@ -127,7 +127,7 @@ public sealed class PlayerInitializationTests
         Assert.Equal(1, session.Channels.BlackboardFrames);
         uint frame = session.Channels.InputFrame!.Value;
         ActorContentBlock expected = session.Raid.State.BlackboardFrame(0, frame,
-            PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0),
+            PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0, session.Raid.Inventory.Blackboard),
             new Dictionary<int, PendulumSlot>());
         ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);
         ActorContentBlock actual = Block(first);

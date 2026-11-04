@@ -1,9 +1,12 @@
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -45,6 +48,9 @@ public sealed record WorldPlayer(
 
     /// <summary>The replicated member inside the squad.</summary>
     public ulong SquadMember { get; init; }
+
+    /// <summary>The character's inventory component.</summary>
+    public ulong Inventory { get; init; }
 
     /// <summary>Whether the client confirmed possessing its character.</summary>
     public bool PossessionAcknowledged { get; init; }
@@ -203,6 +209,7 @@ public sealed class WorldState
             {
                 Squad = squad.Guid,
                 SquadMember = member,
+                Inventory = Next(),
             };
             _players[principal.UserId] = player;
             return player;
@@ -436,6 +443,43 @@ public sealed class WorldState
             [$"{Skin}.{PropertyNames.ChosenSkinNetIndices}"] = appearance.SlotSelections.Select(index => (object?)index).ToArray(),
             [PropertyNames.IsOnboardingCharacter] = false,
         }, Objects([])));
+    }
+
+    /// <summary>Exports naming the character's inventory component.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The component exports.</returns>
+    public ObjectExports InventoryExports(WorldPlayer player) => new([
+        new DynamicActorExport(player.Pawn),
+        new StableSubobjectExport(player.Inventory, player.Pawn, InventoryBlackboard.ComponentName, Replication.Catalog.Class(ClassPaths.InventoryComponent).Checksum),
+    ]);
+
+    /// <summary>The inventory handles that enable the client's container-state receiver.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="inventory">The player's containers.</param>
+    /// <returns>The component properties.</returns>
+    public StableSubobjectContent InventoryContent(WorldPlayer player, RaidInventory inventory)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(inventory);
+        Dictionary<string, object?> values = new()
+        {
+            [PropertyNames.Replicates] = true,
+            [PropertyNames.IsActive] = true,
+            [PropertyNames.EquippedLoadoutFrameItemAssetId] = LoadoutItems.StandardFrameAssetId,
+        };
+        foreach ((string name, int id) in ((string, int)[])[
+            (PropertyNames.Loadout, inventory.Loadout),
+            (PropertyNames.Backpack, inventory.Backpack),
+            (PropertyNames.Belt, inventory.Belt),
+            (PropertyNames.SafePouch, inventory.SafePouch),
+            (PropertyNames.Auxiliary, inventory.Auxiliary),
+        ])
+        {
+            values[$"{name}.{PropertyNames.Id}"] = id;
+            values[$"{name}.{PropertyNames.Revision}"] = (ushort)0;
+        }
+
+        return new StableSubobjectContent(player.Inventory, Replication.Encode(ClassPaths.InventoryComponent, values, Objects([])));
     }
 
     /// <summary>Exports naming the character's ability system component.</summary>

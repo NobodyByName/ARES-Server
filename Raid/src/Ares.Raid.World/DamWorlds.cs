@@ -3,6 +3,7 @@ using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Raid.World.Inventory;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;
@@ -33,6 +34,7 @@ public sealed class RaidWorld
         MatchId = matchId;
         Players = players;
         Loadouts = loadouts;
+        Inventory = new RaidInventory(loadouts.Single());
         Profiles = profiles;
         Seed = seed;
         RoundConfiguration round = DamRounds.All[seed % DamRounds.All.Count];
@@ -79,8 +81,11 @@ public sealed class RaidWorld
     /// <summary>Reserved players.</summary>
     public IReadOnlyList<long> Players { get; }
 
-    /// <summary>The frozen loadout per player; inventory replication is not implemented yet.</summary>
+    /// <summary>The frozen loadout per player.</summary>
     public IReadOnlyList<PlayerLoadout> Loadouts { get; }
+
+    /// <summary>The reserved player's inventory containers.</summary>
+    public RaidInventory Inventory { get; }
 
     /// <summary>The frozen public squad profiles.</summary>
     public IReadOnlyList<CompactPlayerProfile> Profiles { get; }

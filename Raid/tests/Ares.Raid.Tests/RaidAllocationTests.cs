@@ -104,12 +104,14 @@ public sealed class RaidAllocationTests
     public void Prepared_worlds_retain_the_loadout_without_sharing_operator_mutations()
     {
         DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
-        InventoryItem[] items = [new("carried", 42, 1, [], 0, 0, "", "v1", 0)];
-        PlayerLoadout[] loadouts = [new(42, 7, items)];
+        PlayerLoadout loadout = World.InventoryTests.StandardLoadout();
+        InventoryItem[] items = [.. loadout.Items];
+        PlayerLoadout[] loadouts = [loadout with { Items = items }];
         worlds.Prepare(Ticket, [42], loadouts);
-        items[0] = items[0] with { Amount = 2 };
+        int duck = Array.FindIndex(items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        items[duck] = items[duck] with { Amount = 5 };
 
-        Assert.Equal(1, Assert.Single(Assert.Single(worlds.Current!.Loadouts).Items).Amount);
+        Assert.Equal(4, Assert.Single(worlds.Current!.Loadouts).Items[duck].Amount);
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], loadouts));
     }
 
