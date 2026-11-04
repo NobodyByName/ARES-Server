@@ -268,8 +268,20 @@ public sealed class WorldState
         }, Objects([]));
     }
 
+    /// <summary>Assigns the controller's HUD before world play initializes its widgets.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The HUD assignment.</returns>
+    public ActorContentBlock HudAssignment(WorldPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return Replication.Calls(Objects([player.Controller])).Call(PlayerClasses.PlayerController.Class, FunctionNames.ClientSetHud, new Dictionary<string, object?>
+        {
+            [PropertyNames.NewHudClass] = _imports.Classes[PlayerClasses.Hud],
+        }, RpcDirection.Client);
+    }
+
     /// <summary>
-    /// The controller and player-state properties and HUD assignment. Pawn creation follows loading; its
+    /// The controller and player-state properties. Pawn creation follows loading; its
     /// links and readiness follow component delivery
     /// and the client's confirmation that its initial levels are loaded.
     /// </summary>
@@ -280,7 +292,6 @@ public sealed class WorldState
     {
         ArgumentNullException.ThrowIfNull(player);
         Dictionary<ulong, string> objects = Objects(mapped);
-        string controllerClass = PlayerClasses.PlayerController.Class;
         List<(ulong Actor, ActorContentBlock Content)> contents = [];
         foreach (ulong guid in (ulong[])[player.Controller, player.PlayerState])
         {
@@ -302,13 +313,6 @@ public sealed class WorldState
             }
 
             contents.Add((guid, Replication.Encode(actor.ClassPath, values, objects)));
-            if (guid == player.Controller)
-            {
-                contents.Add((guid, Replication.Calls(objects).Call(controllerClass, FunctionNames.ClientSetHud, new Dictionary<string, object?>
-                {
-                    [PropertyNames.NewHudClass] = _imports.Classes[PlayerClasses.Hud],
-                }, RpcDirection.Client)));
-            }
         }
 
         return contents;

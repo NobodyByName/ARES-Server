@@ -22,17 +22,20 @@ public enum DeliveryPhase
     /// <summary>Static exports sent; waiting for their acknowledgement.</summary>
     ExportsPending,
 
+    /// <summary>Controller and player-state channels sent; waiting for their acknowledgement.</summary>
+    ActorOpensPending,
+
+    /// <summary>HUD assignment sent; waiting for acknowledgement before starting world play.</summary>
+    HudAssignmentPending,
+
     /// <summary>Opening the world actors, one at a time.</summary>
     WorldOpensPending,
 
-    /// <summary>Player actors can open.</summary>
+    /// <summary>World actors delivered; the squad can open.</summary>
     PlayerOpensReady,
 
     /// <summary>Squad channel sent; waiting for its acknowledgement.</summary>
     SquadOpenPending,
-
-    /// <summary>Player actor channels sent; waiting for their acknowledgement.</summary>
-    ActorOpensPending,
 
     /// <summary>Squad member created; waiting for its acknowledgement.</summary>
     SquadMemberPending,
@@ -93,8 +96,8 @@ public enum DeliveryPhase
 }
 
 /// <summary>
-/// One player's actor channels after Join: exports and world actors first, then the player actors, their
-/// components and the restart; after possession, input acknowledgements, the first blackboard frame,
+/// One player's actor channels after Join: exports, controller/player state and HUD before world play,
+/// then the squad, character, components and restart; after possession, input acknowledgements, the first blackboard frame,
 /// level streaming requests, ability grants, and the doors and ladders of visible cells.
 /// </summary>
 public sealed partial class PlayerChannels : IPlayerChannels
@@ -469,11 +472,31 @@ public sealed partial class PlayerChannels : IPlayerChannels
         switch (Phase)
         {
             case DeliveryPhase.ExportsPending when delivered:
+                _keys =
+                [
+                    .. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding =>
+                    {
+                        WorldActor actor = Actor(binding.Guid);
+                        ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location, actor.Rotation);
+                        PlayerControllerOpen? open = binding.Guid == _player.Controller ? _login.ControllerOpen() : null;
+                        IReadOnlyList<ActorContentBlock> content = binding.Guid == _player.Controller ? [_raid.State.ControllerOpeningProperties(_player)] : [];
+                        return sender.Queue(new ActorInitialization(spawn, open, content).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
+                    }),
+                ];
+                Phase = DeliveryPhase.ActorOpensPending;
+                return true;
+            case DeliveryPhase.ActorOpensPending when delivered:
+                _mapped = [.. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding => binding.Guid)];
+                // Spawn must finish assigning the HUD before world BeginPlay initializes its screen helpers.
+                _keys = [sender.Queue(Bunches.Actor(ControllerChannel, _raid.State.HudAssignment(_player)))];
+                Phase = DeliveryPhase.HudAssignmentPending;
+                return true;
+            case DeliveryPhase.HudAssignmentPending when delivered:
                 _keys = [];
                 Phase = DeliveryPhase.WorldOpensPending;
                 return true;
             case DeliveryPhase.WorldOpensPending when delivered:
-                // World actors open one at a time, before the player actors.
+                // World actors open one at a time, after HUD assignment has completed.
                 if (_worldOpenIndex < _raid.StaticActors.Count + _raid.SpawnedActors.Count)
                 {
                     int index = _worldOpenIndex++;
@@ -493,22 +516,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.SquadOpenPending;
                 return true;
             case DeliveryPhase.SquadOpenPending when delivered:
-                _keys =
-                [
-                    .. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding =>
-                    {
-                        WorldActor actor = Actor(binding.Guid);
-                        ActorSpawn spawn = new(binding.Guid, _raid.Imports.Archetypes[actor.ClassPath], 0, actor.Location, actor.Rotation);
-                        PlayerControllerOpen? open = binding.Guid == _player.Controller ? _login.ControllerOpen() : null;
-                        IReadOnlyList<ActorContentBlock> content = binding.Guid == _player.Controller ? [_raid.State.ControllerOpeningProperties(_player)] : [];
-                        return sender.Queue(new ActorInitialization(spawn, open, content).ToBunch(binding.Channel, sender.NextSequence(binding.Channel), []));
-                    }),
-                ];
-                Phase = DeliveryPhase.ActorOpensPending;
-                return true;
-            case DeliveryPhase.ActorOpensPending when delivered:
-                // Each open completed (with retries): the client can resolve links between the actors.
-                _mapped = [.. _bindings.Where(binding => binding.Guid != _player.Pawn).Select(binding => binding.Guid), _player.Squad, .. _raid.SpawnedActors.Select(actor => actor.Guid)];
+                _mapped.UnionWith([_player.Squad, .. _raid.SpawnedActors.Select(actor => actor.Guid)]);
                 _keys = [sender.Queue(Bunches.Actor(SquadChannel, _raid.State.SquadMemberContent(_player, _mapped).Write))];
                 Phase = DeliveryPhase.SquadMemberPending;
                 return true;

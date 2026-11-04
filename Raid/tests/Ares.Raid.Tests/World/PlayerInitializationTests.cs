@@ -1,3 +1,4 @@
+using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Serialization;
@@ -12,6 +13,56 @@ namespace Ares.Raid.Tests.World;
 
 public sealed class PlayerInitializationTests
 {
+    [Fact]
+    public void The_hud_is_assigned_once_before_the_game_state_starts_play()
+    {
+        ScriptedPlayer session = new();
+        session.Flush("start");
+        ChannelBunch hud = Assert.Single(session.Sent, bunch => IsHudAssignment(session, bunch));
+        ChannelBunch gameState = Assert.Single(session.Sent, bunch => bunch is { Opened: true, Channel: RaidWorld.GameStateChannel });
+        ChannelBunch playerState = Assert.Single(session.Sent, bunch => bunch is { Opened: true, Channel: 3 });
+        Assert.True(session.Sent.IndexOf(hud) < session.Sent.IndexOf(gameState));
+        Assert.True(session.Sent.IndexOf(playerState) < session.Sent.IndexOf(gameState));
+
+        session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
+        session.Flush("loaded");
+        Assert.Single(session.Sent, bunch => IsHudAssignment(session, bunch));
+    }
+
+    [Fact]
+    public void World_opening_waits_for_hud_assignment_acknowledgement_including_retries()
+    {
+        ScriptedPlayer session = new();
+        for (int packet = 300; packet < 500; packet++)
+        {
+            IReadOnlyList<ReliableKey> keys = session.Io.Sender.Select(100, 8000);
+            Assert.NotEmpty(keys);
+            IReadOnlyList<ChannelBunch> bunches = session.Io.Sender.Bunches(keys);
+            Assert.DoesNotContain(bunches, bunch => bunch is { Opened: true, Channel: RaidWorld.GameStateChannel });
+            session.Io.Sender.Sent(packet, keys, 100);
+            ChannelBunch? hud = bunches.SingleOrDefault(bunch => IsHudAssignment(session, bunch));
+            if (hud is null)
+            {
+                session.Channels.Acknowledge(session.Io, new NotificationHeader(1, packet, [uint.MaxValue]));
+                continue;
+            }
+
+            session.Channels.Service(session.Io, 101);
+            IReadOnlyList<ReliableKey> retry = session.Io.Sender.Select(101, 8000);
+            ChannelBunch repeated = Assert.Single(session.Io.Sender.Bunches(retry));
+            Assert.Equal(hud, repeated);
+            session.Io.Sender.Sent(packet + 1, retry, 101);
+            session.Channels.Service(session.Io, 102);
+            Assert.All(session.Io.Sender.Bunches(session.Io.Sender.Select(102, 8000)), bunch => Assert.True(IsHudAssignment(session, bunch)));
+
+            session.Channels.Acknowledge(session.Io, new NotificationHeader(1, packet + 1, [uint.MaxValue]));
+            Assert.Contains(session.Io.Sender.Bunches(session.Io.Sender.Select(102, 8000)), bunch => bunch.Opened);
+            return;
+        }
+
+        Assert.Fail("HUD assignment was not sent");
+    }
+
     [Fact]
     public void The_controller_opens_at_the_planned_spawn_without_linking_the_pawn_in_either_direction()
     {
@@ -139,6 +190,23 @@ public sealed class PlayerInitializationTests
     {
         BitReader reader = new(bunch.Payload, bunch.PayloadBits);
         return reader.ReadBit() && reader.ReadBit();
+    }
+
+    private static bool IsHudAssignment(ScriptedPlayer session, ChannelBunch bunch)
+    {
+        if (bunch is not { Channel: 2, Opened: false, PackageExports: false })
+        {
+            return false;
+        }
+
+        ActorContentBlock block = Block(bunch);
+        if (block.HasRepLayout)
+        {
+            return false;
+        }
+
+        RpcCodec calls = session.Raid.State.Replication.Calls(session.Raid.State.Objects([]));
+        return calls.ReadFields(PlayerClasses.PlayerController.Class, block, RpcDirection.Client).Any(call => call.Field.Name == FunctionNames.ClientSetHud);
     }
 
     private static ActorContentBlock Block(ChannelBunch bunch) => ActorContentBlock.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
