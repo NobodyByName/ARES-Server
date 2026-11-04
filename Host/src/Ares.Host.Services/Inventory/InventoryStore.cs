@@ -43,7 +43,7 @@ public sealed partial class InventoryStore
 {
     private const int Format = 1;
     private const int MaximumFileBytes = 1048576;
-    private static readonly JsonSerializerOptions s_json = new()
+    internal static JsonSerializerOptions SerializationOptions { get; } = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true,
@@ -351,7 +351,7 @@ public sealed partial class InventoryStore
             throw new InvalidDataException("Inventory file is too large");
         }
 
-        return JsonSerializer.Deserialize<T>(stream, s_json) ?? throw new InvalidDataException("Inventory file is empty");
+        return JsonSerializer.Deserialize<T>(stream, SerializationOptions) ?? throw new InvalidDataException("Inventory file is empty");
     }
 
     private void Save(InventoryDocument candidate)
@@ -366,7 +366,7 @@ public sealed partial class InventoryStore
             Directory.CreateDirectory(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         }
 
-        byte[] data = JsonSerializer.SerializeToUtf8Bytes(candidate, s_json);
+        byte[] data = JsonSerializer.SerializeToUtf8Bytes(candidate, SerializationOptions);
         if (data.Length > MaximumFileBytes)
         {
             throw new InvalidDataException("Inventory save is too large");

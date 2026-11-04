@@ -44,6 +44,7 @@ public sealed class HostTests : IAsyncLifetime
                 IdentityKey = [.. "identity-key-identity-key-identity-key"u8],
                 ArchiveKeys = ArchiveKeys.Parse(ArchiveKeysTests.DummyFile),
                 DataDirectory = _dataDirectory,
+                MongoDbUri = TestDatabase.ConnectionUri,
                 RouteDelayScale = 0,
             },
             Bind = IPAddress.Loopback,

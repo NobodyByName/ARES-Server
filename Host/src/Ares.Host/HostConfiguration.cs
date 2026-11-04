@@ -4,6 +4,7 @@ using Ares.Common.CommandLine;
 using Ares.Common.Endpoints;
 using Ares.Common.Security;
 using Ares.Host.Services;
+using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Status;
 using Ares.Structs.Core;
 
@@ -34,6 +35,9 @@ public sealed record HostConfiguration
           --public-origin <http://host:port>  Origin players configure; also the token issuer (default http://127.0.0.1:<port>)
           --allow-network-clients           Serve players beyond this machine (plain HTTP; trust unverified)
           --data-dir <dir>                  Persistent Host data (default: per-user application data/ARES-Host)
+          --mongodb-uri <uri>               MongoDB connection URI
+          --mongodb-uri-file <path>         Private URI file; takes precedence over mongodb-uri
+          --mongodb-database <name>         Database for this Host/private server (default ares_host)
           --session-control-url <url>       Raid allocation API (loopback HTTP or HTTPS)
           --session-control-token-file <f>  Operator token shared with Raid
           --auth-key-file <f>               Identity signing key, 32-4096 bytes (default: none; tokens are not checked)
@@ -112,6 +116,35 @@ public sealed record HostConfiguration
             ?? throw new CommandLineException("archive-keys-file must not be empty");
         string dataDirectory = file.GetPath("data-dir")
             ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ARES-Host");
+        string? mongoUriFile = file.GetPath("mongodb-uri-file");
+        string mongoDatabase = file.GetString("mongodb-database", "ares_host")!;
+        string? mongoUri = EmptyToNull(file.GetString("mongodb-uri"));
+        if (mongoUriFile is not null)
+        {
+            try
+            {
+                mongoUri = File.ReadAllText(mongoUriFile).Trim();
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                throw new CommandLineException("Cannot read mongodb-uri-file");
+            }
+        }
+
+        if (string.IsNullOrEmpty(mongoUri))
+        {
+            throw new CommandLineException("MongoDB connection requires mongodb-uri or mongodb-uri-file");
+        }
+
+        try
+        {
+            HostDatabase.ValidateConfiguration(mongoUri, mongoDatabase);
+        }
+        catch (ArgumentException error)
+        {
+            throw new CommandLineException(error.Message);
+        }
+
         string consoleMode = file.GetString("console", "auto")!;
         string? logFile = file.GetPath("log-file");
         file.RejectUnknown();
@@ -194,6 +227,8 @@ public sealed record HostConfiguration
                 IdentityKey = identityKey,
                 ArchiveKeys = archiveKeys,
                 DataDirectory = dataDirectory,
+                MongoDbUri = mongoUri,
+                MongoDbDatabase = mongoDatabase,
             },
             ConsoleMode = consoleMode,
             LogFile = logFile,

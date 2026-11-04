@@ -10,7 +10,7 @@ namespace Ares.Host.Tests;
 public sealed class ArchitectureTests
 {
     private static readonly string[] s_expected = ["Ares.Host.Services", "ARES-Host"];
-    private static readonly string[] s_allowedPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.", "Ares.Structs.", "Ares.Common", "Ares.Host", "ARES-Host"];
+    private static readonly string[] s_allowedPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.", "Ares.Structs.", "Ares.Common", "Ares.Host", "ARES-Host", "MongoDB."];
 
     public static TheoryData<string> Assemblies => new(s_expected);
 

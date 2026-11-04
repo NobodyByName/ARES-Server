@@ -40,6 +40,12 @@ public sealed record HostSettings
     /// <summary>Directory holding persistent Host data (account settings).</summary>
     public required string DataDirectory { get; init; }
 
+    /// <summary>MongoDB URI; operators can supply credentials through a private URI file.</summary>
+    public required string MongoDbUri { get; init; }
+
+    /// <summary>One database per independent Host/private server.</summary>
+    public string MongoDbDatabase { get; init; } = "ares_host";
+
     /// <summary>Scale factor applied to the bootstrap reply delays some routes need (tests use 0).</summary>
     public double RouteDelayScale { get; init; } = 1.0;
 }

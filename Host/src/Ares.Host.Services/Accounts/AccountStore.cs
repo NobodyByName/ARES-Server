@@ -17,7 +17,7 @@ public sealed class AccountStore
     /// <summary>ETag of keys that still have their preset value.</summary>
     private const string InitialETag = "ares-host-initial";
 
-    private static readonly JsonSerializerOptions s_fileOptions = new()
+    internal static JsonSerializerOptions SerializationOptions { get; } = new()
     {
         WriteIndented = true,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -170,7 +170,7 @@ public sealed class AccountStore
             return AccountStateDocument.Empty;
         }
 
-        return JsonSerializer.Deserialize<AccountStateDocument>(File.ReadAllBytes(_path), s_fileOptions) ?? AccountStateDocument.Empty;
+        return JsonSerializer.Deserialize<AccountStateDocument>(File.ReadAllBytes(_path), SerializationOptions) ?? AccountStateDocument.Empty;
     }
 
     private void Save(AccountStateDocument state)
@@ -188,7 +188,7 @@ public sealed class AccountStore
         string temporary = Path.Combine(directory, ".account-" + Guid.NewGuid().ToString("N"));
         try
         {
-            File.WriteAllText(temporary, JsonSerializer.Serialize(state, s_fileOptions) + "\n");
+            File.WriteAllText(temporary, JsonSerializer.Serialize(state, SerializationOptions) + "\n");
             File.Move(temporary, _path, overwrite: true);
         }
         finally

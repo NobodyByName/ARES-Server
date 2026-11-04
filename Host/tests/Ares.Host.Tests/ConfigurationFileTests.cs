@@ -7,6 +7,7 @@ namespace Ares.Host.Tests;
 
 public sealed class ConfigurationFileTests : IDisposable
 {
+    private const string MongoConfiguration = "\nmongodb-uri = mongodb://127.0.0.1:27017/?directConnection=true\n";
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "ares-host-config-" + Guid.NewGuid().ToString("N"));
 
     public ConfigurationFileTests()
@@ -18,12 +19,43 @@ public sealed class ConfigurationFileTests : IDisposable
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 
     [Fact]
+    public void MongoDB_connection_files_are_relative_and_cli_database_overrides_the_file()
+    {
+        File.WriteAllText(Path.Combine(_directory, "mongo-uri"), "mongodb://localhost:27017/?directConnection=true\n");
+        File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), "mongodb-uri = mongodb://198.51.100.2:27017\nmongodb-uri-file = mongo-uri\nmongodb-database = private_server\n");
+        HostConfiguration configuration = Parse("--mongodb-database", "other_server");
+        Assert.Equal("mongodb://localhost:27017/?directConnection=true", configuration.Settings.MongoDbUri);
+        Assert.Equal("other_server", configuration.Settings.MongoDbDatabase);
+    }
+
+    [Fact]
+    public void MongoDB_connection_comes_from_configuration_or_an_explicit_override()
+    {
+        File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), "mongodb-uri = mongodb://database.internal:27018");
+        Assert.Equal("mongodb://database.internal:27018", Parse().Settings.MongoDbUri);
+        Assert.Equal("mongodb://another.internal:27019", Parse("--mongodb-uri", "mongodb://another.internal:27019").Settings.MongoDbUri);
+        File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), "");
+        Assert.Contains("requires mongodb-uri or mongodb-uri-file", Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Invalid_MongoDB_uris_do_not_echo_credentials_in_errors()
+    {
+        File.WriteAllText(Path.Combine(_directory, "mongo-uri"), "not-mongodb://secret-user:secret-password@localhost");
+        File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), "mongodb-uri-file = mongo-uri\n");
+        string message = Assert.Throws<CommandLineException>(() => Parse()).Message;
+        Assert.DoesNotContain("secret", message, StringComparison.Ordinal);
+        Assert.Contains("MongoDB", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void First_launch_creates_a_documented_file_with_the_existing_defaults()
     {
         HostConfiguration configuration = Parse();
         string path = Path.Combine(_directory, HostConfigurationFile.DefaultName);
         Assert.Equal(path, configuration.ConfigurationFile);
         Assert.Contains("# NETWORK", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Equal("mongodb://127.0.0.1:27017/?directConnection=true", configuration.Settings.MongoDbUri);
         Assert.Equal(IPAddress.Loopback, configuration.Bind);
         Assert.Equal(18080, configuration.Port);
         Assert.False(configuration.AllowNetworkClients);
@@ -100,7 +132,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal("http://127.0.0.1:19091", configuration.Settings.PublicOrigin);
         Assert.Equal("Override", configuration.Settings.ServerName);
         Assert.Equal("override.log", configuration.LogFile);
-        Assert.Equal(Content, File.ReadAllText(configuration.ConfigurationFile!));
+        Assert.Equal(Content + MongoConfiguration, File.ReadAllText(configuration.ConfigurationFile!));
     }
 
     [Fact]
@@ -168,7 +200,7 @@ public sealed class ConfigurationFileTests : IDisposable
         string folder = Path.Combine(_directory, "other");
         Directory.CreateDirectory(folder);
         File.Copy(Path.Combine(_directory, "archive-keys.txt"), Path.Combine(folder, "archive-keys.txt"));
-        File.WriteAllText(Path.Combine(folder, "custom.conf"), "data-dir = data\nlog-file = host.log");
+        File.WriteAllText(Path.Combine(folder, "custom.conf"), "data-dir = data\nlog-file = host.log" + MongoConfiguration);
         HostConfiguration configuration = Parse("--config", "other/custom.conf");
         Assert.Equal(Path.Combine(folder, "data"), configuration.Settings.DataDirectory);
         Assert.Equal(Path.Combine(folder, "host.log"), configuration.LogFile);
@@ -186,5 +218,5 @@ public sealed class ConfigurationFileTests : IDisposable
 
     private HostConfiguration Parse(params string[] args) => HostConfiguration.Parse(args, ArchiveKeysTests.DummySha256, _directory);
 
-    private void Write(string text) => File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), text);
+    private void Write(string text) => File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName), text + MongoConfiguration);
 }

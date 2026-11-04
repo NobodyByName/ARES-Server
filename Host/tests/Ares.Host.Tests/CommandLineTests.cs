@@ -10,6 +10,7 @@ public sealed class CommandLineTests : IDisposable
     public CommandLineTests()
     {
         File.WriteAllText(_keysFile, ArchiveKeysTests.DummyFile);
+        File.WriteAllText(_configFile, "mongodb-uri = mongodb://127.0.0.1:27017/?directConnection=true");
     }
 
     public void Dispose()
