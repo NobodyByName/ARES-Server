@@ -4,6 +4,7 @@ using Ares.Common.CommandLine;
 using Ares.Common.Logging;
 using Ares.Host;
 using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Persistence;
 using Ares.Structs.Core;
 
 HostConfiguration configuration;
@@ -30,7 +31,18 @@ catch (CommandLineException error)
 
 using HostConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
 JsonEventLog log = console.Log;
-await using WebApplication app = HostApplication.Build(configuration, log, loggerProvider: console);
+WebApplication application;
+try
+{
+    application = HostApplication.Build(configuration, log, loggerProvider: console);
+}
+catch (Exception error) when (error is PersistenceException or InvalidDataException or System.Text.Json.JsonException)
+{
+    Console.Error.WriteLine("ARES-Host: cannot load player data. Check MongoDB and the player document structure.");
+    return 2;
+}
+
+await using WebApplication app = application;
 console.Inventory = app.Services.GetRequiredService<InventoryStore>();
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
@@ -42,6 +54,7 @@ log.Write(new JsonObject
     ["public_origin"] = configuration.Settings.PublicOrigin,
     ["network_clients"] = configuration.AllowNetworkClients,
     ["matchmaking"] = configuration.SessionControlUrl is not null,
+    ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "unchecked",
 });
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(app.Lifetime.ApplicationStopping);

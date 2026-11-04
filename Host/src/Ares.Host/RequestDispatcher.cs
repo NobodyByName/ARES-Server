@@ -7,6 +7,7 @@ using Ares.Common.Security;
 using Ares.Host.Services;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Matchmaking;
+using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Routing;
 using Ares.Host.Services.Status;
 using Ares.Host.Services.Telemetry;
@@ -115,8 +116,25 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             await Task.Delay(route.Delay * settings.RouteDelayScale, time, cancellationToken).ConfigureAwait(false);
         }
 
-        ServiceReply reply = await route.Handler(request, cancellationToken).ConfigureAwait(false);
-        return (reply.StatusCode, reply.Body);
+        try
+        {
+            ServiceReply reply = await route.Handler(request, cancellationToken).ConfigureAwait(false);
+            return (reply.StatusCode, reply.Body);
+        }
+        catch (PersistenceConflictException)
+        {
+            return (409, new ErrorResponse("player_data_changed"));
+        }
+        catch (PersistenceException error)
+        {
+            log.Write("database_error", error.Message);
+            return (503, new ErrorResponse("database_unavailable"));
+        }
+        catch (InvalidDataException)
+        {
+            log.Write("database_error", "Invalid persisted player data");
+            return (503, new ErrorResponse("invalid_player_data"));
+        }
     }
 
     private bool IsLocalPlayer(string? authorization)

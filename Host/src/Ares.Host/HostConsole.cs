@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common;
-using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Core;
@@ -203,8 +202,9 @@ internal sealed class HostConsole : ILoggerProvider
                 case "inventory":
                     if (Inventory is { } inventory)
                     {
-                        InventorySnapshot snapshot = inventory.Snapshot;
-                        AddLine($"Inventory revision {snapshot.Revision}: {snapshot.Items.Count} items, {snapshot.LoadoutRoots.Count} loadout roots");
+                        PlayerInventory state = inventory.Inventory;
+                        AddLine($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {state.Stash.SlotCount}, backpack capacity {state.Loadout.BackpackCapacity}");
+                        AddLine($"QuickUse capacity {state.Loadout.QuickUseCapacity}, Safe Pocket capacity {state.Loadout.SafePocketCapacity}");
                         AddLine($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
                     }
                     else
@@ -233,8 +233,9 @@ internal sealed class HostConsole : ILoggerProvider
 
         try
         {
-            inventory.ImportFile(path, inventory.Snapshot.Revision);
-            AddLine($"Imported {inventory.Snapshot.Items.Count} items at revision {inventory.Snapshot.Revision}. Start a fresh client to refresh item definitions.");
+            inventory.ImportFile(path, inventory.Inventory.Revision);
+            PlayerInventory state = inventory.Inventory;
+            AddLine($"Imported {state.ItemCount} items at revision {state.Revision}. Start a fresh client to refresh capacity changes.");
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or OverflowException)
         {

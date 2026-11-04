@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Host.Services.Inventory;
 using Microsoft.Extensions.Logging;
@@ -9,19 +10,20 @@ public sealed class ConsoleTests
     [Fact]
     public void Inventory_import_reads_the_operator_file_and_survives_a_restart()
     {
-        string directory = Path.Combine(Path.GetTempPath(), $"ares-console-inventory-{Guid.NewGuid():N}");
+        using TestDatabase database = new();
+        string directory = database.Directory;
         Directory.CreateDirectory(directory);
         try
         {
             string path = Path.Combine(directory, "Empty Inventory.json");
-            File.WriteAllText(path, """{"items":[],"definitions":[],"loadoutRoots":[]}""");
+            File.WriteAllText(path, JsonSerializer.Serialize(PlayerInventory.Empty, InventoryStore.SerializationOptions));
             using StringWriter output = new();
             using HostConsole console = new("plain", output);
-            console.Inventory = new InventoryStore(directory);
+            console.Inventory = new InventoryStore(database.Store);
             console.ExecuteCommand($"inventory import \"{path}\"", () => { });
             console.ExecuteCommand("inventory", () => { });
 
-            Assert.Equal(1, new InventoryStore(directory).Snapshot.Revision);
+            Assert.Equal(1, new InventoryStore(database.Store).Snapshot.Revision);
             Assert.Contains("Imported 0 items at revision 1", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("Reserved ticket: none", output.ToString(), StringComparison.Ordinal);
         }

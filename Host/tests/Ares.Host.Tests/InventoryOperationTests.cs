@@ -7,7 +7,7 @@ namespace Ares.Host.Tests;
 
 public sealed class InventoryOperationTests : IDisposable
 {
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "ares-menu-test-" + Guid.NewGuid().ToString("N"));
+    private readonly TestDatabase _database = new();
 
     [Fact]
     public void The_same_duck_moves_both_ways_and_its_location_survives_restarts()
@@ -31,10 +31,10 @@ public sealed class InventoryOperationTests : IDisposable
         Assert.Equal(duck.Amount, Duck(store).Amount);
         Assert.Contains(InventorySnapshots.Loadout(store.Snapshot).Items, item => item.InstanceId == duck.InstanceId);
 
-        InventoryStore restarted = new(_directory);
+        InventoryStore restarted = new(_database.Store);
         Assert.Equal(backpack, Parent(restarted, duck.InstanceId));
         Assert.Equal(200, restarted.Commit(Move(duck.InstanceId, stash, "back-to-stash"), DateTimeOffset.UnixEpoch.AddMinutes(2)).StatusCode);
-        InventoryStore again = new(_directory);
+        InventoryStore again = new(_database.Store);
         Assert.Equal(stash, Parent(again, duck.InstanceId));
         Assert.Equal(count, again.Snapshot.Items.Count);
         Assert.DoesNotContain(InventorySnapshots.Loadout(again.Snapshot).Items, item => item.InstanceId == duck.InstanceId);
@@ -54,7 +54,7 @@ public sealed class InventoryOperationTests : IDisposable
         Assert.Equal(revision, store.Snapshot.Revision);
         Assert.Equal(409, store.Commit(Move(duck, stash, "first"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(200, store.Commit(Move(duck, stash, "second"), DateTimeOffset.UnixEpoch).StatusCode);
-        InventoryStore restarted = new(_directory);
+        InventoryStore restarted = new(_database.Store);
         revision = restarted.Snapshot.Revision;
         ServiceReply replay = restarted.Commit(first, DateTimeOffset.UnixEpoch);
         Assert.Equal(200, replay.StatusCode);
@@ -70,8 +70,7 @@ public sealed class InventoryOperationTests : IDisposable
         InventoryStore store = Create();
         string duck = Duck(store).InstanceId;
         string backpack = BackpackSlot(store);
-        string path = Path.Combine(_directory, "inventory-state.json");
-        byte[] before = File.ReadAllBytes(path);
+        string before = _database.InventoryJson;
         InventoryOperationsRequest batch = new([new SetItemParents(duck, [backpack]), new SetItemParents(duck, ["missing"])], "bad-batch");
         Assert.Equal(400, store.Commit(batch, DateTimeOffset.UnixEpoch).StatusCode);
         string frame = store.Snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.StandardFrameAssetId).InstanceId;
@@ -79,12 +78,12 @@ public sealed class InventoryOperationTests : IDisposable
         Assert.Equal(400, store.Commit(Move(frame, backpack, "move-structure"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(400, store.Commit(new InventoryOperationsRequest(null, "missing-operations"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(400, store.Commit(Move(duck, backpack, "invalid id"), DateTimeOffset.UnixEpoch).StatusCode);
-        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Equal(before, _database.InventoryJson);
 
         store.Reserve(Guid.NewGuid().ToString("D"));
-        before = File.ReadAllBytes(path);
+        before = _database.InventoryJson;
         Assert.Equal(409, store.Commit(Move(duck, backpack, "reserved"), DateTimeOffset.UnixEpoch).StatusCode);
-        Assert.Equal(before, File.ReadAllBytes(path));
+        Assert.Equal(before, _database.InventoryJson);
     }
 
     [Fact]
@@ -93,22 +92,41 @@ public sealed class InventoryOperationTests : IDisposable
         InventoryStore store = Create();
         InventoryItem duck = Duck(store);
         string backpack = BackpackSlot(store);
-        InventoryItem second = duck with { InstanceId = Guid.NewGuid().ToString("D") };
-        InventoryItem[] items = [.. store.Snapshot.Items.Select(item => item.InstanceId == backpack ? item with { Slots = [second.InstanceId] } : item), second];
-        store.Import(new InventoryImport(items, [.. StorageItems.Definitions, .. LoadoutItems.Definitions], store.Snapshot.LoadoutRoots),
-            store.Snapshot.Revision);
-        byte[] before = File.ReadAllBytes(Path.Combine(_directory, "inventory-state.json"));
+        OwnedItem second = Assert.Single(store.Inventory.Stash.Items) with { InstanceId = Guid.NewGuid().ToString("D"), Slot = 0 };
+        store.Import(store.Inventory with { Loadout = store.Inventory.Loadout with { Backpack = new PlayerItemContainer([second]) } }, store.Inventory.Revision);
+        string before = _database.InventoryJson;
         Assert.Equal(400, store.Commit(Move(duck.InstanceId, backpack, "occupied"), DateTimeOffset.UnixEpoch).StatusCode);
-        Assert.Equal(before, File.ReadAllBytes(Path.Combine(_directory, "inventory-state.json")));
+        Assert.Equal(before, _database.InventoryJson);
         Assert.Equal(backpack, Parent(store, second.InstanceId));
         Assert.Equal(2, store.Snapshot.Items.Count(item => item.GameAssetId == StorageItems.RubberDuckAssetId));
     }
 
+    [Fact]
+    public void Stash_order_is_derived_and_moves_return_all_slots_affected_by_compaction()
+    {
+        InventoryStore store = Create();
+        OwnedItem original = Assert.Single(store.Inventory.Stash.Items);
+        OwnedItem first = original with { InstanceId = "a-duck" };
+        OwnedItem second = original with { InstanceId = "b-duck" };
+        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { Items = [second, first] } }, store.Inventory.Revision);
+        InventoryItem stash = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId);
+        string firstSlot = stash.Slots[0];
+        string secondSlot = stash.Slots[1];
+        Assert.Contains(first.InstanceId, store.Snapshot.Items.Single(item => item.InstanceId == firstSlot).Slots);
+        ServiceReply moved = store.Commit(Move(first.InstanceId, BackpackSlot(store), "compact-stash"), DateTimeOffset.UnixEpoch);
+        Assert.Equal(200, moved.StatusCode);
+        IReadOnlyList<InventoryItem> changed = Assert.IsType<InventoryOperationsResponse>(moved.Body).Changeset.Items.Updated;
+        Assert.Contains(changed, item => item.InstanceId == firstSlot && item.Slots.Contains(second.InstanceId));
+        Assert.Contains(changed, item => item.InstanceId == secondSlot && item.Slots.Count == 0);
+        Assert.Null(Assert.Single(store.Inventory.Stash.Items).Slot);
+        Assert.Equal(0, Assert.Single(store.Inventory.Loadout.Backpack.Items).Slot);
+        Assert.Equal(2, store.Inventory.ItemCount);
+    }
+
     private InventoryStore Create()
     {
-        InventoryStore store = new(_directory);
-        store.EnsureStarterStorage(DateTimeOffset.UnixEpoch);
-        store.EnsureStarterLoadout(DateTimeOffset.UnixEpoch);
+        InventoryStore store = new(_database.Store);
+        store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }
 
@@ -120,11 +138,5 @@ public sealed class InventoryOperationTests : IDisposable
 
     private static InventoryOperationsRequest Move(string item, string target, string requestId) => new([new SetItemParents(item, [target])], requestId);
 
-    public void Dispose()
-    {
-        if (Directory.Exists(_directory))
-        {
-            Directory.Delete(_directory, recursive: true);
-        }
-    }
+    public void Dispose() => _database.Dispose();
 }

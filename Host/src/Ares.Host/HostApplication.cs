@@ -5,6 +5,7 @@ using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Identity;
 using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
+using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Routing;
 using Ares.Host.Services.Social;
 
@@ -46,13 +47,26 @@ public static class HostApplication
         });
         configureBuilder?.Invoke(builder);
 
+        HostDatabase database = new(settings.MongoDbUri, settings.MongoDbDatabase);
+        AccountStore accounts;
+        InventoryStore inventory;
+        try
+        {
+            database.Initialize();
+            accounts = new AccountStore(settings.DataDirectory, time);
+            inventory = new InventoryStore(database);
+            inventory.InitializeLayout(time.GetUtcNow());
+        }
+        catch
+        {
+            database.Dispose();
+            throw;
+        }
+
         SessionAllocatorClient? allocator = configuration.SessionControlUrl is null
             ? null
             : new SessionAllocatorClient(configuration.SessionControlUrl, configuration.OperatorToken!, allocatorHandler);
-        AccountStore accounts = new(settings.DataDirectory, time);
-        InventoryStore inventory = new(settings.DataDirectory);
-        inventory.EnsureStarterStorage(time.GetUtcNow());
-        inventory.EnsureStarterLoadout(time.GetUtcNow());
+        builder.Services.AddSingleton<HostDatabase>(_ => database);
         builder.Services.AddSingleton(inventory);
         ProfileFactory profiles = new(accounts, time);
         IdentityService identity = new(settings, profiles, time, inventory);
@@ -63,6 +77,7 @@ public static class HostApplication
         RequestDispatcher dispatcher = new(settings, routes, matchmaking, log, time);
 
         WebApplication app = builder.Build();
+        _ = app.Services.GetRequiredService<HostDatabase>();
         app.Lifetime.ApplicationStopped.Register(() =>
         {
             allocator?.Dispose();

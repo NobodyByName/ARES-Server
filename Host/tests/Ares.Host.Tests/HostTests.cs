@@ -22,7 +22,7 @@ namespace Ares.Host.Tests;
 public sealed class HostTests : IAsyncLifetime
 {
     private const string OperatorToken = "operator-token-operator-token-operator-token";
-    private readonly string _dataDirectory = Path.Combine(Path.GetTempPath(), "ares-host-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly TestDatabase _database = new();
     private readonly FakeRaid _raid = new();
     private WebApplication? _raidApp;
     private WebApplication? _host;
@@ -43,8 +43,9 @@ public sealed class HostTests : IAsyncLifetime
                 PublicOrigin = "http://127.0.0.1:18080",
                 IdentityKey = [.. "identity-key-identity-key-identity-key"u8],
                 ArchiveKeys = ArchiveKeys.Parse(ArchiveKeysTests.DummyFile),
-                DataDirectory = _dataDirectory,
+                DataDirectory = _database.Directory,
                 MongoDbUri = TestDatabase.ConnectionUri,
+                MongoDbDatabase = _database.Name,
                 RouteDelayScale = 0,
             },
             Bind = IPAddress.Loopback,
@@ -63,10 +64,7 @@ public sealed class HostTests : IAsyncLifetime
         _client!.Dispose();
         await _host!.DisposeAsync();
         await _raidApp!.DisposeAsync();
-        if (Directory.Exists(_dataDirectory))
-        {
-            Directory.Delete(_dataDirectory, recursive: true);
-        }
+        _database.Dispose();
     }
 
     [Fact]
@@ -148,31 +146,35 @@ public sealed class HostTests : IAsyncLifetime
     {
         InventoryStore inventory = _host!.Services.GetRequiredService<InventoryStore>();
         long revision = inventory.Snapshot.Revision;
-        inventory.Import(new InventoryImport(
-            [new InventoryItem("carried", 5000000001, 2, [], 0, 0, "", "v1", 0), new InventoryItem("stash", 5000000001, 3, [], 0, 0, "", "v1", 0)],
-            [new ItemDescription(5000000001, "test", 10, true, false, [], [])], ["carried"]), revision);
+        PlayerInventory state = inventory.Inventory;
+        OwnedItem duck = Assert.Single(state.Stash.Items);
+        inventory.Import(state with
+        {
+            Stash = state.Stash with { Items = [duck with { InstanceId = "stash", Quantity = 3 }] },
+            Loadout = state.Loadout with { Backpack = new PlayerItemContainer([duck with { InstanceId = "carried", Quantity = 2, Slot = 0 }]) },
+        }, revision);
         Assert.Equal(HttpStatusCode.Unauthorized, (await _client!.GetAsync("/v1/pioneer/inventory", TestContext.Current.CancellationToken)).StatusCode);
         string bearer = await SignIn();
         using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
         read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
         JsonElement items = await Json(await _client.SendAsync(read, TestContext.Current.CancellationToken));
-        Assert.Equal(2, items.GetProperty("items").GetArrayLength());
+        Assert.Equal(103, items.GetProperty("items").GetArrayLength());
         JsonElement definitions = await GetJson("/v1/pioneer/game-data");
         Assert.Contains(definitions.GetProperty("items-description").GetProperty("itemDescriptions").EnumerateArray(),
-            item => item.GetProperty("gameAssetId").GetInt64() == 5000000001);
+            item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
 
         await Post("/v1/shared/social/party/v2/create", new { });
         string ticket = (await Json(await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer))).GetProperty("ticketId").GetString()!;
         await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
-        Assert.Equal("carried", Assert.Single(Assert.Single(_raid.LastRequest!.Loadouts!).Items).InstanceId);
+        Assert.Equal("carried", Assert.Single(Assert.Single(_raid.LastRequest!.Loadouts!).Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId).InstanceId);
         Assert.Equal(inventory.Snapshot.UserId, _raid.LastRequest.Loadouts![0].UserId);
-        Assert.Equal(ticket, new InventoryStore(_dataDirectory).ReservedTicketId);
-        Assert.Throws<InvalidOperationException>(() => inventory.Import(new InventoryImport([], [], []), inventory.Snapshot.Revision));
+        Assert.Equal(ticket, new InventoryStore(_database.Store).ReservedTicketId);
+        Assert.Throws<InvalidOperationException>(() => inventory.Import(inventory.Inventory with { Stash = inventory.Inventory.Stash with { Items = [] } }, inventory.Snapshot.Revision));
 
         _raid.Forget();
         await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer);
         Assert.Null(inventory.ReservedTicketId);
-        Assert.Equal(2, inventory.Snapshot.Items.Count);
+        Assert.Equal(2, inventory.Inventory.ItemCount);
     }
 
     [Fact]
@@ -194,11 +196,11 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await Post(Path, new { requestId = "malformed", operations = new[] { new { discriminator = "unknown" } } }, bearer)).StatusCode);
         JsonElement response = await Json(await Post(Path, body, bearer));
         Assert.Equal(3, response.GetProperty("changeset").GetProperty("items").GetProperty("updated").GetArrayLength());
-        InventoryStore persisted = new(_dataDirectory);
+        InventoryStore persisted = new(_database.Store);
         Assert.Contains(duck.InstanceId, persisted.Snapshot.Items.Single(item => item.InstanceId == destination).Slots);
         long revision = persisted.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await Post(Path, body, bearer)).StatusCode);
-        Assert.Equal(revision, new InventoryStore(_dataDirectory).Snapshot.Revision);
+        Assert.Equal(revision, new InventoryStore(_database.Store).Snapshot.Revision);
         object stockBody = new
         {
             requestId = "",
@@ -209,7 +211,7 @@ public sealed class HostTests : IAsyncLifetime
         revision = store.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await Post(Path, stockBody, bearer)).StatusCode);
         Assert.Equal(revision, store.Snapshot.Revision);
-        Assert.Contains(duck.InstanceId, new InventoryStore(_dataDirectory).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
+        Assert.Contains(duck.InstanceId, new InventoryStore(_database.Store).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
     }
 
     [Fact]
@@ -233,7 +235,7 @@ public sealed class HostTests : IAsyncLifetime
 
         JsonElement before = await Json(await Post("/v1/shared/manifest", new { }));
         InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
-        store.Import(new InventoryImport([], [], []), store.Snapshot.Revision);
+        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, store.Snapshot.Revision);
         JsonElement after = await Json(await Post("/v1/shared/manifest", new { }));
         Assert.NotEqual(before.GetProperty("partitioning_hash").GetString(), after.GetProperty("partitioning_hash").GetString());
         Assert.NotEqual(before.GetProperty("non_partitioning_hash").GetString(), after.GetProperty("non_partitioning_hash").GetString());
@@ -263,7 +265,7 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, badName.StatusCode);
         Assert.Equal("New Name", profile.GetProperty("display_name").GetProperty("name").GetString());
         Assert.Contains(keys.GetProperty("persistentPlayerKeys").EnumerateArray(), key => key.GetProperty("key").GetString() == "UI.Test");
-        Assert.True(File.Exists(Path.Combine(_dataDirectory, "account-state.json")));
+        Assert.True(File.Exists(Path.Combine(_database.Directory, "account-state.json")));
     }
 
     [Fact]
