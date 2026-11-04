@@ -26,6 +26,8 @@ public sealed class AccountStore
 
     private readonly HostDatabase _database;
     private long _version;
+    private long _transientRevision;
+    private Dictionary<string, StoredKey> _transientKeys = new(StringComparer.Ordinal);
     private readonly TimeProvider _time;
     private readonly Lock _lock = new();
 
@@ -108,6 +110,11 @@ public sealed class AccountStore
                 keys[name] = new PersistentPlayerKey(name, stored.Value, stored.ETag);
             }
 
+            foreach ((string name, StoredKey entry) in _transientKeys)
+            {
+                keys[name] = new PersistentPlayerKey(name, entry.Value, entry.ETag);
+            }
+
             return [.. keys.Values];
         }
     }
@@ -135,19 +142,40 @@ public sealed class AccountStore
 
         lock (_lock)
         {
-            AccountStateDocument state = Read();
+            bool durable = rows.Any(row => !IsTransientKey(row!.Key!));
+            AccountStateDocument state = durable ? Read() : AccountStateDocument.Empty;
             Dictionary<string, StoredKey> stored = new(state.PersistentPlayerKeys ?? AccountStateDocument.NoKeys, StringComparer.Ordinal);
+            Dictionary<string, StoredKey> transient = new(_transientKeys, StringComparer.Ordinal);
             List<PersistentPlayerKey> updated = [];
             long revision = state.Revision;
+            long sessionRevision = _transientRevision;
             foreach (PersistentPlayerKeyWrite? row in rows)
             {
-                revision++;
-                StoredKey entry = new(row!.Value!, "ares-host-key-" + revision.ToString(CultureInfo.InvariantCulture));
-                stored[row.Key!] = entry;
+                bool ephemeral = IsTransientKey(row!.Key!);
+                string etag;
+                if (ephemeral)
+                {
+                    sessionRevision = checked(sessionRevision + 1);
+                    etag = "ares-host-session-key-" + sessionRevision.ToString(CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    revision = checked(revision + 1);
+                    etag = "ares-host-key-" + revision.ToString(CultureInfo.InvariantCulture);
+                }
+
+                StoredKey entry = new(row.Value!, etag);
+                (ephemeral ? transient : stored)[row.Key!] = entry;
                 updated.Add(new PersistentPlayerKey(row.Key!, entry.Value, entry.ETag));
             }
 
-            Save(state with { PersistentPlayerKeys = stored, Revision = revision });
+            if (durable)
+            {
+                Save(state with { PersistentPlayerKeys = stored, Revision = revision });
+            }
+
+            _transientKeys = transient;
+            _transientRevision = sessionRevision;
             return (updated, null);
         }
     }
@@ -178,13 +206,15 @@ public sealed class AccountStore
         if (state.Revision < 0 || state.Profile is { DisplayName: { } name } && !IsValidDisplayName(name)
             || state.Profile?.DisplayNameCooldownEndsAt is < 0
             || state.PersistentPlayerKeys?.Any(pair => pair.Key.Length is < 1 or > 256
-                || pair.Value is not { Value.Length: <= 8192, ETag.Length: > 0 }) == true)
+                || IsTransientKey(pair.Key) || pair.Value is not { Value.Length: <= 8192, ETag.Length: > 0 }) == true)
         {
             throw new InvalidDataException("Invalid account document");
         }
 
         return state;
     }
+
+    private static bool IsTransientKey(string key) => key is MatchmakingPreferenceKeys.SearchSettings or MatchmakingPreferenceKeys.MapSelection;
 
     private void Save(AccountStateDocument state)
     {

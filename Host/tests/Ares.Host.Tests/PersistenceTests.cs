@@ -59,6 +59,24 @@ public sealed class PersistenceTests
     }
 
     [Fact]
+    public void Matchmaking_preferences_round_trip_in_memory_without_database_writes()
+    {
+        using TestDatabase database = new();
+        AccountStore account = new(database.Store, TimeProvider.System);
+        string saved = database.Player.ToJson();
+        account.SetKeys([
+            new PersistentPlayerKeyWrite(MatchmakingPreferenceKeys.SearchSettings, "{\"generatedLoadout\":false}"),
+            new PersistentPlayerKeyWrite(MatchmakingPreferenceKeys.MapSelection, "GameMode.Location.TheDam|false"),
+        ]);
+        Assert.Equal(saved, database.Player.ToJson());
+        Assert.Contains(account.GetKeys(), entry => entry.Key == MatchmakingPreferenceKeys.SearchSettings);
+        Assert.DoesNotContain(new AccountStore(database.Store, TimeProvider.System).GetKeys(), entry => entry.Key == MatchmakingPreferenceKeys.SearchSettings);
+        account.SetKeys([new PersistentPlayerKeyWrite("UI.Test", "stored"), new PersistentPlayerKeyWrite(MatchmakingPreferenceKeys.MapSelection, "other")]);
+        Assert.Contains(new AccountStore(database.Store, TimeProvider.System).GetKeys(), entry => entry is { Key: "UI.Test", Value: "stored" });
+        Assert.False(database.Player["account"]["persistentPlayerKeys"].AsBsonDocument.Contains(MatchmakingPreferenceKeys.MapSelection));
+    }
+
+    [Fact]
     public void Player_key_names_are_not_interpreted_as_Extended_JSON_type_markers()
     {
         using TestDatabase database = new();
