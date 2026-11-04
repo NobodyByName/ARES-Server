@@ -4,6 +4,10 @@
     <RootNamespace>Ares.Host.Services</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ares.Host.Tests" />
+  </ItemGroup>
+
   <!-- References to other components; Directory.Build.targets checks that they are allowed. -->
   <ItemGroup>
     <ProjectReference Include="../../../Structs/src/Ares.Structs.Backend/Ares.Structs.Backend.csproj" />
