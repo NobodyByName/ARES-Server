@@ -196,24 +196,86 @@ public sealed class InventoryTests
         new ItemContainerSlot(new ItemContainerHandle(fromContainer, 0), fromSlot),
         new ItemContainerSlot(new ItemContainerHandle(toContainer, 0), toSlot), 0, new ItemContainerHandle(-1, ushort.MaxValue));
 
-    internal static PlayerLoadout StandardLoadout()
+    [Theory]
+    [InlineData(AugmentItems.CombatMk1AssetId, 16, 4)]
+    [InlineData(AugmentItems.LootingMk1AssetId, 18, 4)]
+    [InlineData(AugmentItems.TacticalMk1AssetId, 15, 5)]
+    public void An_equipped_augment_selects_the_raid_frame_and_replication_uses_its_capacities(long asset, int backpack, int belt)
     {
-        Dictionary<long, ItemDescription> definitions = LoadoutItems.Definitions.Concat(StorageItems.Definitions).ToDictionary(item => item.GameAssetId);
+        PlayerLoadout loadout = StandardLoadout(asset);
+        ScriptedPlayer session = new(loadout: loadout);
+        RaidInventory inventory = session.Raid.Inventory;
+        Assert.Equal(asset, inventory.AugmentAssetId);
+        Assert.Equal(AugmentItems.FrameAssetIds[asset], inventory.FrameAssetId);
+        Assert.Equal([5, backpack, belt, 1, 0], inventory.Containers.Select(container => container.Items.Count));
+        Assert.Equal(s_duckId, inventory.Containers[inventory.Backpack].Items[3]!.Id);
+        session.Possess();
+        StableSubobjectContent content = session.Raid.State.InventoryContent(session.Player, inventory);
+        PropertyCodec codec = new(new ValueCodec(GameReplication.Catalog, []));
+        Dictionary<string, object?> properties = codec.Decode(new PropertyLayout(GameReplication.Catalog, ClassPaths.InventoryComponent), content.Content);
+        Assert.Equal(inventory.FrameAssetId, properties[PropertyNames.EquippedLoadoutFrameItemAssetId]);
+        Assert.True(inventory.Apply(Swap(inventory.Backpack, 3, inventory.Backpack, checked((ushort)(backpack - 1)))));
+        Assert.Equal(s_duckId, inventory.Containers[inventory.Backpack].Items[backpack - 1]!.Id);
+    }
+
+    [Fact]
+    public void Spare_augments_keep_their_item_identity_and_cannot_move_into_quick_use_slots()
+    {
+        RaidInventory inventory = new(StandardLoadout(AugmentItems.CombatMk1AssetId, AugmentItems.TacticalMk1AssetId));
+        ContainerItem spare = inventory.Containers[inventory.Backpack].Items[4]!;
+        Assert.Equal(AugmentItems.UsableIndices[AugmentItems.TacticalMk1AssetId], spare.AssetIndex);
+        Assert.Equal(0.25, spare.Durability);
+        Assert.False(inventory.Apply(Swap(inventory.Backpack, 4, inventory.Belt, 0)));
+        Assert.True(inventory.Apply(Swap(inventory.Backpack, 4, inventory.Backpack, 15)));
+        Assert.Equal(spare, inventory.Containers[inventory.Backpack].Items[15]);
+    }
+
+    [Fact]
+    public void A_frame_that_does_not_match_the_equipped_augment_is_rejected()
+    {
+        PlayerLoadout loadout = StandardLoadout(AugmentItems.CombatMk1AssetId);
+        InventoryItem[] items = [.. loadout.Items.Select(item => item.GameAssetId == AugmentItems.CombatMk1AssetId ? item with { GameAssetId = AugmentItems.TacticalMk1AssetId } : item)];
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(loadout with { Items = items }));
+    }
+
+    internal static PlayerLoadout StandardLoadout(long? augmentAssetId = null, long? spareAugmentAssetId = null)
+    {
+        IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.ByAsset;
         List<InventoryItem> items = [];
-        int sequence = 1;
+        Queue<int> sequence = new(Enumerable.Range(1, InventorySnapshots.MaximumItems));
         Create(LoadoutItems.FrameSlotAssetId);
-        InventoryItem backpack = items.Single(item => item.GameAssetId == LoadoutItems.BackpackAssetId);
+        InventoryItem backpackBranch = items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        InventoryItem backpack = items.Single(item => item.InstanceId == backpackBranch.Slots[0]);
         int slot = items.FindIndex(item => item.InstanceId == backpack.Slots[3]);
         items[slot] = items[slot] with { Slots = [s_duckId.ToString("D")] };
         items.Add(new InventoryItem(s_duckId.ToString("D"), StorageItems.RubberDuckAssetId, 4, [], 50, 100, "", "v1", 0));
+        if (augmentAssetId is { } augment)
+        {
+            Create(AugmentItems.AugmentSlotAssetId);
+            AddAugment(items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId, augment);
+        }
+
+        if (spareAugmentAssetId is { } spare)
+        {
+            AddAugment(backpack.Slots[4], spare);
+        }
+
         return new PlayerLoadout(42, 7, [.. items]);
+
+        void AddAugment(string parentId, long asset)
+        {
+            string id = Guid.NewGuid().ToString("D");
+            int parent = items.FindIndex(item => item.InstanceId == parentId);
+            items[parent] = items[parent] with { Slots = [id] };
+            items.Add(new InventoryItem(id, asset, 1, [], 25, 100, "", "augment", 0));
+        }
 
         string Create(long asset)
         {
-            string id = sequence++.ToString("x8", CultureInfo.InvariantCulture) + "-0000-0000-0000-000000000000";
+            string id = sequence.Dequeue().ToString("x8", CultureInfo.InvariantCulture) + "-0000-0000-0000-000000000000";
             IReadOnlyList<string> children = definitions[asset].SlotConfig switch
             {
-                SingleItemSlot { DefaultSlotAssetId: not 0 } single => [Create(single.DefaultSlotAssetId)],
+                SingleItemSlot { DefaultSlotAssetId: not 0 } single => [Create(asset == LoadoutItems.FrameSlotAssetId ? LoadoutDefinitions.FrameAssetId(augmentAssetId) : single.DefaultSlotAssetId)],
                 StructuralItemSlots structure => [.. structure.SlotAssetIds.Select(Create)],
                 ItemSlotArray array => [.. Enumerable.Range(0, (int)array.NumberOfSlots).Select(_ => Create(array.SlotAssetId))],
                 _ => [],

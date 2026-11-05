@@ -10,27 +10,52 @@ namespace Ares.Raid.World.Inventory;
 public sealed class RaidInventory
 {
     private readonly Dictionary<string, int> _handles = new(StringComparer.Ordinal);
-    private readonly HashSet<(int Container, int Slot)> _duckSlots = [];
+    private readonly Dictionary<(int Container, int Slot), HashSet<int>> _allowedSlots = [];
 
-    /// <summary>Prepares the standard loadout, preserving carried item identities and amounts.</summary>
+    /// <summary>Prepares the selected frame, preserving carried item identities and amounts.</summary>
     /// <param name="loadout">The frozen loadout accepted by this raid.</param>
     public RaidInventory(PlayerLoadout loadout)
     {
         ArgumentNullException.ThrowIfNull(loadout);
         Dictionary<string, InventoryItem> items = loadout.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
-        Dictionary<long, ItemDescription> definitions = LoadoutItems.Definitions.Concat(StorageItems.Definitions).ToDictionary(item => item.GameAssetId);
+        IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.ByAsset;
         HashSet<string> visited = new(StringComparer.Ordinal);
         Dictionary<long, IReadOnlyList<ContainerItem?>> branches = [];
         if (items.Count > 0)
         {
             HashSet<string> children = [.. items.Values.SelectMany(item => item.Slots)];
             InventoryItem[] roots = [.. items.Values.Where(item => !children.Contains(item.InstanceId))];
-            if (roots is not [{ GameAssetId: LoadoutItems.FrameSlotAssetId } root])
+            if (roots.Count(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId) != 1
+                || roots.Count(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId) > 1
+                || roots.Any(item => item.GameAssetId is not (LoadoutItems.FrameSlotAssetId or AugmentItems.AugmentSlotAssetId)))
             {
-                throw new WorldPreparationException("Raid inventory requires a standard player frame");
+                throw new WorldPreparationException("Raid inventory requires a player frame and optional augment structure");
             }
 
-            InventoryItem frame = Child(root, LoadoutItems.StandardFrameAssetId);
+            InventoryItem root = roots.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId);
+            InventoryItem? augmentRoot = roots.SingleOrDefault(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId);
+            if (augmentRoot is not null)
+            {
+                InventoryItem container = Child(augmentRoot, AugmentItems.AugmentContainerAssetId);
+                if (container.Slots is not [{ } slotId])
+                {
+                    throw new WorldPreparationException("Invalid augment container");
+                }
+
+                InventoryItem slot = items[slotId];
+                ReadSlot(slot, AugmentItems.AugmentContentSlotAssetId);
+                if (slot.Slots is [{ } augmentId])
+                {
+                    AugmentAssetId = items[augmentId].GameAssetId;
+                    if (!AugmentItems.FrameAssetIds.ContainsKey(AugmentAssetId.Value))
+                    {
+                        throw new WorldPreparationException("Unsupported equipped augment");
+                    }
+                }
+            }
+
+            FrameAssetId = LoadoutDefinitions.FrameAssetId(AugmentAssetId);
+            InventoryItem frame = Child(root, FrameAssetId);
             if (definitions[frame.GameAssetId].SlotConfig is not StructuralItemSlots frameSlots || frame.Slots.Count != frameSlots.SlotAssetIds.Count)
             {
                 throw new WorldPreparationException("Invalid player frame branches");
@@ -50,7 +75,7 @@ public sealed class RaidInventory
                     throw new WorldPreparationException("Invalid player container size");
                 }
 
-                branches[asset] = Array.AsReadOnly<ContainerItem?>([.. container.Slots.Select(slot => ReadSlot(items[slot], slots.SlotAssetId))]);
+                branches[LoadoutDefinitions.StandardBranch(asset)] = Array.AsReadOnly<ContainerItem?>([.. container.Slots.Select(slot => ReadSlot(items[slot], slots.SlotAssetId))]);
             }
 
             if (visited.Count != items.Count)
@@ -87,16 +112,16 @@ public sealed class RaidInventory
             int handle = containers.Count;
             _handles.Add(name, handle);
             containers.Add(new ItemContainerState(handle, Array.AsReadOnly<ContainerItem?>([.. contents])));
-            if (branchAsset is not { } asset || definitions[asset].SlotConfig is not SingleItemSlot branch
-                || definitions[branch.DefaultSlotAssetId].SlotConfig is not ItemSlotArray array
-                || definitions[array.SlotAssetId].SlotConfig is not SingleItemSlot slot || !slot.AllowedSlotAssetIds.Contains(StorageItems.RubberDuckAssetId))
+            if (branchAsset is not { } asset || definitions[LoadoutDefinitions.Container(FrameAssetId, asset).SlotAssetId].SlotConfig is not SingleItemSlot slot)
             {
                 return;
             }
 
+            HashSet<int> allowed = [.. slot.AllowedSlotAssetIds
+                .Where(id => id == StorageItems.RubberDuckAssetId || AugmentItems.UsableIndices.ContainsKey(id)).Select(LoadoutDefinitions.UsableIndex)];
             for (int index = 0; index < contents.Count; index++)
             {
-                _duckSlots.Add((handle, index));
+                _allowedSlots.Add((handle, index), allowed);
             }
         }
 
@@ -107,10 +132,7 @@ public sealed class RaidInventory
                 return contents;
             }
 
-            if (definitions[asset].SlotConfig is not SingleItemSlot branch || definitions[branch.DefaultSlotAssetId].SlotConfig is not ItemSlotArray slots)
-            {
-                throw new WorldPreparationException("Invalid standard container definitions");
-            }
+            ItemSlotArray slots = LoadoutDefinitions.Container(FrameAssetId, asset);
             return Array.AsReadOnly(new ContainerItem?[checked((int)slots.NumberOfSlots)]);
         }
 
@@ -142,17 +164,24 @@ public sealed class RaidInventory
 
             InventoryItem item = items[slot.Slots[0]];
             visited.Add(item.InstanceId);
-            if (item.GameAssetId != StorageItems.RubberDuckAssetId || item.Slots.Count != 0
-                || item.Amount > StorageItems.Definitions.Single(definition => definition.GameAssetId == item.GameAssetId).MaxAmount
+            if ((item.GameAssetId != StorageItems.RubberDuckAssetId && !AugmentItems.UsableIndices.ContainsKey(item.GameAssetId)) || item.Slots.Count != 0
+                || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
                 || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId)
                 || !Guid.TryParse(item.InstanceId, out Guid guid))
             {
                 throw new WorldPreparationException("Unsupported carried inventory item");
             }
 
-            return new ContainerItem(InventoryBlackboard.RubberDuckIndex, guid, checked((int)item.Amount), item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability);
+            ushort usableIndex = checked((ushort)LoadoutDefinitions.UsableIndex(item.GameAssetId));
+            return new ContainerItem(usableIndex, guid, checked((int)item.Amount), item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability);
         }
     }
+
+    /// <summary>The equipped augment, or null for the standard frame.</summary>
+    public long? AugmentAssetId { get; }
+
+    /// <summary>The inventory frame selected by the equipped augment.</summary>
+    public long FrameAssetId { get; } = LoadoutItems.StandardFrameAssetId;
 
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];
@@ -220,5 +249,6 @@ public sealed class RaidInventory
     private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
         && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;
 
-    private bool Allows(ItemContainerSlot slot, ContainerItem item) => item.AssetIndex == InventoryBlackboard.RubberDuckIndex && _duckSlots.Contains((slot.Parent.Id, slot.Index));
+    private bool Allows(ItemContainerSlot slot, ContainerItem item) => _allowedSlots.TryGetValue((slot.Parent.Id, slot.Index), out HashSet<int>? allowed)
+        && allowed.Contains(item.AssetIndex);
 }

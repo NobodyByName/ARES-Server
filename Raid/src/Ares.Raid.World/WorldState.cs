@@ -2,7 +2,6 @@ using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -469,7 +468,7 @@ public sealed class WorldState
         {
             [PropertyNames.Replicates] = true,
             [PropertyNames.IsActive] = true,
-            [PropertyNames.EquippedLoadoutFrameItemAssetId] = LoadoutItems.StandardFrameAssetId,
+            [PropertyNames.EquippedLoadoutFrameItemAssetId] = inventory.FrameAssetId,
         };
         foreach ((string name, int id) in ((string, int)[])[
             (PropertyNames.Loadout, inventory.Loadout),
