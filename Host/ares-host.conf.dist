@@ -33,7 +33,7 @@ mongodb-uri = "mongodb://127.0.0.1:27017/?directConnection=true"
 # A private URI file takes precedence over mongodb-uri. Use it for credentials.
 mongodb-uri-file =
 mongodb-database = ares_host
-# Required: obtain the game's archive keys as described in README.md, never commit them.
+# Required: operator-supplied game archive keys for ARES-Launcher; never commit them.
 archive-keys-file = "archive-keys.txt"
 # Optional identity signing key file (32-4096 bytes). Empty: identity tokens are unchecked.
 auth-key-file =

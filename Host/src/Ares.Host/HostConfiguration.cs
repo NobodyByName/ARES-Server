@@ -40,7 +40,7 @@ public sealed record HostConfiguration
           --session-control-url <url>       Raid allocation API (loopback HTTP or HTTPS)
           --session-control-token-file <f>  Operator token shared with Raid
           --auth-key-file <f>               Identity signing key, 32-4096 bytes (default: none; tokens are not checked)
-          --archive-keys-file <f>           Game archive keys for ARES-Launcher, required (default {DefaultArchiveKeysFile}; see README)
+          --archive-keys-file <f>           Game archive keys for ARES-Launcher, required (default {DefaultArchiveKeysFile})
           --server-name <text>              Shown in launcher server lists (default {HostSettings.DefaultServerName})
           --motd <text>                     Message of the day for launcher server lists
           --game-build <digits>             Steam build id this server supports (default {GameBuild.SteamBuildId})
@@ -244,7 +244,7 @@ public sealed record HostConfiguration
         if (!File.Exists(fullPath))
         {
             throw new CommandLineException(
-                $"Archive keys file not found: {fullPath}. ARES-Host needs the game's archive keys (README, \"Archive keys\").");
+                $"Archive keys file not found: {fullPath}. ARES-Host needs the game's archive keys in the configured archive-keys-file.");
         }
 
         ArchiveKeys keys;
