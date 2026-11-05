@@ -17,8 +17,11 @@ public sealed record LoadoutReceipt(long UserId, long Revision, string Sha256);
 /// <summary>Validation and defensive copies shared by inventory storage and raid admission.</summary>
 public static class InventorySnapshots
 {
-    /// <summary>Largest item tree accepted from storage or another server.</summary>
+    /// <summary>Largest selected item tree accepted for a Raid handoff.</summary>
     public const int MaximumItems = 256;
+
+    /// <summary>Menu inventory also includes the empty frames needed for local augment changes.</summary>
+    public const int MaximumSnapshotItems = 1024;
 
     private const int MaximumDepth = 32;
     private const int MaximumTextLength = 128;
@@ -28,7 +31,7 @@ public static class InventorySnapshots
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         if (snapshot.UserId <= 0 || snapshot.Revision < 0 || snapshot.Items is null || snapshot.LoadoutRoots is null
-            || snapshot.Items.Count > MaximumItems || snapshot.LoadoutRoots.Count > MaximumItems)
+            || snapshot.Items.Count > MaximumSnapshotItems || snapshot.LoadoutRoots.Count > MaximumItems)
         {
             throw new InvalidDataException("Invalid inventory identity, revision or size");
         }
@@ -108,7 +111,7 @@ public static class InventorySnapshots
             Add(root);
         }
 
-        return new PlayerLoadout(copy.UserId, copy.Revision, selected.AsReadOnly());
+        return Copy(new PlayerLoadout(copy.UserId, copy.Revision, selected.AsReadOnly()));
 
         void Add(string id)
         {
@@ -125,6 +128,11 @@ public static class InventorySnapshots
     public static PlayerLoadout Copy(PlayerLoadout loadout)
     {
         ArgumentNullException.ThrowIfNull(loadout);
+        if (loadout.Items is null || loadout.Items.Count > MaximumItems)
+        {
+            throw new InvalidDataException("Invalid player loadout size");
+        }
+
         InventorySnapshot copy = Copy(new InventorySnapshot(loadout.UserId, loadout.Revision, loadout.Items, []));
         return new PlayerLoadout(copy.UserId, copy.Revision, copy.Items);
     }

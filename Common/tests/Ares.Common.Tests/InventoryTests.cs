@@ -8,6 +8,19 @@ public sealed class InventoryTests
     private static InventoryItem Item(string id, params string[] slots) => new(id, 42, 1, slots, 0, 0, "", "test", 0);
 
     [Fact]
+    public void Menu_frames_can_exceed_the_raid_item_bound_without_expanding_the_handoff_limit()
+    {
+        InventoryItem[] items = [.. Enumerable.Range(0, InventorySnapshots.MaximumItems + 1).Select(index => Item(index.ToString(System.Globalization.CultureInfo.InvariantCulture)))];
+        InventorySnapshot snapshot = InventorySnapshots.Copy(new InventorySnapshot(1, 0, items, ["0"]));
+        Assert.Single(InventorySnapshots.Loadout(snapshot).Items);
+        Assert.Throws<InvalidDataException>(() => InventorySnapshots.Copy(new PlayerLoadout(1, 0, items)));
+        InventoryItem[] largeTree = [items[0] with { Slots = [.. items.Skip(1).Select(item => item.InstanceId)] }, .. items.Skip(1)];
+        Assert.Throws<InvalidDataException>(() => InventorySnapshots.Loadout(snapshot with { Items = largeTree }));
+        InventoryItem[] oversized = [.. Enumerable.Range(0, InventorySnapshots.MaximumSnapshotItems + 1).Select(index => Item(index.ToString(System.Globalization.CultureInfo.InvariantCulture)))];
+        Assert.Throws<InvalidDataException>(() => InventorySnapshots.Copy(new InventorySnapshot(1, 0, oversized, [])));
+    }
+
+    [Fact]
     public void Loadout_selects_complete_trees_and_does_not_share_mutable_lists()
     {
         string[] slots = ["carried"];
