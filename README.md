@@ -17,41 +17,15 @@ the game-session server that runs its raids. Players connect with
 | [Structs](Structs/) | Standalone library of decoded ARC Raiders structures, wire formats and game data for community projects. |
 | [Common](Common/) | Shared server logic used by Host and Raid. |
 
-## Status
+## Content progress
 
-A stock client goes from a fresh launch through sign-in, the main menu and normal Dam matchmaking
-into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets the default Raider,
-moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
-the main menu.
+[![ARES content map: individual maps, ARC enemies, items and equipment, world objects, objectives, skills, traders, furniture and appearance](docs/content-map/overview.svg)](docs/content-map/README.md)
 
-Host persists the local account's stash and selected loadout. Persisted raid reservations are
-checked at startup and periodically; inventory unlocks when Raid confirms the old reservation is gone.
-The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
-moves between compatible slots are
-validated by Raid. Inventory and map screens show their shared menu frame.
-Placement changes remain inside the active raid; post-raid inventory settlement
-is not implemented.
+[Explore content](docs/content-map/README.md) · [Current server support](docs/content-map/support.md)
 
-Combat, Looting and Tactical/Utility Mk.1 augments support persistent menu selection, atomic
-swaps, capacity validation and matching Raid frames. Raid initializes the carrying limit and
-current weight from the selected loadout. Higher tiers and augment skills remain unsupported.
-
-Light Shields support persistent menu selection, atomic swaps and Raid backpack/armor-slot moves.
-Raid replicates their initial shield health and includes their weight. Damage mitigation, depletion,
-equip charge-up, repair, heavier shields and movement penalties remain future work. Shield support
-has automated coverage; menu equipment, Raid shield bars and inventory display are stock-client verified.
-
-Limitations:
-
-- One player and one raid at a time; Dam only.
-- Identity is synthetic: every player uses one local account, with no real sign-in or separate
-  player accounts and progression yet.
-- Movement is trusted from the client; the server does not check it yet.
-- No combat, loot, death or match results yet.
-- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
-- Plain HTTP between the game and ARES-Host; connection trust is not verified.
-- Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
-  been tested yet.
+Each cell is one content piece: **blue** = partial, **orange** = not implemented,
+**gray** = not assessed. Group sizes are balanced for readability; internal names and
+availability still need review.
 
 ## Requirements
 
