@@ -59,6 +59,24 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void Ticket_status_is_read_only_and_requires_one_valid_lookup_key()
+    {
+        RaidAllocations allocations = Allocations();
+        Allocation allocation = allocations.Reserve(Request()).Allocation!;
+        Assert.Equal(allocation.MatchId, allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.MatchId);
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, OtherTicket)).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest(null)).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest(null, "invalid")).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest(allocation.MatchId, Ticket)).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest("invalid")).StatusCode);
+        Assert.Equal([allocation.MatchId], _worlds.Prepared);
+        _now[0] = 121;
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Assert.Equal([allocation.MatchId], _worlds.Prepared);
+    }
+
+    [Fact]
     public void Reservations_expire_unless_the_player_is_active()
     {
         RaidAllocations allocations = Allocations();

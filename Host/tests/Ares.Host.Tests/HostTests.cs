@@ -38,6 +38,11 @@ public sealed class HostTests : IAsyncLifetime
         _raidApp.MapAllocationApi(_raid, OperatorToken);
         await _raidApp.StartAsync(TestContext.Current.CancellationToken);
 
+        await StartHost();
+    }
+
+    private async Task StartHost()
+    {
         HostConfiguration configuration = new()
         {
             Settings = new HostSettings
@@ -54,7 +59,7 @@ public sealed class HostTests : IAsyncLifetime
             SessionControlUrl = new Uri("http://localhost"),
             OperatorToken = OperatorToken,
         };
-        _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), allocatorHandler: _raidApp.GetTestServer().CreateHandler(),
+        _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), allocatorHandler: _raidApp!.GetTestServer().CreateHandler(),
             configureBuilder: builder => builder.WebHost.UseTestServer());
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = _host.GetTestClient();
@@ -225,6 +230,110 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Contains(duck.InstanceId, new InventoryStore(_database.Store).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task The_ready_inventory_swap_releases_a_lost_raid_before_saving_and_freezes_the_new_loadout(bool startFirst, bool restartHost)
+    {
+        (string bearer, InventoryStore store, string oldTicket, InventoryOperationsRequest swap) = await ReserveLootingAugment();
+        _raid.Forget();
+        if (restartHost)
+        {
+            _client!.Dispose();
+            await _host!.DisposeAsync();
+            await StartHost();
+            store = _host!.Services.GetRequiredService<InventoryStore>();
+            await Post("/v1/shared/social/party/v2/create", new { });
+        }
+
+        string? ticket = startFirst ? await StartMatch(bearer) : null;
+
+        Assert.Equal(HttpStatusCode.OK, (await Post("/v1/pioneer/v1/batch-operation", swap, bearer)).StatusCode);
+        Assert.Null(store.ReservedTicketId);
+        Assert.Equal(ItemTechnicalNames.CombatMk1, new InventoryStore(_database.Store).Inventory.Loadout.Augment!.Type);
+        ticket ??= await StartMatch(bearer);
+        Assert.NotEqual(oldTicket, ticket);
+        Assert.Equal(HttpStatusCode.OK, (await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer)).StatusCode);
+
+        PlayerLoadout loadout = Assert.Single(_raid.LastRequest!.Loadouts!);
+        Assert.Equal(store.Snapshot.Revision, loadout.Revision);
+        Assert.Equal("combat", Assert.Single(loadout.Items, item => item.GameAssetId == AugmentItems.CombatMk1AssetId).InstanceId);
+        Assert.Contains(loadout.Items, item => item.GameAssetId == AugmentItems.FrameAssetIds[AugmentItems.CombatMk1AssetId]);
+        Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == AugmentItems.LootingMk1AssetId);
+        Assert.Single(loadout.Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        Assert.Equal(ticket, store.ReservedTicketId);
+        Assert.Equal(3, store.Inventory.ItemCount);
+        Assert.Equal("looting", Assert.Single(store.Inventory.Stash.Items).InstanceId);
+    }
+
+    [Theory]
+    [InlineData(false, false, HttpStatusCode.Conflict)]
+    [InlineData(true, false, HttpStatusCode.ServiceUnavailable)]
+    [InlineData(false, true, HttpStatusCode.Conflict)]
+    [InlineData(true, true, HttpStatusCode.ServiceUnavailable)]
+    public async Task A_ready_swap_preserves_a_live_or_unreachable_raid_reservation(bool unavailable, bool restartHost, HttpStatusCode expected)
+    {
+        (string bearer, InventoryStore store, string ticket, InventoryOperationsRequest swap) = await ReserveLootingAugment();
+        _raid.StatusUnavailable = unavailable;
+        if (restartHost)
+        {
+            _client!.Dispose();
+            await _host!.DisposeAsync();
+            await StartHost();
+            store = _host!.Services.GetRequiredService<InventoryStore>();
+            await Post("/v1/shared/social/party/v2/create", new { });
+        }
+
+        string saved = _database.InventoryJson;
+
+        Assert.Equal(expected, (await Post("/v1/pioneer/v1/batch-operation", swap, bearer)).StatusCode);
+
+        Assert.Equal(saved, _database.InventoryJson);
+        Assert.Equal(ticket, store.ReservedTicketId);
+        Assert.Equal(ItemTechnicalNames.LootingMk1, store.Inventory.Loadout.Augment!.Type);
+        Assert.Equal("looting", Assert.Single(Assert.Single(_raid.LastRequest!.Loadouts!).Items,
+            item => item.GameAssetId == AugmentItems.LootingMk1AssetId).InstanceId);
+    }
+
+    private async Task<(string Bearer, InventoryStore Store, string Ticket, InventoryOperationsRequest Swap)> ReserveLootingAugment()
+    {
+        string bearer = await SignIn();
+        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        PlayerInventory state = store.Inventory;
+        OwnedItem duck = Assert.Single(state.Stash.Items);
+        OwnedItem combat = duck with { InstanceId = "combat", Type = ItemTechnicalNames.CombatMk1 };
+        OwnedItem looting = duck with { InstanceId = "looting", Type = ItemTechnicalNames.LootingMk1 };
+        store.Import(state with
+        {
+            Stash = state.Stash with { Items = [combat] },
+            Loadout = state.Loadout with { Augment = looting, Backpack = new PlayerItemContainer([duck with { Slot = 0 }]) },
+        }, state.Revision);
+        InventorySnapshot snapshot = store.Snapshot;
+        string augmentSlot = snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
+        string stashSlot = snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[0];
+        InventoryItem frame = snapshot.Items.Single(item => item.GameAssetId == AugmentItems.FrameAssetIds[AugmentItems.CombatMk1AssetId]);
+        InventoryItem backpack = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId)
+            && LoadoutDefinitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        string backpackSlot = snapshot.Items.Single(item => item.InstanceId == backpack.Slots[0]).Slots[0];
+        InventoryOperationsRequest swap = new(
+            [new SetItemParents(combat.InstanceId, [augmentSlot]), new SetItemParents(looting.InstanceId, [stashSlot]),
+                new SetItemParents(duck.InstanceId, [backpackSlot])], "");
+        await Post("/v1/shared/social/party/v2/create", new { });
+        string ticket = await StartMatch(bearer);
+        Assert.Equal(HttpStatusCode.OK, (await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer)).StatusCode);
+        Assert.Equal(ticket, store.ReservedTicketId);
+        return (bearer, store, ticket, swap);
+    }
+
+    private async Task<string> StartMatch(string bearer)
+    {
+        HttpResponseMessage response = await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await Json(response)).GetProperty("ticketId").GetString()!;
+    }
+
     [Fact]
     public async Task A_new_host_serves_the_duck_storage_and_changes_the_manifest_when_definitions_change()
     {
@@ -337,6 +446,8 @@ public sealed class HostTests : IAsyncLifetime
 
         public AllocationRequest? LastRequest { get; private set; }
 
+        public bool StatusUnavailable { get; set; }
+
         public void Forget()
         {
             _allocation = null;
@@ -353,7 +464,12 @@ public sealed class HostTests : IAsyncLifetime
 
         public AllocationResult Status(AllocationStatusRequest request)
         {
-            return _allocation is not null && _allocation.MatchId == request.MatchId
+            if (StatusUnavailable)
+            {
+                return AllocationResult.Failure(503, "test_unavailable");
+            }
+
+            return _allocation is not null && (request.MatchId is null ? _allocation.TicketId == request.TicketId : _allocation.MatchId == request.MatchId)
                 ? AllocationResult.Success(_allocation)
                 : AllocationResult.Failure(404, "unknown_session_allocation");
         }

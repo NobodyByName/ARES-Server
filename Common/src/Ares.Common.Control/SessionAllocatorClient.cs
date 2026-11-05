@@ -86,6 +86,21 @@ public sealed class SessionAllocatorClient : IDisposable
             : throw new AllocationUnavailableException("Session routing credential changed within an allocation");
     }
 
+    /// <summary>Looks up a persisted reservation after Host has lost its in-memory match id.</summary>
+    /// <exception cref="AllocationExpiredException">Raid no longer knows the ticket.</exception>
+    /// <exception cref="AllocationUnavailableException">Raid unreachable or the ticket's player/loadout differs.</exception>
+    public async Task<Allocation> StatusByTicketAsync(string ticketId, PlayerLoadout loadout, CancellationToken cancellationToken = default)
+    {
+        Allocation? reply = await PostAsync(AllocationApi.StatusPath, new AllocationStatusRequest(null, ticketId), cancellationToken).ConfigureAwait(false);
+        if (reply is null || reply.TicketId != ticketId || reply.PartyMemberIds is not [var player] || player != loadout.UserId
+            || reply.Loadouts is not [var receipt] || receipt != InventorySnapshots.Receipt(loadout))
+        {
+            throw new AllocationUnavailableException("Session allocation does not match the persisted reservation");
+        }
+
+        return reply;
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {

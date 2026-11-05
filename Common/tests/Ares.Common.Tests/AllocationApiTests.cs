@@ -55,6 +55,29 @@ public sealed class AllocationApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_persisted_ticket_can_be_polled_without_creating_a_new_reservation()
+    {
+        using SessionAllocatorClient client = Client(Token);
+        PlayerLoadout loadout = new(42, 7, []);
+        Allocation reserved = (await client.ReserveAsync(new AllocationRequest(s_ticket, "TheDam", [42], [loadout]), TestContext.Current.CancellationToken))!;
+
+        Allocation found = await client.StatusByTicketAsync(s_ticket, loadout, TestContext.Current.CancellationToken);
+        Assert.Equal(reserved.MatchId, found.MatchId);
+        await Assert.ThrowsAsync<AllocationUnavailableException>(() => client.StatusByTicketAsync(s_ticket, loadout with { Revision = 8 }, TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<AllocationUnavailableException>(() => client.StatusByTicketAsync(s_ticket, loadout with { UserId = 43 }, TestContext.Current.CancellationToken));
+        _raid.Forget();
+        await Assert.ThrowsAsync<AllocationExpiredException>(() => client.StatusByTicketAsync(s_ticket, loadout, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task An_unsupported_ticket_lookup_does_not_report_a_lost_reservation()
+    {
+        using SessionAllocatorClient client = Client(Token);
+        _raid.MatchLookupOnly = true;
+        await Assert.ThrowsAsync<AllocationUnavailableException>(() => client.StatusByTicketAsync(s_ticket, new PlayerLoadout(42, 7, []), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task Wrong_operator_token_is_rejected()
     {
         using SessionAllocatorClient client = Client(new string('y', 40));
@@ -120,6 +143,8 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
         public bool OmitLoadouts { get; set; }
 
+        public bool MatchLookupOnly { get; set; }
+
         public void Forget()
         {
             _allocation = null;
@@ -146,7 +171,12 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
         public AllocationResult Status(AllocationStatusRequest request)
         {
-            return _allocation is not null && _allocation.MatchId == request.MatchId
+            if (MatchLookupOnly && request.MatchId is null)
+            {
+                return AllocationResult.Failure(400, "invalid_allocation_request");
+            }
+
+            return _allocation is not null && (request.MatchId is null ? _allocation.TicketId == request.TicketId : _allocation.MatchId == request.MatchId)
                 ? AllocationResult.Success(_allocation)
                 : AllocationResult.Failure(404, "unknown_session_allocation");
         }

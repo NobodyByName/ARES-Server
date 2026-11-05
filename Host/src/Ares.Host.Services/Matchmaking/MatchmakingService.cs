@@ -9,6 +9,7 @@ using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Social;
 using Ares.Structs.Backend.Matchmaking;
 using Ares.Structs.Backend.Profiles;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Net.Replication;
 using GameServerStates = Ares.Structs.Backend.Matchmaking.GameServerStates;
 using ServerInitializationStates = Ares.Structs.Backend.Matchmaking.ServerInitializationStates;
@@ -66,22 +67,14 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             return ServiceReply.Error(409, "no_local_party");
         }
 
-        if (_assignment is not null && !_assignmentExpired && allocator is not null)
+        // A Raid restart loses the reservation: start a fresh ticket instead of
+        // handing the client a dead match again.
+        try
         {
-            // A Raid restart loses the reservation: start a fresh ticket instead of
-            // handing the client a dead match again.
-            try
-            {
-                await allocator.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
-            }
-            catch (AllocationExpiredException)
-            {
-                inventory.Release(_assignment.TicketId);
-                _assignmentExpired = true;
-            }
-            catch (AllocationUnavailableException)
-            {
-            }
+            await RefreshAssignmentLockedAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (AllocationUnavailableException)
+        {
         }
 
         if (_assignmentExpired)
@@ -107,6 +100,24 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         _revision++;
         log.Write("local_matchmaking", "started");
         return ServiceReply.Ok(_ticket);
+    }
+
+    /// <summary>Commits menu edits before the next allocation freezes the selected loadout.</summary>
+    public async Task<ServiceReply> CommitInventoryAsync(InventoryOperationsRequest request, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        using BackendGate.Releaser held = await gate.EnterAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // Ready saves inventory before starting matchmaking. Reconcile the previous
+            // assignment here too, so a confirmed lost raid cannot reject that save.
+            await RefreshAssignmentLockedAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (AllocationUnavailableException)
+        {
+            return ServiceReply.Error(503, "session_allocation_unavailable");
+        }
+
+        return inventory.Commit(request, now);
     }
 
     /// <summary><c>POST /v1/shared/match/status</c>: reserves a raid while the ticket has none.</summary>
@@ -204,6 +215,37 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         string state = assigned ? PlayerActivityStates.InMatch : ticket is not null ? PlayerActivityStates.Matchmaking : PlayerActivityStates.Idle;
         return new PlayerActivityResponse(1, state, $"ares-host-activity-{_revision}", ticket?.TicketId ?? "",
             assigned ? _assignment!.MatchId : "", "", "", new ScenarioMetadata(ticket?.ScenarioName ?? "", AllowReconnects: false));
+    }
+
+    private async Task RefreshAssignmentLockedAsync(CancellationToken cancellationToken)
+    {
+        if (_assignmentExpired || allocator is null)
+        {
+            return;
+        }
+
+        string? ticket = _assignment?.TicketId ?? inventory.ReservedTicketId;
+        if (ticket is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_assignment is not null)
+            {
+                await allocator.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                await allocator.StatusByTicketAsync(ticket, inventory.Reserve(ticket), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (AllocationExpiredException)
+        {
+            inventory.Release(ticket);
+            _assignmentExpired = _assignment is not null;
+        }
     }
 
     private async Task<ServiceReply> StatusLockedAsync(string? ticketId, bool allocate, CancellationToken cancellationToken)

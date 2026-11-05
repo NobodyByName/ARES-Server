@@ -116,10 +116,17 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     public AllocationResult Status(AllocationStatusRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        bool byTicket = request.MatchId is null;
+        if (byTicket ? !SessionAllocatorClient.IsCanonicalUuid(request.TicketId)
+            : request.TicketId is not null || !SessionAllocatorClient.IsCanonicalUuid(request.MatchId))
+        {
+            return AllocationResult.Failure(StatusCodes.Status400BadRequest, "invalid_session_lookup");
+        }
+
         lock (_lock)
         {
             Maintain();
-            return _current is { } item && item.MatchId == request.MatchId
+            return _current is { } item && (byTicket ? item.TicketId == request.TicketId : item.MatchId == request.MatchId)
                 ? AllocationResult.Success(Status(item))
                 : AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation");
         }

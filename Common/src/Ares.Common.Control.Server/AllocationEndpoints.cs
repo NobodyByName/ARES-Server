@@ -12,7 +12,7 @@ public interface IAllocationService
     /// <summary>Reserves (or re-reads the existing reservation for) a ticket.</summary>
     AllocationResult Reserve(AllocationRequest request);
 
-    /// <summary>Reads a reservation by match id.</summary>
+    /// <summary>Reads a reservation by match id or persisted ticket id.</summary>
     AllocationResult Status(AllocationStatusRequest request);
 }
 

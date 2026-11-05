@@ -83,8 +83,8 @@ public sealed class BackendRoutes
         Add("GET /v1/pioneer/quests", new QuestsResponse([]));
         _routes["GET /v1/pioneer/inventory"] = new BackendRoute((_, _) =>
             Task.FromResult(ServiceReply.Ok(new InventoryResponse(inventory.Snapshot.Items))), RequiresIdentity: true);
-        _routes["POST /v1/pioneer/v1/batch-operation"] = new BackendRoute((request, _) =>
-            Task.FromResult(inventory.Commit(request.Read<InventoryOperationsRequest>(), time.GetUtcNow())), RequiresIdentity: true);
+        _routes["POST /v1/pioneer/v1/batch-operation"] = new BackendRoute((request, token) =>
+            matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token), RequiresIdentity: true);
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));
         Add("POST /v1/pioneer/projects/list", new ProjectsResponse([]));
         Add("GET /v1/pioneer/levels/list", new LevelsResponse(BackendContent.Levels));

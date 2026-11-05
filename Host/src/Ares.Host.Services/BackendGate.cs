@@ -1,8 +1,8 @@
 namespace Ares.Host.Services;
 
 /// <summary>
-/// One async lock shared by party and matchmaking state: matchmaking reads and changes party
-/// readiness as part of its own transitions.
+/// One async lock shared by party, matchmaking and menu inventory commits. Matchmaking reads
+/// party readiness and freezes inventory as part of its own transitions.
 /// </summary>
 public sealed class BackendGate : IDisposable
 {
