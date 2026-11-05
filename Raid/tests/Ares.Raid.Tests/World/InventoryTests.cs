@@ -6,6 +6,7 @@ using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
@@ -18,6 +19,21 @@ public sealed class InventoryTests
 {
     private static readonly Guid s_duckId = Guid.Parse("01234567-89ab-cdef-1234-56789abcdef0");
     private static readonly int[] s_sizes = [5, 10, 4, 1, 0];
+
+    [Theory]
+    [InlineData(null, 30f)]
+    [InlineData(AugmentItems.CombatMk1AssetId, 45f)]
+    [InlineData(AugmentItems.LootingMk1AssetId, 50f)]
+    [InlineData(AugmentItems.TacticalMk1AssetId, 40f)]
+    public void The_join_replicates_the_equipped_augments_weight_limit_in_the_character_attributes(long? augment, float expected)
+    {
+        ScriptedPlayer session = new(loadout: StandardLoadout(augment));
+        session.Possess();
+        Dictionary<string, object?> attributes = CharacterAttributes(session);
+        Assert.Equal(expected, attributes[$"{PropertyNames.MaxWeight}.{PropertyNames.BaseValue}"]);
+        Assert.Equal(expected, attributes[$"{PropertyNames.MaxWeight}.{PropertyNames.CurrentValue}"]);
+        Assert.Equal(2, attributes.Count);
+    }
 
     [Fact]
     public void Selected_items_keep_their_identity_amount_and_slot_in_independent_raid_containers()
@@ -190,6 +206,35 @@ public sealed class InventoryTests
         session.Channels.Commit();
         Assert.Equal(1, session.Channels.InventoryMoves);
         Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+    }
+
+    private static Dictionary<string, object?> CharacterAttributes(ScriptedPlayer session)
+    {
+        int index = CharacterDefaults.AttributeSets.Select(set => set.Class).ToList().IndexOf(ClassPaths.PioneerCharacterAttributeSet);
+        ulong guid = session.Player.AttributeSets[index];
+        DynamicSubobjectContent? character = null;
+        foreach (ChannelBunch bunch in session.Sent.Where(bunch => bunch is { Channel: 6, PackageExports: false, Opened: false }))
+        {
+            try
+            {
+                DynamicSubobjectContent content = DynamicSubobjectContent.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
+                if (content.Guid != guid)
+                {
+                    continue;
+                }
+
+                character = content;
+                break;
+            }
+            catch (InvalidPacketException)
+            {
+                // Other pawn-channel bunches contain stable subobjects or RPCs.
+            }
+        }
+
+        Assert.NotNull(character);
+        PropertyCodec codec = new(new ValueCodec(GameReplication.Catalog, []));
+        return codec.Decode(new PropertyLayout(GameReplication.Catalog, ClassPaths.PioneerCharacterAttributeSet), character.Content);
     }
 
     private static InventoryCommand Swap(int fromContainer, ushort fromSlot, int toContainer, ushort toSlot) => new(InventoryCommandType.SwapItems,

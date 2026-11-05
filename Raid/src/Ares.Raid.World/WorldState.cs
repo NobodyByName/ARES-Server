@@ -507,19 +507,32 @@ public sealed class WorldState
         return new StableSubobjectContent(player.AbilitySystem, Replication.Encode(CharacterDefaults.AbilitySystem.Class, AbilityValues(player), Objects([player.Pawn])));
     }
 
-    /// <summary>Creates the attribute sets (at their class defaults) inside the character.</summary>
+    /// <summary>Creates the character's attribute sets with the selected loadout's carrying limit.</summary>
     /// <param name="player">The player.</param>
+    /// <param name="inventory">The selected loadout.</param>
     /// <returns>The construction blocks.</returns>
-    public IReadOnlyList<DynamicSubobjectContent> AttributeSetCreation(WorldPlayer player)
+    public IReadOnlyList<DynamicSubobjectContent> AttributeSetCreation(WorldPlayer player, RaidInventory inventory)
     {
         ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(inventory);
         return
         [
-            .. player.AttributeSets.Select((guid, index) => new DynamicSubobjectContent(
-                guid,
-                _imports.Classes[CharacterDefaults.AttributeSets[index].Class],
-                new ActorContentBlock([], 0, false),
-                null)),
+            .. player.AttributeSets.Select((guid, index) =>
+            {
+                string classPath = CharacterDefaults.AttributeSets[index].Class;
+                if (classPath != ClassPaths.PioneerCharacterAttributeSet)
+                {
+                    return new DynamicSubobjectContent(guid, _imports.Classes[classPath], new ActorContentBlock([], 0, false), null);
+                }
+
+                Dictionary<string, object?> values = new()
+                {
+                    [$"{PropertyNames.MaxWeight}.{PropertyNames.BaseValue}"] = (float)inventory.MaxWeight,
+                    [$"{PropertyNames.MaxWeight}.{PropertyNames.CurrentValue}"] = (float)inventory.MaxWeight,
+                };
+                ActorContentBlock content = Replication.Encode(classPath, values, Objects([]));
+                return new DynamicSubobjectContent(guid, _imports.Classes[classPath], content, null);
+            }),
         ];
     }
 

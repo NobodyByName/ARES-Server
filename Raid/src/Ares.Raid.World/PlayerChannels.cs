@@ -587,7 +587,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.AbilityComponentPending;
                 return true;
             case DeliveryPhase.AbilityComponentPending when delivered:
-                IReadOnlyList<DynamicSubobjectContent> sets = _raid.State.AttributeSetCreation(_player);
+                IReadOnlyList<DynamicSubobjectContent> sets = _raid.State.AttributeSetCreation(_player, _raid.Inventory);
                 _keys = [sender.Queue(Bunches.Actor(PawnChannel, writer =>
                 {
                     foreach (DynamicSubobjectContent set in sets)

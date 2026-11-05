@@ -183,6 +183,9 @@ public sealed class RaidInventory
     /// <summary>The inventory frame selected by the equipped augment.</summary>
     public long FrameAssetId { get; } = LoadoutItems.StandardFrameAssetId;
 
+    /// <summary>The carrying-weight limit selected by the equipped augment.</summary>
+    public double MaxWeight => LoadoutDefinitions.MaximumWeight(AugmentAssetId);
+
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];
 
