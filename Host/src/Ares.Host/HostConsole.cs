@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Ares.Common;
 using Ares.Common.Logging;
 using Ares.Host.Services.Inventory;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
 namespace Ares.Host;
@@ -23,6 +24,12 @@ internal sealed class HostConsole : ILoggerProvider
     private readonly List<string> _history = [];
     private readonly Dictionary<string, string> _status = [];
     private readonly StringBuilder _input = new();
+    private string[] _completionCandidates = [];
+    private string _completionInput = "";
+    private int _completionCursor;
+    private int _completionStart;
+    private int _completionLength;
+    private int _completionIndex = -1;
     private readonly DateTimeOffset _started = DateTimeOffset.Now;
     private int _cursor;
     private int _historyIndex;
@@ -182,6 +189,7 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("inventory  Show stored items and the loadout reservation");
                     AddLine("inventory import <path>  Replace an idle inventory from a JSON file");
                     AddLine("inventory add <technical-name>  Add one supported item to the stash");
+                    AddLine("Tab completes commands, subcommands and item names; Shift+Tab cycles backward");
                     break;
                 case "status":
                     AddLine($@"ARES-Host {AresVersion.Current} | Steam build {GameBuild.SteamBuildId} | uptime {DateTimeOffset.Now - _started:hh\:mm\:ss}");
@@ -270,8 +278,16 @@ internal sealed class HostConsole : ILoggerProvider
     internal void HandleKey(ConsoleKeyInfo key, Action stop, int height)
     {
         _dirty = true;
+        if (key.Key != ConsoleKey.Tab)
+        {
+            _completionCandidates = [];
+        }
+
         switch (key.Key)
         {
+            case ConsoleKey.Tab:
+                CompleteInput(key.Modifiers.HasFlag(ConsoleModifiers.Shift));
+                break;
             case ConsoleKey.Enter:
                 string command = _input.ToString();
                 _input.Clear();
@@ -348,6 +364,80 @@ internal sealed class HostConsole : ILoggerProvider
         }
     }
 
+    private void CompleteInput(bool reverse)
+    {
+        string input = _input.ToString();
+        bool cycling = _completionCandidates.Length > 0 && input == _completionInput && _cursor == _completionCursor;
+        if (!cycling)
+        {
+            _completionStart = _cursor;
+            while (_completionStart > 0 && input[_completionStart - 1] != ' ')
+            {
+                _completionStart--;
+            }
+
+            string[] preceding = input[.._completionStart].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            IEnumerable<string> candidates = preceding switch
+            {
+                [] => ["help", "status", "clear", "stop", "inventory"],
+                [var command] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
+                [var command, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
+                    && subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => ItemTechnicalNames.AssetIds.Keys,
+                _ => [],
+            };
+            string query = input[_completionStart.._cursor];
+            _completionCandidates = [.. candidates.Where(name => name.Contains(query, StringComparison.OrdinalIgnoreCase)).Order(StringComparer.Ordinal)];
+            if (_completionCandidates.Length == 0)
+            {
+                return;
+            }
+
+            int end = _cursor;
+            while (end < input.Length && input[end] != ' ')
+            {
+                end++;
+            }
+
+            _completionLength = end - _completionStart;
+            _completionIndex = -1;
+            string common = _completionCandidates[0];
+            foreach (string name in _completionCandidates.Skip(1))
+            {
+                int length = 0;
+                while (length < common.Length && length < name.Length && common[length] == name[length])
+                {
+                    length++;
+                }
+
+                common = common[..length];
+            }
+
+            if (!reverse && common.StartsWith(query, StringComparison.OrdinalIgnoreCase) && common.Length > query.Length)
+            {
+                ApplyCompletion(common);
+                return;
+            }
+        }
+
+        _completionIndex = reverse ? (_completionIndex <= 0 ? _completionCandidates.Length - 1 : _completionIndex - 1)
+            : (_completionIndex + 1) % _completionCandidates.Length;
+        ApplyCompletion(_completionCandidates[_completionIndex]);
+    }
+
+    private void ApplyCompletion(string name)
+    {
+        if (_input.Length - _completionLength + name.Length > InputLimit)
+        {
+            return;
+        }
+
+        _input.Remove(_completionStart, _completionLength).Insert(_completionStart, name);
+        _completionLength = name.Length;
+        _cursor = _completionStart + name.Length;
+        _completionInput = _input.ToString();
+        _completionCursor = _cursor;
+    }
+
     internal string Render(int width, int height)
     {
         // Leave the last column unused to avoid the terminal's automatic line wrap.
@@ -381,7 +471,7 @@ internal sealed class HostConsole : ILoggerProvider
         }
 
         rows.Add(new string('-', columns));
-        rows.Add(_scroll == 0 ? "LIVE | help | Up/Down history | Home/End logs | Ctrl+C stop" : $"PAUSED {_scroll} rows above live | Home/End logs");
+        rows.Add(_scroll == 0 ? "LIVE | help | Tab completion | Up/Down history | Home/End logs | Ctrl+C stop" : $"PAUSED {_scroll} rows above live | Home/End logs");
         int inputColumns = Math.Max(1, columns - 2);
         int inputStart = Math.Max(0, _cursor - inputColumns + 1);
         rows.Add("> " + _input.ToString(inputStart, Math.Min(inputColumns, _input.Length - inputStart)));
