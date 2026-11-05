@@ -4,13 +4,13 @@ namespace Ares.Structs.Core;
 public static class GameBuild
 {
     /// <summary>Steam build id.</summary>
-    public const int SteamBuildId = 26159202;
+    public const int SteamBuildId = 26439197;
 
     /// <summary>Project name in the network compatibility string.</summary>
     public const string ProjectName = "PioneerGame";
 
     /// <summary>Build identifier in the network compatibility string.</summary>
-    public const string BuildIdentifier = "CL1438640-A968EFC7-BK4912";
+    public const string BuildIdentifier = "CL1450810-644C5505-BK4962";
 
     /// <summary>Engine network version.</summary>
     public const uint EngineNetworkVersion = 43;
@@ -19,7 +19,7 @@ public static class GameBuild
     public const uint GameNetworkVersion = 0;
 
     /// <summary>Network compatibility checksum of the identity above, checked in the handshake.</summary>
-    public const uint NetworkChecksum = 0xFBE65524U;
+    public const uint NetworkChecksum = 0x91C089DCU;
 
     /// <summary>
     /// SHA-256 (lowercase hex) of the archive keys: the 32-byte pak key followed by the eight container

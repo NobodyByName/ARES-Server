@@ -31,7 +31,7 @@ availability still need review.
 
 - .NET 10 SDK to build from source (version in `global.json`). No game installation is needed to build or test.
 - An operator-managed MongoDB replica set for Host persistence and integration tests (tested with MongoDB 8.0).
-- Players need their own, unmodified copy of **ARC Raiders, Steam build 26159202**, and
+- Players need their own, unmodified copy of **ARC Raiders 2.4.1, Steam build 26439197**, and
   [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher). ARES supports one game build at a time;
   players on a newer build must wait for ARES to support it.
 - Operators must supply the game's [archive keys](#archive-keys). ARES includes no game keys or game files.
