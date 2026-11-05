@@ -359,7 +359,7 @@ public static class AugmentItems
             QualityLevel = 0L,
             SlotConfig = new SingleItemSlot(
             [
-                -2097404337L, 9197506L,
+                1237209984L, 1505999062L,
             ], false, 0L),
         },
         new(819401007L, "InventoryStructure", 1L, false, true,
