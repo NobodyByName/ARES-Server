@@ -10,6 +10,88 @@ public sealed class InventoryOperationTests : IDisposable
     private readonly TestDatabase _database = new();
 
     [Fact]
+    public void Unequipping_into_a_noncanonical_stash_slot_clears_the_predicted_augment_copy()
+    {
+        InventoryStore store = Create();
+        store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch);
+        string augment = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.CombatMk1).InstanceId;
+        string equipment = store.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
+        Assert.Equal(200, store.Commit(Move(augment, equipment, "equip"), DateTimeOffset.UnixEpoch).StatusCode);
+        InventorySnapshot before = store.Snapshot;
+        string target = before.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[3];
+        InventoryOperationsRequest request = Move(augment, target, "");
+        Dictionary<string, InventoryItem> predicted = Predict(before, request);
+        ServiceReply response = store.Commit(request, DateTimeOffset.UnixEpoch);
+        Assert.Equal(200, response.StatusCode);
+        Assert.NotEqual(target, Parent(store, augment));
+        AssertReconcilesPrediction(predicted, response, store.Snapshot);
+        Assert.Single(store.Inventory.Stash.Items, item => item.InstanceId == augment);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Canonical_stash_placement_reconciles_predictions_including_repeated_empty_id_requests(bool carried)
+    {
+        InventoryStore store = Create();
+        string duck = Duck(store).InstanceId;
+        if (carried)
+        {
+            Assert.Equal(200, store.Commit(Move(duck, BackpackSlot(store), "carry"), DateTimeOffset.UnixEpoch).StatusCode);
+        }
+
+        string target = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[20];
+        InventoryOperationsRequest request = Move(duck, target, "");
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            InventorySnapshot before = store.Snapshot;
+            Dictionary<string, InventoryItem> predicted = Predict(before, request);
+            ServiceReply response = store.Commit(request, DateTimeOffset.UnixEpoch);
+            Assert.Equal(200, response.StatusCode);
+            AssertReconcilesPrediction(predicted, response, store.Snapshot);
+            Assert.Equal(1, store.Inventory.ItemCount);
+            Assert.Equal(before.Revision + (carried && attempt == 0 ? 1 : 0), store.Snapshot.Revision);
+        }
+    }
+
+    private static Dictionary<string, InventoryItem> Predict(InventorySnapshot snapshot, InventoryOperationsRequest request)
+    {
+        Dictionary<string, InventoryItem> cache = snapshot.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
+        foreach (SetItemParents operation in request.Operations!.Cast<SetItemParents>())
+        {
+            foreach (InventoryItem parent in cache.Values.Where(item => item.Slots.Contains(operation.ItemInstanceId)).ToArray())
+            {
+                cache[parent.InstanceId] = parent with { Slots = [.. parent.Slots.Where(id => id != operation.ItemInstanceId)] };
+            }
+
+            foreach (string id in operation.ParentInstanceIds)
+            {
+                cache[id] = cache[id] with { Slots = [.. cache[id].Slots, operation.ItemInstanceId] };
+            }
+        }
+
+        return cache;
+    }
+
+    private static void AssertReconcilesPrediction(Dictionary<string, InventoryItem> cache, ServiceReply response, InventorySnapshot authoritative)
+    {
+        ItemChanges changes = Assert.IsType<InventoryOperationsResponse>(response.Body).Changeset.Items;
+        foreach (string id in changes.Deleted)
+        {
+            cache.Remove(id);
+        }
+
+        foreach (InventoryItem item in changes.Created.Concat(changes.Updated))
+        {
+            cache[item.InstanceId] = item;
+        }
+
+        InventorySnapshot reconciled = InventorySnapshots.Copy(authoritative with { Items = [.. cache.Values] });
+        Assert.True(InventorySnapshots.Same(new PlayerLoadout(reconciled.UserId, reconciled.Revision, reconciled.Items),
+            new PlayerLoadout(authoritative.UserId, authoritative.Revision, authoritative.Items)));
+    }
+
+    [Fact]
     public void The_same_duck_moves_both_ways_and_its_location_survives_restarts()
     {
         InventoryStore store = Create();

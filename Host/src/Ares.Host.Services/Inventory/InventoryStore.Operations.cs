@@ -41,6 +41,8 @@ public sealed partial class InventoryStore
             long revision = checked(_state.Revision + 1);
             bool changed = false;
             Dictionary<string, InventoryItem> before = _projection.Snapshot.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
+            HashSet<string> movedIds = [.. operations.Cast<SetItemParents>().Select(operation => operation.ItemInstanceId)];
+            HashSet<string> predictedParents = [.. operations.Cast<SetItemParents>().SelectMany(operation => operation.ParentInstanceIds)];
             try
             {
                 Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
@@ -126,8 +128,19 @@ public sealed partial class InventoryStore
                 return ServiceReply.Error(400, "invalid_inventory_move");
             }
 
-            return Reply([.. _projection.Snapshot.Items.Where(item => !before.TryGetValue(item.InstanceId, out InventoryItem? previous)
-                || item with { Slots = previous.Slots } != previous || !item.Slots.SequenceEqual(previous.Slots))], deleted);
+            IReadOnlyList<InventoryItem> after = _projection.Snapshot.Items;
+            // The client has already predicted the requested parents. Reassert those slots and
+            // the canonical parents even when storage is unchanged, so stash sorting cannot leave
+            // a predicted copy behind or hide the authoritative item after a no-op/retry.
+            return ServiceReply.Ok(new InventoryOperationsResponse(Changeset.Empty with
+            {
+                Items = new ItemChanges(
+                    [.. after.Where(item => !before.ContainsKey(item.InstanceId))],
+                    [.. after.Where(item => before.TryGetValue(item.InstanceId, out InventoryItem? previous)
+                        && (predictedParents.Contains(item.InstanceId) || movedIds.Contains(item.InstanceId) || item.Slots.Any(movedIds.Contains)
+                            || item with { Slots = previous.Slots } != previous || !item.Slots.SequenceEqual(previous.Slots)))],
+                    deleted),
+            }));
         }
     }
 
