@@ -297,6 +297,67 @@ public sealed class HostTests : IAsyncLifetime
             item => item.GameAssetId == AugmentItems.LootingMk1AssetId).InstanceId);
     }
 
+    [Fact]
+    public async Task Startup_releases_a_confirmed_lost_reservation_before_any_client_or_console_request()
+    {
+        (_, InventoryStore store, _, _) = await ReserveLootingAugment();
+        PlayerInventory before = store.Inventory;
+        _raid.Forget();
+        _client!.Dispose();
+        await _host!.DisposeAsync();
+        await StartHost();
+        store = _host!.Services.GetRequiredService<InventoryStore>();
+
+        Assert.Null(store.ReservedTicketId);
+        Assert.Equal(before.Revision, store.Inventory.Revision);
+        Assert.Equal(before.Loadout.Augment, store.Inventory.Loadout.Augment);
+        Assert.Equal(before.Stash.Items, store.Inventory.Stash.Items);
+        store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch);
+        Assert.Contains(store.Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Startup_keeps_a_live_or_unverified_reservation_locked(bool unavailable)
+    {
+        (_, _, string ticket, _) = await ReserveLootingAugment();
+        _raid.StatusUnavailable = unavailable;
+        string saved = _database.InventoryJson;
+        _client!.Dispose();
+        await _host!.DisposeAsync();
+        await StartHost();
+        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+
+        Assert.Equal(ticket, store.ReservedTicketId);
+        Assert.Throws<InvalidOperationException>(() => store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch));
+        Assert.Equal(saved, _database.InventoryJson);
+    }
+
+    [Fact]
+    public async Task Recovery_retries_when_Raid_becomes_available_without_waiting_for_client_traffic()
+    {
+        await ReserveLootingAugment();
+        _raid.StatusUnavailable = true;
+        _client!.Dispose();
+        await _host!.DisposeAsync();
+        await StartHost();
+        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        Assert.NotNull(store.ReservedTicketId);
+        _raid.Forget();
+        _raid.StatusUnavailable = false;
+
+        using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(10));
+        while (store.ReservedTicketId is not null)
+        {
+            await Task.Delay(50, timeout.Token);
+        }
+
+        store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch);
+        Assert.Contains(store.Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+    }
+
     private async Task<(string Bearer, InventoryStore Store, string Ticket, InventoryOperationsRequest Swap)> ReserveLootingAugment()
     {
         string bearer = await SignIn();

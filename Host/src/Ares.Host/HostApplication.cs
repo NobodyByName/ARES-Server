@@ -73,6 +73,8 @@ public static class HostApplication
         BackendGate gate = new();
         PartyService party = new(gate, profiles, log, time);
         MatchmakingService matchmaking = new(gate, party, profiles, allocator, log, inventory);
+        builder.Services.AddSingleton(matchmaking);
+        builder.Services.AddHostedService(_ => new InventoryReservationRecovery(matchmaking, time));
         BackendRoutes routes = new(identity, profiles, accounts, party, matchmaking, inventory, time);
         RequestDispatcher dispatcher = new(settings, routes, matchmaking, log, time);
 

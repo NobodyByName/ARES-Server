@@ -36,6 +36,13 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
     /// <summary>True when a Raid allocation API is configured.</summary>
     public bool HasAllocator => allocator is not null;
 
+    /// <summary>Reconciles a persisted inventory lock independently of menu or matchmaking traffic.</summary>
+    public async Task ReconcileInventoryAsync(CancellationToken cancellationToken)
+    {
+        using BackendGate.Releaser held = await gate.EnterAsync(cancellationToken).ConfigureAwait(false);
+        await RefreshAssignmentLockedAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Players in the current live raid assignment (0 or the party size).</summary>
     public (bool Active, int Players) CurrentRaid
     {
@@ -245,6 +252,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         {
             inventory.Release(ticket);
             _assignmentExpired = _assignment is not null;
+            log.Write("inventory_reservation", "released_lost_raid");
         }
     }
 
