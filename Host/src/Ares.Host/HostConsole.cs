@@ -181,6 +181,7 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("stop    Gracefully stop ARES-Host");
                     AddLine("inventory  Show stored items and the loadout reservation");
                     AddLine("inventory import <path>  Replace an idle inventory from a JSON file");
+                    AddLine("inventory add <technical-name>  Add one supported item to the stash");
                     break;
                 case "status":
                     AddLine($@"ARES-Host {AresVersion.Current} | Steam build {GameBuild.SteamBuildId} | uptime {DateTimeOffset.Now - _started:hh\:mm\:ss}");
@@ -205,6 +206,7 @@ internal sealed class HostConsole : ILoggerProvider
                         PlayerInventory state = inventory.Inventory;
                         AddLine($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {state.Stash.SlotCount}, backpack capacity {state.Loadout.BackpackCapacity}");
                         AddLine($"QuickUse capacity {state.Loadout.QuickUseCapacity}, Safe Pocket capacity {state.Loadout.SafePocketCapacity}");
+                        AddLine($"Augment: {state.Loadout.Augment?.Type ?? "none"}");
                         AddLine($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
                     }
                     else
@@ -215,6 +217,9 @@ internal sealed class HostConsole : ILoggerProvider
                     break;
                 case not null when name.StartsWith("inventory import ", StringComparison.OrdinalIgnoreCase):
                     ImportInventory(name["inventory import ".Length..].Trim().Trim('"'));
+                    break;
+                case not null when name.StartsWith("inventory add ", StringComparison.OrdinalIgnoreCase):
+                    AddInventoryItem(name["inventory add ".Length..].Trim());
                     break;
                 default:
                     AddLine("Unknown command. Type help for commands.");
@@ -240,6 +245,25 @@ internal sealed class HostConsole : ILoggerProvider
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or InvalidOperationException or OverflowException)
         {
             AddLine($"Inventory import rejected: {SafeText(error.Message)}");
+        }
+    }
+
+    private void AddInventoryItem(string technicalName)
+    {
+        if (Inventory is not { } inventory)
+        {
+            AddLine("Inventory is unavailable.");
+            return;
+        }
+
+        try
+        {
+            inventory.AddItem(technicalName, DateTimeOffset.UtcNow);
+            AddLine($"Added {technicalName} to the stash. Start a fresh client to refresh inventory.");
+        }
+        catch (Exception error) when (error is IOException or InvalidOperationException or OverflowException)
+        {
+            AddLine($"Inventory add rejected: {SafeText(error.Message)}");
         }
     }
 

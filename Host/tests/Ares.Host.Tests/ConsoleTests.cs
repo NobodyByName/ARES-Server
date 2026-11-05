@@ -1,12 +1,27 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Host.Services.Inventory;
+using Ares.Structs.Backend.Progression;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Host.Tests;
 
 public sealed class ConsoleTests
 {
+    [Fact]
+    public void Adding_an_item_requires_submitting_the_command()
+    {
+        using TestDatabase database = new();
+        InventoryStore inventory = new(database.Store);
+        inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
+        using HostConsole console = new("plain", TextWriter.Null);
+        console.Inventory = inventory;
+        Type(console, "inventory add " + ItemTechnicalNames.CombatMk1);
+        Assert.Single(inventory.Inventory.Stash.Items);
+        Key(console, ConsoleKey.Enter);
+        Assert.Contains(new InventoryStore(database.Store).Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+    }
+
     [Fact]
     public void Inventory_import_reads_the_operator_file_and_survives_a_restart()
     {
