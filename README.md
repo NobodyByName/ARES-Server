@@ -24,8 +24,10 @@ into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets th
 moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
 the main menu.
 
-Host persists the local account's stash and selected loadout. The standard player containers and
-rubber duck appear in the raid inventory, and whole-stack drag moves between compatible slots are
+Host persists the local account's stash and selected loadout. Persisted raid reservations are
+checked at startup and periodically; inventory unlocks when Raid confirms the old reservation is gone.
+The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
+moves between compatible slots are
 validated by Raid. Inventory and map screens show their shared menu frame.
 Placement changes remain inside the active raid; post-raid inventory settlement
 is not implemented.
@@ -33,6 +35,11 @@ is not implemented.
 Combat, Looting and Tactical/Utility Mk.1 augments support persistent menu selection, atomic
 swaps, capacity validation and matching Raid frames. Raid initializes the carrying limit and
 current weight from the selected loadout. Higher tiers and augment skills remain unsupported.
+
+Light Shields support persistent menu selection, atomic swaps and Raid backpack/armor-slot moves.
+Raid replicates their initial shield health and includes their weight. Damage mitigation, depletion,
+equip charge-up, repair, heavier shields and movement penalties remain future work. Shield support
+has automated coverage; menu equipment, Raid shield bars and inventory display are stock-client verified.
 
 Limitations:
 
