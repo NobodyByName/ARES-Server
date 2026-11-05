@@ -530,6 +530,12 @@ public sealed class WorldState
                     [$"{PropertyNames.MaxWeight}.{PropertyNames.BaseValue}"] = (float)inventory.MaxWeight,
                     [$"{PropertyNames.MaxWeight}.{PropertyNames.CurrentValue}"] = (float)inventory.MaxWeight,
                 };
+                if (inventory.Weight != 0)
+                {
+                    values[$"{PropertyNames.Weight}.{PropertyNames.BaseValue}"] = (float)inventory.Weight;
+                    values[$"{PropertyNames.Weight}.{PropertyNames.CurrentValue}"] = (float)inventory.Weight;
+                }
+
                 ActorContentBlock content = Replication.Encode(classPath, values, Objects([]));
                 return new DynamicSubobjectContent(guid, _imports.Classes[classPath], content, null);
             }),

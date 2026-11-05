@@ -11,6 +11,7 @@ public sealed class RaidInventory
 {
     private readonly Dictionary<string, int> _handles = new(StringComparer.Ordinal);
     private readonly Dictionary<(int Container, int Slot), HashSet<int>> _allowedSlots = [];
+    private readonly Dictionary<ushort, double> _unitWeights = [];
 
     /// <summary>Prepares the selected frame, preserving carried item identities and amounts.</summary>
     /// <param name="loadout">The frozen loadout accepted by this raid.</param>
@@ -173,6 +174,7 @@ public sealed class RaidInventory
             }
 
             ushort usableIndex = checked((ushort)LoadoutDefinitions.UsableIndex(item.GameAssetId));
+            _unitWeights[usableIndex] = LoadoutDefinitions.ItemWeight(item.GameAssetId);
             return new ContainerItem(usableIndex, guid, checked((int)item.Amount), item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability);
         }
     }
@@ -185,6 +187,10 @@ public sealed class RaidInventory
 
     /// <summary>The carrying-weight limit selected by the equipped augment.</summary>
     public double MaxWeight => LoadoutDefinitions.MaximumWeight(AugmentAssetId);
+
+    /// <summary>Current carried weight, counting stack amounts and excluding the equipped augment.</summary>
+    public double Weight => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+        .Sum(item => _unitWeights[item.AssetIndex] * item.Amount);
 
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];

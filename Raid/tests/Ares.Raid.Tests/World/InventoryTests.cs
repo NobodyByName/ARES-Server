@@ -32,7 +32,38 @@ public sealed class InventoryTests
         Dictionary<string, object?> attributes = CharacterAttributes(session);
         Assert.Equal(expected, attributes[$"{PropertyNames.MaxWeight}.{PropertyNames.BaseValue}"]);
         Assert.Equal(expected, attributes[$"{PropertyNames.MaxWeight}.{PropertyNames.CurrentValue}"]);
-        Assert.Equal(2, attributes.Count);
+        Assert.Equal(1.2f, attributes[$"{PropertyNames.Weight}.{PropertyNames.BaseValue}"]);
+        Assert.Equal(1.2f, attributes[$"{PropertyNames.Weight}.{PropertyNames.CurrentValue}"]);
+        Assert.Equal(4, attributes.Count);
+    }
+
+    [Theory]
+    [InlineData(AugmentItems.LootingMk1AssetId, null, 1, 0.3f)]
+    [InlineData(AugmentItems.CombatMk1AssetId, AugmentItems.LootingMk1AssetId, 1, 1.3f)]
+    [InlineData(AugmentItems.LootingMk1AssetId, AugmentItems.TacticalMk1AssetId, 4, 3.2f)]
+    public void Carried_weight_in_the_join_counts_stack_amounts_and_spares_but_excludes_the_equipped_augment(long augment, long? spare, int ducks, float expected)
+    {
+        PlayerLoadout loadout = StandardLoadout(augment, spare);
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == StorageItems.RubberDuckAssetId ? item with { Amount = ducks } : item)] };
+        ScriptedPlayer session = new(loadout: loadout);
+        session.Possess();
+        Dictionary<string, object?> attributes = CharacterAttributes(session);
+        Assert.Equal(expected, attributes[$"{PropertyNames.Weight}.{PropertyNames.BaseValue}"]);
+        Assert.Equal(expected, attributes[$"{PropertyNames.Weight}.{PropertyNames.CurrentValue}"]);
+    }
+
+    [Fact]
+    public void Carried_weight_is_preserved_across_supported_container_moves()
+    {
+        RaidInventory inventory = new(StandardLoadout(AugmentItems.LootingMk1AssetId, AugmentItems.TacticalMk1AssetId));
+        Assert.Equal(3.2, inventory.Weight, precision: 6);
+        Assert.True(inventory.Apply(Swap(inventory.Backpack, 3, inventory.Belt, 0)));
+        Assert.Equal(3.2, inventory.Weight, precision: 6);
+        Assert.True(inventory.Apply(Swap(inventory.Belt, 0, inventory.SafePouch, 0)));
+        Assert.Equal(3.2, inventory.Weight, precision: 6);
+        Assert.False(inventory.Apply(Swap(inventory.Backpack, 4, inventory.Belt, 0)));
+        Assert.Equal(3.2, inventory.Weight, precision: 6);
+        Assert.Equal(0, new RaidInventory(new PlayerLoadout(43, 0, [])).Weight);
     }
 
     [Fact]
