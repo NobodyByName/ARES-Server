@@ -46,7 +46,7 @@ internal sealed class ScriptedPlayer
 
     private static UniqueNetId UniqueId { get; } = new(5, "42", "", false, false);
 
-    private DamWorlds Worlds { get; }
+    public DamWorlds Worlds { get; }
 
     public RaidWorld Raid => Worlds.Current!;
 
@@ -100,14 +100,19 @@ internal sealed class ScriptedPlayer
     // A reliable call from the client on its controller channel.
     public void Call(string function, Dictionary<string, object?> parameters)
     {
+        Channels.Receive(Io, ControllerCall(function, parameters));
+        Channels.Commit();
+    }
+
+    public ChannelBunch ControllerCall(string function, Dictionary<string, object?> parameters)
+    {
         WorldPlayer player = Player;
         RpcCodec calls = Raid.State.Replication.Calls(Raid.State.Objects([player.Controller, player.PlayerState, player.Pawn, Raid.State.GameState.Guid]));
         ActorContentBlock block = calls.Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Server);
         BitWriter writer = new();
         block.Write(writer);
         _clientSequence = (_clientSequence + 1) & (ChannelBunch.SequenceCount - 1);
-        Channels.Receive(Io, new ChannelBunch(2, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = _clientSequence });
-        Channels.Commit();
+        return new ChannelBunch(2, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = _clientSequence };
     }
 
     // A reliable call from the client on a component of its controller (channel 2) or character (any other

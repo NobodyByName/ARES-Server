@@ -61,4 +61,7 @@ public interface IPlayerChannels
 
     /// <summary>Applies deferred changes to the shared world (the packet was accepted).</summary>
     void Commit();
+
+    /// <summary>The committed connection was removed. Speculative packet copies are never notified.</summary>
+    void Closed();
 }

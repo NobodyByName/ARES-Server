@@ -21,6 +21,10 @@ public interface IWorldLifecycle
     /// <param name="matchId">Match id.</param>
     /// <returns>Whether players may connect.</returns>
     bool AcceptingPlayers(string matchId);
+
+    /// <summary>Whether a prepared world has ended and its reservation can be released.</summary>
+    /// <param name="matchId">Match id.</param>
+    bool HasEnded(string matchId);
 }
 
 /// <summary>The world could not be prepared for a reservation.</summary>

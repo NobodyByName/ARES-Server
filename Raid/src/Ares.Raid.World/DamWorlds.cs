@@ -17,6 +17,8 @@ namespace Ares.Raid.World;
 /// <summary>A prepared Dam raid: its seed, round, lighting, spawn, actors, doors and ladders.</summary>
 public sealed class RaidWorld
 {
+    private bool _ended;
+
     /// <summary>Channel of the level script actor.</summary>
     private const int LevelScriptChannel = 4;
 
@@ -77,6 +79,11 @@ public sealed class RaidWorld
 
     /// <summary>Match id of the reservation.</summary>
     public string MatchId { get; }
+
+    /// <summary>The surrendered player's connection has closed; no raid result is recorded.</summary>
+    public bool Ended => Volatile.Read(ref _ended);
+
+    internal void EndSurrender() => Volatile.Write(ref _ended, true);
 
     /// <summary>Reserved players.</summary>
     public IReadOnlyList<long> Players { get; }
@@ -297,7 +304,16 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     {
         lock (_lock)
         {
-            return _current?.MatchId == matchId;
+            return _current is { Ended: false } current && current.MatchId == matchId;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasEnded(string matchId)
+    {
+        lock (_lock)
+        {
+            return _current is { Ended: true } current && current.MatchId == matchId;
         }
     }
 
@@ -318,7 +334,12 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     {
         ArgumentNullException.ThrowIfNull(principal);
         RaidWorld? raid = Current;
-        return raid is null || (raid.MatchId == principal.MatchId && raid.Players.Contains(principal.UserId))
+        if (raid is null || raid.Ended)
+        {
+            return null;
+        }
+
+        return raid.MatchId == principal.MatchId && raid.Players.Contains(principal.UserId)
             ? raid
             : throw new InvalidPacketException("Player does not own this raid");
     }

@@ -159,7 +159,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
 
     private void Maintain()
     {
-        if (_current is not { } item || _clock() < item.Deadline)
+        if (_current is not { } item || (!_worlds.HasEnded(item.MatchId) && _clock() < item.Deadline))
         {
             return;
         }

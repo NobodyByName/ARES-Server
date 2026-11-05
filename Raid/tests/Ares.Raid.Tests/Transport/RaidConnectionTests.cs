@@ -96,6 +96,25 @@ public sealed class RaidConnectionTests
     }
 
     [Fact]
+    public void A_joined_players_committed_channels_are_notified_once_when_the_connection_closes()
+    {
+        (RaidConnections connections, Client client) = Start();
+        client.SendControl(new ControlHello(Version, "42", 0));
+        _world.Ready = true;
+        client.SendControl(new ControlLogin("0", "?EncryptionToken=42", new UniqueNetId(5, "42", "", false, false), "WIN"));
+        client.SendControl(new ControlNetspeed(50000), new ControlJoin());
+        Assert.Empty(_world.ClosedPlayers);
+
+        ConnectionResult result = client.Send(Client.Control(new ControlCloseReason("Quit")));
+
+        Assert.Equal(ConnectionEvent.ClientClosed, result.Event);
+        Assert.Equal([s_player], _world.ClosedPlayers);
+        Assert.Empty(connections.Players);
+        connections.Poll();
+        Assert.Equal([s_player], _world.ClosedPlayers);
+    }
+
+    [Fact]
     public void Polling_sends_keepalives_and_retries()
     {
         (RaidConnections connections, Client client) = Start();
@@ -117,6 +136,8 @@ public sealed class RaidConnectionTests
         public bool Ready { get; set; }
 
         public List<FakePlayer> Players { get; } = [];
+
+        public List<SessionPrincipal> ClosedPlayers { get; } = [];
 
         public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Ready ? s_welcome : null;
 
@@ -154,6 +175,8 @@ public sealed class RaidConnectionTests
             world.Players.RemoveAll(player => player.Principal == Principal);
             world.Players.Add(this);
         }
+
+        public void Closed() => world.ClosedPlayers.Add(Principal);
     }
 
     // Plays the client side: routing wrapper, handshake, packet sequence and reliable control bunches.

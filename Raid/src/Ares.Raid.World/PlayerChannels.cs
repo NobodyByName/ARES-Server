@@ -149,6 +149,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private HashSet<string> _visibleLevels = new(StringComparer.Ordinal);
     private double? _visibleLevelsChangedAt;
     private bool _possessionToCommit;
+    private bool _surrenderToCommit;
+    private bool _surrendered;
     private bool _initialLevelsLoaded;
     private Dictionary<string, int> _ignoredCalls = new(StringComparer.Ordinal);
 
@@ -418,6 +420,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <inheritdoc />
     public void Commit()
     {
+        if (_surrenderToCommit)
+        {
+            _surrendered = true;
+            _surrenderToCommit = false;
+        }
+
         if (_possessionToCommit)
         {
             _raid.State.AcknowledgePossession(_player);
@@ -457,6 +465,17 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         _inventoryRequests.Clear();
+    }
+
+    /// <inheritdoc />
+    public void Closed()
+    {
+        if (_surrendered)
+        {
+            // Keep the reservation valid while the reliable return-to-menu reply drains.
+            // Only an accepted surrender followed by connection removal ends the world.
+            _raid.EndSurrender();
+        }
     }
 
     [GeneratedRegex("^/Game/[A-Za-z_0-9/]+$")]
@@ -694,6 +713,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                         break;
                     case FunctionNames.ServerSurrender when Phase == DeliveryPhase.Possessed:
                         // Leaving the raid returns the player to the main menu; no raid result is recorded.
+                        _surrenderToCommit = true;
                         replies.Add((FunctionNames.ClientReturnToMainMenuWithTextReason, new Dictionary<string, object?> { [PropertyNames.ReturnReason] = "" }));
                         break;
                     case FunctionNames.ServerSurrender:

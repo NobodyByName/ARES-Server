@@ -520,13 +520,17 @@ public sealed class RaidConnections
     {
         foreach (IPEndPoint peer in _states.Keys.Where(peer => !_handshake.Connections.ContainsKey(peer)).ToArray())
         {
-            _states.Remove(peer);
+            Drop(peer);
         }
     }
 
     private void Drop(IPEndPoint peer)
     {
-        _states.Remove(peer);
+        if (_states.Remove(peer, out ConnectionState? state))
+        {
+            state.Player?.Closed();
+        }
+
         _handshake.Forget(peer);
     }
 

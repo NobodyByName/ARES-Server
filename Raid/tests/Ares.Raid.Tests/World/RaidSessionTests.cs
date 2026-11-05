@@ -3,10 +3,13 @@ using System.Text;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
+using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
 namespace Ares.Raid.Tests.World;
@@ -48,6 +51,77 @@ public sealed class RaidSessionTests
         session.ComponentCall(6, session.Player.Pawn, "InventoryComponent");
         Assert.Equal((1, 1), (session.Channels.IgnoredCalls["path:PingManager"], session.Channels.IgnoredCalls["path:InventoryComponent"]));
         Assert.Throws<InvalidPacketException>(() => session.ComponentCall(2, session.Player.Pawn, "PingManager"));
+    }
+
+    [Fact]
+    public void Surrender_sends_the_menu_reply_and_ends_the_world_only_when_the_connection_closes()
+    {
+        ScriptedPlayer session = new(loadout: InventoryTests.StandardLoadout());
+        session.Possess();
+        RaidWorld raid = session.Raid;
+        session.Sent.Clear();
+
+        session.Call(FunctionNames.ServerSurrender, []);
+        Assert.False(raid.Ended);
+        Assert.False(session.Worlds.HasEnded(raid.MatchId));
+        Assert.True(session.Worlds.AcceptingPlayers(raid.MatchId));
+        session.Flush("surrender");
+        ChannelBunch reply = Assert.Single(session.Sent, bunch => bunch is { Channel: 2, PackageExports: false });
+        RpcCodec calls = raid.State.Replication.Calls(raid.State.Objects([session.Player.Controller]));
+        (NetField field, ActorFieldPayload payload) = Assert.Single(calls.ReadFields(PlayerClasses.PlayerController.Class,
+            ActorContentBlock.Read(new BitReader(reply.Payload, reply.PayloadBits)), RpcDirection.Client));
+        Assert.Equal(FunctionNames.ClientReturnToMainMenuWithTextReason, field.Name);
+        Assert.Equal(1, payload.PayloadBits);
+        Assert.False(new BitReader(payload.Payload, payload.PayloadBits).ReadBit()); // Empty return-reason text.
+
+        session.Channels.Closed();
+
+        Assert.True(raid.Ended);
+        Assert.True(session.Worlds.HasEnded(raid.MatchId));
+        Assert.False(session.Worlds.HasEnded("another-match"));
+        Assert.False(session.Worlds.AcceptingPlayers(raid.MatchId));
+        Assert.Null(session.Worlds.WelcomeFor(new SessionPrincipal(42, raid.MatchId)));
+        session.Channels.Closed();
+        Assert.Equal(4, Assert.Single(raid.Loadouts).Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId).Amount);
+    }
+
+    [Fact]
+    public void A_disconnect_without_surrender_does_not_finish_the_reserved_raid()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        session.Channels.Closed();
+        Assert.False(session.Raid.Ended);
+        Assert.True(session.Worlds.AcceptingPlayers(session.Raid.MatchId));
+    }
+
+    [Fact]
+    public void A_discarded_surrender_packet_cannot_end_the_world()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        IPlayerChannels copy = session.Channels.Copy();
+        ChannelBunch surrender = session.ControllerCall(FunctionNames.ServerSurrender, []);
+        copy.Receive(new ChannelIo(session.Io.Sender.Copy(), session.Io.Receiver.Copy()), surrender);
+        copy.Closed();
+        session.Channels.Closed();
+        Assert.False(session.Raid.Ended);
+
+        session.Channels.Receive(session.Io, surrender);
+        session.Channels.Commit();
+        session.Channels.Closed();
+        Assert.True(session.Raid.Ended);
+    }
+
+    [Fact]
+    public void Surrender_before_possession_is_rejected_and_does_not_end_the_raid()
+    {
+        ScriptedPlayer session = new();
+        session.Flush("start");
+        Assert.Throws<InvalidPacketException>(() => session.Call(FunctionNames.ServerSurrender, []));
+        session.Channels.Commit();
+        session.Channels.Closed();
+        Assert.False(session.Raid.Ended);
     }
 
     [Fact]

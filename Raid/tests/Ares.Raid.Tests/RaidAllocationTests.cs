@@ -77,6 +77,25 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void An_ended_world_releases_its_ticket_immediately_and_another_raid_can_be_reserved()
+    {
+        RaidAllocations allocations = Allocations();
+        Allocation allocation = allocations.Reserve(Request()).Allocation!;
+        byte[] token = Convert.FromBase64String(allocation.Gameserver.RoutingToken);
+        Assert.NotNull(allocations.Route(token, renew: true));
+        _worlds.Ended.Add(allocation.MatchId);
+
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
+        Assert.Null(allocations.Route(token, renew: true));
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Allocation next = allocations.Reserve(Request(OtherTicket)).Allocation!;
+        Assert.NotEqual(allocation.MatchId, next.MatchId);
+        Assert.Equal(200, allocations.Status(new AllocationStatusRequest(next.MatchId)).StatusCode);
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(allocation.MatchId)).StatusCode);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+    }
+
+    [Fact]
     public void Reservations_expire_unless_the_player_is_active()
     {
         RaidAllocations allocations = Allocations();
@@ -194,6 +213,8 @@ public sealed class RaidAllocationTests
 
         public List<string> Released { get; } = [];
 
+        public HashSet<string> Ended { get; } = [];
+
         public bool Fail { get; set; }
 
         public IReadOnlyList<PlayerLoadout>? Loadouts { get; private set; }
@@ -214,5 +235,7 @@ public sealed class RaidAllocationTests
         public void Release(string matchId) => Released.Add(matchId);
 
         public bool AcceptingPlayers(string matchId) => Prepared.Contains(matchId) && !Released.Contains(matchId);
+
+        public bool HasEnded(string matchId) => Ended.Contains(matchId);
     }
 }
