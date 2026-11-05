@@ -6,7 +6,7 @@ namespace Ares.Common.Game.Inventory;
 /// <summary>Shared item definitions and the inventory frame selected by an equipped augment.</summary>
 public static class LoadoutDefinitions
 {
-    public static IReadOnlyList<ItemDescription> All { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions];
+    public static IReadOnlyList<ItemDescription> All { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions, .. ShieldItems.Definitions];
     public static IReadOnlyDictionary<long, ItemDescription> ByAsset { get; } = All.ToDictionary(item => item.GameAssetId);
 
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
@@ -21,6 +21,7 @@ public static class LoadoutDefinitions
 
     /// <summary>Unit weight of a supported gameplay item.</summary>
     public static double ItemWeight(long assetId) => assetId == StorageItems.RubberDuckAssetId ? StorageItems.RubberDuckWeight
+        : assetId == ShieldItems.LightShieldAssetId ? ShieldItems.LightShieldWeight
         : AugmentItems.ItemWeights.TryGetValue(assetId, out double weight) ? weight
         : throw new InvalidDataException("Unsupported carried inventory item");
 
@@ -40,6 +41,7 @@ public static class LoadoutDefinitions
 
     /// <summary>Resolves a supported carried item to the game's usable-item catalogue.</summary>
     public static int UsableIndex(long assetId) => assetId == StorageItems.RubberDuckAssetId ? InventoryBlackboard.RubberDuckIndex
+        : assetId == ShieldItems.LightShieldAssetId ? ShieldItems.LightShieldUsableIndex
         : AugmentItems.UsableIndices.TryGetValue(assetId, out int index) ? index
         : throw new InvalidDataException("Unsupported carried inventory item");
 }

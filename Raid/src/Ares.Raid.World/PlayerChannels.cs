@@ -5,6 +5,7 @@ using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -178,6 +179,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private List<InventoryRequest> _inventoryRequests = [];
     private uint _inventoryFrame;
     private uint _inventoryVersion = 1;
+    private ContainerItem? _shield;
     private double? _mapActorsAllowedAt;
     private Dictionary<int, (LadderChannel State, ReliableKey? Key)> _ladders = [];
     private HashSet<int> _failedLadders = [];
@@ -586,11 +588,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.AppearanceContentPending;
                 return true;
             case DeliveryPhase.AppearanceContentPending when delivered:
-                _keys = [sender.Queue(Bunches.Exports(_raid.State.InventoryExports(_player), [_player.Inventory]))];
+                _keys = [sender.Queue(Bunches.Exports(_raid.State.InventoryExports(_player), [_player.Inventory, _player.Health]))];
                 Phase = DeliveryPhase.InventoryExportsPending;
                 return true;
             case DeliveryPhase.InventoryExportsPending when delivered:
-                _keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InventoryContent(_player, _raid.Inventory).Write))];
+                _keys =
+                [
+                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InventoryContent(_player, _raid.Inventory).Write)),
+                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _raid.Inventory).Write)),
+                ];
+                _shield = _raid.Inventory.Shield;
                 Phase = DeliveryPhase.InventoryContentPending;
                 return true;
             case DeliveryPhase.InventoryContentPending when delivered:
@@ -900,10 +907,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
         IReadOnlyDictionary<int, PendulumSlot> state;
         uint frame = latest;
         ulong focus = 0;
+        bool initializingContainers = _blackboardFrame == 0 && _raid.Inventory.InitialBlackboard is not null;
         if (_blackboardFrame == 0)
         {
             WorldActor pawn = Actor(_player.Pawn);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus, _raid.Inventory.Blackboard);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus,
+                _raid.Inventory.InitialBlackboard ?? _raid.Inventory.Blackboard);
         }
         else
         {
@@ -920,9 +929,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
             state = PawnBlackboardFrames.State(frame, new PawnMotion(position, step, yaw), focus, _raid.Inventory.Blackboard);
         }
 
-        _blackboardKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];
+        List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];
+        if (_shield != _raid.Inventory.Shield)
+        {
+            keys.Add(sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _raid.Inventory).Write)));
+            _shield = _raid.Inventory.Shield;
+        }
+
+        _blackboardKeys = [.. keys];
         (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
-        _inventoryVersion = _raid.Inventory.Version;
+        _inventoryVersion = initializingContainers ? 1 : _raid.Inventory.Version;
         BlackboardFrames++;
     }
 

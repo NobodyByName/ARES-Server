@@ -92,6 +92,7 @@ public sealed class RaidInventory
         equipped[InventoryBlackboard.ArmorSlot] = Branch(LoadoutItems.ArmorSlotAssetId).Single();
         equipped[InventoryBlackboard.MeleeSlot] = Branch(LoadoutItems.MeleeSlotAssetId).Single();
         Add(nameof(Loadout), equipped);
+        _allowedSlots.Add((Loadout, InventoryBlackboard.ArmorSlot), [ShieldItems.LightShieldUsableIndex]);
         Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId), LoadoutItems.BackpackSlotAssetId);
         Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId), LoadoutItems.BeltSlotAssetId);
         Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId), LoadoutItems.SafePocketSlotAssetId);
@@ -99,7 +100,19 @@ public sealed class RaidInventory
         Containers = containers.AsReadOnly();
         try
         {
-            Blackboard = ItemContainerState.Encode(Containers);
+            if (Containers.SelectMany(container => container.Items).Any(item => item?.AssetIndex == ShieldItems.LightShieldUsableIndex))
+            {
+                // The stock client must finish container creation and install its loadout slot
+                // queries before it receives armor items. Deliver contents in the next acknowledged
+                // frame; owned items and their positions stay in the authoritative inventory.
+                InitialBlackboard = ItemContainerState.Encode([.. Containers.Select(container => container with
+                {
+                    Items = Array.AsReadOnly(new ContainerItem?[container.Items.Count]),
+                })]);
+                Version = 2;
+            }
+
+            Blackboard = ItemContainerState.Encode(Containers, Version);
         }
         catch (InvalidPacketException error)
         {
@@ -119,7 +132,7 @@ public sealed class RaidInventory
             }
 
             HashSet<int> allowed = [.. slot.AllowedSlotAssetIds
-                .Where(id => id == StorageItems.RubberDuckAssetId || AugmentItems.UsableIndices.ContainsKey(id)).Select(LoadoutDefinitions.UsableIndex)];
+                .Where(id => id is StorageItems.RubberDuckAssetId or ShieldItems.LightShieldAssetId || AugmentItems.UsableIndices.ContainsKey(id)).Select(LoadoutDefinitions.UsableIndex)];
             for (int index = 0; index < contents.Count; index++)
             {
                 _allowedSlots.Add((handle, index), allowed);
@@ -165,7 +178,7 @@ public sealed class RaidInventory
 
             InventoryItem item = items[slot.Slots[0]];
             visited.Add(item.InstanceId);
-            if ((item.GameAssetId != StorageItems.RubberDuckAssetId && !AugmentItems.UsableIndices.ContainsKey(item.GameAssetId)) || item.Slots.Count != 0
+            if ((item.GameAssetId is not (StorageItems.RubberDuckAssetId or ShieldItems.LightShieldAssetId) && !AugmentItems.UsableIndices.ContainsKey(item.GameAssetId)) || item.Slots.Count != 0
                 || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
                 || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId)
                 || !Guid.TryParse(item.InstanceId, out Guid guid))
@@ -192,6 +205,12 @@ public sealed class RaidInventory
     public double Weight => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
         .Sum(item => _unitWeights[item.AssetIndex] * item.Amount);
 
+    /// <summary>The equipped Light Shield; a broken shield remains equipped with no available health.</summary>
+    public ContainerItem? Shield => Containers[Loadout].Items[InventoryBlackboard.ArmorSlot];
+
+    /// <summary>Available shield capacity. Positive item durability permits the full authored capacity.</summary>
+    public double ShieldHealth => Shield is { Durability: > 0 } ? ShieldDefaults.MaxHealth : 0;
+
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];
 
@@ -212,6 +231,9 @@ public sealed class RaidInventory
 
     /// <summary>The current container state carried in each pawn frame.</summary>
     public PendulumVariable Blackboard { get; private set; }
+
+    /// <summary>Empty container creation before armor contents, or null when one frame is sufficient.</summary>
+    public PendulumVariable? InitialBlackboard { get; }
 
     /// <summary>Container update counter, including corrections for rejected requests.</summary>
     public uint Version { get; private set; } = 1;

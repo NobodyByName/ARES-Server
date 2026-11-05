@@ -7,10 +7,12 @@ public static class ItemTechnicalNames
     public const string CombatMk1 = "DA_Item_Augment_Combat_T1";
     public const string LootingMk1 = "DA_Item_Augment_Looting_T1";
     public const string TacticalMk1 = "DA_Item_Augment_Utility_T1";
+    public const string LightShield = "DA_Item_Armor_LightBody";
 
     /// <summary>Protocol asset IDs indexed by technical item name.</summary>
     public static IReadOnlyDictionary<string, long> AssetIds { get; } = new Dictionary<string, long>(StringComparer.Ordinal)
     {
         [RubberDuck] = StorageItems.RubberDuckAssetId,
+        [LightShield] = ShieldItems.LightShieldAssetId,
     }.Concat(AugmentItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
 }

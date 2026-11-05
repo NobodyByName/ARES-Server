@@ -51,6 +51,9 @@ public sealed record WorldPlayer(
     /// <summary>The character's inventory component.</summary>
     public ulong Inventory { get; init; }
 
+    /// <summary>The character's health and shield component.</summary>
+    public ulong Health { get; init; }
+
     /// <summary>Whether the client confirmed possessing its character.</summary>
     public bool PossessionAcknowledged { get; init; }
 }
@@ -209,6 +212,7 @@ public sealed class WorldState
                 Squad = squad.Guid,
                 SquadMember = member,
                 Inventory = Next(),
+                Health = Next(),
             };
             _players[principal.UserId] = player;
             return player;
@@ -454,7 +458,30 @@ public sealed class WorldState
     public ObjectExports InventoryExports(WorldPlayer player) => new([
         new DynamicActorExport(player.Pawn),
         new StableSubobjectExport(player.Inventory, player.Pawn, InventoryBlackboard.ComponentName, Replication.Catalog.Class(ClassPaths.InventoryComponent).Checksum),
+        new StableSubobjectExport(player.Health, player.Pawn, ShieldDefaults.ComponentName, Replication.Catalog.Class(ClassPaths.HealthComponent).Checksum),
     ]);
+
+    /// <summary>Replicates the equipped Light Shield's initial health for the Raid HUD.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="inventory">The current loadout.</param>
+    /// <returns>The health component properties.</returns>
+    public StableSubobjectContent ShieldContent(WorldPlayer player, RaidInventory inventory)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        ArgumentNullException.ThrowIfNull(inventory);
+        // TODO: Apply shield damage mitigation and drain shield health when server-side damage is
+        // implemented. These values only initialize/display the shield; no damage is processed yet.
+        // Medium/Heavy shields, movement penalties, equip charge-up and repair are future work.
+        bool equipped = inventory.Shield is not null;
+        return new StableSubobjectContent(player.Health, Replication.Encode(ClassPaths.HealthComponent, new Dictionary<string, object?>
+        {
+            [PropertyNames.Replicates] = true,
+            [PropertyNames.IsActive] = true,
+            [$"{PropertyNames.Armor}.{PropertyNames.Health}"] = inventory.ShieldHealth,
+            [$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"] = inventory.ShieldHealth,
+            [$"{PropertyNames.Armor}.{PropertyNames.HealthPerPlate}"] = equipped ? ShieldDefaults.HealthPerPlate : 0.0,
+        }, Objects([])));
+    }
 
     /// <summary>The inventory handles that enable the client's container-state receiver.</summary>
     /// <param name="player">The player.</param>
