@@ -35,6 +35,11 @@ validated by Raid. Inventory and map screens show their shared menu frame.
 Placement changes remain inside the active raid; post-raid inventory settlement
 is not implemented.
 
+Combat, Looting and Tactical/Utility Mk.1 augments support persistent menu selection, atomic
+swaps, capacity validation and matching Raid frames. Raid initializes the carrying limit and
+current weight from the selected loadout. Higher tiers and augment skills remain unsupported.
+Host's `inventory add <technical-name>` command adds items to the stash; Tab completes names.
+
 Limitations:
 
 - One player and one raid at a time; Dam only.
@@ -42,7 +47,7 @@ Limitations:
   player accounts and progression yet.
 - Movement is trusted from the client; the server does not check it yet.
 - No combat, loot, death or match results yet.
-- Equipment, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
+- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
   been tested yet.

@@ -15,13 +15,24 @@ Whole-stack drag moves between compatible slots are validated by Raid and remain
 and reopening inventory. Movement continues normally after these updates. Inventory and map screens
 show their shared tabs, background and backplate.
 
+Combat, Looting and Tactical/Utility Mk.1 augments select the player's inventory frame and container
+capacities. Raid validates the equipped augment against the reserved frame. Spare supported
+augments can travel in compatible backpack slots and retain their GUID, amount and condition.
+The character's carrying limit is initialized from the same augment data as the menu: Combat 45,
+Looting 50, Tactical/Utility 40, or 30 without an augment. Current carried weight uses item weights
+and stack amounts, excluding the equipped augment and including spare augments in the backpack.
+
+An accepted surrender ends its world after the client connection closes, allowing Host to release
+the inventory reservation before the next menu swap. Surrender preserves the original Host inventory.
+
 Limitations:
 
 - One player and one raid at a time; Dam only.
 - Movement is trusted from the client; the server does not check it yet.
 - No combat, loot, death or match results yet.
 - In-raid placement changes are not settled back to Host after the raid.
-- Equipment subobjects, additional item types, splitting, merging, quick moves, dropping and item use
+- Higher augment tiers, changing the equipped augment during a raid, other equipment subobjects,
+  additional item types, splitting, merging, quick moves, dropping and item use
   are not implemented yet.
 
 Projects:

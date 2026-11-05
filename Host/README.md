@@ -14,10 +14,11 @@ Limitations:
 
 - Identity is synthetic: every player uses one local account. There is no real sign-in or
   separate per-player progress. Inventory is stored for this local account only.
-- Main-menu storage starts with one rubber duck and an empty standard player loadout. Moving whole
-  items between compatible empty slots is supported. Raid displays the standard containers and carried
-  duck and supports whole-stack drag moves. Equipment, additional item types, loot and result settlement
-  are not implemented yet.
+- Main-menu storage starts with one rubber duck and an empty standard player loadout. Whole-item
+  moves and swaps between compatible slots are supported. Combat, Looting and Tactical/Utility Mk.1
+  augments determine the loadout's frame capacities and carrying limit. Menu commits release
+  confirmed lost raid reservations before saving. Higher tiers, other equipment, loot and result
+  settlement remain unimplemented.
 - One raid at a time.
 - Plain HTTP. Serving other machines needs `allow-network-clients = true`; connection trust is not
   verified.
@@ -130,8 +131,33 @@ when items are removed.
 The menu commits moves when Storage closes. Host authenticates the batch, validates destinations
 and capacity, and commits it atomically. Moving within stash is a no-op; stash display order is
 derived. Moving between stash and carried slots preserves identity, quantity and durability.
+Responses reconcile client prediction as well as saved changes: requested slots and each moved
+item's canonical parent are reasserted even when storage is unchanged, so stash sorting cannot
+leave a predicted duplicate behind.
 Recent request receipts prevent duplicate application after retries/restarts. Split/merge,
 crafting, recycling, currency purchases and post-raid settlement remain unimplemented.
+
+The empty augment slot and all supported frames are always generated. Equipping Combat, Looting
+or Tactical/Utility Mk.1 selects its shared frame definition and capacities. Each frame has its own
+stable slot IDs, allowing the stock menu to migrate items and refresh its layout immediately before
+committing the batch. Inactive frames stay empty and are excluded from Raid handoffs.
+An equip/remove/swap batch must leave every item within capacity; otherwise no change is saved.
+
+To add test items from the local Host console before a fresh client launch:
+
+```text
+inventory add DA_Item_Augment_Combat_T1
+inventory add DA_Item_Augment_Looting_T1
+inventory add DA_Item_Augment_Utility_T1
+```
+
+Tab also completes commands and subcommands: `inv` becomes `inventory`, `inventory a` becomes
+`inventory add`, and `inventory im` becomes `inventory import`. Completion matches text anywhere
+in the current token, ignoring case: `inventory add augment` cycles the
+three supported augments. Prefix searches first expand their common prefix; repeated Tab/Shift+Tab
+cycles matching supported names.
+Each command adds one item to the stash, preserving existing items. Full stashes and reserved
+inventories reject additions. Starter provisioning remains one duck; augments require explicit grants.
 
 Use `inventory` in the console to see owned stack count, capacities, revision and the pending raid
 ticket. `inventory import <path>` reads a player inventory object and replaces the idle inventory
@@ -140,5 +166,5 @@ using its current revision.
 Raid handoffs are stored separately in `raidReservations`. Host freezes the carried inventory and
 retains its ticket across restarts or lost replies. Raid acknowledges the player, revision and
 content hash. Release removes the handoff when Raid confirms it is gone; it does not apply a raid
-result. Raid still accepts the standard frame and rubber duck only. Loot, death, equipment use
-and inventory gains/losses need their remaining gameplay/settlement implementations.
+result. Raid accepts the standard frame, supported Mk.1 augment frames, and their carried duck or
+spare augments. Loot, death, equipment use and inventory gains/losses remain unimplemented.
