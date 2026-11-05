@@ -36,8 +36,8 @@ public sealed class InventoryStoreTests : IDisposable
     {
         InventoryStore store = Create();
         InventorySnapshot snapshot = store.Snapshot;
-        Assert.Equal(102, snapshot.Items.Count);
-        Assert.Equal(74, snapshot.Items.Count(item => item.GameAssetId == StorageItems.ContentSlotAssetId));
+        Assert.Equal(227, snapshot.Items.Count);
+        Assert.Equal(123, snapshot.Items.Count(item => item.GameAssetId == StorageItems.ContentSlotAssetId));
         Assert.Equal(1, store.Inventory.ItemCount);
         BsonDocument saved = _database.Player["inventory"].AsBsonDocument;
         Assert.False(saved.Contains("snapshot"));

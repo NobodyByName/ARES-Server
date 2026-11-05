@@ -169,7 +169,7 @@ public sealed class HostTests : IAsyncLifetime
         using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
         read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
         JsonElement items = await Json(await _client.SendAsync(read, TestContext.Current.CancellationToken));
-        Assert.Equal(103, items.GetProperty("items").GetArrayLength());
+        Assert.Equal(228, items.GetProperty("items").GetArrayLength());
         JsonElement definitions = await GetJson("/v1/pioneer/game-data");
         Assert.Contains(definitions.GetProperty("items-description").GetProperty("itemDescriptions").EnumerateArray(),
             item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);

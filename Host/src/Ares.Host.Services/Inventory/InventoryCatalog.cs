@@ -1,3 +1,4 @@
+using Ares.Common.Game.Inventory;
 using Ares.Structs.Backend.Progression;
 
 namespace Ares.Host.Services.Inventory;
@@ -5,30 +6,26 @@ namespace Ares.Host.Services.Inventory;
 /// <summary>Maps technical item names and gameplay locations to shared definitions.</summary>
 internal static class InventoryCatalog
 {
-    internal static IReadOnlyList<ItemDescription> Definitions { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions];
-    internal static IReadOnlyDictionary<long, ItemDescription> ByAsset { get; } = Definitions.ToDictionary(item => item.GameAssetId);
-
-    private static long ContainerAsset(long branch) => ((SingleItemSlot)ByAsset[branch].SlotConfig!).DefaultSlotAssetId;
-
-    private static int DefaultCapacity(long branch)
-    {
-        return checked((int)((ItemSlotArray)ByAsset[ContainerAsset(branch)].SlotConfig!).NumberOfSlots);
-    }
+    internal static IReadOnlyList<ItemDescription> Definitions => LoadoutDefinitions.All;
+    internal static IReadOnlyDictionary<long, ItemDescription> ByAsset => LoadoutDefinitions.ByAsset;
 
     internal static bool UsesSlots(InventoryArea area) => area is InventoryArea.Backpack or InventoryArea.QuickUse or InventoryArea.SafePockets;
 
     internal static int Capacity(PlayerInventory inventory, InventoryArea area) => area == InventoryArea.Stash
         ? inventory.Stash.SlotCount : LoadoutCapacity(inventory.Loadout, area);
 
-    internal static int LoadoutCapacity(PlayerLoadoutState loadout, InventoryArea area) => (loadout.Augment, area) switch
+    internal static long FrameAssetId(PlayerLoadoutState loadout) => LoadoutDefinitions.FrameAssetId(loadout.Augment is { } augment ? AssetId(augment.Type) : null);
+
+    internal static int LoadoutCapacity(PlayerLoadoutState loadout, InventoryArea area) => area switch
     {
-        (null, InventoryArea.Backpack) => DefaultCapacity(LoadoutItems.BackpackSlotAssetId),
-        (null, InventoryArea.QuickUse) => DefaultCapacity(LoadoutItems.BeltSlotAssetId),
-        (null, InventoryArea.SafePockets) => DefaultCapacity(LoadoutItems.SafePocketSlotAssetId),
-        (null, InventoryArea.Augment or InventoryArea.Shield or InventoryArea.MainWeapon or InventoryArea.SecondaryWeapon) => 1,
-        (null, _) => throw new ArgumentOutOfRangeException(nameof(area)),
-        _ => throw new InvalidDataException("Augment items are not supported yet"),
+        InventoryArea.Backpack => CapacityOf(loadout, LoadoutItems.BackpackSlotAssetId),
+        InventoryArea.QuickUse => CapacityOf(loadout, LoadoutItems.BeltSlotAssetId),
+        InventoryArea.SafePockets => CapacityOf(loadout, LoadoutItems.SafePocketSlotAssetId),
+        InventoryArea.Augment or InventoryArea.Shield or InventoryArea.MainWeapon or InventoryArea.SecondaryWeapon => 1,
+        _ => throw new ArgumentOutOfRangeException(nameof(area)),
     };
+
+    private static int CapacityOf(PlayerLoadoutState loadout, long branch) => checked((int)LoadoutDefinitions.Container(FrameAssetId(loadout), branch).NumberOfSlots);
 
     internal static long AssetId(string name) => ItemTechnicalNames.AssetIds.TryGetValue(name, out long assetId) ? assetId
         : throw new InvalidDataException("Unknown inventory item technical name");
@@ -65,7 +62,7 @@ internal static class InventoryCatalog
         };
     }
 
-    internal static InventoryPosition? Branch(long assetId) => assetId switch
+    internal static InventoryPosition? Branch(long assetId) => LoadoutDefinitions.StandardBranch(assetId) switch
     {
         LoadoutItems.BackpackSlotAssetId => new InventoryPosition(InventoryArea.Backpack, 0),
         LoadoutItems.SafePocketSlotAssetId => new InventoryPosition(InventoryArea.SafePockets, 0),

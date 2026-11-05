@@ -13,22 +13,33 @@ internal sealed class InventoryProjection
     private readonly Dictionary<string, InventoryPosition> _positions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<long>> _allowed = new(StringComparer.Ordinal);
 
-    private InventoryProjection(PlayerInventory inventory)
+    private InventoryProjection(PlayerInventory inventory, bool allowOverflow = false)
     {
-        Inventory = Validate(inventory);
+        Inventory = Validate(inventory, allowOverflow);
+        long selectedFrame = InventoryCatalog.FrameAssetId(inventory.Loadout);
         List<InventoryItem> items = [];
         List<string> roots = [];
+        Dictionary<long, string> frames = [];
         if (inventory.Stash.SlotCount > 0)
         {
             BuildNode(StorageItems.StashSlotAssetId, "stash", new InventoryPosition(InventoryArea.Stash, 0));
         }
 
+        // The stock menu looks up the next frame and migrates items locally before committing
+        // operations. Keep every supported frame present, with independent permanent slot IDs.
+        foreach (long frame in AugmentItems.FrameAssetIds.Values.Prepend(LoadoutItems.StandardFrameAssetId))
+        {
+            string path = frame == LoadoutItems.StandardFrameAssetId ? "carried/container" : "frames/" + frame.ToString(CultureInfo.InvariantCulture);
+            frames.Add(frame, BuildNode(frame, path, null, frame));
+        }
+
         roots.Add(BuildNode(LoadoutItems.FrameSlotAssetId, "carried", null));
+        roots.Add(BuildNode(AugmentItems.AugmentSlotAssetId, "augment", new InventoryPosition(InventoryArea.Augment, 0)));
 
         Snapshot = InventorySnapshots.Copy(new InventorySnapshot(LocalPlayer.TenancyUserId, inventory.Revision, items.AsReadOnly(), roots.AsReadOnly()));
         return;
 
-        string BuildNode(long asset, string path, InventoryPosition? position)
+        string BuildNode(long asset, string path, InventoryPosition? position, long? frameAssetId = null)
         {
             ItemDescription definition = InventoryCatalog.Definition(inventory, InventoryCatalog.ByAsset[asset]);
             string id = StructuralId(path);
@@ -36,11 +47,13 @@ internal sealed class InventoryProjection
             switch (definition.SlotConfig)
             {
                 case SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } single:
-                    children.Add(BuildNode(single.DefaultSlotAssetId, path + "/container", position));
+                    children.Add(asset == LoadoutItems.FrameSlotAssetId ? frames[selectedFrame]
+                        : BuildNode(single.DefaultSlotAssetId, path + "/container", position, frameAssetId));
                     break;
                 case StructuralItemSlots structural:
                     children.AddRange(structural.SlotAssetIds.Select(branch =>
-                        BuildNode(branch, path + "/" + branch.ToString(CultureInfo.InvariantCulture), InventoryCatalog.Branch(branch))));
+                        BuildNode(branch, path + "/" + LoadoutDefinitions.StandardBranch(branch).ToString(CultureInfo.InvariantCulture),
+                            InventoryCatalog.Branch(branch) is { } location ? location with { FrameAssetId = frameAssetId } : null, frameAssetId)));
 
                     break;
                 case ItemSlotArray array:
@@ -49,7 +62,7 @@ internal sealed class InventoryProjection
                     {
                         InventoryPosition? next = position is null ? null
                             : position with { Index = position.Index + index };
-                        children.Add(BuildNode(array.SlotAssetId, path + "/" + index.ToString(CultureInfo.InvariantCulture), next));
+                        children.Add(BuildNode(array.SlotAssetId, path + "/" + index.ToString(CultureInfo.InvariantCulture), next, frameAssetId));
                     }
 
                     break;
@@ -62,7 +75,8 @@ internal sealed class InventoryProjection
 
                     _positions.Add(id, position);
                     _allowed.Add(id, single.AllowedSlotAssetIds);
-                    IReadOnlyList<OwnedItem> contents = InventoryCatalog.Items(inventory, position.Area);
+                    IReadOnlyList<OwnedItem> contents = frameAssetId is null || frameAssetId == selectedFrame
+                        ? InventoryCatalog.Items(inventory, position.Area) : [];
                     OwnedItem? owned = position.Area == InventoryArea.Stash
                         ? contents.OrderBy(item => item.Type, StringComparer.Ordinal).ThenBy(item => item.InstanceId, StringComparer.Ordinal).ElementAtOrDefault(position.Index)
                         : InventoryCatalog.UsesSlots(position.Area) ? contents.SingleOrDefault(item => item.Slot == position.Index)
@@ -94,6 +108,9 @@ internal sealed class InventoryProjection
     internal PlayerInventory Inventory { get; }
     internal InventorySnapshot Snapshot { get; }
     internal static InventoryProjection Create(PlayerInventory inventory) => new(inventory);
+    // A batch may temporarily remove an augment before moving items out of its larger containers.
+    // Only the final projection is validated and saved; provisional over-capacity items stay owned.
+    internal static InventoryProjection ForOperations(PlayerInventory inventory) => new(inventory, allowOverflow: true);
 
     internal InventoryPosition Position(string slotId) => _positions.GetValueOrDefault(slotId)
         ?? throw new InvalidDataException("Unknown inventory destination slot");
@@ -101,7 +118,7 @@ internal sealed class InventoryProjection
     internal bool Allows(string slotId, string itemType) => _allowed.TryGetValue(slotId, out IReadOnlyList<long>? assets)
         && assets.Contains(InventoryCatalog.AssetId(itemType));
 
-    private static PlayerInventory Validate(PlayerInventory inventory)
+    private static PlayerInventory Validate(PlayerInventory inventory, bool allowOverflow)
     {
         if (inventory is not
             {
@@ -117,7 +134,10 @@ internal sealed class InventoryProjection
             || inventory.RaidTicketId is { } ticket && (!Guid.TryParseExact(ticket, "D", out Guid id) || id.ToString("D") != ticket)
             || inventory.OperationReceipts.Any(receipt => receipt is not { RequestId.Length: > 0 and <= 128, Sha256.Length: 64 }
                 || receipt.RequestId.Any(character => char.IsControl(character) || char.IsWhiteSpace(character))
-                || receipt.Sha256.Any(character => !char.IsAsciiHexDigitLower(character)))
+                || receipt.Sha256.Any(character => !char.IsAsciiHexDigitLower(character))
+                || receipt.DeletedItemIds is not { Count: <= InventorySnapshots.MaximumItems }
+                || receipt.DeletedItemIds.Any(deletedId => deletedId is not { Length: > 0 and <= 128 } || deletedId.Any(char.IsControl))
+                || receipt.DeletedItemIds.Distinct(StringComparer.Ordinal).Count() != receipt.DeletedItemIds.Count)
             || inventory.OperationReceipts.Select(receipt => receipt.RequestId).Distinct(StringComparer.Ordinal).Count() != inventory.OperationReceipts.Count)
         {
             throw new InvalidDataException("Invalid player inventory");
@@ -130,7 +150,7 @@ internal sealed class InventoryProjection
                 ?? throw new InvalidDataException("Missing inventory item array");
             int capacity = InventoryCatalog.Capacity(inventory, area);
             HashSet<int> slots = [];
-            if (contents.Count > capacity)
+            if (!allowOverflow && contents.Count > capacity)
             {
                 throw new InvalidDataException("Inventory capacity exceeded");
             }
@@ -142,7 +162,7 @@ internal sealed class InventoryProjection
                     || !double.IsFinite(item.Durability) || !double.IsFinite(item.MaxDurability)
                     || item.Durability < 0 || item.MaxDurability < item.Durability
                     || !InventoryCatalog.UsesSlots(area) && item.Slot is not null
-                    || InventoryCatalog.UsesSlots(area) && (item.Slot is not { } slot || slot < 0 || slot >= capacity || !slots.Add(slot)))
+                    || InventoryCatalog.UsesSlots(area) && (item.Slot is not { } slot || slot < 0 || slot >= InventorySnapshots.MaximumItems || !allowOverflow && slot >= capacity || !slots.Add(slot)))
                 {
                     throw new InvalidDataException("Invalid owned item or position");
                 }

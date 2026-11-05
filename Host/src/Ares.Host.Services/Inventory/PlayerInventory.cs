@@ -57,4 +57,4 @@ internal enum InventoryArea
     SafePockets,
 }
 
-internal sealed record InventoryPosition(InventoryArea Area, int Index);
+internal sealed record InventoryPosition(InventoryArea Area, int Index, long? FrameAssetId = null);

@@ -13,7 +13,11 @@ namespace Ares.Host.Services.Inventory;
 public sealed record InventoryReservation(string TicketId, PlayerLoadout Loadout);
 
 /// <summary>A bounded receipt for an already committed inventory request.</summary>
-public sealed record InventoryOperationReceipt(string RequestId, string Sha256);
+public sealed record InventoryOperationReceipt(string RequestId, string Sha256)
+{
+    /// <summary>Removed structural nodes to repeat when a client retries after losing the response.</summary>
+    public IReadOnlyList<string> DeletedItemIds { get; init; } = [];
+}
 
 /// <summary>Owns compact persistent inventory and projects the game's protocol tree on demand.</summary>
 public sealed partial class InventoryStore
@@ -133,6 +137,32 @@ public sealed partial class InventoryStore
 
         Import(JsonSerializer.Deserialize<PlayerInventory>(stream, SerializationOptions)
             ?? throw new InvalidDataException("Inventory import is empty"), expectedRevision);
+    }
+
+    /// <summary>Adds one supported item to the idle player's stash from the local operator console.</summary>
+    public void AddItem(string technicalName, DateTimeOffset now)
+    {
+        if (!ItemTechnicalNames.AssetIds.ContainsKey(technicalName))
+        {
+            throw new InvalidDataException("Unknown inventory item technical name");
+        }
+
+        lock (_lock)
+        {
+            Refresh();
+            if (_state.RaidTicketId is not null)
+            {
+                throw new InvalidOperationException("The inventory is reserved for a raid");
+            }
+
+            OwnedItem item = new(Guid.NewGuid().ToString("D"), technicalName, 1,
+                StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-operator", now.ToUnixTimeMilliseconds());
+            Save(_state with
+            {
+                Revision = checked(_state.Revision + 1),
+                Stash = _state.Stash with { Items = [.. _state.Stash.Items, item] },
+            });
+        }
     }
 
     public void Import(PlayerInventory inventory, long expectedRevision)
