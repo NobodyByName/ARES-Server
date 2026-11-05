@@ -18,6 +18,9 @@ public static class StorageItems
     /// <summary>Number of slots in the basic stash.</summary>
     public const int StashSlotCount = 64;
 
+    /// <summary>Weight of one standard rubber duck.</summary>
+    public const double RubberDuckWeight = 0.3;
+
     /// <summary>Initial durability of these storage items.</summary>
     public const double InitialDurability = 1.0;
 
