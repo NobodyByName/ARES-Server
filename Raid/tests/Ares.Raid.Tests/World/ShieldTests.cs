@@ -54,7 +54,8 @@ public sealed class ShieldTests
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         RaidInventory inventory = session.Raid.Inventory;
-        Assert.Equal(new ContainerItem(3, Guid.Parse(selected.InstanceId), 1, 0.5), inventory.Shield);
+        Assert.Equal(new ContainerItem(3, Guid.Parse(selected.InstanceId), 1, 0.5) { ModContainerId = 5 }, inventory.Shield);
+        Assert.Empty(inventory.Containers[5].Items);
         Assert.Equal(6.2, inventory.Weight, precision: 6);
         Dictionary<string, object?> values = ShieldProperties(session, Assert.Single(ShieldDeliveries(session)).Content);
         Assert.Equal(40.0, values[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
@@ -104,16 +105,15 @@ public sealed class ShieldTests
         ScriptedPlayer session = new(loadout: WithShield(inBackpack: true));
         session.Possess();
         Assert.Equal(0.0, ShieldProperties(session, Assert.Single(ShieldDeliveries(session)).Content)[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
-        session.Service(100);
-        session.Input(33, 34, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 5, session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot));
-        session.Input(34, 35, position: session.Raid.Spawn.Location);
-        session.Service(100.1);
+        (uint start, double at) = session.Settle(30, 100);
+        session.Input(start, start + 1, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 5, session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot));
+        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
+        session.Service(at);
         Assert.Equal(2, ShieldDeliveries(session).Count);
         Assert.Equal(40.0, ShieldProperties(session, ShieldDeliveries(session)[^1].Content)[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
-        session.Input(35, 36, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot, session.Raid.Inventory.Backpack, 5));
-        session.Input(36, 37, position: session.Raid.Spawn.Location);
-        session.Service(100.2);
+        session.Input(start + 2, start + 3, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot, session.Raid.Inventory.Backpack, 5));
+        session.Input(start + 3, start + 4, position: session.Raid.Spawn.Location);
+        session.Service(at + 0.1);
         Assert.Equal(3, ShieldDeliveries(session).Count);
         Assert.Equal(0.0, ShieldProperties(session, ShieldDeliveries(session)[^1].Content)[$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"]);
     }

@@ -144,6 +144,9 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["input_yaw_degrees"] = channels.InputYaw is { } yaw ? Math.Round(yaw * 180 / Math.PI, 1) : null,
                 ["input_decode_failures"] = channels.InputDecodeFailures,
                 ["input_decode_error"] = channels.LastInputDecodeError,
+                ["input_equip_target"] = channels.LatestWeaponInput?.EquipTarget,
+                ["input_equip_change"] = channels.LatestWeaponInput?.EquipChange,
+                ["input_weapon_flags"] = channels.LatestWeaponInput is { } weapon ? $"0x{weapon.Flags:x}" : null,
                 ["blackboard_frames"] = channels.BlackboardFrames,
                 ["simulated_speed"] = channels.SimulatedCharacter is { } character
                     ? Math.Round(Math.Sqrt((character.Velocity.X * character.Velocity.X) + (character.Velocity.Y * character.Velocity.Y)))
@@ -155,6 +158,8 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["door_presses"] = channels.DoorPresses,
                 ["ignored_door_requests"] = channels.IgnoredDoorRequests,
                 ["inventory_moves"] = channels.InventoryMoves,
+                ["shots_fired"] = channels.ShotsFired,
+                ["reloads_completed"] = channels.ReloadsCompleted,
                 ["rejected_inventory_requests"] = channels.RejectedInventoryRequests,
                 ["ladders_ready"] = channels.LaddersReady,
                 ["ladders_in_progress"] = channels.LaddersInProgress,

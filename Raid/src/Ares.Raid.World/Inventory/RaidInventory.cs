@@ -91,27 +91,51 @@ public sealed class RaidInventory
         equipped[InventoryBlackboard.Firearm2Slot] = Branch(LoadoutItems.Firearm2SlotAssetId).Single();
         equipped[InventoryBlackboard.ArmorSlot] = Branch(LoadoutItems.ArmorSlotAssetId).Single();
         equipped[InventoryBlackboard.MeleeSlot] = Branch(LoadoutItems.MeleeSlotAssetId).Single();
+        // Every raider also holds the Raider Tool and empty hands. The client draws them by item (keys 3 and 7),
+        // so both exist as raid-only items in their loadout slots; they cannot be moved and add no weight.
+        equipped[InventoryBlackboard.MeleeSlot] ??= new ContainerItem(HandItems.RaiderToolUsableIndex, Guid.NewGuid(), 1, 1);
+        equipped[InventoryBlackboard.UnarmedSlot] = new ContainerItem(HandItems.UnarmedUsableIndex, Guid.NewGuid(), 1, 1);
+        _unitWeights.TryAdd(HandItems.RaiderToolUsableIndex, 0);
+        _unitWeights.TryAdd(HandItems.UnarmedUsableIndex, 0);
         Add(nameof(Loadout), equipped);
+        _allowedSlots.Add((Loadout, InventoryBlackboard.Firearm1Slot), [WeaponItems.FerroIUsableIndex]);
+        _allowedSlots.Add((Loadout, InventoryBlackboard.Firearm2Slot), [WeaponItems.FerroIUsableIndex]);
         _allowedSlots.Add((Loadout, InventoryBlackboard.ArmorSlot), [ShieldItems.LightShieldUsableIndex]);
         Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId), LoadoutItems.BackpackSlotAssetId);
         Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId), LoadoutItems.BeltSlotAssetId);
         Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId), LoadoutItems.SafePocketSlotAssetId);
         Add(nameof(Auxiliary), []);
+        // The client indexes the container list with every weapon's and armor item's mod container and stops
+        // its whole character tick when the index is invalid. Each such item gets its own empty mod container,
+        // which no move can fill.
+        for (int container = 0, count = containers.Count; container < count; container++)
+        {
+            ContainerItem?[] contents = [.. containers[container].Items];
+            for (int slot = 0; slot < contents.Length; slot++)
+            {
+                if (contents[slot] is not { } item || ModSlotCount(item.AssetIndex) is not { } modSlots)
+                {
+                    continue;
+                }
+
+                contents[slot] = item with { ModContainerId = containers.Count };
+                containers.Add(new ItemContainerState(containers.Count, Array.AsReadOnly(new ContainerItem?[modSlots])));
+            }
+
+            containers[container] = containers[container] with { Items = Array.AsReadOnly(contents) };
+        }
+
         Containers = containers.AsReadOnly();
         try
         {
-            if (Containers.SelectMany(container => container.Items).Any(item => item?.AssetIndex == ShieldItems.LightShieldUsableIndex))
+            // The stock client must finish container creation and install its loadout slot queries before
+            // it receives equipment items, and every loadout holds hand items. Deliver contents in the next
+            // acknowledged frame; owned items and their positions stay in the authoritative inventory.
+            InitialBlackboard = ItemContainerState.Encode([.. Containers.Select(container => container with
             {
-                // The stock client must finish container creation and install its loadout slot
-                // queries before it receives armor items. Deliver contents in the next acknowledged
-                // frame; owned items and their positions stay in the authoritative inventory.
-                InitialBlackboard = ItemContainerState.Encode([.. Containers.Select(container => container with
-                {
-                    Items = Array.AsReadOnly(new ContainerItem?[container.Items.Count]),
-                })]);
-                Version = 2;
-            }
-
+                Items = Array.AsReadOnly(new ContainerItem?[container.Items.Count]),
+            })]);
+            Version = 2;
             Blackboard = ItemContainerState.Encode(Containers, Version);
         }
         catch (InvalidPacketException error)
@@ -132,7 +156,7 @@ public sealed class RaidInventory
             }
 
             HashSet<int> allowed = [.. slot.AllowedSlotAssetIds
-                .Where(id => id is StorageItems.RubberDuckAssetId or ShieldItems.LightShieldAssetId || AugmentItems.UsableIndices.ContainsKey(id)).Select(LoadoutDefinitions.UsableIndex)];
+                .Where(LoadoutDefinitions.SupportsCarriedItem).Select(LoadoutDefinitions.UsableIndex)];
             for (int index = 0; index < contents.Count; index++)
             {
                 _allowedSlots.Add((handle, index), allowed);
@@ -178,7 +202,7 @@ public sealed class RaidInventory
 
             InventoryItem item = items[slot.Slots[0]];
             visited.Add(item.InstanceId);
-            if ((item.GameAssetId is not (StorageItems.RubberDuckAssetId or ShieldItems.LightShieldAssetId) && !AugmentItems.UsableIndices.ContainsKey(item.GameAssetId)) || item.Slots.Count != 0
+            if (!LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId) || item.Slots.Count != 0
                 || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
                 || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId)
                 || !Guid.TryParse(item.InstanceId, out Guid guid))
@@ -203,7 +227,65 @@ public sealed class RaidInventory
 
     /// <summary>Current carried weight, counting stack amounts and excluding the equipped augment.</summary>
     public double Weight => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
-        .Sum(item => _unitWeights[item.AssetIndex] * item.Amount);
+        .Sum(item => (_unitWeights[item.AssetIndex] * item.Amount) + (item.AmmoInClip * WeaponItems.HeavyAmmoWeight));
+
+    /// <summary>Heavy Ammo available in carried containers, excluding rounds already chambered.</summary>
+    public int HeavyAmmo => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+        .Where(item => item.AssetIndex == WeaponItems.HeavyAmmoUsableIndex).Sum(item => item.Amount);
+
+    /// <summary>Changes a Ferro chamber, optionally transferring one carried Heavy Ammo round atomically.</summary>
+    public bool SetChamber(Guid id, int amount, bool consumeReserve = false)
+    {
+        if (amount is < 0 or > FerroDefaults.ClipSize || consumeReserve && amount != 1)
+        {
+            return false;
+        }
+
+        (int Container, int Slot)? gun = null;
+        (int Container, int Slot)? ammo = null;
+        for (int container = 0; container < Containers.Count; container++)
+        {
+            for (int slot = 0; slot < Containers[container].Items.Count; slot++)
+            {
+                ContainerItem? item = Containers[container].Items[slot];
+                if (item is { AssetIndex: WeaponItems.FerroIUsableIndex } && item.Id == id)
+                {
+                    gun = (container, slot);
+                }
+
+                if (ammo is null && item is { AssetIndex: WeaponItems.HeavyAmmoUsableIndex, Amount: > 0 })
+                {
+                    ammo = (container, slot);
+                }
+            }
+        }
+
+        if (gun is not { } target || consumeReserve && ammo is null
+            || Containers[target.Container].Items[target.Slot]!.AmmoInClip == amount)
+        {
+            return false;
+        }
+
+        ItemContainerState[] updated = [.. Containers];
+        Replace(target, updated[target.Container].Items[target.Slot]! with { AmmoInClip = amount });
+        if (consumeReserve && ammo is { } source)
+        {
+            ContainerItem item = updated[source.Container].Items[source.Slot]!;
+            Replace(source, item.Amount == 1 ? null : item with { Amount = item.Amount - 1 });
+        }
+
+        Containers = Array.AsReadOnly(updated);
+        Version++;
+        Blackboard = ItemContainerState.Encode(Containers, Version);
+        return true;
+
+        void Replace((int Container, int Slot) position, ContainerItem? item)
+        {
+            ContainerItem?[] contents = [.. updated[position.Container].Items];
+            contents[position.Slot] = item;
+            updated[position.Container] = updated[position.Container] with { Items = Array.AsReadOnly(contents) };
+        }
+    }
 
     /// <summary>The equipped Light Shield; a broken shield remains equipped with no available health.</summary>
     public ContainerItem? Shield => Containers[Loadout].Items[InventoryBlackboard.ArmorSlot];
@@ -232,11 +314,11 @@ public sealed class RaidInventory
     /// <summary>The current container state carried in each pawn frame.</summary>
     public PendulumVariable Blackboard { get; private set; }
 
-    /// <summary>Empty container creation before armor contents, or null when one frame is sufficient.</summary>
-    public PendulumVariable? InitialBlackboard { get; }
+    /// <summary>Empty container creation, sent before the equipment contents.</summary>
+    public PendulumVariable InitialBlackboard { get; }
 
     /// <summary>Container update counter, including corrections for rejected requests.</summary>
-    public uint Version { get; private set; } = 1;
+    public uint Version { get; private set; }
 
     /// <summary>Applies a whole-stack swap, or corrects the client's prediction when it is invalid.</summary>
     /// <param name="command">The requested operation.</param>
@@ -276,6 +358,13 @@ public sealed class RaidInventory
         Containers = Array.AsReadOnly(containers);
         return true;
     }
+
+    private static int? ModSlotCount(ushort assetIndex) => assetIndex switch
+    {
+        WeaponItems.FerroIUsableIndex => FerroDefaults.ModSlotCount,
+        ShieldItems.LightShieldUsableIndex => ShieldDefaults.ModSlotCount,
+        _ => null,
+    };
 
     private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
         && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;

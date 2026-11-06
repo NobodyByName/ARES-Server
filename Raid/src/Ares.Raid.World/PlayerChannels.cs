@@ -178,6 +178,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private HashSet<int> _failedDoors = [];
     private List<InteractionRequest> _requests = [];
     private List<InventoryRequest> _inventoryRequests = [];
+    private List<WeaponInput> _weaponRequests = [];
+    private uint _weaponVersion;
+    private bool _populatedInventorySent;
+    private bool _weaponCreationSent;
+    private bool _weaponItemsCreated;
+    private ReliableKey[] _weaponCreationKeys = [];
+    private bool _weaponReferencesSent;
+    private bool _weaponReferencesMapped;
+    private ReliableKey[] _weaponReferenceKeys = [];
     private uint _inventoryFrame;
     private uint _inventoryVersion = 1;
     private ContainerItem? _shield;
@@ -228,6 +237,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Reason the latest undecoded input payload was rejected, if any.</summary>
     public string? LastInputDecodeError { get; private set; }
 
+    /// <summary>The newest weapon controls the client sent: what it holds or wants to equip.</summary>
+    public WeaponInput? LatestWeaponInput { get; private set; }
+
     /// <summary>The object the client focuses in its latest input frame (its prompt shows), or 0.</summary>
     public ulong InputFocus => _input.Focus;
 
@@ -254,6 +266,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     /// <summary>Whole-stack inventory swaps accepted.</summary>
     public int InventoryMoves { get; private set; }
+
+    public int ShotsFired => _raid.Weapons.ShotsFired;
+    public int ReloadsCompleted => _raid.Weapons.ReloadsCompleted;
 
     /// <summary>Inventory requests rejected and corrected.</summary>
     public int RejectedInventoryRequests { get; private set; }
@@ -282,6 +297,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
             .Concat(_raid.SpawnedActors.SelectMany(actor => actor.RequiredGuids))
             .Concat(_bindings.Select(binding => _raid.Imports.Archetypes[_raid.State.Actor(binding.Guid).ClassPath]))
             .Append(_raid.Imports.Archetypes[PlayerClasses.Squad.Class]);
+        roots = roots.Concat(_raid.Inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+            .Where(item => _player.HeldItems.ContainsKey(item.Id)).Select(item => _raid.Imports.Classes[WorldImports.HeldItemClasses[item.AssetIndex]]));
+
         _keys = [.. roots.Distinct().Select(root => io.Sender.Queue(Bunches.Exports(_raid.Imports.Exports, [root])))];
         Phase = DeliveryPhase.ExportsPending;
     }
@@ -301,6 +319,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._failedDoors = [.. _failedDoors];
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
+        copy._weaponRequests = [.. _weaponRequests];
         copy._ladders = new Dictionary<int, (LadderChannel, ReliableKey?)>(_ladders);
         copy._failedLadders = [.. _failedLadders];
         return copy;
@@ -395,6 +414,14 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
             _requests.AddRange(requests);
             _inventoryRequests.AddRange(inventory);
+            _weaponRequests.AddRange(_input.Weapons);
+            foreach (WeaponInput weapon in _input.Weapons)
+            {
+                if (LatestWeaponInput is not { } current || weapon.Frame > current.Frame)
+                {
+                    LatestWeaponInput = weapon;
+                }
+            }
         }
         catch (InvalidPacketException error)
         {
@@ -487,11 +514,28 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _inventoryRequests.Clear();
         if (Phase == DeliveryPhase.Possessed && _blackboardFrame != 0 && InputFrame is { } latest)
         {
-            // No weapon can be drawn yet, so the character always moves unarmed.
+            // Each simulated frame moves with the weapon its own input left in the character's hands.
+            Queue<WeaponInput> weapons = new(_weaponRequests.Where(input => input.Frame < latest).OrderBy(input => input.Frame));
             while (_movement is { } movement && movement.Frame + 1 < latest)
             {
-                movement.Advance(_input, armed: false);
+                while (weapons.TryPeek(out WeaponInput input) && input.Frame <= movement.Frame + 1)
+                {
+                    _raid.Weapons.Apply(weapons.Dequeue(), _weaponReferencesMapped ? _player.HeldItems : null);
+                }
+
+                movement.Advance(_input, _raid.Weapons.Armed);
             }
+
+            foreach (WeaponInput input in weapons)
+            {
+                _raid.Weapons.Apply(input, _weaponReferencesMapped ? _player.HeldItems : null);
+            }
+
+            _weaponRequests.RemoveAll(input => input.Frame < latest);
+        }
+        else
+        {
+            _weaponRequests.Clear();
         }
     }
 
@@ -918,7 +962,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     }
 
     // The first frame starts the client's character simulation at the spawn after the client confirmed its
-    // initial levels loaded and possession completed. The client applies each later
+    // initial levels loaded and possession completed, with the slot-1 gun already in hand (a raid never starts
+    // unarmed; its item link follows once the item exists). The client applies each later
     // frame as its full character state, so later frames carry the movement the client itself predicted
     // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
     // the latest input. They are sent when the usable focused button changes: the client's interaction (and
@@ -930,16 +975,55 @@ public sealed partial class PlayerChannels : IPlayerChannels
             return;
         }
 
+        // Item initialization caches its inventory owner even when FindSlotOf fails. Registering
+        // before populated containers arrive leaves the item permanently assigned to an invalid slot.
+        if (_populatedInventorySent && _player.HeldItems.Count > 0 && !_weaponReferencesMapped)
+        {
+            if (!_weaponCreationSent)
+            {
+                _weaponCreationKeys = [.. _raid.State.WeaponItemCreation(_player, _raid.Inventory)
+                    .Select(item => sender.Queue(Bunches.Actor(PawnChannel, item.Write)))];
+                _weaponCreationSent = true;
+                return;
+            }
+
+            if (!_weaponItemsCreated)
+            {
+                if (_weaponCreationKeys.Any(sender.Pending))
+                {
+                    return;
+                }
+
+                _weaponItemsCreated = true;
+            }
+
+            if (!_weaponReferencesSent)
+            {
+                _weaponReferenceKeys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.WeaponItemReferences(_player).Write))];
+                _weaponReferencesSent = true;
+                return;
+            }
+
+            if (_weaponReferenceKeys.Any(sender.Pending))
+            {
+                return;
+            }
+
+            _weaponReferencesMapped = true;
+            _weaponVersion = uint.MaxValue;
+        }
+
+        IReadOnlyDictionary<Guid, ulong>? weaponObjects = _weaponReferencesMapped ? _player.HeldItems : null;
         IReadOnlyDictionary<int, PendulumSlot> state;
         uint frame = latest;
         ulong focus = 0;
-        bool initializingContainers = _blackboardFrame == 0 && _raid.Inventory.InitialBlackboard is not null;
+        bool initializingContainers = _blackboardFrame == 0;
         if (_blackboardFrame == 0)
         {
             WorldActor pawn = Actor(_player.Pawn);
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
-                _raid.Inventory.InitialBlackboard ?? _raid.Inventory.Blackboard);
+                _raid.Inventory.InitialBlackboard, _raid.Weapons.Variables(frame, weaponObjects));
             _movement = new PlayerMovement(frame, pawn.Location, yaw);
         }
         else
@@ -947,7 +1031,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
             focus = UsableDoor(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _raid.Inventory.Version;
-            if ((!inventoryChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
+            bool weaponsChanged = _weaponVersion != _raid.Weapons.Version;
+            if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
                 || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0)
             {
@@ -957,7 +1042,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
             // Vertical motion is not simulated yet; it stays the reported position change.
             Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _raid.Inventory.Blackboard);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _raid.Inventory.Blackboard,
+                _raid.Weapons.Variables(frame, weaponObjects));
         }
 
         // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
@@ -972,6 +1058,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _blackboardKeys = [.. keys];
         (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
         _inventoryVersion = initializingContainers ? 1 : _raid.Inventory.Version;
+        _weaponVersion = _raid.Weapons.Version;
+        _populatedInventorySent = !initializingContainers;
         BlackboardFrames++;
     }
 

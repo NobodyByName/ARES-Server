@@ -39,12 +39,15 @@ public sealed class InputHistory
     /// <summary>The object the client focuses in its latest frame (its prompt shows), or 0.</summary>
     public ulong Focus { get; private set; }
 
+    /// <summary>New weapon input frames from the last successfully decoded payload.</summary>
+    public IReadOnlyList<WeaponInput> Weapons { get; private set; } = [];
+
     /// <summary>Latest frame received.</summary>
     private uint Latest { get; set; }
 
     /// <summary>A copy for speculative packet processing (frames are not changed after they are stored).</summary>
     /// <returns>The copy.</returns>
-    public InputHistory Copy() => new() { _frames = new Dictionary<uint, Dictionary<int, PendulumSlot>>(_frames), Latest = Latest, Focus = Focus };
+    public InputHistory Copy() => new() { _frames = new Dictionary<uint, Dictionary<int, PendulumSlot>>(_frames), Latest = Latest, Focus = Focus, Weapons = Weapons };
 
     /// <summary>The character position the client predicted for a frame it sent.</summary>
     /// <param name="frame">Input frame.</param>
@@ -110,6 +113,7 @@ public sealed class InputHistory
         BitReader reader = new(payload);
         if (PendulumInputHeader.Read(reader) is not { } header)
         {
+            Weapons = [];
             return (null, [], []);
         }
 
@@ -124,12 +128,17 @@ public sealed class InputHistory
         Dictionary<uint, Dictionary<int, PendulumSlot>> updates = [];
         List<InteractionRequest> requests = [];
         List<InventoryRequest> inventory = [];
+        List<WeaponInput> weapons = [];
         uint first = Math.Max(header.Baseline + 1, header.Latest >= FramesPerPayload - 1 ? header.Latest - (FramesPerPayload - 1) : 0);
         for (uint number = first; number <= header.Latest; number++)
         {
             Dictionary<int, PendulumSlot> frame = PendulumCodec.Default.ReadFrame(reader, previous);
             updates[number] = frame;
             previous = frame;
+            if (number > Latest && frame.TryGetValue(WeaponProtocol.InputSlot, out PendulumSlot? weapon))
+            {
+                weapons.Add(WeaponInput.Read(number, weapon));
+            }
             if (number > Latest && Request(number, frame) is { } request)
             {
                 requests.Add(request);
@@ -154,6 +163,7 @@ public sealed class InputHistory
         }
 
         Latest = Math.Max(Latest, header.Latest);
+        Weapons = weapons.AsReadOnly();
         foreach ((uint number, Dictionary<int, PendulumSlot> frame) in updates)
         {
             _frames[number] = frame;

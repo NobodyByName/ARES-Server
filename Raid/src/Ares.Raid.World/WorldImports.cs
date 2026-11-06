@@ -1,4 +1,6 @@
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
@@ -17,6 +19,14 @@ public sealed class WorldImports
     private readonly Dictionary<string, ulong> _archetypes = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ulong> _classes = new(StringComparer.Ordinal);
     private readonly List<(GlobalActor Actor, ulong Guid)> _globalActors = [];
+
+    /// <summary>Gameplay classes of the items a character can hold, by usable-item index.</summary>
+    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = new Dictionary<ushort, string>
+    {
+        [WeaponItems.FerroIUsableIndex] = FerroDefaults.ItemClass,
+        [HandItems.RaiderToolUsableIndex] = HandItems.RaiderToolItemClass,
+        [HandItems.UnarmedUsableIndex] = HandItems.UnarmedItemClass,
+    };
 
     /// <summary>Builds the exports.</summary>
     /// <param name="catalog">Replication schemas.</param>
@@ -62,6 +72,14 @@ public sealed class WorldImports
         (string _, string squadName) = Split(PlayerClasses.Squad.Archetype);
         _archetypes[PlayerClasses.Squad.Class] = Add(memberOuter, squadName, catalog.Class(PlayerClasses.Squad.Class).Checksum);
         _classes[PlayerClasses.SquadMember] = Add(memberOuter, memberName, catalog.Class(PlayerClasses.SquadMember).Checksum);
+
+        foreach (string itemClass in HeldItemClasses.Values)
+        {
+            (string itemPackage, string itemName) = Split(itemClass);
+            uint checksum = catalog.ReferenceClasses[itemClass].ExportChecksum
+                ?? throw new InvalidOperationException("Held item class has no export checksum");
+            _classes[itemClass] = Add(Add(0, itemPackage, package), itemName, checksum);
+        }
 
         Exports = new ObjectExports(_records);
     }

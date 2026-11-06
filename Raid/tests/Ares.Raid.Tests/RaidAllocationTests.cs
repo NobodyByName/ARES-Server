@@ -1,4 +1,5 @@
 using Ares.Common.Control;
+using Ares.Common.Control.Server;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
@@ -135,6 +136,18 @@ public sealed class RaidAllocationTests
         Assert.Equal("invalid_session_loadout", allocations.Reserve(request with { Loadouts = [new PlayerLoadout(43, 7, items)] }).Error);
         Assert.Equal("invalid_session_loadout", allocations.Reserve(request with { Loadouts = [] }).Error);
         Assert.Equal("session_allocation_conflict", allocations.Reserve(Request()).Error);
+    }
+
+    [Fact]
+    public void A_ferro_and_heavy_ammo_loadout_can_be_reserved_against_the_real_dam_world()
+    {
+        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        RaidAllocations allocations = new(s_endpoint, worlds, () => 0);
+        AllocationRequest request = Request() with { Loadouts = [World.WeaponTests.WithWeapons()] };
+        AllocationResult result = allocations.Reserve(request);
+        Assert.Equal(200, result.StatusCode);
+        Assert.NotNull(worlds.Current);
+        Assert.Equal(200, allocations.Reserve(request).StatusCode);
     }
 
     [Fact]

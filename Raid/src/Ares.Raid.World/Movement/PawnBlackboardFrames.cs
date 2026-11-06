@@ -35,8 +35,10 @@ public static class PawnBlackboardFrames
     /// <param name="motion">Character movement.</param>
     /// <param name="focus">Interaction the character may use (its focused button), or 0 for none.</param>
     /// <param name="inventory">The player's container state.</param>
+    /// <param name="weapons">Weapon simulation variables replacing or extending the initial state.</param>
     /// <returns>The slots by index.</returns>
-    public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null)
+    public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
+        IReadOnlyList<PendulumVariable>? weapons = null)
     {
         if (tick is < FirstTick or > LastTick)
         {
@@ -44,7 +46,8 @@ public static class PawnBlackboardFrames
         }
 
         Dictionary<int, PendulumSlot> slots = [];
-        foreach (PendulumVariable initial in PawnBlackboard.InitialState)
+        foreach (PendulumVariable initial in PawnBlackboard.InitialState.Where(initial => weapons is null || weapons.All(item => item.Slot != initial.Slot))
+            .Concat(weapons ?? []))
         {
             PendulumVariable variable = inventory is not null && initial.Slot == inventory.Slot ? inventory : initial;
             List<PendulumValue> values = [.. variable.Values];

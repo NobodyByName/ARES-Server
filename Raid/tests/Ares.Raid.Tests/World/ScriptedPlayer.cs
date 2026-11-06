@@ -33,6 +33,7 @@ internal sealed class ScriptedPlayer
     private ulong _focus;
     private Vector3D? _position;
     private readonly Dictionary<uint, InventoryCommand> _inventoryInputs = [];
+    private readonly Dictionary<uint, ulong> _weaponInputs = [];
 
     public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null)
     {
@@ -140,14 +141,15 @@ internal sealed class ScriptedPlayer
             [PropertyNames.LevelVisibilities] = levels.Select(object? (level, index) => new LevelVisibility(level.Package, level.Package, level.Visible, false, new VisibilityTransaction(index == 0 ? 1 : 0, level.Client))).ToArray(),
         });
 
-    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null, InventoryCommand? inventory = null)
+    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null, InventoryCommand? inventory = null, ulong weaponFlags = 0)
     {
         if (inventory is not null)
         {
             _inventoryInputs[latest] = inventory;
         }
 
-        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs));
+        _weaponInputs[latest] = weaponFlags;
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs, _weaponInputs));
         (_focus, _position) = (focus, position);
         Channels.Commit();
     }
@@ -157,7 +159,8 @@ internal sealed class ScriptedPlayer
 
     // The client's input history: a header and the last frames, every slot at its descriptor default
     // (the new frames optionally report a position and focus a button, and the latest frame optionally presses one).
-    private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported, Dictionary<uint, InventoryCommand> inventory)
+    private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported, Dictionary<uint, InventoryCommand> inventory,
+        Dictionary<uint, ulong>? weapons = null)
     {
         BitWriter writer = new();
         writer.WriteBit(true);
@@ -213,6 +216,12 @@ internal sealed class ScriptedPlayer
                         break;
                 }
 
+                if (slot == WeaponProtocol.InputSlot && weapons is not null && weapons.TryGetValue(frame, out ulong flags))
+                {
+                    PendulumCodec.Apply(PendulumRegistry.Descriptors[descriptor].Fields, value,
+                        [new PendulumIntegerValue(WeaponProtocol.InputFlagsField, flags)]);
+                }
+
                 int size = (value.Length + 255) / 256;
                 slots[slot] = new PendulumSlot(slot, position, size, descriptor, value);
                 position += size;
@@ -259,5 +268,23 @@ internal sealed class ScriptedPlayer
         ReportVisible((DamMap.MapPackage, true, true), (Door.Cell, true, false));
         Flush("possession and visibility");
         Input(0, 30);
+    }
+
+    /// <summary>Frames sent until the held items are linked: spawn, filled containers, item links.</summary>
+    public const int SettledFrames = 3;
+
+    // Standing inputs from the given frame until the spawn frame, the filled containers and the linked held
+    // items are delivered; returns the next input frame and service time.
+    public (uint Frame, double At) Settle(uint frame, double at, Vector3D? position = null)
+    {
+        for (int step = 0; step < 10 && Channels.BlackboardFrames < SettledFrames; step++)
+        {
+            Input(frame, frame + 3, position: position ?? Raid.Spawn.Location);
+            Service(at);
+            (frame, at) = (frame + 3, at + 0.1);
+        }
+
+        Assert.Equal(SettledFrames, Channels.BlackboardFrames);
+        return (frame, at);
     }
 }

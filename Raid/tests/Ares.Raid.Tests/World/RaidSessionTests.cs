@@ -18,7 +18,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization.
-    private const string ReferenceTrace = "34c957232e6c5c6e092140d9d9c17135295c6ddd2272a910bfd5f35089c089cd";
+    private const string ReferenceTrace = "7b1e05f1b05793c74e9ac9cdcc83baae9425ed0c7650189388d57910ea97649f";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -230,19 +230,20 @@ public sealed class RaidSessionTests
 
         ulong button = session.Door.Buttons[0];
         Vector3D there = new(450000.0, 600000.0, -38000.0);
-        session.Input(30, 33, focus: button);
-        session.Service(122.5);
-        Assert.Equal((button, 1), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
+        (uint start, double startAt) = session.Settle(30, 122.5);
+        session.Input(start, start + 3, focus: button);
+        session.Service(startAt);
+        Assert.Equal((button, ScriptedPlayer.SettledFrames), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
 
-        session.Input(33, 36, focus: button, position: there);
-        session.Service(123.0);
-        session.Input(36, 39, focus: button, position: there);
-        session.Service(123.5);
-        Assert.Equal(2, session.Channels.BlackboardFrames);
+        session.Input(start + 3, start + 6, focus: button, position: there);
+        session.Service(startAt + 0.1);
+        session.Input(start + 6, start + 9, focus: button, position: there);
+        session.Service(startAt + 0.2);
+        Assert.Equal(ScriptedPlayer.SettledFrames + 1, session.Channels.BlackboardFrames);
 
-        session.Input(39, 42, position: there);
-        session.Service(124.0);
-        Assert.Equal((0UL, 3), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
+        session.Input(start + 9, start + 12, position: there);
+        session.Service(startAt + 0.3);
+        Assert.Equal((0UL, ScriptedPlayer.SettledFrames + 2), (session.Channels.InputFocus, session.Channels.BlackboardFrames));
     }
 
     [Fact]
@@ -255,9 +256,10 @@ public sealed class RaidSessionTests
             session.Service(at);
         }
 
-        session.Input(30, 33, focus: session.HiddenDoor.Buttons[0], position: new Vector3D(1.0, 2.0, 3.0));
-        session.Service(122.5);
-        Assert.Equal(1, session.Channels.BlackboardFrames);
+        (uint start, double startAt) = session.Settle(30, 122.5);
+        session.Input(start, start + 3, focus: session.HiddenDoor.Buttons[0], position: new Vector3D(1.0, 2.0, 3.0));
+        session.Service(startAt);
+        Assert.Equal(ScriptedPlayer.SettledFrames, session.Channels.BlackboardFrames);
     }
 
     [Fact]

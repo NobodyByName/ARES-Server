@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Inventory;
@@ -53,6 +54,9 @@ public sealed record WorldPlayer(
 
     /// <summary>The character's health and shield component.</summary>
     public ulong Health { get; init; }
+
+    /// <summary>Replicated objects of the items the character can hold, keyed by their inventory identities.</summary>
+    public IReadOnlyDictionary<Guid, ulong> HeldItems { get; init; } = new Dictionary<Guid, ulong>();
 
     /// <summary>Whether the client confirmed possessing its character.</summary>
     public bool PossessionAcknowledged { get; init; }
@@ -116,7 +120,7 @@ public sealed class WorldState
         channel,
         GameState.Guid,
         _imports.Archetypes[GameState.ClassPath],
-        [.. _imports.Classes.Values],
+        [.. _imports.Classes.Where(item => !WorldImports.HeldItemClasses.Values.Contains(item.Key)).Select(item => item.Value)],
         [Replication.Encode(GameState.ClassPath, GameState.Properties, Objects([GameState.Guid]))]);
 
     /// <summary>The game state's world time: clients derive the server's clock from it.</summary>
@@ -130,8 +134,9 @@ public sealed class WorldState
     /// <param name="uniqueId">The unique id the player logged in with; its player state carries it.</param>
     /// <param name="spawn">Spawn location for a new player.</param>
     /// <param name="rotation">Authored spawn rotation for a new player.</param>
+    /// <param name="inventory">Carried items that need replicated gameplay objects.</param>
     /// <returns>The player.</returns>
-    public WorldPlayer PlayerFor(SessionPrincipal principal, UniqueNetId uniqueId, Vector3D spawn, Rotator rotation = default)
+    public WorldPlayer PlayerFor(SessionPrincipal principal, UniqueNetId uniqueId, Vector3D spawn, Rotator rotation = default, RaidInventory? inventory = null)
     {
         ArgumentNullException.ThrowIfNull(principal);
         ArgumentNullException.ThrowIfNull(uniqueId);
@@ -213,6 +218,9 @@ public sealed class WorldState
                 SquadMember = member,
                 Inventory = Next(),
                 Health = Next(),
+                HeldItems = inventory?.Containers.SelectMany(container => container.Items)
+                    .OfType<ContainerItem>().Where(item => WorldImports.HeldItemClasses.ContainsKey(item.AssetIndex))
+                    .ToDictionary(item => item.Id, _ => Next()) ?? [],
             };
             _players[principal.UserId] = player;
             return player;
@@ -510,6 +518,44 @@ public sealed class WorldState
         }
 
         return new StableSubobjectContent(player.Inventory, Replication.Encode(ClassPaths.InventoryComponent, values, Objects([])));
+    }
+
+    /// <summary>Creates the held items' gameplay objects before the inventory references them.</summary>
+    public IReadOnlyList<DynamicSubobjectContent> WeaponItemCreation(WorldPlayer player, RaidInventory inventory)
+    {
+        return [.. inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+            .Where(item => player.HeldItems.ContainsKey(item.Id)).Select(item =>
+            {
+                Dictionary<string, object?> values = new()
+                {
+                    [PropertyNames.QualityLevel] = 0,
+                    [PropertyNames.DurabilityVal] = item.Durability,
+                    [$"{PropertyNames.SubItemContainer}.{PropertyNames.Id}"] = item.ModContainerId ?? -1,
+                    [$"{PropertyNames.SubItemContainer}.{PropertyNames.Revision}"] = item.ModContainerId is null ? ushort.MaxValue : ushort.MinValue,
+                };
+                string id = item.Id.ToString("N");
+                foreach ((string name, int index) in ((string, int)[])
+                    [(PropertyNames.A, 0), (PropertyNames.B, 1), (PropertyNames.C, 2), (PropertyNames.D, 3)])
+                {
+                    values[$"{PropertyNames.Id}.{name}"] = unchecked((int)uint.Parse(id.AsSpan(index * 8, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
+                }
+
+                return new DynamicSubobjectContent(player.HeldItems[item.Id], _imports.Classes[WorldImports.HeldItemClasses[item.AssetIndex]],
+                    Replication.Encode(ClassPaths.ItemBase, values, Objects([])), player.Inventory);
+            })];
+    }
+
+    /// <summary>Publishes acknowledged item objects so the client recognizes the items it can hold.</summary>
+    public StableSubobjectContent WeaponItemReferences(WorldPlayer player)
+    {
+        Dictionary<ulong, string> objects = Objects([]);
+        foreach (ulong guid in player.HeldItems.Values)
+        {
+            objects[guid] = ClassPaths.ItemBase;
+        }
+
+        return new StableSubobjectContent(player.Inventory, Replication.Encode(ClassPaths.InventoryComponent,
+            new Dictionary<string, object?> { [PropertyNames.KnownReplicatedItems] = player.HeldItems.Values.Select(guid => (object?)guid).ToArray() }, objects));
     }
 
     /// <summary>Exports naming the character's ability system component.</summary>

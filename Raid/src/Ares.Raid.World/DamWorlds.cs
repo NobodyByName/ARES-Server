@@ -37,6 +37,7 @@ public sealed class RaidWorld
         Players = players;
         Loadouts = loadouts;
         Inventory = new RaidInventory(loadouts.Single());
+        Weapons = new RaidWeapons(Inventory);
         Profiles = profiles;
         Seed = seed;
         RoundConfiguration round = DamRounds.All[seed % DamRounds.All.Count];
@@ -93,6 +94,9 @@ public sealed class RaidWorld
 
     /// <summary>The reserved player's inventory containers.</summary>
     public RaidInventory Inventory { get; }
+
+    /// <summary>The reserved player's weapon simulation.</summary>
+    public RaidWeapons Weapons { get; }
 
     /// <summary>The frozen public squad profiles.</summary>
     public IReadOnlyList<CompactPlayerProfile> Profiles { get; }
@@ -325,7 +329,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     {
         ArgumentNullException.ThrowIfNull(login);
         RaidWorld raid = Raid(principal) ?? throw new InvalidPacketException("The raid ended");
-        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location, new Rotator(0, raid.Spawn.Yaw, 0)), login);
+        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location, new Rotator(0, raid.Spawn.Yaw, 0), raid.Inventory), login);
         channels.Start(io);
         return channels;
     }

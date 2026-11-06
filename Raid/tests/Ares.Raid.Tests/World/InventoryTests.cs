@@ -75,9 +75,11 @@ public sealed class InventoryTests
         Assert.Equal(Enumerable.Range(0, 5), inventory.Containers.Select(container => container.Id));
         ContainerItem duck = Assert.IsType<ContainerItem>(inventory.Containers[inventory.Backpack].Items[3]);
         Assert.Equal(new ContainerItem(InventoryBlackboard.RubberDuckIndex, s_duckId, 4, 0.5), duck);
-        Assert.Single(inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>());
+        Assert.Equal(3, inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>().Count());
         Assert.Equal(4, loadout.Items.Single(item => item.InstanceId == s_duckId.ToString("D")).Amount);
-        Assert.All(new RaidInventory(new PlayerLoadout(43, 0, [])).Containers.SelectMany(container => container.Items), Assert.Null);
+        RaidInventory empty = new(new PlayerLoadout(43, 0, []));
+        Assert.Equal([HandItems.RaiderToolUsableIndex, HandItems.UnarmedUsableIndex],
+            empty.Containers.SelectMany(container => container.Items).OfType<ContainerItem>().Select(item => (int)item.AssetIndex));
     }
 
     [Fact]
@@ -159,7 +161,7 @@ public sealed class InventoryTests
         Assert.True(inventory.Apply(Swap(inventory.Backpack, 7, inventory.Belt, 0)));
         Assert.Equal(duck, inventory.Containers[inventory.Belt].Items[0]);
         Assert.Null(inventory.Containers[inventory.Backpack].Items[7]);
-        Assert.Equal(4, inventory.Containers.SelectMany(container => container.Items).Sum(item => item?.Amount ?? 0));
+        Assert.Equal(6, inventory.Containers.SelectMany(container => container.Items).Sum(item => item?.Amount ?? 0));
         Assert.Equal(4, loadout.Items.Single(item => item.InstanceId == s_duckId.ToString("D")).Amount);
     }
 
@@ -193,28 +195,26 @@ public sealed class InventoryTests
     {
         ScriptedPlayer session = new(loadout: StandardLoadout());
         session.Possess();
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
-        session.Service(100);
-        Assert.Equal(1, session.Channels.BlackboardFrames);
-        session.Input(33, 34, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7));
+        (uint start, double at) = session.Settle(30, 100);
+        session.Input(start, start + 1, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7));
         Assert.Equal(1, session.Channels.InventoryMoves);
-        session.Service(100.1);
-        Assert.Equal(1, session.Channels.BlackboardFrames);
-        session.Input(34, 35, position: session.Raid.Spawn.Location);
-        session.Service(100.2);
-        Assert.Equal(2, session.Channels.BlackboardFrames);
+        session.Service(at);
+        Assert.Equal(ScriptedPlayer.SettledFrames, session.Channels.BlackboardFrames);
+        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
+        session.Service(at + 0.1);
+        Assert.Equal(ScriptedPlayer.SettledFrames + 1, session.Channels.BlackboardFrames);
         Assert.Equal(1, session.Channels.InventoryMoves);
         Assert.Equal(0, session.Channels.RejectedInventoryRequests);
-        session.Input(34, 35, position: session.Raid.Spawn.Location);
+        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
         Assert.Equal(1, session.Channels.InventoryMoves);
         Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
-        session.Input(35, 36, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 7, session.Raid.Inventory.Loadout, 0));
-        session.Input(36, 37, position: session.Raid.Spawn.Location);
-        session.Service(100.3);
-        Assert.Equal(3, session.Channels.BlackboardFrames);
+        session.Input(start + 2, start + 3, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 7, session.Raid.Inventory.Loadout, 0));
+        session.Input(start + 3, start + 4, position: session.Raid.Spawn.Location);
+        session.Service(at + 0.2);
+        Assert.Equal(ScriptedPlayer.SettledFrames + 2, session.Channels.BlackboardFrames);
         Assert.Equal(1, session.Channels.RejectedInventoryRequests);
         Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
-        Assert.All(session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items, Assert.Null);
+        Assert.Null(session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
     }
 
     [Fact]
@@ -226,13 +226,13 @@ public sealed class InventoryTests
         byte[] payload = ScriptedPlayer.InventoryPayload(30, 31, command);
         IPlayerChannels speculative = session.Channels.Copy();
         Assert.True(speculative.ObserveDirect(PendulumInput.DirectStreamKind, payload));
-        Assert.Equal(1U, session.Raid.Inventory.Version);
+        Assert.Equal(2U, session.Raid.Inventory.Version);
         Assert.Null(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
 
         Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, [.. payload, 0xFF]));
         session.Channels.Commit();
         Assert.Equal(1, session.Channels.InputDecodeFailures);
-        Assert.Equal(1U, session.Raid.Inventory.Version);
+        Assert.Equal(2U, session.Raid.Inventory.Version);
         Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, payload));
         session.Channels.Commit();
         Assert.Equal(1, session.Channels.InventoryMoves);
