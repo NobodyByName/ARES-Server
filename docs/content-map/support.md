@@ -24,13 +24,34 @@ Raid replicates their initial shield health and includes their weight. Damage mi
 equip charge-up, repair, heavier shields and movement penalties remain future work. Shield support
 has automated coverage; menu equipment, Raid shield bars and inventory display are stock-client verified.
 
+Ferro I and Heavy Ammo have menu item definitions and persistent storage. Ferro I fits both
+weapon slots and the backpack; Heavy Ammo stacks hold 1–60 rounds and move as whole stacks through
+the stash, backpack and safe pocket. Raid accepts both, includes them in the carried weight and
+validates whole-stack moves. Every raider also holds the Raider Tool and empty hands.
+
+In Raid the slot-1 Ferro I starts drawn. Switching between the Ferro I, the Raider Tool and empty
+hands plays the put-away and draw animations; the Ferro I fires at its semi-automatic cadence and
+reloads one round at a time from carried Heavy Ammo. These are stock-client verified, with known
+issues. Damage, ballistics, attachments and upgrades remain future work.
+
+To grant menu test items from the Host console before a fresh client launch:
+
+```text
+inventory add DA_Item_BattleRifle_BreachAction_01
+inventory add DA_Item_HeavyAmmo 60
+```
+
+`inventory add <technical-name> [quantity]` adds a new stack; quantity defaults to one and must
+fit that item's stack limit. Existing stacks remain unchanged. Full stashes and raid reservations
+reject grants. Starter provisioning still supplies only one rubber duck.
+
 Limitations:
 
 - One player and one raid at a time; Dam only.
 - Identity is synthetic: every player uses one local account, with no real sign-in or separate
   player accounts and progression yet.
 - Movement is trusted from the client; the server does not check it yet.
-- No combat, loot, death or match results yet.
+- No damage, loot, death or match results yet.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not

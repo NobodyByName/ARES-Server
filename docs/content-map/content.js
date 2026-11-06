@@ -3534,9 +3534,10 @@ globalThis.AresContent = {
               "status": "unassessed"
             },
             {
-              "name": "Battle Rifle Breach Action 01",
+              "name": "Ferro I",
               "technical": "DA_Item_BattleRifle_BreachAction_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Menu equipment, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, attachments and upgrades remain."
             },
             {
               "name": "Battle Rifle Energy Burst 01",
@@ -3941,7 +3942,8 @@ globalThis.AresContent = {
             {
               "name": "Heavy Ammo",
               "technical": "DA_Item_HeavyAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported; Ferro I reloads take rounds from carried stacks. Splitting and merging stacks remain."
             },
             {
               "name": "Launcher Ammo",

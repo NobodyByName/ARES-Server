@@ -589,7 +589,7 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 | <a id="content-root-2-4-17"></a>Assault Rifle Pneumatic 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-18"></a>Assault Rifle Pneumatic 01 Full Auto | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-19"></a>Assault Rifle Pneumatic 01 XRounds | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-4-20"></a>Battle Rifle Breach Action 01 | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-4-20"></a>Ferro I | Partial | Menu equipment, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, attachments and upgrades remain. |
 | <a id="content-root-2-4-21"></a>Battle Rifle Energy Burst 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-22"></a>Battle Rifle Energy Burst 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-23"></a>Battle Rifle Energy Burst 01 Bigger Mag | Not assessed | Availability and server behavior have not been assessed. |
@@ -676,7 +676,7 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 | Content | Status | Details |
 | --- | --- | --- |
 | <a id="content-root-2-5-0"></a>Energy Ammo | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-5-1"></a>Heavy Ammo | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-5-1"></a>Heavy Ammo | Partial | Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported; Ferro I reloads take rounds from carried stacks. Splitting and merging stacks remain. |
 | <a id="content-root-2-5-2"></a>Launcher Ammo | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-5-3"></a>Light Ammo | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-5-4"></a>Medium Ammo | Not assessed | Availability and server behavior have not been assessed. |
