@@ -225,8 +225,17 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Input payloads that could not be decoded (they never reject the packet carrying them).</summary>
     public int InputDecodeFailures { get; private set; }
 
+    /// <summary>Reason the latest undecoded input payload was rejected, if any.</summary>
+    public string? LastInputDecodeError { get; private set; }
+
     /// <summary>The object the client focuses in its latest input frame (its prompt shows), or 0.</summary>
     public ulong InputFocus => _input.Focus;
+
+    /// <summary>The character position the client predicted in its latest input frame, if any.</summary>
+    public Vector3D? InputPosition => InputFrame is { } frame ? _input.Position(frame) : null;
+
+    /// <summary>The heading of the client's control rotation in its latest input frame, in radians, if any.</summary>
+    public double? InputYaw => InputFrame is { } frame ? _input.Yaw(frame) : null;
 
     /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
     public int BlackboardFrames { get; private set; }
@@ -387,10 +396,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
             _requests.AddRange(requests);
             _inventoryRequests.AddRange(inventory);
         }
-        catch (InvalidPacketException)
+        catch (InvalidPacketException error)
         {
             // Never let an undecoded input payload reject the channel traffic it rides with.
             InputDecodeFailures++;
+            LastInputDecodeError = error.Message;
         }
 
         return true;

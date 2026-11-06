@@ -138,7 +138,12 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
             {
                 ["phase"] = channels.Phase.ToString(),
                 ["input_frame"] = channels.InputFrame,
+                ["input_position"] = channels.InputPosition is { } position
+                    ? new JsonArray(Math.Round(position.X), Math.Round(position.Y), Math.Round(position.Z))
+                    : null,
+                ["input_yaw_degrees"] = channels.InputYaw is { } yaw ? Math.Round(yaw * 180 / Math.PI, 1) : null,
                 ["input_decode_failures"] = channels.InputDecodeFailures,
+                ["input_decode_error"] = channels.LastInputDecodeError,
                 ["blackboard_frames"] = channels.BlackboardFrames,
                 ["simulated_speed"] = channels.SimulatedCharacter is { } character
                     ? Math.Round(Math.Sqrt((character.Velocity.X * character.Velocity.X) + (character.Velocity.Y * character.Velocity.Y)))
