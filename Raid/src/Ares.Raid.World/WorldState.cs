@@ -629,8 +629,8 @@ public sealed class WorldState
     }
 
     /// <summary>A pawn blackboard frame: a reset when there is no baseline, otherwise a delta from it.</summary>
-    /// <param name="baseline">Frame number of the previous frame (0 for a reset).</param>
-    /// <param name="frame">The frame number (a client input frame).</param>
+    /// <param name="baseline">Delivery number of the previous snapshot (0 for a reset).</param>
+    /// <param name="frame">The next delivery number, independent of the simulation tick in the state.</param>
     /// <param name="state">The frame's state.</param>
     /// <param name="previous">The previous frame's state (empty for a reset).</param>
     /// <returns>The pawn content.</returns>

@@ -177,13 +177,54 @@ public sealed class PlayerInitializationTests
         session.Service(100);
         Assert.Equal(1, session.Channels.BlackboardFrames);
         uint frame = session.Channels.InputFrame!.Value;
-        ActorContentBlock expected = session.Raid.State.BlackboardFrame(0, frame,
+        ActorContentBlock expected = session.Raid.State.BlackboardFrame(0, 1,
             PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0, session.Raid.Inventory.Blackboard),
             new Dictionary<int, PendulumSlot>());
         ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);
         ActorContentBlock actual = Block(first);
         Assert.Equal(expected.PayloadBits, actual.PayloadBits);
         Assert.Equal(expected.Payload, actual.Payload);
+    }
+
+    [Fact]
+    public void Snapshot_delivery_numbers_are_consecutive_while_simulation_ticks_follow_the_inputs()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        session.Sent.Clear();
+        session.Service(100);
+        session.Input(30, 1000, position: session.Raid.Spawn.Location);
+        session.Service(100.1);
+        session.Service(100.2);
+        session.Service(100.3);
+        session.Input(1000, 1003, position: session.Raid.Spawn.Location);
+        session.Service(100.4);
+
+        ChannelBunch[] frames = [.. session.Sent.Where(bunch => bunch.Channel == 6 && (bunch.Payload[0] & 3) == 2)];
+        Assert.Equal(3, frames.Length);
+        uint[] ticks = [30, 999, 1002];
+        NetFieldTable fields = session.Raid.State.Replication.Calls().Fields(PlayerClasses.Pawn.Class);
+        Dictionary<int, PendulumSlot> previous = [];
+        for (int index = 0; index < frames.Length; index++)
+        {
+            ActorContentBlock block = Block(frames[index]);
+            ActorFieldPayload payload = ActorFieldPayload.Read(new BitReader(block.Payload, block.PayloadBits), fields.Count);
+            Assert.Equal(PropertyNames.BlackBoardReplicationPtr, fields.FieldAt(payload.Index).Name);
+            BitReader reader = new(payload.Payload, payload.PayloadBits);
+            Assert.True(reader.ReadBit());
+            Assert.True(reader.ReadBit());
+            uint baseline = reader.ReadBounded(PendulumFrames.BaselineRange);
+            Assert.Equal((uint)index, baseline);
+            Assert.Equal(index == 0, reader.ReadBit());
+            Assert.Equal((uint)index + 1, PendulumFrames.ReadRelative(reader, baseline));
+            Assert.False(reader.ReadBit());
+            Assert.True(reader.ReadBit());
+            previous = PendulumCodec.Default.ReadFrame(reader, previous);
+            Assert.Equal(0, reader.Remaining);
+            PendulumSlot graph = previous[PawnBlackboard.GraphStateSlot];
+            Assert.Equal(ticks[index], PendulumCodec.Integer(
+                PendulumRegistry.Descriptors[Assert.NotNull(graph.DescriptorId)].Fields[PawnBlackboard.TickField], graph.Value));
+        }
     }
 
     private static bool IsActorProperties(ChannelBunch bunch)

@@ -960,7 +960,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
             state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _raid.Inventory.Blackboard);
         }
 
-        List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];
+        // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
+        uint delivery = checked((uint)BlackboardFrames);
+        List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
         if (_shield != _raid.Inventory.Shield)
         {
             keys.Add(sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _raid.Inventory).Write)));
