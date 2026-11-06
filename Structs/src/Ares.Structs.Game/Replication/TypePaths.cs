@@ -9,6 +9,9 @@ public static class ClassPaths
     public const string BpArcRaidersGameModeSalvageC = "/Game/Pioneer/Core/GameModes/BP_ArcRaidersGameModeSalvage.BP_ArcRaidersGameModeSalvage_C";
     public const string BpPioneerGameModeC = "/Game/Pioneer/Core/GameModes/BP_PioneerGameMode.BP_PioneerGameMode_C";
     public const string BpPioneerHudC = "/Game/Pioneer/Core/UI/BP_PioneerHUD.BP_PioneerHUD_C";
+    public const string BpItemBattleRifleBreachAction01C = "/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/BP_Item_BattleRifle_BreachAction_01.BP_Item_BattleRifle_BreachAction_01_C";
+    public const string BpUnarmedItemC = "/Game/Pioneer/Items/Misc/Unarmed/BP_UnarmedItem.BP_UnarmedItem_C";
+    public const string BpItemBasicMeleeWeaponC = "/Game/Pioneer/Items/_GENERATED_/P2Prototype/BasicMeleeWeapon/BP_Item_BasicMeleeWeapon.BP_Item_BasicMeleeWeapon_C";
     public const string TheDam02Pc = "/Game/Pioneer/Maps/TheDam_02/TheDam_02_P.TheDam_02_P_C";
     public const string ActorAudioDataComponent = "/Script/Angelscript.ActorAudioDataComponent";
     public const string AnnouncementHandlerComponent = "/Script/Angelscript.AnnouncementHandlerComponent";
@@ -31,7 +34,9 @@ public static class ClassPaths
     public const string EmbarkPlayerState = "/Script/Angelscript.EmbarkPlayerState";
     public const string EmoteComponent = "/Script/Angelscript.EmoteComponent";
     public const string ExtractionPointInfoComponent = "/Script/Angelscript.ExtractionPointInfoComponent";
+    public const string FirearmItem = "/Script/Angelscript.FirearmItem";
     public const string GameModeAnnouncementComponent = "/Script/Angelscript.GameModeAnnouncementComponent";
+    public const string GameplayAbilityItem = "/Script/Angelscript.GameplayAbilityItem";
     public const string HealthComponent = "/Script/Angelscript.HealthComponent";
     public const string HealthComponentInterface = "/Script/Angelscript.HealthComponentInterface";
     public const string IEmoteComponentInterface = "/Script/Angelscript.IEmoteComponentInterface";
@@ -42,6 +47,8 @@ public static class ClassPaths
     public const string ItemContainerComponentBase = "/Script/Angelscript.ItemContainerComponentBase";
     public const string LootComponentBase = "/Script/Angelscript.LootComponentBase";
     public const string LootInteractionComponent = "/Script/Angelscript.LootInteractionComponent";
+    public const string MeleeWeaponItem = "/Script/Angelscript.MeleeWeaponItem";
+    public const string ModifiableItemBase = "/Script/Angelscript.ModifiableItemBase";
     public const string PingManager = "/Script/Angelscript.PingManager";
     public const string PioPendulumQueryGlobalActor = "/Script/Angelscript.PioPendulumQueryGlobalActor";
     public const string PioneerActorAttributeSet = "/Script/Angelscript.PioneerActorAttributeSet";
@@ -88,6 +95,8 @@ public static class ClassPaths
     public const string TetherSystem = "/Script/Angelscript.TetherSystem";
     public const string TraversableLine = "/Script/Angelscript.TraversableLine";
     public const string TraversableLineInterface = "/Script/Angelscript.TraversableLineInterface";
+    public const string UnarmedItem = "/Script/Angelscript.UnarmedItem";
+    public const string WeaponItem = "/Script/Angelscript.WeaponItem";
     public const string WorldItem = "/Script/Angelscript.WorldItem";
     public const string WorldItemBase = "/Script/Angelscript.WorldItemBase";
     public const string WorldItemInterface = "/Script/Angelscript.WorldItemInterface";

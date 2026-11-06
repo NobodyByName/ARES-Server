@@ -2126,9 +2126,18 @@ public static class GameReplication
     private static ReferenceClass[] CreateReferenceClasses() =>
         [
             new("/Game/Pioneer/Core/UI/BP_PioneerHUD.BP_PioneerHUD_C", "/Script/Angelscript.PioneerHud", 0x295E1466U),
+            new("/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/BP_Item_BattleRifle_BreachAction_01.BP_Item_BattleRifle_BreachAction_01_C", "/Script/Angelscript.FirearmItem", 0xD0674436U),
+            new("/Game/Pioneer/Items/Misc/Unarmed/BP_UnarmedItem.BP_UnarmedItem_C", "/Script/Angelscript.UnarmedItem", 0xD0674436U),
+            new("/Game/Pioneer/Items/_GENERATED_/P2Prototype/BasicMeleeWeapon/BP_Item_BasicMeleeWeapon.BP_Item_BasicMeleeWeapon_C", "/Script/Angelscript.MeleeWeaponItem", 0xB63AEA3CU),
             new("/Script/Angelscript.EmbarkHUD", "/Script/Engine.HUD"),
+            new("/Script/Angelscript.FirearmItem", "/Script/Angelscript.WeaponItem"),
+            new("/Script/Angelscript.GameplayAbilityItem", "/Script/Angelscript.ItemBase"),
+            new("/Script/Angelscript.MeleeWeaponItem", "/Script/Angelscript.GameplayAbilityItem"),
+            new("/Script/Angelscript.ModifiableItemBase", "/Script/Angelscript.ItemBase"),
             new("/Script/Angelscript.PioneerHUDBase", "/Script/Angelscript.EmbarkHUD"),
             new("/Script/Angelscript.PioneerHud", "/Script/Angelscript.PioneerHUDBase"),
+            new("/Script/Angelscript.UnarmedItem", "/Script/Angelscript.ItemBase"),
+            new("/Script/Angelscript.WeaponItem", "/Script/Angelscript.ModifiableItemBase"),
             new("/Script/Engine.HUD", "/Script/Engine.Actor"),
         ];
 }
