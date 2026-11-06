@@ -64,6 +64,42 @@ public static class PawnBlackboard
     /// <summary>Field of the interactor-state variable holding the focused interaction.</summary>
     public const int FocusedInteractionField = 12;
 
+    /// <summary>Ground normal represented as a quantized rotation.</summary>
+    public const int GroundNormalField = 0;
+
+    /// <summary>Ground X velocity divided by three; Y and Z follow.</summary>
+    public const int GroundVelocityDiv3XField = 7;
+
+    /// <summary>Packed movement-state flags.</summary>
+    public const int MovementFlagsField = 13;
+
+    /// <summary>Broad movement mode.</summary>
+    public const int RoughMovementModeField = 15;
+
+    /// <summary>Character posture and traversal state.</summary>
+    public const int CharacterStanceField = 17;
+
+    /// <summary>Character locomotion intensity.</summary>
+    public const int LocoModeField = 18;
+
+    /// <summary>Physical surface type.</summary>
+    public const int SurfaceTypeField = 19;
+
+    /// <summary>Slot of persistent character actions.</summary>
+    public const int ActionStateSlot = 2;
+
+    /// <summary>Action posture, including slide, air and ladder states.</summary>
+    public const int ActionStanceField = 44;
+
+    /// <summary>Action locomotion intensity.</summary>
+    public const int ActionLocoModeField = 45;
+
+    /// <summary>Graph-state flags containing the flashlight state.</summary>
+    public const int FlashlightFlagsField = 7;
+
+    /// <summary>Graph-state flag indicating an active flashlight.</summary>
+    public const ulong FlashlightFlag = 1UL << 55;
+
     /// <summary>Simulation time units per tick.</summary>
     public const int TimePerTick = 20;
 

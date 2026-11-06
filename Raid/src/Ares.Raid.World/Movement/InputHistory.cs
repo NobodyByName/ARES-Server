@@ -81,6 +81,26 @@ public sealed class InputHistory
             ? PendulumRotations.Yaw(PendulumCodec.Quaternion(s_rotationField, slot.Value), s_rotationField)
             : null;
 
+    /// <summary>The movement axes and buttons of a frame the client sent.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The movement input, or null when the frame is unknown.</returns>
+    public MovementInput? Movement(uint frame) =>
+        _frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+        && slots.TryGetValue(PendulumInput.MovementSlot, out PendulumSlot? slot)
+        && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.MovementSlot]
+            ? MovementInput.Read(frame, slot)
+            : null;
+
+    /// <summary>The character button claims of a frame the client sent.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The claims, or null when the frame is unknown.</returns>
+    public CharacterInput? Claims(uint frame) =>
+        _frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+        && slots.TryGetValue(PendulumInput.CharacterClaimsSlot, out PendulumSlot? slot)
+        && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.CharacterClaimsSlot]
+            ? CharacterInput.Read(frame, slot)
+            : null;
+
     /// <summary>Reads a payload.</summary>
     /// <param name="payload">The payload.</param>
     /// <returns>Its latest frame (null when it carries none), new interaction requests and new inventory requests.</returns>

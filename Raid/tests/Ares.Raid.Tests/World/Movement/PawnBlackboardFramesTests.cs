@@ -78,6 +78,23 @@ public sealed class PawnBlackboardFramesTests
     }
 
     [Fact]
+    public void A_simulated_frame_carries_stance_locomotion_and_flashlight()
+    {
+        CharacterState character = new(40, s_spawn, Flashlight: true) { Stance = CharacterStance.Crouch, Locomotion = LocoMode.Walking };
+        IReadOnlyDictionary<int, PendulumSlot> lit = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> dark = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character with { Flashlight = false }), 0);
+        IReadOnlyDictionary<int, PendulumSlot> initial = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn), 0);
+
+        Assert.Equal((ulong)CharacterStance.Crouch, Field(lit, PawnBlackboard.MovementStateSlot, PawnBlackboard.CharacterStanceField));
+        Assert.Equal((ulong)LocoMode.Walking, Field(lit, PawnBlackboard.MovementStateSlot, PawnBlackboard.LocoModeField));
+        Assert.Equal((ulong)CharacterStance.Crouch, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionStanceField));
+        Assert.Equal((ulong)LocoMode.Walking, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionLocoModeField));
+        ulong flags = Field(initial, PawnBlackboard.GraphStateSlot, PawnBlackboard.FlashlightFlagsField);
+        Assert.Equal(flags | PawnBlackboard.FlashlightFlag, Field(lit, PawnBlackboard.GraphStateSlot, PawnBlackboard.FlashlightFlagsField));
+        Assert.Equal(flags & ~PawnBlackboard.FlashlightFlag, Field(dark, PawnBlackboard.GraphStateSlot, PawnBlackboard.FlashlightFlagsField));
+    }
+
+    [Fact]
     public void A_stationary_spawn_has_no_velocity_on_any_axis()
     {
         PendulumSlot movement = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0)[PawnBlackboard.MovementStateSlot];
@@ -92,4 +109,7 @@ public sealed class PawnBlackboardFramesTests
     [Fact]
     public void Ticks_outside_the_simulation_range_are_rejected() =>
         Assert.Throws<InvalidPacketException>(() => PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick - 1, new PawnMotion(s_spawn), 0));
+
+    private static ulong Field(IReadOnlyDictionary<int, PendulumSlot> state, int slot, int field) =>
+        PendulumCodec.Integer(PendulumRegistry.Descriptors[state[slot].DescriptorId!.Value].Fields[field], state[slot].Value);
 }

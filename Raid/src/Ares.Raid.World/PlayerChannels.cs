@@ -161,6 +161,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private uint? _inputAckSent;
     private ReliableKey[] _blackboardKeys = [];
     private uint _blackboardFrame;
+    private PlayerMovement? _movement;
     private IReadOnlyDictionary<int, PendulumSlot> _blackboardState = new Dictionary<int, PendulumSlot>();
     private ulong _blackboardFocus;
     private double? _asyncLoadAt;
@@ -230,6 +231,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
     public int BlackboardFrames { get; private set; }
 
+    /// <summary>The character's simulated state after the latest simulated input frame, or null before the reset frame.</summary>
+    public CharacterState? SimulatedCharacter => _movement?.Latest;
+
+    /// <summary>Input frames the character simulation ran without the client's input.</summary>
+    public int MissingInputFrames => _movement?.MissingFrames ?? 0;
+
     /// <summary>Door presses applied.</summary>
     public int DoorPresses { get; private set; }
 
@@ -278,6 +285,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._visibleLevels = new HashSet<string>(_visibleLevels, StringComparer.Ordinal);
         copy._ignoredCalls = new Dictionary<string, int>(_ignoredCalls, StringComparer.Ordinal);
         copy._input = _input.Copy();
+        copy._movement = _movement?.Copy();
         copy._doors = new Dictionary<int, (DoorChannel, ReliableKey?)>(_doors);
         copy._doorRevisions = new Dictionary<int, int>(_doorRevisions);
         copy._doorUpdates = new Dictionary<int, ReliableKey>(_doorUpdates);
@@ -467,6 +475,14 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         _inventoryRequests.Clear();
+        if (Phase == DeliveryPhase.Possessed && _blackboardFrame != 0 && InputFrame is { } latest)
+        {
+            // No weapon can be drawn yet, so the character always moves unarmed.
+            while (_movement is { } movement && movement.Frame + 1 < latest)
+            {
+                movement.Advance(_input, armed: false);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -911,8 +927,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         if (_blackboardFrame == 0)
         {
             WorldActor pawn = Actor(_player.Pawn);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), focus,
+            double yaw = pawn.Rotation.Yaw * Math.PI / 180;
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
                 _raid.Inventory.InitialBlackboard ?? _raid.Inventory.Blackboard);
+            _movement = new PlayerMovement(frame, pawn.Location, yaw);
         }
         else
         {
@@ -920,14 +938,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _raid.Inventory.Version;
             if ((!inventoryChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
-                || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw)
+                || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
+                || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0)
             {
+                // The slide's own state is not written yet, so a frame would end it; wait until it is over.
                 return;
             }
 
-            Vector3D velocity = new((position.X - before.X) / PawnBlackboard.TickSeconds, (position.Y - before.Y) / PawnBlackboard.TickSeconds,
-                (position.Z - before.Z) / PawnBlackboard.TickSeconds);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw), focus, _raid.Inventory.Blackboard);
+            // Vertical motion is not simulated yet; it stays the reported position change.
+            Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _raid.Inventory.Blackboard);
         }
 
         List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];

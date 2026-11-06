@@ -140,6 +140,13 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["input_frame"] = channels.InputFrame,
                 ["input_decode_failures"] = channels.InputDecodeFailures,
                 ["blackboard_frames"] = channels.BlackboardFrames,
+                ["simulated_speed"] = channels.SimulatedCharacter is { } character
+                    ? Math.Round(Math.Sqrt((character.Velocity.X * character.Velocity.X) + (character.Velocity.Y * character.Velocity.Y)))
+                    : null,
+                ["simulated_stance"] = channels.SimulatedCharacter?.Stance.ToString(),
+                ["simulated_locomotion"] = channels.SimulatedCharacter?.Locomotion.ToString(),
+                ["simulated_flashlight"] = channels.SimulatedCharacter?.Flashlight,
+                ["simulated_missing_frames"] = channels.MissingInputFrames,
                 ["door_presses"] = channels.DoorPresses,
                 ["ignored_door_requests"] = channels.IgnoredDoorRequests,
                 ["inventory_moves"] = channels.InventoryMoves,

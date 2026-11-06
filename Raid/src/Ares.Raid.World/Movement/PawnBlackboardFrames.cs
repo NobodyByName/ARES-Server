@@ -8,13 +8,14 @@ namespace Ares.Raid.World.Movement;
 /// <param name="Position">World position.</param>
 /// <param name="Velocity">Velocity in world units per second.</param>
 /// <param name="Yaw">Facing in radians, or null to keep the initial facing.</param>
-public readonly record struct PawnMotion(Vector3D Position, Vector3D Velocity = default, double? Yaw = null);
+/// <param name="Character">Simulated stance, locomotion and flashlight, or null to keep the initial values.</param>
+public readonly record struct PawnMotion(Vector3D Position, Vector3D Velocity = default, double? Yaw = null, CharacterState? Character = null);
 
 /// <summary>
 /// The pawn's blackboard frames. The first (reset) frame holds the initial state at the client's latest input
 /// frame with the spawn position and starts the client's character simulation, which then runs from the
 /// client's own input. The client applies each later frame as its full character state, so later frames carry
-/// the position the client reported.
+/// the position the client reported, with the simulated velocity, stance and flashlight.
 /// </summary>
 public static class PawnBlackboardFrames
 {
@@ -52,14 +53,30 @@ public static class PawnBlackboardFrames
                 case PawnBlackboard.GraphStateSlot:
                     values.Add(new PendulumIntegerValue(PawnBlackboard.TickField, tick));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.TimeField, (ulong)tick * PawnBlackboard.TimePerTick));
+                    if (motion.Character is { } flashlight)
+                    {
+                        ulong flags = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.FlashlightFlagsField)?.Value ?? 0;
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.FlashlightFlagsField,
+                            flashlight.Flashlight ? flags | PawnBlackboard.FlashlightFlag : flags & ~PawnBlackboard.FlashlightFlag));
+                    }
+
+                    break;
+                case PawnBlackboard.ActionStateSlot when motion.Character is { } action:
+                    Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionStanceField, (ulong)action.Stance));
+                    Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionLocoModeField, (ulong)action.Locomotion));
                     break;
                 case PawnBlackboard.MovementStateSlot:
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionXField, Quantize(motion.Position.X)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionYField, Quantize(motion.Position.Y)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionZField, Quantize(motion.Position.Z)));
-                    values.Add(Velocity(PawnBlackboard.VelocityXField, motion.Velocity.X));
-                    values.Add(Velocity(PawnBlackboard.VelocityYField, motion.Velocity.Y));
-                    values.Add(Velocity(PawnBlackboard.VelocityZField, motion.Velocity.Z));
+                    Replace(values, Velocity(PawnBlackboard.VelocityXField, motion.Velocity.X));
+                    Replace(values, Velocity(PawnBlackboard.VelocityYField, motion.Velocity.Y));
+                    Replace(values, Velocity(PawnBlackboard.VelocityZField, motion.Velocity.Z));
+                    if (motion.Character is { } character)
+                    {
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.CharacterStanceField, (ulong)character.Stance));
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.LocoModeField, (ulong)character.Locomotion));
+                    }
 
                     if (motion.Yaw is { } yaw)
                     {
@@ -89,6 +106,12 @@ public static class PawnBlackboardFrames
     {
         ArgumentNullException.ThrowIfNull(state);
         PendulumCodec.Default.WriteFrame(writer, state.Values, previous);
+    }
+
+    private static void Replace(List<PendulumValue> values, PendulumValue value)
+    {
+        values.RemoveAll(existing => existing.Field == value.Field);
+        values.Add(value);
     }
 
     // A velocity component in world units per second.
