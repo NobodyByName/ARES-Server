@@ -139,12 +139,18 @@ public sealed partial class InventoryStore
             ?? throw new InvalidDataException("Inventory import is empty"), expectedRevision);
     }
 
-    /// <summary>Adds one supported item to the idle player's stash from the local operator console.</summary>
-    public void AddItem(string technicalName, DateTimeOffset now)
+    /// <summary>Adds one supported item stack to the idle player's stash from the local operator console.</summary>
+    public void AddItem(string technicalName, DateTimeOffset now, long quantity = 1)
     {
         if (!ItemTechnicalNames.AssetIds.ContainsKey(technicalName))
         {
             throw new InvalidDataException("Unknown inventory item technical name");
+        }
+
+        ItemDescription definition = InventoryCatalog.ByAsset[InventoryCatalog.AssetId(technicalName)];
+        if (quantity <= 0 || quantity > definition.MaxAmount || !definition.Stackable && quantity != 1)
+        {
+            throw new InvalidDataException("Invalid item quantity");
         }
 
         lock (_lock)
@@ -155,7 +161,7 @@ public sealed partial class InventoryStore
                 throw new InvalidOperationException("The inventory is reserved for a raid");
             }
 
-            OwnedItem item = new(Guid.NewGuid().ToString("D"), technicalName, 1,
+            OwnedItem item = new(Guid.NewGuid().ToString("D"), technicalName, quantity,
                 StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-operator", now.ToUnixTimeMilliseconds());
             Save(_state with
             {

@@ -132,6 +132,29 @@ public sealed class ConsoleTests
     }
 
     [Fact]
+    public void Quantity_grants_add_one_ammo_stack_and_reject_invalid_commands_without_writes()
+    {
+        using TestDatabase database = new();
+        InventoryStore inventory = new(database.Store);
+        inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
+        using StringWriter output = new();
+        using HostConsole console = new("plain", output);
+        console.Inventory = inventory;
+        console.ExecuteCommand("inventory add " + ItemTechnicalNames.HeavyAmmo + " 60", () => { });
+        Assert.Equal(60, inventory.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.HeavyAmmo).Quantity);
+        string saved = database.InventoryJson;
+        foreach (string arguments in new[] { "0", "61", "-1", "abc", "9223372036854775808", "60 extra" })
+        {
+            console.ExecuteCommand("inventory add " + ItemTechnicalNames.HeavyAmmo + " " + arguments, () => { });
+            Assert.Equal(saved, database.InventoryJson);
+        }
+
+        console.ExecuteCommand("inventory add " + ItemTechnicalNames.FerroI, () => { });
+        Assert.Single(inventory.Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.FerroI);
+        Assert.Contains("Inventory add rejected:", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Inventory_import_reads_the_operator_file_and_survives_a_restart()
     {
         using TestDatabase database = new();

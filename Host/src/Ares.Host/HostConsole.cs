@@ -188,7 +188,7 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("stop    Gracefully stop ARES-Host");
                     AddLine("inventory  Show stored items and the loadout reservation");
                     AddLine("inventory import <path>  Replace an idle inventory from a JSON file");
-                    AddLine("inventory add <technical-name>  Add one supported item to the stash");
+                    AddLine("inventory add <technical-name> [quantity]  Add one supported stack to the stash");
                     AddLine("Tab completes commands, subcommands and item names; Shift+Tab cycles backward");
                     break;
                 case "status":
@@ -256,7 +256,7 @@ internal sealed class HostConsole : ILoggerProvider
         }
     }
 
-    private void AddInventoryItem(string technicalName)
+    private void AddInventoryItem(string arguments)
     {
         if (Inventory is not { } inventory)
         {
@@ -266,10 +266,17 @@ internal sealed class HostConsole : ILoggerProvider
 
         try
         {
-            inventory.AddItem(technicalName, DateTimeOffset.UtcNow);
-            AddLine($"Added {technicalName} to the stash. Start a fresh client to refresh inventory.");
+            string[] parts = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            long quantity = 1;
+            if (parts.Length is < 1 or > 2 || parts.Length == 2 && !long.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out quantity))
+            {
+                throw new InvalidDataException("Use inventory add <technical-name> [quantity]");
+            }
+
+            inventory.AddItem(parts[0], DateTimeOffset.UtcNow, quantity);
+            AddLine($"Added {quantity} x {parts[0]} to the stash. Start a fresh client to refresh inventory.");
         }
-        catch (Exception error) when (error is IOException or InvalidOperationException or OverflowException)
+        catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or OverflowException)
         {
             AddLine($"Inventory add rejected: {SafeText(error.Message)}");
         }
