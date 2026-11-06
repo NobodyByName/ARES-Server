@@ -9,6 +9,39 @@ public static class PendulumInput
     /// <summary>Descriptor id of each input frame slot, by slot.</summary>
     public static IReadOnlyList<int> SlotDescriptors { get; } = [75, 66, 98, 101, 39, 97, 99, 85];
 
+    /// <summary>Slot holding character button claims and inventory commands.</summary>
+    public const int CharacterClaimsSlot = 5;
+
+    /// <summary>Packed character button flags in the claims slot.</summary>
+    public const int CharacterClaimsFlagsField = 4;
+
+    /// <summary>Bit requesting slow walking.</summary>
+    public const int WalkBit = 0;
+
+    /// <summary>Bit indicating that the flashlight button is down.</summary>
+    public const int FlashlightDownBit = 9;
+
+    /// <summary>Bit indicating that the flashlight button was down on the previous input.</summary>
+    public const int FlashlightPreviousDownBit = 10;
+
+    /// <summary>Slot holding movement axes, buttons and control rotation.</summary>
+    public const int MovementSlot = 4;
+
+    /// <summary>Forward movement axis, stored with a bias of 128.</summary>
+    public const int ForwardField = 6;
+
+    /// <summary>Right movement axis, stored with a bias of 128.</summary>
+    public const int RightField = 7;
+
+    /// <summary>Packed movement buttons.</summary>
+    public const int MovementFlagsField = 8;
+
+    /// <summary>Bias added to a signed movement axis.</summary>
+    public const int MovementAxisBias = 128;
+
+    /// <summary>Magnitude of a full signed movement axis.</summary>
+    public const int MovementAxisMaximum = 126;
+
     /// <summary>Slot of the interaction claim: what the player asks to interact with.</summary>
     public const int InteractionSlot = 6;
 
