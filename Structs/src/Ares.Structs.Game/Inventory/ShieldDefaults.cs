@@ -12,4 +12,7 @@ public static class ShieldDefaults
     /// <summary>HealthPerPlate for the Light Shield.</summary>
     public const double HealthPerPlate = 40.0;
 
+    /// <summary>ModSlotCount for the Light Shield.</summary>
+    public const int ModSlotCount = 0;
+
 }
