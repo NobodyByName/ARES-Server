@@ -7,6 +7,7 @@ using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
@@ -17,7 +18,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization.
-    private const string ReferenceTrace = "040613b8de4321ea87a86d45e9e419be6782f68fa6a003c0e4b6055792d8b570";
+    private const string ReferenceTrace = "34c957232e6c5c6e092140d9d9c17135295c6ddd2272a910bfd5f35089c089cd";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -181,6 +182,40 @@ public sealed class RaidSessionTests
         session.Input(30, 33, session.HiddenDoor.Buttons[0]);
         session.Input(0, 40, 0x12345);
         Assert.Equal((0, 2), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
+    }
+
+    [Fact]
+    public void Frames_return_the_reported_position_without_drift()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        session.Sent.Clear();
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0])
+        {
+            session.Service(at);
+        }
+
+        ulong button = session.Door.Buttons[0];
+        Vector3D there = new(516538.10336022545, 527468.742117282, -38998.81315174722);
+        session.Input(30, 33, focus: button);
+        session.Service(122.5);
+        Dictionary<int, PendulumSlot> first = session.PawnFrame([]);
+
+        session.Input(33, 36, focus: button, position: there);
+        session.Sent.Clear();
+        session.Service(123.0);
+        session.Input(36, 39, focus: button, position: there);
+        session.Service(123.5);
+        Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
+
+        PendulumSlot movement = second[PawnBlackboard.MovementStateSlot];
+        IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[Assert.NotNull(movement.DescriptorId)].Fields;
+        Assert.Equal((Expected(there.X), Expected(there.Y)), (Position(PawnBlackboard.PositionXField), Position(PawnBlackboard.PositionYField)));
+        Assert.Equal(Expected(there.Z), Position(PawnBlackboard.PositionZField));
+        return;
+
+        ulong Position(int field) => PendulumCodec.Integer((PendulumScalarField)fields[field], movement.Value);
+        ulong Expected(double world) => (ulong)Math.Round((world + PawnBlackboard.PositionRange) * ((1 << 24) - 1) / (2 * PawnBlackboard.PositionRange));
     }
 
     [Fact]

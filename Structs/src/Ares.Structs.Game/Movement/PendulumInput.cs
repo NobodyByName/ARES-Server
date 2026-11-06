@@ -26,7 +26,7 @@ public static class PendulumInput
 
     /// <summary>
     /// Field of the position slot holding the quantized world X position (Y and Z follow):
-    /// quantized = Maximum/2 + round(world * (Maximum/2) / <see cref="PawnBlackboard.PositionRange"/>).
+    /// World endpoints map to 0 and Maximum - 1; the default integer is not the world origin.
     /// </summary>
     public const int PositionXField = 7;
 

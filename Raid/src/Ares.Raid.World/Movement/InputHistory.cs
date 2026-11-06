@@ -66,7 +66,8 @@ public sealed class InputHistory
             return null;
         }
 
-        double[] world = [.. values.Zip(scalars, (value, field) => (value - (field.Maximum / 2.0)) * PawnBlackboard.PositionRange / (field.Maximum / 2.0))];
+        // The lowest and highest representable integers map to the two world-range endpoints.
+        double[] world = [.. values.Zip(scalars, (value, field) => value * (2 * PawnBlackboard.PositionRange / (field.Maximum - 1.0)) - PawnBlackboard.PositionRange)];
         return new Vector3D(world[0], world[1], world[2]);
     }
 

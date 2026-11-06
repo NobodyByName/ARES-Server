@@ -102,7 +102,7 @@ public static class PawnBlackboardFrames
 
     private static ulong Quantize(double world)
     {
-        double quantized = (1 << (PositionBits - 1)) + Math.Round(world * (1 << (PositionBits - 1)) / PawnBlackboard.PositionRange, MidpointRounding.ToEven);
+        double quantized = Math.Round((world + PawnBlackboard.PositionRange) * ((1 << PositionBits) - 1) / (2 * PawnBlackboard.PositionRange), MidpointRounding.ToEven);
         return quantized is >= 0 and < 1 << PositionBits ? (ulong)quantized : throw new InvalidPacketException("Position outside the blackboard range");
     }
 }

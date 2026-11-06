@@ -3,7 +3,6 @@ using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
-using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Replication;
@@ -26,7 +25,7 @@ public sealed class ShieldTests
         session.Sent.Clear();
         session.Input(30, 33, position: session.Raid.Spawn.Location);
         session.Service(100);
-        Dictionary<int, PendulumSlot> first = PawnFrame(session, new Dictionary<int, PendulumSlot>());
+        Dictionary<int, PendulumSlot> first = session.PawnFrame(new Dictionary<int, PendulumSlot>());
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.ArmorSlot));
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.LoadoutSlotCount + 3));
         Assert.NotNull(session.Raid.Inventory.Shield);
@@ -34,7 +33,7 @@ public sealed class ShieldTests
         session.Input(33, 36, position: session.Raid.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.1);
-        Dictionary<int, PendulumSlot> second = PawnFrame(session, first);
+        Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
         Assert.Equal(ShieldItems.LightShieldUsableIndex, AssetIndex(second, InventoryBlackboard.ArmorSlot));
         Assert.Equal(InventoryBlackboard.RubberDuckIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 3));
         Assert.Equal(2, session.Channels.BlackboardFrames);
@@ -143,25 +142,6 @@ public sealed class ShieldTests
         }
 
         return contents;
-    }
-
-    private static Dictionary<int, PendulumSlot> PawnFrame(ScriptedPlayer session, Dictionary<int, PendulumSlot> previous)
-    {
-        ChannelBunch bunch = Assert.Single(session.Sent, item => item.Channel == 6 && (item.Payload[0] & 3) == 2);
-        ActorContentBlock block = ActorContentBlock.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
-        NetFieldTable fields = session.Raid.State.Replication.Calls().Fields(PlayerClasses.Pawn.Class);
-        ActorFieldPayload payload = ActorFieldPayload.Read(new BitReader(block.Payload, block.PayloadBits), fields.Count);
-        Assert.Equal(PropertyNames.BlackBoardReplicationPtr, fields.FieldAt(payload.Index).Name);
-        BitReader reader = new(payload.Payload, payload.PayloadBits);
-        Assert.True(reader.ReadBit());
-        Assert.True(reader.ReadBit());
-        uint baseline = reader.ReadBounded(PendulumFrames.BaselineRange);
-        Assert.Equal(previous.Count == 0, reader.ReadBit());
-        PendulumFrames.ReadRelative(reader, baseline);
-        reader.ReadBits(2);
-        Dictionary<int, PendulumSlot> result = PendulumCodec.Default.ReadFrame(reader, previous);
-        Assert.Equal(0, reader.Remaining);
-        return result;
     }
 
     private static int AssetIndex(Dictionary<int, PendulumSlot> frame, int slot)

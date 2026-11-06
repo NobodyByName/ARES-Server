@@ -222,10 +222,31 @@ internal sealed class ScriptedPlayer
         }
     }
 
+    // The one pawn blackboard frame among the bunches sent since the last clear, decoded against the state of
+    // the frame before it (empty for the first frame).
+    public Dictionary<int, PendulumSlot> PawnFrame(Dictionary<int, PendulumSlot> previous)
+    {
+        ChannelBunch bunch = Assert.Single(Sent, item => item.Channel == 6 && (item.Payload[0] & 3) == 2);
+        ActorContentBlock block = ActorContentBlock.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
+        NetFieldTable fields = Raid.State.Replication.Calls().Fields(PlayerClasses.Pawn.Class);
+        ActorFieldPayload payload = ActorFieldPayload.Read(new BitReader(block.Payload, block.PayloadBits), fields.Count);
+        Assert.Equal(PropertyNames.BlackBoardReplicationPtr, fields.FieldAt(payload.Index).Name);
+        BitReader reader = new(payload.Payload, payload.PayloadBits);
+        Assert.True(reader.ReadBit());
+        Assert.True(reader.ReadBit());
+        uint baseline = reader.ReadBounded(PendulumFrames.BaselineRange);
+        Assert.Equal(previous.Count == 0, reader.ReadBit());
+        PendulumFrames.ReadRelative(reader, baseline);
+        reader.ReadBits(2);
+        Dictionary<int, PendulumSlot> result = PendulumCodec.Default.ReadFrame(reader, previous);
+        Assert.Equal(0, reader.Remaining);
+        return result;
+    }
+
     private static PendulumIntegerValue Quantized(int descriptor, int field, double world)
     {
-        uint half = ((PendulumScalarField)PendulumRegistry.Descriptors[descriptor].Fields[field]).Maximum / 2;
-        return new PendulumIntegerValue(field, (ulong)(half + Math.Round(world * half / PawnBlackboard.PositionRange)));
+        PendulumScalarField scalar = (PendulumScalarField)PendulumRegistry.Descriptors[descriptor].Fields[field];
+        return new PendulumIntegerValue(field, (ulong)Math.Round((world + PawnBlackboard.PositionRange) * (scalar.Maximum - 1) / (2 * PawnBlackboard.PositionRange)));
     }
 
     // Join, possession, the map and the usable door's cell visible, and the first input frames.

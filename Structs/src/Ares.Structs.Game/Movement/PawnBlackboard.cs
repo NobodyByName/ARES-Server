@@ -63,7 +63,7 @@ public static class PawnBlackboard
 
     /// <summary>
     /// World units mapped onto the 24-bit position range around the origin:
-    /// quantized = 2^23 + round(world * 2^23 / PositionRange).
+    /// quantized = round((world + PositionRange) * (2^24 - 1) / (2 * PositionRange)).
     /// </summary>
     public const double PositionRange = 800000.0;
 

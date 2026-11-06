@@ -97,7 +97,7 @@ public sealed class PendulumCodecTests
         return [.. slots];
     }
 
-    private static ulong Quantize(double world) => (1UL << 23) + (ulong)(long)Math.Round(world * (1 << 23) / PawnBlackboard.PositionRange, MidpointRounding.ToEven);
+    private static ulong Quantize(double world) => (ulong)Math.Round((world + PawnBlackboard.PositionRange) * ((1 << 24) - 1) / (2 * PawnBlackboard.PositionRange), MidpointRounding.ToEven);
 
     private static (string Encoded, long Bits) Encode(Action<BitWriter> write)
     {

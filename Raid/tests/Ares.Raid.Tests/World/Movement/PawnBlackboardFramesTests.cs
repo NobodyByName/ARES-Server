@@ -10,6 +10,17 @@ public sealed class PawnBlackboardFramesTests
     private static readonly Vector3D s_spawn = new(1000.0, -2000.0, 300.0);
 
     [Fact]
+    public void Pawn_positions_match_the_quantized_world_coordinates()
+    {
+        Vector3D position = new(515991.956948754, 590748.297616738, -45139.267750934);
+        PendulumSlot movement = PawnBlackboardFrames.State(30, new PawnMotion(position), 0)[PawnBlackboard.MovementStateSlot];
+        IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
+        Assert.Equal(13799175UL, PendulumCodec.Integer(fields[PawnBlackboard.PositionXField], movement.Value));
+        Assert.Equal(14583052UL, PendulumCodec.Integer(fields[PawnBlackboard.PositionYField], movement.Value));
+        Assert.Equal(7915288UL, PendulumCodec.Integer(fields[PawnBlackboard.PositionZField], movement.Value));
+    }
+
+    [Fact]
     public void A_focus_frame_changes_only_the_tick_and_the_interactor_state()
     {
         IReadOnlyDictionary<int, PendulumSlot> reset = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0);
