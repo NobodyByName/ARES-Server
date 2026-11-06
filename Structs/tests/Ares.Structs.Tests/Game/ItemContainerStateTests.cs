@@ -22,6 +22,18 @@ public sealed class ItemContainerStateTests
         Assert.Equal(0, reader.Remaining);
     }
 
+    [Fact]
+    public void An_item_references_its_mod_container_by_position_in_the_set()
+    {
+        ContainerItem gun = new(InventoryBlackboard.RubberDuckIndex, Guid.Parse("01234567-89ab-cdef-1234-56789abcdef0"), 1, 1) { ModContainerId = 9 };
+        PendulumVariable state = ItemContainerState.Encode([new ItemContainerState(4, [gun]), new ItemContainerState(9, new ContainerItem?[3])]);
+        PendulumArrayValue slots = Assert.IsType<PendulumArrayValue>(state.Values.Single(value => value.Field == InventoryBlackboard.SlotsField));
+        PendulumIntegerValue mods = Assert.IsType<PendulumIntegerValue>(Assert.Single(slots.Elements).Values
+            .Single(value => value.Field == InventoryBlackboard.SubcontainerField));
+        Assert.Equal(1UL, mods.Value);
+        Assert.Throws<InvalidPacketException>(() => ItemContainerState.Encode([new ItemContainerState(4, [gun])]));
+    }
+
     [Theory]
     [InlineData(0, 1.0)]
     [InlineData(1000, 1.0)]

@@ -9,7 +9,14 @@ namespace Ares.Structs.Game.Inventory;
 /// <param name="Id">Item identity.</param>
 /// <param name="Amount">Stack amount.</param>
 /// <param name="Durability">Durability as a fraction of maximum durability.</param>
-public sealed record ContainerItem(ushort AssetIndex, Guid Id, int Amount, double Durability);
+public sealed record ContainerItem(ushort AssetIndex, Guid Id, int Amount, double Durability)
+{
+    /// <summary>Rounds loaded into this item's magazine or chamber.</summary>
+    public int AmmoInClip { get; init; }
+
+    /// <summary>Id of the container in the same set that holds this item's mods; weapons and armor need one.</summary>
+    public int? ModContainerId { get; init; }
+}
 
 /// <summary>A container and its slots, including empty slots.</summary>
 /// <param name="Id">Container id.</param>
@@ -34,6 +41,8 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
             throw new InvalidPacketException("Invalid player container set");
         }
 
+        Dictionary<int, int> positions = containers.Select((container, position) => (container.Id, position))
+            .ToDictionary(entry => entry.Id, entry => entry.position);
         List<PendulumArrayElement> encodedContainers = [];
         List<PendulumArrayElement> items = [];
         int slot = 0;
@@ -53,7 +62,9 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
                 {
                     PendulumScalarField amount = (PendulumScalarField)itemArray.ElementFields[InventoryBlackboard.AmountField];
                     if (item.Amount <= 0 || (ulong)item.Amount >= amount.Maximum || item.AssetIndex == ushort.MaxValue
-                        || !double.IsFinite(item.Durability) || item.Durability is < 0 or > 1 || item.Id == Guid.Empty)
+                        || !double.IsFinite(item.Durability) || item.Durability is < 0 or > 1 || item.Id == Guid.Empty
+                        || item.AmmoInClip is < 0 or > ushort.MaxValue
+                        || item.ModContainerId is { } mods && !positions.ContainsKey(mods))
                     {
                         throw new InvalidPacketException("Invalid player container item");
                     }
@@ -64,7 +75,13 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
                         new PendulumIntegerValue(InventoryBlackboard.QualityField, 128),
                         new PendulumIntegerValue(InventoryBlackboard.DurabilityField, (ulong)Math.Round(item.Durability * InventoryBlackboard.DurabilityScale) + 128),
                         new PendulumIntegerValue(InventoryBlackboard.AssetIndexField, item.AssetIndex),
+                        new PendulumIntegerValue(InventoryBlackboard.AmmoField, (ulong)item.AmmoInClip),
                     ];
+                    if (item.ModContainerId is { } modContainer)
+                    {
+                        values.Add(new PendulumIntegerValue(InventoryBlackboard.SubcontainerField, (ulong)positions[modContainer]));
+                    }
+
                     string guid = item.Id.ToString("N");
                     for (int word = 0; word < 4; word++)
                     {
