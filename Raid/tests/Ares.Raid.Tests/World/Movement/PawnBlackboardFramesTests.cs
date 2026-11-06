@@ -52,8 +52,8 @@ public sealed class PawnBlackboardFramesTests
     [Fact]
     public void A_moving_frame_carries_the_velocity_and_facing()
     {
-        // 12.5 world units per tick along X, facing a quarter turn to the left.
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, new Vector3D(12.5, 0.0, 0.0), -Math.PI / 2), 0);
+        // 375 world units per second (12.5 per tick) along X, facing a quarter turn to the left.
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, new Vector3D(375, 0.0, 0.0), -Math.PI / 2), 0);
         PendulumSlot movement = state[PawnBlackboard.MovementStateSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
         PendulumScalarField velocity = (PendulumScalarField)fields[PawnBlackboard.VelocityXField];
@@ -62,6 +62,19 @@ public sealed class PawnBlackboardFramesTests
         Assert.Equal(velocity.Default, (uint)PendulumCodec.Integer(fields[PawnBlackboard.VelocityYField], movement.Value));
         PendulumQuaternionField facing = (PendulumQuaternionField)fields[PawnBlackboard.FacingField];
         Assert.Equal(-90.0, PendulumRotations.Yaw(PendulumCodec.Quaternion(facing, movement.Value), facing) * 180.0 / Math.PI, 1);
+    }
+
+    [Theory]
+    [InlineData(-6000.0, 0UL)]
+    [InlineData(-1.0, 2047UL)]
+    [InlineData(300.0, 2149UL)]
+    [InlineData(5999.0, 4094UL)]
+    [InlineData(9000.0, 4095UL)]
+    public void Velocities_use_the_clients_quantization(double velocity, ulong expected)
+    {
+        PendulumSlot movement = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, new Vector3D(velocity, 0.0, 0.0)), 0)[PawnBlackboard.MovementStateSlot];
+        IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
+        Assert.Equal(expected, PendulumCodec.Integer(fields[PawnBlackboard.VelocityXField], movement.Value));
     }
 
     [Fact]

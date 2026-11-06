@@ -925,8 +925,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 return;
             }
 
-            Vector3D step = new(position.X - before.X, position.Y - before.Y, position.Z - before.Z);
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, step, yaw), focus, _raid.Inventory.Blackboard);
+            Vector3D velocity = new((position.X - before.X) / PawnBlackboard.TickSeconds, (position.Y - before.Y) / PawnBlackboard.TickSeconds,
+                (position.Z - before.Z) / PawnBlackboard.TickSeconds);
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw), focus, _raid.Inventory.Blackboard);
         }
 
         List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(_blackboardFrame, frame, state, _blackboardState)))];

@@ -6,9 +6,9 @@ namespace Ares.Raid.World.Movement;
 
 /// <summary>The character's movement in a pawn frame.</summary>
 /// <param name="Position">World position.</param>
-/// <param name="Step">Position change over the last tick (zero at rest).</param>
+/// <param name="Velocity">Velocity in world units per second.</param>
 /// <param name="Yaw">Facing in radians, or null to keep the initial facing.</param>
-public readonly record struct PawnMotion(Vector3D Position, Vector3D Step = default, double? Yaw = null);
+public readonly record struct PawnMotion(Vector3D Position, Vector3D Velocity = default, double? Yaw = null);
 
 /// <summary>
 /// The pawn's blackboard frames. The first (reset) frame holds the initial state at the client's latest input
@@ -57,9 +57,9 @@ public static class PawnBlackboardFrames
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionXField, Quantize(motion.Position.X)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionYField, Quantize(motion.Position.Y)));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionZField, Quantize(motion.Position.Z)));
-                    values.Add(Velocity(PawnBlackboard.VelocityXField, motion.Step.X));
-                    values.Add(Velocity(PawnBlackboard.VelocityYField, motion.Step.Y));
-                    values.Add(Velocity(PawnBlackboard.VelocityZField, motion.Step.Z));
+                    values.Add(Velocity(PawnBlackboard.VelocityXField, motion.Velocity.X));
+                    values.Add(Velocity(PawnBlackboard.VelocityYField, motion.Velocity.Y));
+                    values.Add(Velocity(PawnBlackboard.VelocityZField, motion.Velocity.Z));
 
                     if (motion.Yaw is { } yaw)
                     {
@@ -91,13 +91,12 @@ public static class PawnBlackboardFrames
         PendulumCodec.Default.WriteFrame(writer, state.Values, previous);
     }
 
-    // A velocity component from the position change over one tick, around the field's resting value.
-    private static PendulumIntegerValue Velocity(int field, double step)
+    // A velocity component in world units per second.
+    private static PendulumIntegerValue Velocity(int field, double velocity)
     {
         PendulumScalarField scalar = (PendulumScalarField)s_movementFields[field];
-        double steps = step * (1 << (PositionBits - 1)) / PawnBlackboard.PositionRange;
-        double quantized = Math.Clamp(scalar.Default + Math.Round(steps * PawnBlackboard.VelocityPerPositionStep), 0, scalar.Maximum - 1);
-        return new PendulumIntegerValue(field, (ulong)quantized);
+        double quantized = Math.Floor((velocity + PawnBlackboard.VelocityRange) * (scalar.Maximum - 1) / (2 * PawnBlackboard.VelocityRange));
+        return new PendulumIntegerValue(field, (ulong)Math.Clamp(quantized, 0, scalar.Maximum - 1));
     }
 
     private static ulong Quantize(double world)

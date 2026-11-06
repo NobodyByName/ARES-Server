@@ -28,17 +28,23 @@ public static class PawnBlackboard
     /// <summary>Field of the movement-state variable holding the quantized world Z position.</summary>
     public const int PositionZField = 30;
 
-    /// <summary>Field of the movement-state variable holding the quantized X velocity (Y and Z follow).</summary>
+    /// <summary>Field of the movement-state variable holding quantized X velocity divided by three (Y and Z follow).</summary>
     public const int VelocityXField = 1;
 
-    /// <summary>Field of the movement-state variable holding the quantized Y velocity.</summary>
+    /// <summary>Field of the movement-state variable holding quantized Y velocity divided by three.</summary>
     public const int VelocityYField = 2;
 
-    /// <summary>Field of the movement-state variable holding the quantized Z velocity.</summary>
+    /// <summary>Field of the movement-state variable holding quantized Z velocity divided by three.</summary>
     public const int VelocityZField = 3;
 
-    /// <summary>Quantized velocity per quantized position change over one tick.</summary>
-    public const double VelocityPerPositionStep = 0.979;
+    /// <summary>
+    /// World units per second mapped onto each velocity field's range:
+    /// quantized = floor((velocity + VelocityRange) * (maximum - 1) / (2 * VelocityRange)).
+    /// </summary>
+    public const double VelocityRange = 6000.0;
+
+    /// <summary>Duration of one simulation tick in seconds.</summary>
+    public const double TickSeconds = 1.0 / 30;
 
     /// <summary>Field of the movement-state variable holding the character's facing (a rotation about the vertical axis).</summary>
     public const int FacingField = 31;
