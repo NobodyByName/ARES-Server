@@ -3537,7 +3537,7 @@ globalThis.AresContent = {
               "name": "Ferro I",
               "technical": "DA_Item_BattleRifle_BreachAction_01",
               "status": "partial",
-              "note": "Menu equipment, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, attachments and upgrades remain."
+              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, fitting mods and upgrades remain."
             },
             {
               "name": "Battle Rifle Energy Burst 01",

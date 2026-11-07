@@ -589,7 +589,7 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 | <a id="content-root-2-4-17"></a>Assault Rifle Pneumatic 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-18"></a>Assault Rifle Pneumatic 01 Full Auto | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-19"></a>Assault Rifle Pneumatic 01 XRounds | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-4-20"></a>Ferro I | Partial | Menu equipment, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, attachments and upgrades remain. |
+| <a id="content-root-2-4-20"></a>Ferro I | Partial | Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, fitting mods and upgrades remain. |
 | <a id="content-root-2-4-21"></a>Battle Rifle Energy Burst 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-22"></a>Battle Rifle Energy Burst 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-23"></a>Battle Rifle Energy Burst 01 Bigger Mag | Not assessed | Availability and server behavior have not been assessed. |
