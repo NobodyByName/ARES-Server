@@ -344,8 +344,7 @@ public sealed class WorldState
 
     /// <summary>
     /// The calls and the last property that complete the player's start: the ability system's initialization
-    /// notice, the view of the pawn, the pawn and ready flag together, the player-state links, a restart if needed,
-    /// and the pawn's walking movement mode at its location.
+    /// notice, the view of the pawn, the pawn and ready flag together, the player-state links and a restart if needed.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
@@ -357,7 +356,6 @@ public sealed class WorldState
         RpcCodec calls = Replication.Calls(objects);
         string controllerClass = PlayerClasses.PlayerController.Class;
         string pawnClass = PlayerClasses.Pawn.Class;
-        WorldActor pawn = Actor(player.Pawn);
         return
         [
             (player.Pawn, Replication.Encode(pawnClass, new Dictionary<string, object?> { [PropertyNames.Controller] = player.Controller }, objects)),
@@ -385,17 +383,6 @@ public sealed class WorldState
                 [PropertyNames.CurrentPawn] = player.Pawn,
             }, objects)),
             (player.Controller, calls.Call(controllerClass, FunctionNames.ClientRetryClientRestart, new Dictionary<string, object?> { [PropertyNames.NewPawn] = player.Pawn }, RpcDirection.Client)),
-            (player.Pawn, calls.Call(pawnClass, FunctionNames.ClientAdjustPosition, new Dictionary<string, object?>
-            {
-                [PropertyNames.Timestamp] = 1.0f,
-                [PropertyNames.NewLoc] = pawn.Location,
-                [PropertyNames.NewVel] = default(Vector3D),
-                [PropertyNames.NewBase] = 0UL,
-                [PropertyNames.NewBaseBoneName] = NetworkName.None,
-                [PropertyNames.HasBase] = false,
-                [PropertyNames.BaseRelativePosition] = false,
-                [PropertyNames.ServerMovementMode] = (ulong)MovementMode.Walking,
-            }, RpcDirection.Client)),
         ];
     }
 
