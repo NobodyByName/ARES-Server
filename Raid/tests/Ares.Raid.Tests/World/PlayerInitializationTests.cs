@@ -144,8 +144,12 @@ public sealed class PlayerInitializationTests
         Assert.Equal(true, values[PropertyNames.IsServerReady]);
 
         RpcCodec calls = session.Raid.State.Replication.Calls(session.Raid.State.Objects([session.Player.Pawn]));
-        ActorContentBlock restart = Assert.Single(controller.Select(Block), block => !block.HasRepLayout);
-        (string function, Dictionary<string, object?> parameters) = calls.ReadCall(PlayerClasses.PlayerController.Class, restart, RpcDirection.Client);
+        ActorContentBlock[] controllerCalls = [.. controller.Select(Block).Where(block => !block.HasRepLayout)];
+        Assert.Equal(2, controllerCalls.Length);
+        (string function, Dictionary<string, object?> parameters) = calls.ReadCall(PlayerClasses.PlayerController.Class, controllerCalls[0], RpcDirection.Client);
+        Assert.Equal(FunctionNames.ClientSetViewTarget, function);
+        Assert.Equal(session.Player.Pawn, parameters[PropertyNames.A]);
+        (function, parameters) = calls.ReadCall(PlayerClasses.PlayerController.Class, controllerCalls[1], RpcDirection.Client);
         Assert.Equal(FunctionNames.ClientRetryClientRestart, function);
         Assert.Equal(session.Player.Pawn, parameters[PropertyNames.NewPawn]);
         ChannelBunch state = Assert.Single(session.Sent, bunch => bunch is { Channel: 3, Opened: false });

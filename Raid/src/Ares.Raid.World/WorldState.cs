@@ -344,8 +344,8 @@ public sealed class WorldState
 
     /// <summary>
     /// The calls and the last property that complete the player's start: the ability system's initialization
-    /// notice, the pawn and ready flag together, the player-state links, a restart if needed, and the pawn's
-    /// walking movement mode at its location.
+    /// notice, the view of the pawn, the pawn and ready flag together, the player-state links, a restart if needed,
+    /// and the pawn's walking movement mode at its location.
     /// </summary>
     /// <param name="player">The player.</param>
     /// <param name="mapped">Actor ids the client has mapped.</param>
@@ -362,6 +362,18 @@ public sealed class WorldState
         [
             (player.Pawn, Replication.Encode(pawnClass, new Dictionary<string, object?> { [PropertyNames.Controller] = player.Controller }, objects)),
             (player.Pawn, calls.Call(pawnClass, FunctionNames.ClientPostInitializeAbilitySystem, new Dictionary<string, object?>(), RpcDirection.Client)),
+            // Viewing the pawn turns the camera to the pawn's facing.
+            (player.Controller, calls.Call(controllerClass, FunctionNames.ClientSetViewTarget, new Dictionary<string, object?>
+            {
+                [PropertyNames.A] = player.Pawn,
+                [PropertyNames.TransitionParams] = new Dictionary<string, object?>
+                {
+                    [PropertyNames.BlendTime] = 0f,
+                    [PropertyNames.BlendFunction] = (ulong)ViewTargetBlendFunction.Cubic,
+                    [PropertyNames.BlendExp] = 2f,
+                    [PropertyNames.LockOutgoing] = false,
+                },
+            }, RpcDirection.Client)),
             (player.Controller, Replication.Encode(controllerClass, new Dictionary<string, object?>
             {
                 [PropertyNames.Pawn] = player.Pawn,
