@@ -9,6 +9,15 @@ public static class WeaponItems
     /// <summary>Asset id of HeavyAmmo.</summary>
     public const long HeavyAmmoAssetId = -1402742438L;
 
+    /// <summary>Asset id of MuzzleModSlot.</summary>
+    public const long MuzzleModSlotAssetId = -377848428L;
+
+    /// <summary>Asset id of UnderBarrelModSlot.</summary>
+    public const long UnderBarrelModSlotAssetId = -1923186072L;
+
+    /// <summary>Asset id of StockModSlot.</summary>
+    public const long StockModSlotAssetId = 1415875854L;
+
     /// <summary>Item definitions and their allowed child slots.</summary>
     public static IReadOnlyList<ItemDescription> Definitions { get; } =
     [
@@ -17,7 +26,7 @@ public static class WeaponItems
         {
             BaseGameAssetId = -1180768360L,
             QualityLevel = 0L,
-            SlotConfig = new NoItemSlots(),
+            SlotConfig = new StructuralItemSlots([-377848428L, -1923186072L, 1415875854L]),
         },
         new(-1402742438L, "GameItem", 60L, true, false,
             ["Online.Release.Base"], [])
@@ -25,6 +34,37 @@ public static class WeaponItems
             BaseGameAssetId = -1402742438L,
             QualityLevel = 0L,
             SlotConfig = new NoItemSlots(),
+        },
+        new(-377848428L, "InventoryStructure", 1L, false, false,
+            ["Online.Item.Modification", "Item.Flag.MandatoryChild", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = 0L,
+            QualityLevel = 0L,
+            SlotConfig = new SingleItemSlot(
+            [
+                -450689218L, 1363078343L, -1113070540L, -1888542545L, -1072384644L, -518509289L, -977121851L, -53041115L,
+                1407760402L, -409081322L, 1921518029L, -621597590L,
+            ], false, 0L),
+        },
+        new(-1923186072L, "InventoryStructure", 1L, false, false,
+            ["Online.Item.Modification", "Item.Flag.MandatoryChild", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = 0L,
+            QualityLevel = 0L,
+            SlotConfig = new SingleItemSlot(
+            [
+                346923872L, -1681246336L, -1131982378L, 1013182792L, -1404148784L, -295158634L, -1074924798L,
+            ], false, 0L),
+        },
+        new(1415875854L, "InventoryStructure", 1L, false, false,
+            ["Online.Item.Modification", "Item.Flag.MandatoryChild", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = 0L,
+            QualityLevel = 0L,
+            SlotConfig = new SingleItemSlot(
+            [
+                668021707L, -2095596285L, 1682428740L, 775298648L, 1287783108L, -123856886L,
+            ], false, 0L),
         },
     ];
 
