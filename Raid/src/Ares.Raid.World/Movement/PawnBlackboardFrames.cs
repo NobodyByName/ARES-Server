@@ -27,6 +27,9 @@ public static class PawnBlackboardFrames
 
     private const int PositionBits = 24;
 
+    private static readonly PendulumQuaternionField s_actionRotation = (PendulumQuaternionField)PendulumRegistry.Descriptors[
+        PawnBlackboard.InitialState.First(variable => variable.Slot == PawnBlackboard.ActionStateSlot).DescriptorId].Fields[PawnBlackboard.ActionRotationField];
+
     private static readonly IReadOnlyList<PendulumField> s_movementFields =
         PendulumRegistry.Descriptors[PawnBlackboard.InitialState.First(variable => variable.Slot == PawnBlackboard.MovementStateSlot).DescriptorId].Fields;
 
@@ -64,9 +67,18 @@ public static class PawnBlackboardFrames
                     }
 
                     break;
-                case PawnBlackboard.ActionStateSlot when motion.Character is { } action:
-                    Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionStanceField, (ulong)action.Stance));
-                    Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionLocoModeField, (ulong)action.Locomotion));
+                case PawnBlackboard.ActionStateSlot:
+                    if (motion.Yaw is { } actionYaw)
+                    {
+                        Replace(values, new PendulumQuaternionValue(PawnBlackboard.ActionRotationField, PendulumRotations.FromYaw(actionYaw, s_actionRotation)));
+                    }
+
+                    if (motion.Character is { } action)
+                    {
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionStanceField, (ulong)action.Stance));
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.ActionLocoModeField, (ulong)action.Locomotion));
+                    }
+
                     break;
                 case PawnBlackboard.MovementStateSlot:
                     values.Add(new PendulumIntegerValue(PawnBlackboard.PositionXField, Quantize(motion.Position.X)));

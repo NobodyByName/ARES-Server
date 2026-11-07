@@ -65,6 +65,21 @@ public sealed class PawnBlackboardFramesTests
     }
 
     [Theory]
+    [InlineData(-110.0)]
+    [InlineData(15.0)]
+    [InlineData(120.0)]
+    public void The_action_rotation_turns_with_the_facing(double degrees)
+    {
+        PendulumSlot action = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Yaw: degrees * Math.PI / 180), 0)[PawnBlackboard.ActionStateSlot];
+        PendulumQuaternionField rotation = (PendulumQuaternionField)PendulumRegistry.Descriptors[action.DescriptorId!.Value].Fields[PawnBlackboard.ActionRotationField];
+        PendulumQuaternion quaternion = PendulumCodec.Quaternion(rotation, action.Value);
+
+        Assert.Equal(degrees, PendulumRotations.Yaw(quaternion, rotation) * 180.0 / Math.PI, 1.5);
+        (double x, double y, _, _) = PendulumRotations.Components(quaternion, rotation);
+        Assert.Equal((0.0, 0.0), (x, y));
+    }
+
+    [Theory]
     [InlineData(-6000.0, 0UL)]
     [InlineData(-1.0, 2047UL)]
     [InlineData(300.0, 2149UL)]

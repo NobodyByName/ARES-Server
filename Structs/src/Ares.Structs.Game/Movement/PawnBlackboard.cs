@@ -88,6 +88,9 @@ public static class PawnBlackboard
     /// <summary>Slot of persistent character actions.</summary>
     public const int ActionStateSlot = 2;
 
+    /// <summary>Rotation of the action state; the character's pose turns with it.</summary>
+    public const int ActionRotationField = 0;
+
     /// <summary>Action posture, including slide, air and ladder states.</summary>
     public const int ActionStanceField = 44;
 
