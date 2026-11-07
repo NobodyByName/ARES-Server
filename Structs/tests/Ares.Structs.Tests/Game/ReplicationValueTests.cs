@@ -11,7 +11,7 @@ public sealed class ReplicationValueTests
     private static ReplicationCatalog Catalog => GameReplication.Catalog;
 
     private static ValueCodec Values(IReadOnlyDictionary<ulong, string>? mappedObjects = null) =>
-        new(Catalog, [KnownEnums.NetRole, KnownEnums.GamePhase], mappedObjects);
+        new(Catalog, [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction], mappedObjects);
 
     [Theory]
     [InlineData(-128, 0x80)]
@@ -75,6 +75,27 @@ public sealed class ReplicationValueTests
             Dictionary<string, object?> decoded = codec.ReadParameters(field, payload);
             Assert.Equal(encoded, Convert.ToHexStringLower(codec.Call(classPath, function, decoded, direction).Payload));
         }
+    }
+
+    [Fact]
+    public void Struct_parameters_without_their_own_serializer_are_sent_as_their_members()
+    {
+        RpcCodec codec = new(Values(new Dictionary<ulong, string> { [13280] = PlayerClasses.Pawn.Class }));
+        Dictionary<string, object?> transition = new()
+        {
+            [PropertyNames.BlendTime] = 0f,
+            [PropertyNames.BlendFunction] = (ulong)ViewTargetBlendFunction.Cubic,
+            [PropertyNames.BlendExp] = 2f,
+            [PropertyNames.LockOutgoing] = false,
+        };
+        ActorContentBlock block = codec.Call(PlayerClasses.PlayerController.Class, FunctionNames.ClientSetViewTarget,
+            new Dictionary<string, object?> { [PropertyNames.A] = 13280UL, [PropertyNames.TransitionParams] = transition }, RpcDirection.Client);
+
+        (NetField field, ActorFieldPayload payload) = Assert.Single(codec.ReadFields(PlayerClasses.PlayerController.Class, block, RpcDirection.Client));
+        Assert.Equal(("839d030000000400000008", 86L), (Convert.ToHexStringLower(payload.Payload), payload.PayloadBits));
+        Dictionary<string, object?> decoded = codec.ReadParameters(field, payload);
+        Assert.Equal(13280UL, decoded[PropertyNames.A]);
+        Assert.Equal(transition, Assert.IsType<Dictionary<string, object?>>(decoded[PropertyNames.TransitionParams]));
     }
 
     [Fact]

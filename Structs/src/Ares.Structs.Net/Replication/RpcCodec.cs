@@ -7,7 +7,7 @@ namespace Ares.Structs.Net.Replication;
 /// <summary>
 /// Network function calls: a field payload addressed by the class's field table, holding the parameters.
 /// Each parameter except booleans has a presence bit; parameters at their default are not sent (structs
-/// always are).
+/// always are). A struct without its own serializer is sent as its members, given as a dictionary by name.
 /// </summary>
 /// <param name="values">Value codec.</param>
 public sealed class RpcCodec(ValueCodec values)
@@ -129,7 +129,7 @@ public sealed class RpcCodec(ValueCodec values)
             PropertyDefinition property = Parameter(parameter);
             result[property.Name] = property.Kind == PropertyKind.BoolProperty
                 ? _values.Read(reader, property)
-                : DefaultOf(property) is var fallback && reader.ReadBit() ? _values.Read(reader, property) : fallback;
+                : DefaultOf(property) is var fallback && reader.ReadBit() ? ReadValue(reader, property) : fallback;
         }
 
         return reader.Remaining == 0 ? result : throw new InvalidPacketException("Trailing parameter bits");
@@ -163,7 +163,7 @@ public sealed class RpcCodec(ValueCodec values)
                     }
 
                     BitWriter raw = new();
-                    _values.Write(raw, property, value);
+                    WriteValue(raw, property, value);
                     bool send = property.Kind == PropertyKind.StructProperty || !IsDefault(property, value);
                     writer.WriteBit(send);
                     if (send)
@@ -175,6 +175,40 @@ public sealed class RpcCodec(ValueCodec values)
             }
         }
     }
+
+    // A struct without its own serializer is sent as its members in order, without presence bits of their own.
+    private static bool IsPlainStruct(PropertyDefinition property) =>
+        property.Kind == PropertyKind.StructProperty && (property.StructFlags & StructFlags.NetSerializeNative) == 0;
+
+    private IEnumerable<PropertyDefinition> Members(PropertyDefinition property) =>
+        property.Children.Select(_values.Catalog.Property).Where(member => (member.Flags & PropertyFlags.RepSkip) == 0)
+            .Select(member => member.ArrayDim == 1 ? member : throw new InvalidPacketException("Static array members are not supported"));
+
+    private void WriteValue(BitWriter writer, PropertyDefinition property, object? value)
+    {
+        if (!IsPlainStruct(property))
+        {
+            _values.Write(writer, property, value);
+            return;
+        }
+
+        IReadOnlyDictionary<string, object?> members = value as IReadOnlyDictionary<string, object?> ?? throw new InvalidPacketException("Struct parameters need their members");
+        PropertyDefinition[] definitions = [.. Members(property)];
+        if (definitions.Length != members.Count || definitions.Any(member => !members.ContainsKey(member.Name)))
+        {
+            throw new InvalidPacketException("Members do not match the struct");
+        }
+
+        foreach (PropertyDefinition member in definitions)
+        {
+            WriteValue(writer, member, members[member.Name]);
+        }
+    }
+
+    private object ReadValue(BitReader reader, PropertyDefinition property) =>
+        IsPlainStruct(property)
+            ? Members(property).ToDictionary(member => member.Name, member => ReadValue(reader, member), StringComparer.Ordinal)
+            : _values.Read(reader, property);
 
     private PropertyDefinition Parameter(string path)
     {
@@ -199,9 +233,13 @@ public sealed class RpcCodec(ValueCodec values)
         _ => false,
     };
 
-    private static object DefaultOf(PropertyDefinition property) =>
+    private object DefaultOf(PropertyDefinition property) =>
         s_defaults.TryGetValue(property.Kind, out object? value)
             ? value
+            : property.Kind == PropertyKind.BoolProperty
+                ? false
+            : IsPlainStruct(property)
+                ? Members(property).ToDictionary(member => member.Name, DefaultOf, StringComparer.Ordinal)
             : property.Kind == PropertyKind.StructProperty
                 ? StructDefault(property.TypePath)
                 : throw new InvalidPacketException("Parameter needs a serializer that is not implemented");

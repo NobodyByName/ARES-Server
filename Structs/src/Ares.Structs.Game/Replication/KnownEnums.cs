@@ -44,6 +44,16 @@ public enum MovementMode : byte
     Custom = 6,
 }
 
+/// <summary>How a camera blends to a new view target (<c>EViewTargetBlendFunction</c>).</summary>
+public enum ViewTargetBlendFunction : byte
+{
+    Linear = 0,
+    Cubic = 1,
+    EaseIn = 2,
+    EaseOut = 3,
+    PreBlended = 4,
+}
+
 /// <summary>Replicated enums whose wire width is not given by the replication schema alone.</summary>
 public static class KnownEnums
 {
@@ -57,4 +67,8 @@ public static class KnownEnums
     /// </summary>
     public static EnumDefinition GamePhase { get; } =
         new(EnumPaths.EGamePhase, 4, ["PreGame", "EarlyGame", "MidGame", "LateGame", "NOT_INITIALIZED"]);
+
+    /// <summary>View target blend functions; the engine's maximum is <c>VTBlend_MAX</c> (5).</summary>
+    public static EnumDefinition ViewTargetBlendFunction { get; } =
+        new(EnumPaths.EViewTargetBlendFunction, 5, ["VTBlend_Linear", "VTBlend_Cubic", "VTBlend_EaseIn", "VTBlend_EaseOut", "VTBlend_PreBlended"]);
 }
