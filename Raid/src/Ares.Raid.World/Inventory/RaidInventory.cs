@@ -233,16 +233,17 @@ public sealed class RaidInventory
     public int HeavyAmmo => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
         .Where(item => item.AssetIndex == WeaponItems.HeavyAmmoUsableIndex).Sum(item => item.Amount);
 
-    /// <summary>Changes a Ferro chamber, optionally transferring one carried Heavy Ammo round atomically.</summary>
+    /// <summary>Changes a Ferro chamber, optionally loading the added rounds from carried Heavy Ammo atomically.</summary>
+    /// <remarks>Loading takes from the first carried stacks and fails when they hold too few rounds.</remarks>
     public bool SetChamber(Guid id, int amount, bool consumeReserve = false)
     {
-        if (amount is < 0 or > FerroDefaults.ClipSize || consumeReserve && amount != 1)
+        if (amount is < 0 or > FerroDefaults.ClipSize)
         {
             return false;
         }
 
         (int Container, int Slot)? gun = null;
-        (int Container, int Slot)? ammo = null;
+        List<(int Container, int Slot)> ammo = [];
         for (int container = 0; container < Containers.Count; container++)
         {
             for (int slot = 0; slot < Containers[container].Items.Count; slot++)
@@ -253,25 +254,37 @@ public sealed class RaidInventory
                     gun = (container, slot);
                 }
 
-                if (ammo is null && item is { AssetIndex: WeaponItems.HeavyAmmoUsableIndex, Amount: > 0 })
+                if (item is { AssetIndex: WeaponItems.HeavyAmmoUsableIndex, Amount: > 0 })
                 {
-                    ammo = (container, slot);
+                    ammo.Add((container, slot));
                 }
             }
         }
 
-        if (gun is not { } target || consumeReserve && ammo is null
-            || Containers[target.Container].Items[target.Slot]!.AmmoInClip == amount)
+        if (gun is not { } target || Containers[target.Container].Items[target.Slot]!.AmmoInClip == amount)
+        {
+            return false;
+        }
+
+        int needed = consumeReserve ? amount - Containers[target.Container].Items[target.Slot]!.AmmoInClip : 0;
+        if (consumeReserve && (needed <= 0 || needed > HeavyAmmo))
         {
             return false;
         }
 
         ItemContainerState[] updated = [.. Containers];
         Replace(target, updated[target.Container].Items[target.Slot]! with { AmmoInClip = amount });
-        if (consumeReserve && ammo is { } source)
+        foreach ((int Container, int Slot) source in ammo)
         {
+            if (needed == 0)
+            {
+                break;
+            }
+
             ContainerItem item = updated[source.Container].Items[source.Slot]!;
-            Replace(source, item.Amount == 1 ? null : item with { Amount = item.Amount - 1 });
+            int taken = Math.Min(needed, item.Amount);
+            Replace(source, item.Amount == taken ? null : item with { Amount = item.Amount - taken });
+            needed -= taken;
         }
 
         Containers = Array.AsReadOnly(updated);

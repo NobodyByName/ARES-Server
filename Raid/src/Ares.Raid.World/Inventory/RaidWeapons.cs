@@ -100,7 +100,8 @@ public sealed class RaidWeapons(RaidInventory inventory)
             Gun gun = Get(equipped.Id);
             if (gun.State == WeaponProtocol.ReloadingState && input.Frame >= gun.ReadyAt)
             {
-                if (inventory.SetChamber(gun.Id, FerroDefaults.ClipSize, consumeReserve: true))
+                ContainerItem loading = Equipped().First(item => item?.Id == gun.Id)!;
+                if (inventory.SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, loading.AmmoInClip + inventory.HeavyAmmo), consumeReserve: true))
                 {
                     ReloadsCompleted++;
                 }
