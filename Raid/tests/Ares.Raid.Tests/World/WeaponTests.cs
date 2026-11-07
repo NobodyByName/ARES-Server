@@ -396,11 +396,37 @@ public sealed class WeaponTests
     }
 
     [Fact]
+    public void Ferro_mod_slots_must_be_present_in_order_and_empty()
+    {
+        PlayerLoadout loadout = WithWeapons();
+        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
+        Assert.Equal(StructuralSlots(WeaponItems.FerroIAssetId), [.. gun.Slots.Select(id => loadout.Items.Single(item => item.InstanceId == id).GameAssetId)]);
+        RaidInventory inventory = new(loadout);
+        Assert.NotNull(inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
+
+        PlayerLoadout missing = loadout with { Items = [.. loadout.Items.Where(item => !gun.Slots.Contains(item.InstanceId)).Select(item => item == gun ? item with { Slots = [] } : item)] };
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(missing));
+        PlayerLoadout reordered = loadout with { Items = [.. loadout.Items.Select(item => item == gun ? item with { Slots = [.. gun.Slots.Reverse()] } : item)] };
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(reordered));
+        InventoryItem mod = new(Guid.NewGuid().ToString("D"), ((SingleItemSlot)LoadoutDefinitions.ByAsset[WeaponItems.MuzzleModSlotAssetId].SlotConfig!).AllowedSlotAssetIds[0],
+            1, [], 1, 1, "", "weapon-test", 0);
+        PlayerLoadout filled = loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == gun.Slots[0] ? item with { Slots = [mod.InstanceId] } : item), mod] };
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(filled));
+        return;
+
+        static IReadOnlyList<long> StructuralSlots(long asset) => ((StructuralItemSlots)LoadoutDefinitions.ByAsset[asset].SlotConfig!).SlotAssetIds;
+    }
+
+    [Fact]
     public void Ammo_without_a_firearm_still_stages_and_registers_both_hand_items()
     {
         PlayerLoadout loadout = WithWeapons();
-        string gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId).InstanceId;
-        loadout = loadout with { Items = [.. loadout.Items.Where(item => item.InstanceId != gun).Select(item => item.Slots.Contains(gun) ? item with { Slots = [] } : item)] };
+        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
+        loadout = loadout with
+        {
+            Items = [.. loadout.Items.Where(item => item != gun && !gun.Slots.Contains(item.InstanceId))
+                .Select(item => item.Slots.Contains(gun.InstanceId) ? item with { Slots = [] } : item)],
+        };
         ScriptedPlayer session = new(loadout: loadout);
         RaidInventory inventory = session.Raid.Inventory;
         Assert.NotNull(inventory.InitialBlackboard);
@@ -519,8 +545,12 @@ public sealed class WeaponTests
             InventoryItem branch = source.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == branchAsset);
             InventoryItem container = source.Items.Single(item => item.InstanceId == branch.Slots[0]);
             string slot = container.Slots[index];
-            InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, amount, [], condition, 1, "", "weapon-test", 0);
-            return source with { Items = [.. source.Items.Select(item => item.InstanceId == slot ? item with { Slots = [owned.InstanceId] } : item), owned] };
+            // Like the menu inventory, a weapon carries one empty node per mod slot.
+            InventoryItem[] modSlots = LoadoutDefinitions.ByAsset[asset].SlotConfig is StructuralItemSlots slots
+                ? [.. slots.SlotAssetIds.Select(slotAsset => new InventoryItem(Guid.NewGuid().ToString("D"), slotAsset, 1, [], 1, 1, "", "weapon-test", 0))]
+                : [];
+            InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, amount, [.. modSlots.Select(modSlot => modSlot.InstanceId)], condition, 1, "", "weapon-test", 0);
+            return source with { Items = [.. source.Items.Select(item => item.InstanceId == slot ? item with { Slots = [owned.InstanceId] } : item), owned, .. modSlots] };
         }
     }
 

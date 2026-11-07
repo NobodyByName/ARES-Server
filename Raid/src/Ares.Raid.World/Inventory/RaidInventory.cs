@@ -212,7 +212,7 @@ public sealed class RaidInventory
 
             InventoryItem item = items[slot.Slots[0]];
             visited.Add(item.InstanceId);
-            if (!LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId) || item.Slots.Count != 0
+            if (!LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId) || !EmptyModSlots(item)
                 || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
                 || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId)
                 || !Guid.TryParse(item.InstanceId, out Guid guid))
@@ -223,6 +223,28 @@ public sealed class RaidInventory
             ushort usableIndex = checked((ushort)LoadoutDefinitions.UsableIndex(item.GameAssetId));
             _unitWeights[usableIndex] = LoadoutDefinitions.ItemWeight(item.GameAssetId);
             return new ContainerItem(usableIndex, guid, checked((int)item.Amount), item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability);
+        }
+
+        // A weapon carries one empty node per mod slot; mods themselves are not supported yet.
+        bool EmptyModSlots(InventoryItem item)
+        {
+            IReadOnlyList<long> expected = definitions[item.GameAssetId].SlotConfig is StructuralItemSlots modSlots ? modSlots.SlotAssetIds : [];
+            if (item.Slots.Count != expected.Count)
+            {
+                return false;
+            }
+
+            foreach ((string id, long asset) in item.Slots.Zip(expected))
+            {
+                if (items[id] is not { Amount: 1, Slots.Count: 0 } modSlot || modSlot.GameAssetId != asset)
+                {
+                    return false;
+                }
+
+                visited.Add(id);
+            }
+
+            return true;
         }
     }
 
