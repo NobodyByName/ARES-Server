@@ -2,6 +2,7 @@ using System.Globalization;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -231,8 +232,13 @@ internal sealed class ScriptedPlayer
         }
     }
 
+    // The state the character opens with: the spawn frame inside the pawn's opening bunch.
+    public Dictionary<int, PendulumSlot> SpawnState => new(PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
+        new PawnMotion(Raid.Spawn.Location, Yaw: Raid.Spawn.Yaw * Math.PI / 180), 0, Raid.Inventory.InitialBlackboard,
+        Raid.Weapons.Variables(PawnBlackboardFrames.FirstTick)));
+
     // The one pawn blackboard frame among the bunches sent since the last clear, decoded against the state of
-    // the frame before it (empty for the first frame).
+    // the frame before it (empty for a full frame).
     public Dictionary<int, PendulumSlot> PawnFrame(Dictionary<int, PendulumSlot> previous)
     {
         ChannelBunch bunch = Assert.Single(Sent, item => item.Channel == 6 && (item.Payload[0] & 3) == 2);
@@ -270,10 +276,10 @@ internal sealed class ScriptedPlayer
         Input(0, 30);
     }
 
-    /// <summary>Frames sent until the held items are linked: spawn, filled containers, item links.</summary>
-    public const int SettledFrames = 3;
+    /// <summary>Frames sent until the held items are linked: spawn, first input, filled containers, item links.</summary>
+    public const int SettledFrames = 4;
 
-    // Standing inputs from the given frame until the spawn frame, the filled containers and the linked held
+    // Standing inputs from the given frame until the first input frame, the filled containers and the linked held
     // items are delivered; returns the next input frame and service time.
     public (uint Frame, double At) Settle(uint frame, double at, Vector3D? position = null)
     {

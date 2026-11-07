@@ -42,7 +42,7 @@ public sealed class WeaponTests
         session.Sent.Clear();
         session.Input(30, 33, position: session.Raid.Spawn.Location);
         session.Service(100);
-        Dictionary<int, PendulumSlot> initial = session.PawnFrame([]);
+        Dictionary<int, PendulumSlot> initial = session.PawnFrame(session.SpawnState);
         Assert.Equal((ulong)WeaponProtocol.FirstWeaponSlot, Inventory(initial, WeaponProtocol.InventoryCurrentField));
         Assert.Equal(0UL, ItemReference(initial, WeaponProtocol.FirstWeaponSlot));
         session.Input(33, 36, position: session.Raid.Spawn.Location);
@@ -337,7 +337,7 @@ public sealed class WeaponTests
         session.Sent.Clear();
         session.Input(30, 33, position: session.Raid.Spawn.Location);
         session.Service(100);
-        Dictionary<int, PendulumSlot> first = session.PawnFrame([]);
+        Dictionary<int, PendulumSlot> first = session.PawnFrame(session.SpawnState);
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.Firearm1Slot));
         session.Input(33, 36, position: session.Raid.Spawn.Location);
         session.Sent.Clear();

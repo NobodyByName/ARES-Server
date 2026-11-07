@@ -25,7 +25,7 @@ public sealed class ShieldTests
         session.Sent.Clear();
         session.Input(30, 33, position: session.Raid.Spawn.Location);
         session.Service(100);
-        Dictionary<int, PendulumSlot> first = session.PawnFrame(new Dictionary<int, PendulumSlot>());
+        Dictionary<int, PendulumSlot> first = session.PawnFrame(session.SpawnState);
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.ArmorSlot));
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.LoadoutSlotCount + 3));
         Assert.NotNull(session.Raid.Inventory.Shield);
@@ -36,10 +36,10 @@ public sealed class ShieldTests
         Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
         Assert.Equal(ShieldItems.LightShieldUsableIndex, AssetIndex(second, InventoryBlackboard.ArmorSlot));
         Assert.Equal(InventoryBlackboard.RubberDuckIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 3));
-        Assert.Equal(2, session.Channels.BlackboardFrames);
+        Assert.Equal(3, session.Channels.BlackboardFrames);
         session.Input(36, 39, position: session.Raid.Spawn.Location);
         session.Service(100.2);
-        Assert.Equal(2, session.Channels.BlackboardFrames);
+        Assert.Equal(3, session.Channels.BlackboardFrames);
     }
 
     [Theory]

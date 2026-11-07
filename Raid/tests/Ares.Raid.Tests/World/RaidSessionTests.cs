@@ -199,7 +199,7 @@ public sealed class RaidSessionTests
         Vector3D there = new(516538.10336022545, 527468.742117282, -38998.81315174722);
         session.Input(30, 33, focus: button);
         session.Service(122.5);
-        Dictionary<int, PendulumSlot> first = session.PawnFrame([]);
+        Dictionary<int, PendulumSlot> first = session.PawnFrame(session.SpawnState);
 
         session.Input(33, 36, focus: button, position: there);
         session.Sent.Clear();

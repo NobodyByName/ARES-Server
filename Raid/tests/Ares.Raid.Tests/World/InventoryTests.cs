@@ -103,7 +103,7 @@ public sealed class InventoryTests
         Assert.Equal(session.Raid.Inventory.Loadout, handles[$"{PropertyNames.Loadout}.{PropertyNames.Id}"]);
 
         session.Service(100);
-        Assert.Equal(1, session.Channels.BlackboardFrames);
+        Assert.Equal(2, session.Channels.BlackboardFrames);
         uint tick = session.Channels.InputFrame!.Value;
         IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(tick, new PawnMotion(session.Raid.Spawn.Location), 0, session.Raid.Inventory.Blackboard);
         IReadOnlyDictionary<int, PendulumSlot> original = PawnBlackboardFrames.State(tick, new PawnMotion(session.Raid.Spawn.Location), 0);

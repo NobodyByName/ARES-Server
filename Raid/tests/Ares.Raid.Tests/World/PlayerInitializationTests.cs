@@ -1,6 +1,7 @@
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Movement;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
@@ -110,15 +111,13 @@ public sealed class PlayerInitializationTests
         session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
         session.Flush("loaded");
         ChannelBunch open = Assert.Single(session.Sent, bunch => bunch is { Channel: 6, Opened: true });
-        BitReader reader = new(open.Payload, open.PayloadBits);
-        MustMapGuids.Read(reader);
-        ActorSpawn spawn = ActorSpawn.Read(reader);
-        Assert.Equal(session.Raid.Spawn.Location, spawn.Location);
         Assert.NotEqual(0, session.Raid.Spawn.Yaw);
-        double expected = (session.Raid.Spawn.Yaw + 360) % 360;
-        Assert.InRange(Math.Abs(expected - spawn.Rotation.Yaw), 0, 360.0 / 65536);
-        Assert.Equal(0, spawn.Rotation.Pitch);
-        Assert.Equal(0, spawn.Rotation.Roll);
+        ActorSpawn spawn = new(session.Player.Pawn, session.Raid.Imports.Archetypes[PlayerClasses.Pawn.Class], 0, session.Raid.Spawn.Location,
+            new Rotator(0, session.Raid.Spawn.Yaw, 0));
+        ActorContentBlock frame = session.Raid.State.BlackboardFrame(0, 1, session.SpawnState, new Dictionary<int, PendulumSlot>());
+        ChannelBunch expected = new ActorInitialization(spawn, null, [frame]).ToBunch(6, open.Sequence!.Value, []);
+        Assert.Equal(expected.PayloadBits, open.PayloadBits);
+        Assert.Equal(expected.Payload, open.Payload);
     }
 
     [Fact]
@@ -176,15 +175,15 @@ public sealed class PlayerInitializationTests
     {
         ScriptedPlayer session = new();
         session.Possess();
-        Assert.Equal(0, session.Channels.BlackboardFrames);
+        Assert.Equal(1, session.Channels.BlackboardFrames);
         session.Sent.Clear();
         session.Service(100);
-        Assert.Equal(1, session.Channels.BlackboardFrames);
+        Assert.Equal(2, session.Channels.BlackboardFrames);
         uint frame = session.Channels.InputFrame!.Value;
-        ActorContentBlock expected = session.Raid.State.BlackboardFrame(0, 1,
+        ActorContentBlock expected = session.Raid.State.BlackboardFrame(1, 2,
             PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0,
                 session.Raid.Inventory.InitialBlackboard, session.Raid.Weapons.Variables(frame)),
-            new Dictionary<int, PendulumSlot>());
+            session.SpawnState);
         ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);
         ActorContentBlock actual = Block(first);
         Assert.Equal(expected.PayloadBits, actual.PayloadBits);
@@ -209,7 +208,7 @@ public sealed class PlayerInitializationTests
         Assert.Equal(3, frames.Length);
         uint[] ticks = [30, 999, 1002];
         NetFieldTable fields = session.Raid.State.Replication.Calls().Fields(PlayerClasses.Pawn.Class);
-        Dictionary<int, PendulumSlot> previous = [];
+        Dictionary<int, PendulumSlot> previous = session.SpawnState;
         for (int index = 0; index < frames.Length; index++)
         {
             ActorContentBlock block = Block(frames[index]);
@@ -219,9 +218,9 @@ public sealed class PlayerInitializationTests
             Assert.True(reader.ReadBit());
             Assert.True(reader.ReadBit());
             uint baseline = reader.ReadBounded(PendulumFrames.BaselineRange);
-            Assert.Equal((uint)index, baseline);
-            Assert.Equal(index == 0, reader.ReadBit());
-            Assert.Equal((uint)index + 1, PendulumFrames.ReadRelative(reader, baseline));
+            Assert.Equal((uint)index + 1, baseline);
+            Assert.False(reader.ReadBit());
+            Assert.Equal((uint)index + 2, PendulumFrames.ReadRelative(reader, baseline));
             Assert.False(reader.ReadBit());
             Assert.True(reader.ReadBit());
             previous = PendulumCodec.Default.ReadFrame(reader, previous);

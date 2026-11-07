@@ -637,7 +637,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 // Starting the character earlier lets its spawn animation finish behind the loading screen.
                 WorldActor pawn = Actor(_player.Pawn);
                 ActorSpawn pawnSpawn = new(pawn.Guid, _raid.Imports.Archetypes[pawn.ClassPath], 0, pawn.Location, pawn.Rotation);
-                _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, []).ToBunch(PawnChannel, sender.NextSequence(PawnChannel), []))];
+                _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, [SpawnFrame()]).ToBunch(PawnChannel, sender.NextSequence(PawnChannel), []))];
                 Phase = DeliveryPhase.PawnOpenPending;
                 return true;
             case DeliveryPhase.PawnOpenPending when delivered:
@@ -712,6 +712,22 @@ public sealed partial class PlayerChannels : IPlayerChannels
             default:
                 return false;
         }
+    }
+
+    // The client's character simulation turns the character to the facing of the state it starts from, so the
+    // character opens with the spawn state. The first frame built from the client's input then follows as an
+    // ordinary update.
+    private ActorContentBlock SpawnFrame()
+    {
+        WorldActor pawn = Actor(_player.Pawn);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
+            new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, _raid.Inventory.InitialBlackboard,
+            _raid.Weapons.Variables(PawnBlackboardFrames.FirstTick));
+        uint delivery = checked((uint)BlackboardFrames);
+        ActorContentBlock frame = _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState);
+        _blackboardState = state;
+        BlackboardFrames++;
+        return frame;
     }
 
     private void ReceiveControllerCalls(ChannelBunch item, BitReader reader, List<(string, Dictionary<string, object?>)> replies)
