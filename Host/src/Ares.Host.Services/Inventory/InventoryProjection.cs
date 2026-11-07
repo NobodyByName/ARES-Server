@@ -69,7 +69,7 @@ internal sealed class InventoryProjection
                 case SingleItemSlot { IsRequired: false } single:
                     if (position is null)
                     {
-                        // Emit the default melee structure expected by the client.
+                        // Slots without a position stay empty: the default melee structure and weapon mod slots.
                         break;
                     }
 
@@ -89,7 +89,12 @@ internal sealed class InventoryProjection
                             throw new InvalidDataException("Item is incompatible with its equipment slot");
                         }
 
-                        items.Add(new InventoryItem(owned.InstanceId, itemAsset, owned.Quantity, [], owned.Durability, owned.MaxDurability,
+                        // The menu shows a weapon's mod slots only from these child nodes. They stay empty until mods are supported.
+                        List<string> modSlots = InventoryCatalog.ByAsset[itemAsset].SlotConfig is StructuralItemSlots weaponSlots
+                            ? [.. weaponSlots.SlotAssetIds.Select((slot, index) =>
+                                BuildNode(slot, "items/" + owned.InstanceId + "/" + index.ToString(CultureInfo.InvariantCulture), null))]
+                            : [];
+                        items.Add(new InventoryItem(owned.InstanceId, itemAsset, owned.Quantity, modSlots.AsReadOnly(), owned.Durability, owned.MaxDurability,
                             "", owned.ETag, owned.UpdatedAt));
                         children.Add(owned.InstanceId);
                     }

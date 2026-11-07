@@ -57,6 +57,28 @@ public sealed class WeaponTests : IDisposable
     }
 
     [Fact]
+    public void Ferro_shows_its_empty_mod_slots_in_the_stash_and_the_loadout()
+    {
+        InventoryStore store = Create();
+        OwnedItem gun = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.FerroI);
+        IReadOnlyList<string> inStash = ModSlots(store.Snapshot);
+        Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.Firearm1SlotAssetId), "primary").StatusCode);
+        Assert.Equal(inStash, ModSlots(store.Snapshot));
+        Assert.Equal(inStash.Count + 1, InventorySnapshots.Loadout(store.Snapshot).Items.Count(item => item.InstanceId == gun.InstanceId || inStash.Contains(item.InstanceId)));
+        Assert.Empty(store.Snapshot.Items.Where(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId).SelectMany(item => item.Slots));
+        return;
+
+        IReadOnlyList<string> ModSlots(InventorySnapshot snapshot)
+        {
+            InventoryItem projected = snapshot.Items.Single(item => item.InstanceId == gun.InstanceId);
+            InventoryItem[] slots = [.. projected.Slots.Select(id => snapshot.Items.Single(item => item.InstanceId == id))];
+            Assert.Equal([WeaponItems.MuzzleModSlotAssetId, WeaponItems.UnderBarrelModSlotAssetId, WeaponItems.StockModSlotAssetId], slots.Select(slot => slot.GameAssetId));
+            Assert.All(slots, slot => Assert.Empty(slot.Slots));
+            return projected.Slots;
+        }
+    }
+
+    [Fact]
     public void Weapon_swaps_are_atomic_and_retryable_and_incompatible_moves_do_not_write()
     {
         InventoryStore store = Create();
