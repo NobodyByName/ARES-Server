@@ -29,10 +29,11 @@ weapon slots and the backpack; Heavy Ammo stacks hold 1–60 rounds and move as 
 the stash, backpack and safe pocket. Raid accepts both, includes them in the carried weight and
 validates whole-stack moves. Every raider also holds the Raider Tool and empty hands.
 
-In Raid the slot-1 Ferro I starts drawn. Switching between the Ferro I, the Raider Tool and empty
-hands plays the put-away and draw animations; the Ferro I fires at its semi-automatic cadence and
-reloads one round at a time from carried Heavy Ammo. These are stock-client verified, with known
-issues. Damage, ballistics, attachments and upgrades remain future work.
+In Raid the slot-1 Ferro I starts drawn, and equipped guns start loaded from carried Heavy Ammo.
+Switching between the Ferro I, the Raider Tool and empty hands plays the put-away and draw
+animations; the Ferro I fires at its semi-automatic cadence and reloads one round at a time from
+carried Heavy Ammo. These are stock-client verified, with known issues. Damage, ballistics,
+attachments and upgrades remain future work.
 
 To grant menu test items from the Host console before a fresh client launch:
 

@@ -129,6 +129,7 @@ public sealed class WeaponTests
     public void Weapon_replication_uses_simulation_time_units_and_the_items_default_model()
     {
         RaidInventory inventory = new(WithWeapons());
+        Empty(inventory);
         RaidWeapons weapons = new(inventory);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         Assert.Equal(780UL, Read(WeaponProtocol.WeaponEquipTimeField, 30));
@@ -200,22 +201,23 @@ public sealed class WeaponTests
     public void Reload_transfers_one_round_once_and_firing_consumes_it_without_duplicating_replayed_inputs()
     {
         RaidInventory inventory = new(WithWeapons());
+        Empty(inventory);
         RaidWeapons weapons = new(inventory);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
-        Assert.Equal(60, inventory.HeavyAmmo);
-        weapons.Apply(new WeaponInput(186, 0, 0, 0));
-        Assert.Equal(60, inventory.HeavyAmmo);
-        weapons.Apply(new WeaponInput(187, 0, 0, 0));
         Assert.Equal(59, inventory.HeavyAmmo);
+        weapons.Apply(new WeaponInput(186, 0, 0, 0));
+        Assert.Equal(59, inventory.HeavyAmmo);
+        weapons.Apply(new WeaponInput(187, 0, 0, 0));
+        Assert.Equal(58, inventory.HeavyAmmo);
         Assert.Equal(1, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
-        Assert.Equal(12.2, inventory.Weight, precision: 6);
+        Assert.Equal(12.15, inventory.Weight, precision: 6);
         weapons.Apply(new WeaponInput(188, Fire, 0, 0));
         weapons.Apply(new WeaponInput(188, Fire, 0, 0));
         Assert.Equal(1, weapons.ShotsFired);
         Assert.Equal(1, weapons.ReloadsCompleted);
         Assert.Equal(0, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
-        Assert.Equal(12.15, inventory.Weight, precision: 6);
+        Assert.Equal(12.1, inventory.Weight, precision: 6);
         weapons.Apply(new WeaponInput(224, Fire, 0, 0));
         weapons.Apply(new WeaponInput(311, Fire, 0, 0));
         Assert.Equal(2, weapons.ReloadsCompleted);
@@ -223,7 +225,7 @@ public sealed class WeaponTests
         weapons.Apply(new WeaponInput(312, 0, 0, 0));
         weapons.Apply(new WeaponInput(313, Fire, 0, 0));
         Assert.Equal(2, weapons.ShotsFired);
-        Assert.Equal(58, inventory.HeavyAmmo);
+        Assert.Equal(57, inventory.HeavyAmmo);
     }
 
     [Fact]
@@ -231,7 +233,7 @@ public sealed class WeaponTests
     {
         RaidInventory inventory = new(WithWeapons());
         Guid gun = inventory.Containers[inventory.Loadout].Items[0]!.Id;
-        Assert.True(inventory.SetChamber(gun, 1, consumeReserve: true));
+        Assert.Equal(1, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
         RaidWeapons weapons = new(inventory);
         weapons.Apply(new WeaponInput(30, Fire | (1UL << WeaponProtocol.FireBlockedBit), 0, 0));
         Assert.True(weapons.Armed);
@@ -249,8 +251,6 @@ public sealed class WeaponTests
         PlayerLoadout loadout = WithWeapons();
         loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == WeaponItems.FerroIAssetId ? item with { Durability = 0 } : item)] };
         RaidInventory inventory = new(loadout);
-        Guid gun = inventory.Containers[inventory.Loadout].Items[0]!.Id;
-        inventory.SetChamber(gun, 1, consumeReserve: true);
         RaidWeapons weapons = new(inventory);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Fire, 0, 0));
@@ -270,9 +270,21 @@ public sealed class WeaponTests
     }
 
     [Fact]
+    public void A_raid_starts_with_the_gun_loaded_from_carried_ammo_and_an_emptied_stack_leaves_its_slot()
+    {
+        PlayerLoadout loadout = WithWeapons();
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId ? item with { Amount = FerroDefaults.ClipSize } : item)] };
+        RaidInventory inventory = new(loadout);
+        Assert.Equal(FerroDefaults.ClipSize, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
+        Assert.Equal(0, inventory.HeavyAmmo);
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[5]);
+    }
+
+    [Fact]
     public void Removing_a_gun_during_reload_cancels_the_transfer_and_keeps_its_reserve()
     {
         RaidInventory inventory = new(WithWeapons());
+        Empty(inventory);
         RaidWeapons weapons = new(inventory);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
@@ -280,7 +292,7 @@ public sealed class WeaponTests
         weapons.Apply(new WeaponInput(101, 0, 0, 0));
         weapons.Apply(new WeaponInput(400, 0, 0, 0));
         Assert.Equal(0, weapons.ReloadsCompleted);
-        Assert.Equal(60, inventory.HeavyAmmo);
+        Assert.Equal(59, inventory.HeavyAmmo);
         Assert.Equal(0, inventory.Containers[inventory.Backpack].Items[4]!.AmmoInClip);
     }
 
@@ -289,6 +301,7 @@ public sealed class WeaponTests
     {
         ScriptedPlayer session = new(loadout: WithWeapons());
         session.Possess();
+        Empty(session.Raid.Inventory);
         session.Input(30, 33, position: session.Raid.Spawn.Location);
         session.Service(100);
         session.Input(33, 36, position: session.Raid.Spawn.Location);
@@ -301,7 +314,7 @@ public sealed class WeaponTests
         session.Input(246, 249, position: session.Raid.Spawn.Location);
         Assert.Equal(1, session.Channels.ShotsFired);
         Assert.Equal(0, session.Channels.InputDecodeFailures);
-        Assert.Equal(59, session.Raid.Inventory.HeavyAmmo);
+        Assert.Equal(58, session.Raid.Inventory.HeavyAmmo);
     }
 
     [Theory]
@@ -317,8 +330,8 @@ public sealed class WeaponTests
         RaidInventory inventory = session.Raid.Inventory;
         InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
         InventoryItem ammo = loadout.Items.Single(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId);
-        Assert.Equal(new ContainerItem(WeaponItems.FerroIUsableIndex, Guid.Parse(gun.InstanceId), 1, .65) { ModContainerId = 5 }, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
-        Assert.Equal(new ContainerItem(WeaponItems.HeavyAmmoUsableIndex, Guid.Parse(ammo.InstanceId), 60, 1), inventory.Containers[inventory.Backpack].Items[5]);
+        Assert.Equal(new ContainerItem(WeaponItems.FerroIUsableIndex, Guid.Parse(gun.InstanceId), 1, .65) { AmmoInClip = 1, ModContainerId = 5 }, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
+        Assert.Equal(new ContainerItem(WeaponItems.HeavyAmmoUsableIndex, Guid.Parse(ammo.InstanceId), 59, 1), inventory.Containers[inventory.Backpack].Items[5]);
         Assert.Equal(12.2, inventory.Weight, precision: 6);
 
         session.Sent.Clear();
@@ -510,6 +523,10 @@ public sealed class WeaponTests
             return source with { Items = [.. source.Items.Select(item => item.InstanceId == slot ? item with { Slots = [owned.InstanceId] } : item), owned] };
         }
     }
+
+    /// <summary>Spends the round a raid starts with, so a test can reload from an empty gun.</summary>
+    private static void Empty(RaidInventory inventory) =>
+        Assert.True(inventory.SetChamber(inventory.Containers[inventory.Loadout].Items[0]!.Id, 0));
 
     private static InventoryCommand Swap(int from, int fromSlot, int to, int toSlot) => new(InventoryCommandType.SwapItems,
         new ItemContainerSlot(new ItemContainerHandle(from, 0), checked((ushort)fromSlot)),

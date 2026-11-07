@@ -128,6 +128,16 @@ public sealed class RaidInventory
         Containers = containers.AsReadOnly();
         try
         {
+            // Loadout guns are stored unloaded; a raid starts with each equipped gun loaded from carried ammo.
+            foreach (int slot in (int[])[InventoryBlackboard.Firearm1Slot, InventoryBlackboard.Firearm2Slot])
+            {
+                // With fewer rounds than the magazine holds, the gun takes them all.
+                if (Containers[Loadout].Items[slot] is { AssetIndex: WeaponItems.FerroIUsableIndex, AmmoInClip: 0 } gun && HeavyAmmo > 0)
+                {
+                    SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, HeavyAmmo), consumeReserve: true);
+                }
+            }
+
             // The stock client must finish container creation and install its loadout slot queries before
             // it receives equipment items, and every loadout holds hand items. Deliver contents in the next
             // acknowledged frame; owned items and their positions stay in the authoritative inventory.
