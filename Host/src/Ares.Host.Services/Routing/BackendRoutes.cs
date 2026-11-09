@@ -1,9 +1,9 @@
+using System.Text.Json.Nodes;
+using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Identity;
-using Ares.Host.Services.Inventory;
-using Ares.Host.Services.Matchmaking;
-using Ares.Host.Services.Social;
+using Ares.Host.Services.Players;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Accounts;
 using Ares.Structs.Backend.Bootstrap;
@@ -21,9 +21,12 @@ public delegate Task<ServiceReply> RouteHandler(BackendRequest request, Cancella
 
 /// <summary>One backend route.</summary>
 /// <param name="Handler">Produces the reply.</param>
-/// <param name="RequiresIdentity">The caller must present the local player's identity token (when Host has an identity key).</param>
+/// <param name="RequiresIdentity">
+/// The caller must present a valid identity token of an unbanned account. Only the game's sign-in
+/// itself is open; the game calls nothing else before it.
+/// </param>
 /// <param name="Delay">Wait before replying. Some bootstrap replies arriving too early made client startup fail intermittently.</param>
-public sealed record BackendRoute(RouteHandler Handler, bool RequiresIdentity = false, TimeSpan Delay = default);
+public sealed record BackendRoute(RouteHandler Handler, bool RequiresIdentity = true, TimeSpan Delay = default);
 
 /// <summary>The backend routes the client uses, keyed by <c>"METHOD /path"</c>. Anything else is HTTP 501.</summary>
 public sealed class BackendRoutes
@@ -31,16 +34,26 @@ public sealed class BackendRoutes
     private readonly Dictionary<string, BackendRoute> _routes = new(StringComparer.Ordinal);
 
     /// <summary>Registers all routes against the services.</summary>
-    public BackendRoutes(IdentityService identity, ProfileFactory profiles, AccountStore accounts, PartyService party, MatchmakingService matchmaking,
-        InventoryStore inventory, TimeProvider time)
+    public BackendRoutes(IdentityService identity, JsonEventLog log, TimeProvider time)
     {
         // Identity and bootstrap.
-        Add("POST /oauth2/token", identity.SignIn());
-        Add("GET /v1/shared/profile", _ => profiles.Create());
-        Add("GET /v1/pioneer/raiders", IdentityService.Raiders());
-        Add("POST /v1/shared/profile/by-thirdparty-userid", request => identity.PlatformProfiles(request.Read<PlatformProfilesRequest>()).Response);
-        Add("GET /v1/shared/auth/third-party-access-token", _ => identity.ThirdPartyAccessToken());
-        Add("POST /v1/shared/manifest", request => identity.Manifest(request.Read<ManifestRequest>()));
+        _routes["POST /oauth2/token"] = new BackendRoute((request, _) =>
+        {
+            (OAuthTokenResponse? signedIn, Account? account) = identity.SignIn(request);
+            log.Write("game_sign_in", new JsonObject
+            {
+                ["name"] = account?.Name,
+                ["grant"] = request.FormValue(OAuthTokenForm.GrantType),
+                ["result"] = signedIn is null ? "rejected" : "signed_in",
+            });
+            return Task.FromResult(signedIn is null ? ServiceReply.Error(401, "invalid_launch_key") : ServiceReply.Ok(signedIn));
+        }, RequiresIdentity: false);
+        Player("GET /v1/shared/profile", (_, player) => player.Profiles.Create());
+        Player("GET /v1/pioneer/raiders", (_, player) => IdentityService.Raiders(player.Account.UserId));
+        Player("POST /v1/shared/profile/by-thirdparty-userid", (request, player) =>
+            IdentityService.PlatformProfiles(player.Profiles.Create(), request.Read<PlatformProfilesRequest>()).Response);
+        Player("GET /v1/shared/auth/third-party-access-token", (_, player) => identity.ThirdPartyAccessToken(player.Account));
+        Player("POST /v1/shared/manifest", (request, player) => identity.Manifest(request.Read<ManifestRequest>(), player.Inventory.DefinitionHash()));
         Add("POST /v1/shared/build/v2/latest", request => IdentityService.LatestBuild(request.Read<LatestBuildRequest>()));
         Add("GET /sdk/v1/default", EosSdkDefaults.Configuration);
         Add("GET /sdk/v1/product/" + EosEndpoints.GameProductId, EosSdkDefaults.Configuration);
@@ -49,42 +62,35 @@ public sealed class BackendRoutes
             request.Authorization).Response);
 
         // Accounts.
-        Add("POST /v1/shared/profile/display-name/validate", request =>
-            new DisplayNameValidationResponse(AccountStore.IsValidDisplayName(request.Read<DisplayNameRequest>().DisplayName), []));
-        _routes["PUT /v1/shared/profile/display-name"] = new BackendRoute((request, _) => Task.FromResult(
-            accounts.SetDisplayName(request.Read<DisplayNameRequest>().DisplayName)
-                ? ServiceReply.Ok(profiles.Create())
-                : ServiceReply.Error(400, "invalid_local_display_name")));
-        Add("POST /v1/shared/get-persistent-player-keys", _ => new PersistentPlayerKeysResponse(accounts.GetKeys()));
-        _routes["POST /v1/shared/set-persistent-player-keys"] = new BackendRoute((request, _) =>
+        Player("POST /v1/shared/get-persistent-player-keys", (_, player) => new PersistentPlayerKeysResponse(player.Settings.GetKeys()));
+        Player("POST /v1/shared/set-persistent-player-keys", (request, player, _) =>
         {
-            (IReadOnlyList<PersistentPlayerKey>? updated, string? error) = accounts.SetKeys(request.Read<SetPersistentPlayerKeysRequest>().PersistentPlayerKeys);
+            (IReadOnlyList<PersistentPlayerKey>? updated, string? error) = player.Settings.SetKeys(request.Read<SetPersistentPlayerKeysRequest>().PersistentPlayerKeys);
             return Task.FromResult(updated is null ? ServiceReply.Error(400, error!) : ServiceReply.Ok(new PersistentPlayerKeysResponse(updated)));
         });
 
         // Party and notifications.
-        _routes["POST /v1/shared/social/party/v2/create"] = new BackendRoute((request, _) => party.CreateAsync(request.Read<CreatePartyRequest>()));
-        _routes["PATCH /v1/shared/social/party/v2/update-party-attributes"] = new BackendRoute((request, _) => party.UpdateAttributesAsync(request.Read<UpdatePartyAttributesRequest>()));
-        _routes["POST /v1/shared/social/party/v2/update-party-member-data"] = new BackendRoute((request, _) => party.UpdateMemberAsync(request.Read<UpdatePartyMemberDataRequest>()));
-        _routes["POST /v1/shared/social/party/set-ready-for-matchmaking"] = new BackendRoute((request, _) => party.SetReadyAsync(request.Read<SetReadyForMatchmakingRequest>()));
-        _routes["POST /v1/shared/notifications"] = new BackendRoute((request, token) => party.PollAsync(request.Read<NotificationsRequest>(), token));
+        Player("POST /v1/shared/social/party/v2/create", (request, player, _) => player.Party.CreateAsync(request.Read<CreatePartyRequest>()));
+        Player("PATCH /v1/shared/social/party/v2/update-party-attributes", (request, player, _) => player.Party.UpdateAttributesAsync(request.Read<UpdatePartyAttributesRequest>()));
+        Player("POST /v1/shared/social/party/v2/update-party-member-data", (request, player, _) => player.Party.UpdateMemberAsync(request.Read<UpdatePartyMemberDataRequest>()));
+        Player("POST /v1/shared/social/party/set-ready-for-matchmaking", (request, player, _) => player.Party.SetReadyAsync(request.Read<SetReadyForMatchmakingRequest>()));
+        Player("POST /v1/shared/notifications", (request, player, token) => player.Party.PollAsync(request.Read<NotificationsRequest>(), token));
 
         // Matchmaking.
         _routes["POST /v1/shared/scenarios"] = new BackendRoute((_, _) => Task.FromResult(ServiceReply.Ok(BackendContent.Scenarios)));
-        _routes["POST /v1/shared/match/start"] = new BackendRoute((request, token) => matchmaking.StartAsync(request.Read<MatchStartRequest>(), token), RequiresIdentity: true);
-        _routes["POST /v1/shared/match/status"] = new BackendRoute((request, token) => matchmaking.StatusAsync(request.Read<TicketRequest>(), token), RequiresIdentity: true);
-        _routes["POST /v1/shared/match/v2/cancel"] = new BackendRoute((request, token) => matchmaking.CancelAsync(request.Read<TicketRequest>(), token), RequiresIdentity: true);
-        _routes["POST /v1/shared/squad/layout"] = new BackendRoute((request, token) => matchmaking.SquadLayoutAsync(request.Read<TicketRequest>(), token), RequiresIdentity: true);
-        _routes["POST /v1/shared/gameserver/status"] = new BackendRoute((request, token) => matchmaking.GameServerAsync(request.Read<GameServerStatusRequest>(), token), RequiresIdentity: true);
-        _routes["POST /v1/shared/player/activity"] = new BackendRoute(async (_, token) => ServiceReply.Ok(await matchmaking.ActivityAsync(token).ConfigureAwait(false)), RequiresIdentity: true);
+        Player("POST /v1/shared/match/start", (request, player, token) => player.Matchmaking.StartAsync(request.Read<MatchStartRequest>(), token));
+        Player("POST /v1/shared/match/status", (request, player, token) => player.Matchmaking.StatusAsync(request.Read<TicketRequest>(), token));
+        Player("POST /v1/shared/match/v2/cancel", (request, player, token) => player.Matchmaking.CancelAsync(request.Read<TicketRequest>(), token));
+        Player("POST /v1/shared/squad/layout", (request, player, token) => player.Matchmaking.SquadLayoutAsync(request.Read<TicketRequest>(), token));
+        Player("POST /v1/shared/gameserver/status", (request, player, token) => player.Matchmaking.GameServerAsync(request.Read<GameServerStatusRequest>(), token));
+        Player("POST /v1/shared/player/activity", async (_, player, token) => ServiceReply.Ok(await player.Matchmaking.ActivityAsync(token).ConfigureAwait(false)));
 
         // Progression: empty state for a fresh account.
-        Add("GET /v1/pioneer/game-data", _ => inventory.GameData());
+        Player("GET /v1/pioneer/game-data", (_, player) => player.Inventory.GameData());
         Add("GET /v1/pioneer/quests", new QuestsResponse([]));
-        _routes["GET /v1/pioneer/inventory"] = new BackendRoute((_, _) =>
-            Task.FromResult(ServiceReply.Ok(new InventoryResponse(inventory.Snapshot.Items))), RequiresIdentity: true);
-        _routes["POST /v1/pioneer/v1/batch-operation"] = new BackendRoute((request, token) =>
-            matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token), RequiresIdentity: true);
+        Player("GET /v1/pioneer/inventory", (_, player) => new InventoryResponse(player.Inventory.Snapshot.Items));
+        Player("POST /v1/pioneer/v1/batch-operation", (request, player, token) =>
+            player.Matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token));
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));
         Add("POST /v1/pioneer/projects/list", new ProjectsResponse([]));
         Add("GET /v1/pioneer/levels/list", new LevelsResponse(BackendContent.Levels));
@@ -157,5 +163,15 @@ public sealed class BackendRoutes
     private void Add(string route, Func<BackendRequest, object> reply)
     {
         _routes.Add(route, new BackendRoute((request, _) => Task.FromResult(ServiceReply.Ok(reply(request)))));
+    }
+
+    private void Player(string route, Func<BackendRequest, PlayerServices, object> reply)
+    {
+        Player(route, (request, player, _) => Task.FromResult(ServiceReply.Ok(reply(request, player))));
+    }
+
+    private void Player(string route, Func<BackendRequest, PlayerServices, CancellationToken, Task<ServiceReply>> handler)
+    {
+        _routes.Add(route, new BackendRoute((request, token) => handler(request, request.Player!, token)));
     }
 }

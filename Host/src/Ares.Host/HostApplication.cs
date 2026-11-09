@@ -2,11 +2,10 @@ using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Identity;
-using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
+using Ares.Host.Services.Players;
 using Ares.Host.Services.Routing;
-using Ares.Host.Services.Social;
 
 namespace Ares.Host;
 
@@ -47,41 +46,37 @@ public static class HostApplication
         configureBuilder?.Invoke(builder);
 
         HostDatabase database = new(settings.MongoDbUri, settings.MongoDbDatabase);
-        AccountStore accounts;
-        InventoryStore inventory;
+        raidStarter ??= configuration.Raids is { } launch ? new RaidProcesses(launch, log) : null;
+        RaidFleet? raids = raidStarter is null ? null : new RaidFleet(raidStarter, settings.RaidCapacity, time);
+        AccountDirectory accounts = new(database, time);
+        PlayerRegistry players = new(database, accounts, raids, log, time);
         try
         {
             database.Initialize();
-            accounts = new AccountStore(database, time);
-            inventory = new InventoryStore(database);
-            inventory.InitializeLayout(time.GetUtcNow());
+            players.LoadReservationOwners();
         }
         catch
         {
+            players.Dispose();
+            raids?.Dispose();
             database.Dispose();
             throw;
         }
 
-        raidStarter ??= configuration.Raids is { } launch ? new RaidProcesses(launch, log) : null;
-        RaidFleet? raids = raidStarter is null ? null : new RaidFleet(raidStarter, settings.RaidCapacity, time);
         builder.Services.AddSingleton<HostDatabase>(_ => database);
-        builder.Services.AddSingleton(inventory);
-        ProfileFactory profiles = new(accounts, time);
-        IdentityService identity = new(settings, profiles, time, inventory);
-        BackendGate gate = new();
-        PartyService party = new(gate, profiles, log, time);
-        MatchmakingService matchmaking = new(gate, party, profiles, raids, log, inventory);
-        builder.Services.AddSingleton(matchmaking);
-        builder.Services.AddHostedService(_ => new InventoryReservationRecovery(matchmaking, time));
-        BackendRoutes routes = new(identity, profiles, accounts, party, matchmaking, inventory, time);
-        RequestDispatcher dispatcher = new(settings, routes, matchmaking, log, time);
+        builder.Services.AddSingleton(accounts);
+        builder.Services.AddSingleton(players);
+        builder.Services.AddHostedService(_ => new InventoryReservationRecovery(players, time));
+        IdentityService identity = new(settings, accounts, time);
+        BackendRoutes routes = new(identity, log, time);
+        RequestDispatcher dispatcher = new(settings, routes, identity, players, new SignInService(accounts, log, time), log, time);
 
         WebApplication app = builder.Build();
         _ = app.Services.GetRequiredService<HostDatabase>();
         app.Lifetime.ApplicationStopped.Register(() =>
         {
             raids?.Dispose();
-            gate.Dispose();
+            players.Dispose();
         });
         app.Run(dispatcher.HandleAsync);
         return app;

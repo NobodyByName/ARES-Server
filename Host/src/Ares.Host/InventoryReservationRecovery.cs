@@ -1,11 +1,11 @@
 using Ares.Common.Control;
-using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
+using Ares.Host.Services.Players;
 
 namespace Ares.Host;
 
 /// <summary>Recovers inventory locks even when no game client is connected.</summary>
-internal sealed class InventoryReservationRecovery(MatchmakingService matchmaking, TimeProvider time) : BackgroundService
+internal sealed class InventoryReservationRecovery(PlayerRegistry players, TimeProvider time) : BackgroundService
 {
     public override async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -25,14 +25,17 @@ internal sealed class InventoryReservationRecovery(MatchmakingService matchmakin
 
     private async Task ReconcileAsync(CancellationToken cancellationToken)
     {
-        try
+        foreach (PlayerServices player in players.Loaded)
         {
-            await matchmaking.ReconcileInventoryAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception error) when (error is AllocationUnavailableException or PersistenceException or InvalidDataException)
-        {
-            // Host can start before Raid. Keep the lock until Raid confirms the old ticket is
-            // gone, and retry after Raid and storage become usable; a Host restart alone proves nothing.
+            try
+            {
+                await player.Matchmaking.ReconcileInventoryAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception error) when (error is AllocationUnavailableException or PersistenceException or InvalidDataException)
+            {
+                // Host can start before Raid. Keep the lock until Raid confirms the old ticket is
+                // gone, and retry after Raid and storage become usable; a Host restart alone proves nothing.
+            }
         }
     }
 }

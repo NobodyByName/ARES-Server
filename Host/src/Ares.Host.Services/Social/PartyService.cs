@@ -11,7 +11,7 @@ using Ares.Structs.Backend.Social;
 
 namespace Ares.Host.Services.Social;
 
-/// <summary>The local player's single party and its ordered notification stream (long-polled by the client).</summary>
+/// <summary>One player's party and its ordered notification stream (long-polled by the client).</summary>
 public sealed class PartyService(BackendGate gate, ProfileFactory profiles, JsonEventLog log, TimeProvider time)
 {
     /// <summary>Notifications kept for clients that poll late.</summary>
@@ -36,7 +36,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
     {
         using BackendGate.Releaser held = await gate.EnterAsync().ConfigureAwait(false);
         EmbarkProfile profile = profiles.Create();
-        _party = new PartyState(LocalPlayer.TenancyUserId, profile)
+        _party = new PartyState(profiles.UserId, profile)
         {
             CrossplayEnabled = request.CrossplayEnabled ?? true,
             PlatformSessionId = request.PlatformSessionId ?? "",
@@ -54,7 +54,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
     public async Task<ServiceReply> UpdateAttributesAsync(UpdatePartyAttributesRequest request)
     {
         using BackendGate.Releaser held = await gate.EnterAsync().ConfigureAwait(false);
-        if (_party is null || request.PartyId != LocalPlayer.PartyId)
+        if (_party is null || request.PartyId != _party.Id)
         {
             return ServiceReply.Error(409, "unknown_local_party");
         }
@@ -65,7 +65,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
             _party.Attributes[key] = value.Clone();
         }
 
-        Publish(new PartyAttributesChangedNotification(_party.Leader, LocalPlayer.PartyId,
+        Publish(new PartyAttributesChangedNotification(_party.Leader, _party.Id,
             new Dictionary<string, JsonElement>(modified), new Dictionary<string, JsonElement>(_party.Attributes)));
         return ServiceReply.Ok(EmptyResponse.Instance);
     }
@@ -74,7 +74,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
     public async Task<ServiceReply> UpdateMemberAsync(UpdatePartyMemberDataRequest request)
     {
         using BackendGate.Releaser held = await gate.EnterAsync().ConfigureAwait(false);
-        if (_party is null || request.PartyId != LocalPlayer.PartyId)
+        if (_party is null || request.PartyId != _party.Id)
         {
             return ServiceReply.Error(409, "unknown_local_party");
         }
@@ -85,12 +85,12 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
         _party.Ready = request.ReadyForMatchmaking ?? _party.Ready;
         if (request.PlatformSessionId is not null)
         {
-            Publish(new PartyPlayerPlatformSessionIdNotification(LocalPlayer.PartyId, _party.Leader, _party.PlatformSessionId));
+            Publish(new PartyPlayerPlatformSessionIdNotification(_party.Id, _party.Leader, _party.PlatformSessionId));
         }
 
         if (request.CrossplayEnabled is not null)
         {
-            Publish(new PartyPlayerCrossplayEnabledNotification(LocalPlayer.PartyId, _party.Leader, _party.CrossplayEnabled));
+            Publish(new PartyPlayerCrossplayEnabledNotification(_party.Id, _party.Leader, _party.CrossplayEnabled));
         }
 
         return ServiceReply.Ok(EmptyResponse.Instance);
@@ -118,7 +118,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
 
         _party.Ready = ready;
         _party.ReadinessReported = true;
-        Publish(new PartyPlayerReadyForMatchmakingNotification(_party.Leader, LocalPlayer.PartyId, ready));
+        Publish(new PartyPlayerReadyForMatchmakingNotification(_party.Leader, _party.Id, ready));
         return ServiceReply.Ok(EmptyResponse.Instance);
     }
 
@@ -182,6 +182,8 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
     {
         public long Leader { get; } = leader;
 
+        public string Id { get; } = PlayerDefaults.PartyId(leader);
+
         public Dictionary<string, JsonElement> Attributes { get; } = new(StringComparer.Ordinal);
 
         public bool CrossplayEnabled { get; set; }
@@ -200,7 +202,7 @@ public sealed class PartyService(BackendGate gate, ProfileFactory profiles, Json
         public Party Snapshot()
         {
             return new Party(
-                LocalPlayer.PartyId,
+                Id,
                 Leader,
                 [new PartyMember(leaderProfile)],
                 ReadinessReported ? [new PartyMemberReadiness(Leader, Ready)] : [],

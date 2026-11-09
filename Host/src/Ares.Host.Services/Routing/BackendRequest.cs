@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Ares.Host.Services.Players;
 using Ares.Structs.Backend;
 
 namespace Ares.Host.Services.Routing;
@@ -35,6 +36,9 @@ public sealed class BackendRequest
 
     /// <summary>The Authorization header, if any.</summary>
     public string? Authorization { get; }
+
+    /// <summary>The signed-in player, set by the dispatcher; never null in a route that requires identity.</summary>
+    public PlayerServices? Player { get; set; }
 
     /// <summary>The body when it is a JSON object.</summary>
     public JsonElement? Json { get; }

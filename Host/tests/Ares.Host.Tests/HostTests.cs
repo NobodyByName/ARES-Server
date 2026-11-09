@@ -2,14 +2,18 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Numerics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services;
+using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
+using Ares.Host.Services.Players;
 using Ares.Host.Services.Status;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
@@ -58,11 +62,18 @@ public sealed class HostTests : IAsyncLifetime
             Bind = IPAddress.Loopback,
             Port = 18080,
         };
+        _ = _database.Store;
         _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), raidStarter: new TestRaidStarter(_raidApp!),
             configureBuilder: builder => builder.WebHost.UseTestServer());
         await _host.StartAsync(TestContext.Current.CancellationToken);
+        _client?.Dispose();
         _client = _host.GetTestClient();
+        _client.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse(await SignIn());
     }
+
+    private HttpClient Anonymous() => _host!.GetTestClient();
+
+    private InventoryStore HostInventory() => _host!.Services.GetRequiredService<PlayerRegistry>().Find(TestDatabase.UserId)!.Inventory;
 
     public async ValueTask DisposeAsync()
     {
@@ -75,11 +86,11 @@ public sealed class HostTests : IAsyncLifetime
     [Fact]
     public async Task Invalid_persisted_data_returns_503_without_resetting_the_player()
     {
-        await _database.Players.UpdateOneAsync(FilterDefinition<BsonDocument>.Empty,
+        await _database.Accounts.UpdateOneAsync(FilterDefinition<BsonDocument>.Empty,
             Builders<BsonDocument>.Update.Set("inventoryVersion", -1L), cancellationToken: TestContext.Current.CancellationToken);
         HttpResponseMessage response = await _client!.GetAsync("/v1/shared/profile", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
-        Assert.Equal(-1, _database.Player["inventoryVersion"].AsInt64);
+        Assert.Equal(-1, _database.Account["inventoryVersion"].AsInt64);
     }
 
     [Fact]
@@ -107,14 +118,21 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Matchmaking_needs_the_local_players_identity()
+    public async Task Every_backend_route_except_sign_in_needs_a_signed_in_player()
     {
-        HttpResponseMessage anonymous = await Post("/v1/shared/player/activity", new { });
-        HttpResponseMessage forged = await Post("/v1/shared/player/activity", new { }, "Bearer a.b.c");
+        using HttpClient client = Anonymous();
+        foreach (string path in new[] { "/v1/shared/player/activity", "/v1/shared/manifest", "/v1/shared/scenarios", "/v1/shared/heartbeat",
+                     "/v1/shared/get-persistent-player-keys", "/auth/v1/oauth/token" })
+        {
+            HttpResponseMessage anonymous = await client.PostAsJsonAsync(path, new { }, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        }
 
-        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/v1/shared/game-settings", TestContext.Current.CancellationToken)).StatusCode);
+        HttpResponseMessage forged = await Post("/v1/shared/player/activity", new { }, "Bearer a.b.c");
         Assert.Equal(HttpStatusCode.Unauthorized, forged.StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await Post("/v1/shared/player/activity", new { }, await SignIn())).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Post("/v1/shared/scenarios", new { })).StatusCode);
     }
 
     [Fact]
@@ -159,7 +177,7 @@ public sealed class HostTests : IAsyncLifetime
     [Fact]
     public async Task Persisted_inventory_is_authenticated_and_the_selected_tree_crosses_the_allocation_api()
     {
-        InventoryStore inventory = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryStore inventory = HostInventory();
         long revision = inventory.Snapshot.Revision;
         PlayerInventory state = inventory.Inventory;
         OwnedItem duck = Assert.Single(state.Stash.Items);
@@ -168,11 +186,12 @@ public sealed class HostTests : IAsyncLifetime
             Stash = state.Stash with { Items = [duck with { InstanceId = "stash", Quantity = 3 }] },
             Loadout = state.Loadout with { Backpack = new PlayerItemContainer([duck with { InstanceId = "carried", Quantity = 2, Slot = 0 }]) },
         }, revision);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await _client!.GetAsync("/v1/pioneer/inventory", TestContext.Current.CancellationToken)).StatusCode);
+        using HttpClient anonymous = Anonymous();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/v1/pioneer/inventory", TestContext.Current.CancellationToken)).StatusCode);
         string bearer = await SignIn();
         using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
         read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
-        JsonElement items = await Json(await _client.SendAsync(read, TestContext.Current.CancellationToken));
+        JsonElement items = await Json(await _client!.SendAsync(read, TestContext.Current.CancellationToken));
         Assert.Equal(228, items.GetProperty("items").GetArrayLength());
         JsonElement definitions = await GetJson("/v1/pioneer/game-data");
         Assert.Contains(definitions.GetProperty("items-description").GetProperty("itemDescriptions").EnumerateArray(),
@@ -183,7 +202,7 @@ public sealed class HostTests : IAsyncLifetime
         await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
         Assert.Equal("carried", Assert.Single(Assert.Single(_raid.LastRequest!.Loadouts!).Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId).InstanceId);
         Assert.Equal(inventory.Snapshot.UserId, _raid.LastRequest.Loadouts![0].UserId);
-        Assert.Equal(ticket, new InventoryStore(_database.Store).ReservedTicketId);
+        Assert.Equal(ticket, new InventoryStore(_database.Store, TestDatabase.UserId).ReservedTicketId);
         Assert.Throws<InvalidOperationException>(() => inventory.Import(inventory.Inventory with { Stash = inventory.Inventory.Stash with { Items = [] } }, inventory.Snapshot.Revision));
 
         _raid.Forget();
@@ -197,7 +216,7 @@ public sealed class HostTests : IAsyncLifetime
     {
         const string Path = "/v1/pioneer/v1/batch-operation";
         string bearer = await SignIn();
-        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryStore store = HostInventory();
         InventoryItem duck = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId);
         string stash = store.Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId;
         InventoryItem backpack = store.Snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.BackpackAssetId);
@@ -207,15 +226,16 @@ public sealed class HostTests : IAsyncLifetime
             requestId = "stock-menu-request",
             operations = new[] { new { discriminator = "setParents", itemInstanceId = duck.InstanceId, parentInstanceIds = new[] { destination } } },
         };
-        Assert.Equal(HttpStatusCode.Unauthorized, (await Post(Path, body)).StatusCode);
+        using HttpClient anonymous = Anonymous();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.PostAsJsonAsync(Path, body, TestContext.Current.CancellationToken)).StatusCode);
         Assert.Equal(HttpStatusCode.BadRequest, (await Post(Path, new { requestId = "malformed", operations = new[] { new { discriminator = "unknown" } } }, bearer)).StatusCode);
         JsonElement response = await Json(await Post(Path, body, bearer));
         Assert.Equal(3, response.GetProperty("changeset").GetProperty("items").GetProperty("updated").GetArrayLength());
-        InventoryStore persisted = new(_database.Store);
+        InventoryStore persisted = new(_database.Store, TestDatabase.UserId);
         Assert.Contains(duck.InstanceId, persisted.Snapshot.Items.Single(item => item.InstanceId == destination).Slots);
         long revision = persisted.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await Post(Path, body, bearer)).StatusCode);
-        Assert.Equal(revision, new InventoryStore(_database.Store).Snapshot.Revision);
+        Assert.Equal(revision, new InventoryStore(_database.Store, TestDatabase.UserId).Snapshot.Revision);
         object stockBody = new
         {
             requestId = "",
@@ -226,7 +246,7 @@ public sealed class HostTests : IAsyncLifetime
         revision = store.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await Post(Path, stockBody, bearer)).StatusCode);
         Assert.Equal(revision, store.Snapshot.Revision);
-        Assert.Contains(duck.InstanceId, new InventoryStore(_database.Store).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
+        Assert.Contains(duck.InstanceId, new InventoryStore(_database.Store, TestDatabase.UserId).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
     }
 
     [Theory]
@@ -243,7 +263,7 @@ public sealed class HostTests : IAsyncLifetime
             _client!.Dispose();
             await _host!.DisposeAsync();
             await StartHost();
-            store = _host!.Services.GetRequiredService<InventoryStore>();
+            store = HostInventory();
             await Post("/v1/shared/social/party/v2/create", new { });
         }
 
@@ -251,7 +271,7 @@ public sealed class HostTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, (await Post("/v1/pioneer/v1/batch-operation", swap, bearer)).StatusCode);
         Assert.Null(store.ReservedTicketId);
-        Assert.Equal(ItemTechnicalNames.CombatMk1, new InventoryStore(_database.Store).Inventory.Loadout.Augment!.Type);
+        Assert.Equal(ItemTechnicalNames.CombatMk1, new InventoryStore(_database.Store, TestDatabase.UserId).Inventory.Loadout.Augment!.Type);
         ticket ??= await StartMatch(bearer);
         Assert.NotEqual(oldTicket, ticket);
         Assert.Equal(HttpStatusCode.OK, (await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer)).StatusCode);
@@ -296,7 +316,7 @@ public sealed class HostTests : IAsyncLifetime
         _client!.Dispose();
         await _host!.DisposeAsync();
         await StartHost();
-        store = _host!.Services.GetRequiredService<InventoryStore>();
+        store = HostInventory();
 
         Assert.Null(store.ReservedTicketId);
         Assert.Equal(before.Revision, store.Inventory.Revision);
@@ -310,7 +330,7 @@ public sealed class HostTests : IAsyncLifetime
     public async Task Recovery_releases_the_reservation_once_the_raid_ends_without_waiting_for_client_traffic()
     {
         await ReserveLootingAugment();
-        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryStore store = HostInventory();
         Assert.NotNull(store.ReservedTicketId);
         _raid.Forget();
 
@@ -328,7 +348,7 @@ public sealed class HostTests : IAsyncLifetime
     private async Task<(string Bearer, InventoryStore Store, string Ticket, InventoryOperationsRequest Swap)> ReserveLootingAugment()
     {
         string bearer = await SignIn();
-        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryStore store = HostInventory();
         PlayerInventory state = store.Inventory;
         OwnedItem duck = Assert.Single(state.Stash.Items);
         OwnedItem combat = duck with { InstanceId = "combat", Type = ItemTechnicalNames.CombatMk1 };
@@ -382,7 +402,7 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal(StorageItems.StashSlotCount, containerDefinition.GetProperty("slotConfig").GetProperty("numberOfSlots").GetInt64());
 
         JsonElement before = await Json(await Post("/v1/shared/manifest", new { }));
-        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
+        InventoryStore store = HostInventory();
         store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, store.Snapshot.Revision);
         JsonElement after = await Json(await Post("/v1/shared/manifest", new { }));
         Assert.NotEqual(before.GetProperty("partitioning_hash").GetString(), after.GetProperty("partitioning_hash").GetString());
@@ -403,40 +423,117 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Persistent_keys_and_display_name_are_stored()
+    public async Task Persistent_keys_are_stored()
     {
         await Post("/v1/shared/set-persistent-player-keys", new { persistentPlayerKeys = new[] { new { key = "UI.Test", value = "1" } } });
-        HttpResponseMessage badName = await Put("/v1/shared/profile/display-name", new { displayName = "x#" });
-        JsonElement profile = await Json(await Put("/v1/shared/profile/display-name", new { displayName = "New Name" }));
         JsonElement keys = await Json(await Post("/v1/shared/get-persistent-player-keys", new { }));
 
-        Assert.Equal(HttpStatusCode.BadRequest, badName.StatusCode);
-        Assert.Equal("New Name", profile.GetProperty("display_name").GetProperty("name").GetString());
         Assert.Contains(keys.GetProperty("persistentPlayerKeys").EnumerateArray(), key => key.GetProperty("key").GetString() == "UI.Test");
-        Assert.Equal("New Name", _database.Player["account"]["profile"]["displayName"].AsString);
+        Assert.Equal("1", _database.Account["settings"]["persistentPlayerKeys"]["UI.Test"]["value"].AsString);
     }
 
     [Fact]
-    public async Task The_current_display_name_crosses_the_allocation_api_as_a_squad_profile()
+    public async Task A_renamed_account_shows_and_crosses_the_allocation_api_with_its_new_name()
     {
         string bearer = await SignIn();
-        JsonElement renamed = await Json(await Put("/v1/shared/profile/display-name", new { displayName = "Squad Raider" }));
+        Account renamedAccount = new AccountDirectory(_database.Store, TimeProvider.System).Rename(TestDatabase.AccountName, "Squad.Raider").Account!;
+        _host!.Services.GetRequiredService<PlayerRegistry>().Update(renamedAccount);
+        JsonElement renamed = await Json(await Get("/v1/shared/profile", bearer));
         await Post("/v1/shared/social/party/v2/create", new { });
         string ticket = (await Json(await Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer))).GetProperty("ticketId").GetString()!;
         await Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
 
+        Assert.Equal("Squad.Raider", renamed.GetProperty("display_name").GetProperty("name").GetString());
         CompactPlayerProfile profile = Assert.Single(_raid.LastRequest!.Profiles!);
         Assert.Equal((ulong)renamed.GetProperty("tenancy_user_id").GetInt64(), profile.TenancyUserId.Value);
-        Assert.Equal("Squad Raider", profile.DisplayName);
+        Assert.Equal("Squad.Raider", profile.DisplayName);
         Assert.Equal(renamed.GetProperty("display_name").GetProperty("discriminator").GetString(), profile.DisplayNameDiscriminator);
         Assert.Equal(renamed.GetProperty("third_party_user_id").GetString(), profile.ThirdPartyUserId);
         Assert.Equal(renamed.GetProperty("third_party_last_seen_account_name").GetString(), profile.ThirdPartyLastSeenAccountName);
     }
 
+    [Fact]
+    public async Task Each_account_signs_in_through_the_launcher_and_keeps_its_own_profile_and_inventory()
+    {
+        AccountDirectory accounts = new(_database.Store, TimeProvider.System);
+        accounts.Create("Alice", "alice-password");
+        accounts.Create("Bob", "bob-password");
+        (string aliceBearer, _) = await LauncherSignIn("Alice", "alice-password");
+        (string bobBearer, _) = await LauncherSignIn("Bob", "bob-password");
+        long alice = accounts.Find("Alice")!.UserId;
+        _host!.Services.GetRequiredService<PlayerRegistry>().Find(alice)!.Inventory.AddItem(ItemTechnicalNames.HeavyAmmo, DateTimeOffset.UnixEpoch, 10);
+
+        JsonElement aliceProfile = await Json(await Get("/v1/shared/profile", aliceBearer));
+        JsonElement bobProfile = await Json(await Get("/v1/shared/profile", bobBearer));
+        JsonElement aliceItems = await Json(await Get("/v1/pioneer/inventory", aliceBearer));
+        JsonElement bobItems = await Json(await Get("/v1/pioneer/inventory", bobBearer));
+
+        Assert.Equal("Alice", aliceProfile.GetProperty("display_name").GetProperty("name").GetString());
+        Assert.Equal("Bob", bobProfile.GetProperty("display_name").GetProperty("name").GetString());
+        Assert.Equal(alice, aliceProfile.GetProperty("tenancy_user_id").GetInt64());
+        Assert.NotEqual(alice, bobProfile.GetProperty("tenancy_user_id").GetInt64());
+        long ammo = ItemTechnicalNames.AssetIds[ItemTechnicalNames.HeavyAmmo];
+        Assert.Contains(aliceItems.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == ammo);
+        Assert.DoesNotContain(bobItems.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == ammo);
+    }
+
+    [Fact]
+    public async Task Game_sign_in_needs_a_live_launch_key_or_refresh_token_of_an_unbanned_account()
+    {
+        AccountDirectory accounts = new(_database.Store, TimeProvider.System);
+        accounts.Create("Alice", "alice-password");
+        (string bearer, string refresh) = await LauncherSignIn("Alice", "alice-password");
+
+        Assert.Equal(HttpStatusCode.OK, (await GameSignIn(("grant_type", "refresh_token"), ("refresh_token", refresh))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await GameSignIn(("grant_type", "refresh_token"), ("refresh_token", bearer[7..]))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await GameSignIn(("grant_type", "external"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await GameSignIn(("client_secret", Convert.ToBase64String(new byte[32])))).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Get("/v1/shared/profile", "Bearer " + refresh)).StatusCode);
+
+        Account banned = accounts.SetBanned("Alice", banned: true)!;
+        _host!.Services.GetRequiredService<PlayerRegistry>().Update(banned);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Get("/v1/shared/profile", bearer)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await GameSignIn(("grant_type", "refresh_token"), ("refresh_token", refresh))).StatusCode);
+    }
+
+    private async Task<(string Bearer, string Refresh)> LauncherSignIn(string name, string password)
+    {
+        using HttpClient client = Anonymous();
+        BigInteger secret = Srp.Number(RandomNumberGenerator.GetBytes(32));
+        byte[] clientPublic = Srp.Pad(BigInteger.ModPow(Srp.G, secret, Srp.N));
+        HttpResponseMessage started = await client.PostAsJsonAsync(SignInService.StartPath, new { name, a = Convert.ToBase64String(clientPublic) },
+            TestContext.Current.CancellationToken);
+        SignInStartResponse challenge = (await started.Content.ReadFromJsonAsync<SignInStartResponse>(TestContext.Current.CancellationToken))!;
+        (byte[] proof, byte[] serverProof) = SrpClient.Prove(name, password, secret, clientPublic, challenge);
+        HttpResponseMessage finished = await client.PostAsJsonAsync(SignInService.FinishPath,
+            new { session = challenge.Session, proof = Convert.ToBase64String(proof) }, TestContext.Current.CancellationToken);
+        SignInFinishResponse result = (await finished.Content.ReadFromJsonAsync<SignInFinishResponse>(TestContext.Current.CancellationToken))!;
+        Assert.Equal(serverProof, Convert.FromBase64String(result.Proof));
+        JsonElement token = await Json(await GameSignIn(("grant_type", "external"), ("client_secret", result.LaunchKey)));
+        return ("Bearer " + token.GetProperty("access_token").GetString(), token.GetProperty("refresh_token").GetString()!);
+    }
+
+    private async Task<HttpResponseMessage> GameSignIn(params (string Name, string Value)[] fields)
+    {
+        using HttpClient client = Anonymous();
+        return await client.PostAsync("/oauth2/token", new FormUrlEncodedContent(fields.Select(field => new KeyValuePair<string, string>(field.Name, field.Value))),
+            TestContext.Current.CancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> Get(string path, string authorization)
+    {
+        using HttpRequestMessage request = new(HttpMethod.Get, path);
+        request.Headers.Authorization = AuthenticationHeaderValue.Parse(authorization);
+        using HttpClient client = Anonymous();
+        return await client.SendAsync(request, TestContext.Current.CancellationToken);
+    }
+
     private async Task<string> SignIn()
     {
-        JsonElement token = await Json(await _client!.PostAsync("/oauth2/token",
-            new FormUrlEncodedContent([new KeyValuePair<string, string>("grant_type", "external")]), TestContext.Current.CancellationToken));
+        string key = new AccountDirectory(_database.Store, TimeProvider.System).IssueLaunchKey(TestDatabase.UserId);
+        using HttpClient client = Anonymous();
+        JsonElement token = await Json(await client.PostAsync("/oauth2/token",
+            new FormUrlEncodedContent([new KeyValuePair<string, string>("grant_type", "external"), new KeyValuePair<string, string>("client_secret", key)]), TestContext.Current.CancellationToken));
         return "Bearer " + token.GetProperty("access_token").GetString();
     }
 
@@ -450,11 +547,6 @@ public sealed class HostTests : IAsyncLifetime
         }
 
         return await _client!.SendAsync(request, TestContext.Current.CancellationToken);
-    }
-
-    private async Task<HttpResponseMessage> Put(string path, object body)
-    {
-        return await _client!.PutAsJsonAsync(path, body, TestContext.Current.CancellationToken);
     }
 
     private async Task<JsonElement> GetJson(string path)

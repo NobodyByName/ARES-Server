@@ -3,8 +3,9 @@ using Ares.Common;
 using Ares.Common.CommandLine;
 using Ares.Common.Logging;
 using Ares.Host;
-using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Persistence;
+using Ares.Host.Services.Players;
 using Ares.Structs.Core;
 
 HostConfiguration configuration;
@@ -43,7 +44,8 @@ catch (Exception error) when (error is PersistenceException or InvalidDataExcept
 }
 
 await using WebApplication app = application;
-console.Inventory = app.Services.GetRequiredService<InventoryStore>();
+console.Accounts = app.Services.GetRequiredService<AccountDirectory>();
+console.Players = app.Services.GetRequiredService<PlayerRegistry>();
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {
@@ -57,7 +59,7 @@ log.Write(new JsonObject
     ["raid_capacity"] = configuration.Settings.RaidCapacity,
     ["raid_players"] = configuration.Raids?.Players,
     ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
-    ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "unchecked",
+    ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "per-run-key",
 });
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(app.Lifetime.ApplicationStopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);

@@ -33,9 +33,6 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
     private Allocation? _assignment;
     private bool _assignmentExpired;
 
-    /// <summary>True when Host starts Raid servers.</summary>
-    public bool HasAllocator => raids is not null;
-
     /// <summary>Reconciles a persisted inventory lock independently of menu or matchmaking traffic.</summary>
     public async Task ReconcileInventoryAsync(CancellationToken cancellationToken)
     {

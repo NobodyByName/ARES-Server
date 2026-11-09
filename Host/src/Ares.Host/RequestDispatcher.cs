@@ -1,13 +1,12 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Ares.Common.Game.Identity;
 using Ares.Common.Logging;
-using Ares.Common.Security;
 using Ares.Host.Services;
-using Ares.Host.Services.Content;
-using Ares.Host.Services.Matchmaking;
+using Ares.Host.Services.Accounts;
+using Ares.Host.Services.Identity;
 using Ares.Host.Services.Persistence;
+using Ares.Host.Services.Players;
 using Ares.Host.Services.Routing;
 using Ares.Host.Services.Status;
 using Ares.Host.Services.Telemetry;
@@ -23,7 +22,8 @@ namespace Ares.Host;
 /// the public status, health and telemetry endpoints, dispatches backend routes and answers
 /// anything unknown with HTTP 501.
 /// </summary>
-public sealed class RequestDispatcher(HostSettings settings, BackendRoutes routes, MatchmakingService matchmaking, JsonEventLog log, TimeProvider time)
+public sealed class RequestDispatcher(HostSettings settings, BackendRoutes routes, IdentityService identity, PlayerRegistry players, SignInService signIn,
+    JsonEventLog log, TimeProvider time)
 {
     /// <summary>Largest accepted request body.</summary>
     public const int MaximumBodyBytes = 1048576;
@@ -56,7 +56,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
 
         if (path != PublicStatus.Path)
         {
-            log.Write(RequestEvent(request, method, path, body.Length, declared, backend.Json, form));
+            log.Write(RequestEvent(request, method, path, body.Length, declared, backend.Json, form, backend.Authorization));
         }
 
         int status;
@@ -68,6 +68,12 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
                 break;
             case ArchiveKeys.Path when method == HttpMethods.Get:
                 (status, reply) = (200, settings.ArchiveKeys.ToDocument(settings.GameBuild));
+                break;
+            case SignInService.StartPath when method == HttpMethods.Post:
+                (status, reply) = Reply(signIn.Start(backend.Read<SignInStartRequest>()));
+                break;
+            case SignInService.FinishPath when method == HttpMethods.Post:
+                (status, reply) = Reply(signIn.Finish(backend.Read<SignInFinishRequest>()));
                 break;
             case "/health":
                 (status, reply) = (200, new JsonObject { ["service"] = "ARES-Host" });
@@ -106,18 +112,19 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             return (501, new ErrorResponse("unimplemented_local_route"));
         }
 
-        if (route.RequiresIdentity && settings.IdentityKey is not null && !IsLocalPlayer(request.Authorization))
-        {
-            return (401, new ErrorResponse("backend_identity_required"));
-        }
-
-        if (route.Delay > TimeSpan.Zero && settings.RouteDelayScale > 0)
-        {
-            await Task.Delay(route.Delay * settings.RouteDelayScale, time, cancellationToken).ConfigureAwait(false);
-        }
-
         try
         {
+            request.Player = identity.Authenticate(request.Authorization) is { } userId ? players.SignedIn(userId) : null;
+            if (route.RequiresIdentity && request.Player is null)
+            {
+                return (401, new ErrorResponse("backend_identity_required"));
+            }
+
+            if (route.Delay > TimeSpan.Zero && settings.RouteDelayScale > 0)
+            {
+                await Task.Delay(route.Delay * settings.RouteDelayScale, time, cancellationToken).ConfigureAwait(false);
+            }
+
             ServiceReply reply = await route.Handler(request, cancellationToken).ConfigureAwait(false);
             return (reply.StatusCode, reply.Body);
         }
@@ -137,32 +144,17 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
         }
     }
 
-    private bool IsLocalPlayer(string? authorization)
-    {
-        if (authorization is null || !authorization.StartsWith("Bearer ", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        try
-        {
-            IdentityPrincipal principal = IdentityTokens.Validate(authorization[7..], settings.IdentityKey, settings.Issuer, time.GetUtcNow());
-            return principal.UserId == LocalPlayer.TenancyUserId;
-        }
-        catch (TokenRejectedException)
-        {
-            return false;
-        }
-    }
+    private static (int Status, object Reply) Reply(ServiceReply reply) => (reply.StatusCode, reply.Body);
 
     private PublicStatus PublicStatusDocument()
     {
-        (bool active, int players) = matchmaking.CurrentRaid;
+        (int raids, int inRaids) = players.CurrentRaids;
         return new PublicStatus(1, settings.ServerName, settings.Motd, settings.GameBuild,
-            new RaidCounts(active ? 1 : 0, settings.RaidCapacity), players, matchmaking.HasAllocator);
+            new RaidCounts(raids, settings.RaidCapacity), inRaids, players.HasAllocator);
     }
 
-    private JsonObject RequestEvent(HttpRequest request, string method, string path, int bytes, long declared, JsonElement? json, IReadOnlyDictionary<string, string>? form)
+    private JsonObject RequestEvent(HttpRequest request, string method, string path, int bytes, long declared, JsonElement? json,
+        IReadOnlyDictionary<string, string>? form, string? authorization)
     {
         string[] queryKeys =
         [
@@ -216,6 +208,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             ["body_types"] = bodyTypes,
             ["string_lengths"] = stringLengths,
             ["content_type"] = request.ContentType,
+            ["auth_scheme"] = authorization?.Split(' ', 2)[0],
             ["bytes"] = bytes,
             ["declared_bytes"] = declared,
         };
