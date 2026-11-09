@@ -24,7 +24,7 @@ public sealed class InventoryStoreTests : IDisposable
         Assert.Equal(revision, store.Inventory.Revision);
         PlayerInventory cleared = store.Inventory with { Stash = store.Inventory.Stash with { Items = [] } };
         store.Import(cleared, revision);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         restarted.InitializeLayout(DateTimeOffset.UnixEpoch.AddDays(2));
         Assert.Equal(0, restarted.Inventory.ItemCount);
         Assert.Equal(StorageItems.StashSlotCount, restarted.Inventory.Stash.SlotCount);
@@ -39,10 +39,10 @@ public sealed class InventoryStoreTests : IDisposable
         Assert.Equal(227, snapshot.Items.Count);
         Assert.Equal(123, snapshot.Items.Count(item => item.GameAssetId == StorageItems.ContentSlotAssetId));
         Assert.Equal(1, store.Inventory.ItemCount);
-        BsonDocument saved = _database.Player["inventory"].AsBsonDocument;
+        BsonDocument saved = _database.Account["inventory"].AsBsonDocument;
         Assert.False(saved.Contains("snapshot"));
         Assert.False(saved.Contains("definitions"));
-        InventorySnapshot restarted = new InventoryStore(_database.Store).Snapshot;
+        InventorySnapshot restarted = new InventoryStore(_database.Store, TestDatabase.UserId).Snapshot;
         Assert.True(InventorySnapshots.Same(new PlayerLoadout(snapshot.UserId, snapshot.Revision, snapshot.Items),
             new PlayerLoadout(restarted.UserId, restarted.Revision, restarted.Items)));
         Assert.DoesNotContain(InventorySnapshots.Loadout(snapshot).Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
@@ -54,21 +54,21 @@ public sealed class InventoryStoreTests : IDisposable
         InventoryStore store = Create();
         string itemId = Assert.Single(store.Inventory.Stash.Items).InstanceId;
         store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, store.Inventory.Revision);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.Equal(128, restarted.Inventory.Stash.SlotCount);
         Assert.Equal(itemId, Assert.Single(restarted.Inventory.Stash.Items).InstanceId);
         InventoryItem stash = Assert.Single(restarted.Snapshot.Items, item => item.GameAssetId == StorageItems.StashContainerAssetId);
         Assert.Equal(128, stash.Slots.Count);
         ItemDescription definition = Assert.Single(restarted.GameData().ItemDescriptions.ItemDescriptions, item => item.GameAssetId == StorageItems.StashContainerAssetId);
         Assert.Equal(128, Assert.IsType<ItemSlotArray>(definition.SlotConfig).NumberOfSlots);
-        Assert.Single(_database.Player["inventory"]["stash"]["items"].AsBsonArray);
+        Assert.Single(_database.Account["inventory"]["stash"]["items"].AsBsonArray);
     }
 
     [Fact]
     public void Saved_loadout_has_four_single_equipment_slots_and_three_item_containers()
     {
         InventoryStore store = Create();
-        BsonDocument loadout = _database.Player["inventory"]["loadout"].AsBsonDocument;
+        BsonDocument loadout = _database.Account["inventory"]["loadout"].AsBsonDocument;
         Assert.Equal(["augment", "backpack", "mainWeapon", "quickUse", "safePockets", "secondaryWeapon", "shield"], loadout.Names.Order(StringComparer.Ordinal));
         foreach (string slot in new[] { "augment", "shield", "mainWeapon", "secondaryWeapon" })
         {
@@ -106,7 +106,7 @@ public sealed class InventoryStoreTests : IDisposable
 
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout frozen = store.Reserve(ticket);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.True(InventorySnapshots.Same(frozen, restarted.Reserve(ticket)));
         BsonDocument record = _database.Native.GetCollection<BsonDocument>("raidReservations")
             .Find(new BsonDocument("_id", ticket)).Single(TestContext.Current.CancellationToken);
@@ -130,7 +130,7 @@ public sealed class InventoryStoreTests : IDisposable
             Loadout = loadout with { Backpack = new PlayerItemContainer([duck with { Slot = capacity }]) },
         }, store.Inventory.Revision));
         Assert.Equal(saved, _database.InventoryJson);
-        Assert.Equal(capacity - 1, Assert.Single(new InventoryStore(_database.Store).Inventory.Loadout.Backpack.Items).Slot);
+        Assert.Equal(capacity - 1, Assert.Single(new InventoryStore(_database.Store, TestDatabase.UserId).Inventory.Loadout.Backpack.Items).Slot);
     }
 
     [Fact]
@@ -139,18 +139,18 @@ public sealed class InventoryStoreTests : IDisposable
         InventoryStore store = Create();
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout frozen = store.Reserve(ticket);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.True(InventorySnapshots.Same(frozen, restarted.Reserve(ticket)));
         Assert.Equal(ticket, restarted.ReservedTicketId);
         BsonDocument reservation = Assert.Single(_database.Native.GetCollection<BsonDocument>("raidReservations").Find(FilterDefinition<BsonDocument>.Empty).ToList(TestContext.Current.CancellationToken));
         Assert.True(reservation.Contains("loadout"));
-        Assert.False(_database.Player["inventory"].AsBsonDocument.Contains("reservation"));
+        Assert.False(_database.Account["inventory"].AsBsonDocument.Contains("reservation"));
         Assert.Throws<InvalidOperationException>(() => restarted.Reserve(Guid.NewGuid().ToString("D")));
         Assert.Throws<InvalidOperationException>(() => restarted.Import(restarted.Inventory, restarted.Inventory.Revision));
         restarted.Release(Guid.NewGuid().ToString("D"));
         Assert.Equal(ticket, restarted.ReservedTicketId);
         restarted.Release(ticket);
-        Assert.Null(new InventoryStore(_database.Store).ReservedTicketId);
+        Assert.Null(new InventoryStore(_database.Store, TestDatabase.UserId).ReservedTicketId);
         Assert.Equal(0, _database.Native.GetCollection<BsonDocument>("raidReservations").CountDocuments(FilterDefinition<BsonDocument>.Empty,
             cancellationToken: TestContext.Current.CancellationToken));
     }
@@ -161,7 +161,7 @@ public sealed class InventoryStoreTests : IDisposable
         InventoryStore store = Create();
         _database.Native.RunCommand<BsonDocument>(new BsonDocument
         {
-            ["collMod"] = "players",
+            ["collMod"] = "accounts",
             ["validator"] = new BsonDocument("inventory.raidTicketId", new BsonDocument("$exists", false)),
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Throws<PersistenceException>(() => store.Reserve(Guid.NewGuid().ToString("D")));
@@ -193,7 +193,7 @@ public sealed class InventoryStoreTests : IDisposable
         long revision = store.Inventory.Revision;
         _database.Native.RunCommand<BsonDocument>(new BsonDocument
         {
-            ["collMod"] = "players",
+            ["collMod"] = "accounts",
             ["validator"] = new BsonDocument("inventory.revision", revision),
         }, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Throws<PersistenceException>(() => store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, revision));
@@ -205,16 +205,16 @@ public sealed class InventoryStoreTests : IDisposable
     public void Invalid_documents_fail_instead_of_resetting_player_data()
     {
         InventoryStore store = Create();
-        BsonDocument inventory = _database.Player["inventory"].AsBsonDocument;
+        BsonDocument inventory = _database.Account["inventory"].AsBsonDocument;
         inventory["stash"]["items"][0]["type"] = "unknown";
         _database.ReplaceInventory(inventory.ToJson());
-        Assert.Throws<InvalidDataException>(() => new InventoryStore(_database.Store));
+        Assert.Throws<InvalidDataException>(() => new InventoryStore(_database.Store, TestDatabase.UserId));
         Assert.Throws<InvalidDataException>(() => store.Snapshot);
     }
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

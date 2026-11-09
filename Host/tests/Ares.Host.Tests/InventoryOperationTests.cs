@@ -113,10 +113,10 @@ public sealed class InventoryOperationTests : IDisposable
         Assert.Equal(duck.Amount, Duck(store).Amount);
         Assert.Contains(InventorySnapshots.Loadout(store.Snapshot).Items, item => item.InstanceId == duck.InstanceId);
 
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.Equal(backpack, Parent(restarted, duck.InstanceId));
         Assert.Equal(200, restarted.Commit(Move(duck.InstanceId, stash, "back-to-stash"), DateTimeOffset.UnixEpoch.AddMinutes(2)).StatusCode);
-        InventoryStore again = new(_database.Store);
+        InventoryStore again = new(_database.Store, TestDatabase.UserId);
         Assert.Equal(stash, Parent(again, duck.InstanceId));
         Assert.Equal(count, again.Snapshot.Items.Count);
         Assert.DoesNotContain(InventorySnapshots.Loadout(again.Snapshot).Items, item => item.InstanceId == duck.InstanceId);
@@ -136,7 +136,7 @@ public sealed class InventoryOperationTests : IDisposable
         Assert.Equal(revision, store.Snapshot.Revision);
         Assert.Equal(409, store.Commit(Move(duck, stash, "first"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(200, store.Commit(Move(duck, stash, "second"), DateTimeOffset.UnixEpoch).StatusCode);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         revision = restarted.Snapshot.Revision;
         ServiceReply replay = restarted.Commit(first, DateTimeOffset.UnixEpoch);
         Assert.Equal(200, replay.StatusCode);
@@ -207,7 +207,7 @@ public sealed class InventoryOperationTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

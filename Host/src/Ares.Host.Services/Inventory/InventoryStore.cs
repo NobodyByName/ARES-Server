@@ -33,21 +33,24 @@ public sealed partial class InventoryStore
 
     private readonly Lock _lock = new();
     private readonly HostDatabase _database;
+    private readonly long _userId;
     private long _version;
     private PlayerInventory _state;
     private InventoryProjection _projection;
 
-    public InventoryStore(HostDatabase database)
+    /// <summary>Opens the inventory of player <paramref name="userId"/>.</summary>
+    public InventoryStore(HostDatabase database, long userId)
     {
         _database = database;
-        (_state, _version) = _database.Read<PlayerInventory>(LocalPlayer.TenancyUserId, "inventory", SerializationOptions);
-        _projection = InventoryProjection.Create(_state);
+        _userId = userId;
+        (_state, _version) = _database.Read<PlayerInventory>(_userId, "inventory", SerializationOptions);
+        _projection = InventoryProjection.Create(_userId, _state);
     }
 
     private void Refresh()
     {
-        (_state, _version) = _database.Read<PlayerInventory>(LocalPlayer.TenancyUserId, "inventory", SerializationOptions);
-        _projection = InventoryProjection.Create(_state);
+        (_state, _version) = _database.Read<PlayerInventory>(_userId, "inventory", SerializationOptions);
+        _projection = InventoryProjection.Create(_userId, _state);
     }
 
     /// <summary>Sets missing stash capacity once. Positive capacity survives emptying the inventory.</summary>
@@ -117,15 +120,23 @@ public sealed partial class InventoryStore
         lock (_lock)
         {
             Refresh();
-            IEnumerable<ItemDescription> definitions = InventoryCatalog.Definitions.Select(definition => InventoryCatalog.Definition(_state, definition));
-            return BackendContent.GameData with
-            {
-                ItemDescriptions = new ItemDescriptionTable([.. BackendContent.GameData.ItemDescriptions.ItemDescriptions, .. definitions]),
-            };
+            return GameData(_state);
         }
     }
 
-    public string DefinitionHash() => "ares-host-" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(GameData(), BackendJson.Options)));
+    public string DefinitionHash() => DefinitionHashOf(GameData());
+
+    private static GameDataResponse GameData(PlayerInventory state)
+    {
+        IEnumerable<ItemDescription> definitions = InventoryCatalog.Definitions.Select(definition => InventoryCatalog.Definition(state, definition));
+        return BackendContent.GameData with
+        {
+            ItemDescriptions = new ItemDescriptionTable([.. BackendContent.GameData.ItemDescriptions.ItemDescriptions, .. definitions]),
+        };
+    }
+
+    private static string DefinitionHashOf(GameDataResponse data) =>
+        "ares-host-" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(data, BackendJson.Options)));
 
     public void ImportFile(string path, long expectedRevision)
     {
@@ -208,7 +219,7 @@ public sealed partial class InventoryStore
             Refresh();
             if (_state.RaidTicketId is { } existing)
             {
-                return existing == ticketId ? _database.ReadReservation(existing)!.Loadout
+                return existing == ticketId ? _database.ReadReservation(_userId, existing)!.Loadout
                     : throw new InvalidOperationException("The inventory is reserved for another ticket");
             }
 
@@ -237,13 +248,13 @@ public sealed partial class InventoryStore
 
     private void Save(PlayerInventory candidate, InventoryReservation? reservation = null)
     {
-        InventoryProjection projection = InventoryProjection.Create(candidate);
+        InventoryProjection projection = InventoryProjection.Create(_userId, candidate);
         if (JsonSerializer.SerializeToUtf8Bytes(candidate, SerializationOptions).Length > 1048576)
         {
             throw new InvalidDataException("Inventory save is too large");
         }
 
-        _database.SaveInventory(candidate, _version, reservation, _state.RaidTicketId);
+        _database.SaveInventory(_userId, candidate, _version, reservation, _state.RaidTicketId);
         _version = checked(_version + 1);
         _state = candidate;
         _projection = projection;

@@ -76,7 +76,7 @@ public sealed partial class InventoryStore
                     finalAugment = owned[move.ItemInstanceId].Item with { Slot = null };
                 }
 
-                InventoryProjection projection = InventoryProjection.ForOperations(candidate with { Loadout = candidate.Loadout with { Augment = finalAugment } });
+                InventoryProjection projection = InventoryProjection.ForOperations(_userId, candidate with { Loadout = candidate.Loadout with { Augment = finalAugment } });
                 foreach (SetItemParents move in moves.Values)
                 {
                     InventoryPosition target = projection.Position(move.ParentInstanceIds[0]);
@@ -114,7 +114,7 @@ public sealed partial class InventoryStore
             IReadOnlyList<string> deleted;
             try
             {
-                HashSet<string> remaining = InventoryProjection.Create(candidate).Snapshot.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
+                HashSet<string> remaining = InventoryProjection.Create(_userId, candidate).Snapshot.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
                 deleted = [.. before.Keys.Where(id => !remaining.Contains(id))];
                 candidate = candidate with
                 {

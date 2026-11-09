@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Ares.Common.Game.Inventory;
-using Ares.Host.Services.Content;
 using Ares.Structs.Backend.Progression;
 
 namespace Ares.Host.Services.Inventory;
@@ -13,7 +12,7 @@ internal sealed class InventoryProjection
     private readonly Dictionary<string, InventoryPosition> _positions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<long>> _allowed = new(StringComparer.Ordinal);
 
-    private InventoryProjection(PlayerInventory inventory, bool allowOverflow = false)
+    private InventoryProjection(long userId, PlayerInventory inventory, bool allowOverflow = false)
     {
         Inventory = Validate(inventory, allowOverflow);
         long selectedFrame = InventoryCatalog.FrameAssetId(inventory.Loadout);
@@ -36,13 +35,13 @@ internal sealed class InventoryProjection
         roots.Add(BuildNode(LoadoutItems.FrameSlotAssetId, "carried", null));
         roots.Add(BuildNode(AugmentItems.AugmentSlotAssetId, "augment", new InventoryPosition(InventoryArea.Augment, 0)));
 
-        Snapshot = InventorySnapshots.Copy(new InventorySnapshot(LocalPlayer.TenancyUserId, inventory.Revision, items.AsReadOnly(), roots.AsReadOnly()));
+        Snapshot = InventorySnapshots.Copy(new InventorySnapshot(userId, inventory.Revision, items.AsReadOnly(), roots.AsReadOnly()));
         return;
 
         string BuildNode(long asset, string path, InventoryPosition? position, long? frameAssetId = null)
         {
             ItemDescription definition = InventoryCatalog.Definition(inventory, InventoryCatalog.ByAsset[asset]);
-            string id = StructuralId(path);
+            string id = StructuralId(userId, path);
             List<string> children = [];
             switch (definition.SlotConfig)
             {
@@ -112,10 +111,10 @@ internal sealed class InventoryProjection
 
     internal PlayerInventory Inventory { get; }
     internal InventorySnapshot Snapshot { get; }
-    internal static InventoryProjection Create(PlayerInventory inventory) => new(inventory);
+    internal static InventoryProjection Create(long userId, PlayerInventory inventory) => new(userId, inventory);
     // A batch may temporarily remove an augment before moving items out of its larger containers.
     // Only the final projection is validated and saved; provisional over-capacity items stay owned.
-    internal static InventoryProjection ForOperations(PlayerInventory inventory) => new(inventory, allowOverflow: true);
+    internal static InventoryProjection ForOperations(long userId, PlayerInventory inventory) => new(userId, inventory, allowOverflow: true);
 
     internal InventoryPosition Position(string slotId) => _positions.GetValueOrDefault(slotId)
         ?? throw new InvalidDataException("Unknown inventory destination slot");
@@ -183,9 +182,9 @@ internal sealed class InventoryProjection
         return inventory;
     }
 
-    private static string StructuralId(string path)
+    private static string StructuralId(long userId, string path)
     {
-        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(LocalPlayer.TenancyUserId.ToString(CultureInfo.InvariantCulture) + "/" + path));
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(userId.ToString(CultureInfo.InvariantCulture) + "/" + path));
         return new Guid(hash.AsSpan(0, 16)).ToString("D");
     }
 }

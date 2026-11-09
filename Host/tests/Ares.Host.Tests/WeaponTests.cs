@@ -39,7 +39,7 @@ public sealed class WeaponTests : IDisposable
         Assert.Equal(200, Move(store, ammo, Slot(store, LoadoutItems.BackpackSlotAssetId), "ammo").StatusCode);
         Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.Firearm2SlotAssetId), "secondary").StatusCode);
         Assert.Equal(200, Move(store, ammo, Slot(store, LoadoutItems.SafePocketSlotAssetId), "safe").StatusCode);
-        store = new InventoryStore(_database.Store);
+        store = new InventoryStore(_database.Store, TestDatabase.UserId);
         Assert.Null(store.Inventory.Loadout.MainWeapon);
         Assert.Equal(gun.InstanceId, store.Inventory.Loadout.SecondaryWeapon!.InstanceId);
         Assert.Equal(gun.Durability, store.Inventory.Loadout.SecondaryWeapon.Durability);
@@ -101,7 +101,7 @@ public sealed class WeaponTests : IDisposable
         AssertChanges(before, reply, store.Snapshot);
         Assert.Equal(second.InstanceId, store.Inventory.Loadout.MainWeapon!.InstanceId);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -146,7 +146,7 @@ public sealed class WeaponTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.FerroI, DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.HeavyAmmo, DateTimeOffset.UnixEpoch, 60);

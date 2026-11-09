@@ -1,5 +1,4 @@
 using Ares.Host.Services.Accounts;
-using Ares.Host.Services.Content;
 using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Persistence;
 using MongoDB.Bson;
@@ -13,16 +12,16 @@ public sealed class HostDatabaseTests
     {
         using TestDatabase database = new();
         HostDatabase store = database.Store;
-        (PlayerInventory inventory, long inventoryVersion) = store.Read<PlayerInventory>(LocalPlayer.TenancyUserId, "inventory", InventoryStore.SerializationOptions);
-        (AccountStateDocument account, long accountVersion) = store.Read<AccountStateDocument>(LocalPlayer.TenancyUserId, "account", AccountStore.SerializationOptions);
-        store.Save(LocalPlayer.TenancyUserId, "account", account with { Profile = new AccountProfileOverrides("Updated Name", 0) }, accountVersion, AccountStore.SerializationOptions);
-        store.Save(LocalPlayer.TenancyUserId, "inventory", inventory with { Revision = 7 }, inventoryVersion, InventoryStore.SerializationOptions);
-        Assert.Equal("Updated Name", database.Player["account"]["profile"]["displayName"].AsString);
-        Assert.Equal(7, database.Player["inventory"]["revision"].AsInt64);
-        Assert.Throws<PersistenceConflictException>(() => store.Save(LocalPlayer.TenancyUserId, "inventory", inventory, inventoryVersion, InventoryStore.SerializationOptions));
-        string saved = database.Player.ToJson();
+        (PlayerInventory inventory, long inventoryVersion) = store.Read<PlayerInventory>(TestDatabase.UserId, "inventory", InventoryStore.SerializationOptions);
+        (AccountStateDocument account, long accountVersion) = store.Read<AccountStateDocument>(TestDatabase.UserId, "settings", AccountStore.SerializationOptions);
+        store.Save(TestDatabase.UserId, "settings", account with { Revision = 3 }, accountVersion, AccountStore.SerializationOptions);
+        store.Save(TestDatabase.UserId, "inventory", inventory with { Revision = 7 }, inventoryVersion, InventoryStore.SerializationOptions);
+        Assert.Equal(3, database.Account["settings"]["revision"].AsInt64);
+        Assert.Equal(7, database.Account["inventory"]["revision"].AsInt64);
+        Assert.Throws<PersistenceConflictException>(() => store.Save(TestDatabase.UserId, "inventory", inventory, inventoryVersion, InventoryStore.SerializationOptions));
+        string saved = database.Account.ToJson();
         store.Initialize();
-        Assert.Equal(saved, database.Player.ToJson());
+        Assert.Equal(saved, database.Account.ToJson());
     }
 
     [Theory]

@@ -47,7 +47,7 @@ public sealed class AugmentTests : IDisposable
         Assert.DoesNotContain(handoff.Items, item => item.GameAssetId == LoadoutItems.StandardFrameAssetId);
         Assert.DoesNotContain(handoff.Items, item => AugmentItems.FrameAssetIds.Values.Contains(item.GameAssetId) && item.GameAssetId != frame);
         Assert.Single(handoff.Items, item => item.InstanceId == duck.InstanceId);
-        Assert.Equal(destination, new InventoryStore(_database.Store).Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId);
+        Assert.Equal(destination, new InventoryStore(_database.Store, TestDatabase.UserId).Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class AugmentTests : IDisposable
         Assert.Equal(augment with { ETag = "ares-host-inventory-3", UpdatedAt = 60000 }, store.Inventory.Loadout.Augment);
         AssertChanges(before, reply, store.Snapshot);
 
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.Equal(augment.InstanceId, restarted.Inventory.Loadout.Augment!.InstanceId);
         Assert.Equal(backpack, restarted.Inventory.Loadout.BackpackCapacity);
         string ticket = Guid.NewGuid().ToString("D");
@@ -128,7 +128,7 @@ public sealed class AugmentTests : IDisposable
         Assert.Contains(store.Inventory.Stash.Items, item => item.InstanceId == combat.InstanceId);
         Assert.Equal(3, store.Inventory.ItemCount);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -152,7 +152,7 @@ public sealed class AugmentTests : IDisposable
         Assert.Equal(2, store.Inventory.Stash.Items.Count);
         Assert.Contains(store.Inventory.Stash.Items, item => item.InstanceId == duck.InstanceId && item.Slot is null);
         ItemChanges original = Assert.IsType<InventoryOperationsResponse>(reply.Body).Changeset.Items;
-        ServiceReply retried = new InventoryStore(_database.Store).Commit(remove, DateTimeOffset.UnixEpoch);
+        ServiceReply retried = new InventoryStore(_database.Store, TestDatabase.UserId).Commit(remove, DateTimeOffset.UnixEpoch);
         Assert.Equal(original.Deleted, Assert.IsType<InventoryOperationsResponse>(retried.Body).Changeset.Items.Deleted);
         Assert.Equal(200, store.Commit(Move(augment.InstanceId, AugmentSlot(store), "reequip"), DateTimeOffset.UnixEpoch).StatusCode);
         long revision = store.Inventory.Revision;
@@ -173,7 +173,7 @@ public sealed class AugmentTests : IDisposable
             Stash = store.Inventory.Stash with { Items = [duck] },
             Loadout = store.Inventory.Loadout with { Augment = augment },
         };
-        string destination = BackpackSlots(InventoryProjection.Create(equipped).Snapshot)[15];
+        string destination = BackpackSlots(InventoryProjection.Create(TestDatabase.UserId, equipped).Snapshot)[15];
         InventoryOperationsRequest batch = new([new SetItemParents(duck.InstanceId, [destination]), new SetItemParents(augment.InstanceId, [AugmentSlot(store)])], "grow");
         Assert.Equal(200, store.Commit(batch, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(15, Assert.Single(store.Inventory.Loadout.Backpack.Items).Slot);
@@ -195,7 +195,7 @@ public sealed class AugmentTests : IDisposable
 
     private InventoryStore Create(params string[] types)
     {
-        InventoryStore store = new(_database.Store);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         OwnedItem[] augments = [.. types.Select(type => new OwnedItem(Guid.NewGuid().ToString("D"), type, 1, 0.5, 1, "original", 0))];
         store.Import(store.Inventory with { Stash = store.Inventory.Stash with { Items = [.. store.Inventory.Stash.Items, .. augments] } }, store.Inventory.Revision);

@@ -31,7 +31,7 @@ public sealed class ShieldTests : IDisposable
         AssertChanges(before, reply, store.Snapshot);
         Assert.Equal(shield.InstanceId, store.Inventory.Loadout.Shield!.InstanceId);
         Assert.DoesNotContain(store.Inventory.Stash.Items, item => item.InstanceId == shield.InstanceId);
-        InventoryStore restarted = new(_database.Store);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
         Assert.Equal(store.Inventory.Loadout.Shield, restarted.Inventory.Loadout.Shield);
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout handoff = restarted.Reserve(ticket);
@@ -65,7 +65,7 @@ public sealed class ShieldTests : IDisposable
         Assert.Equal(second.InstanceId, store.Inventory.Loadout.Shield!.InstanceId);
         Assert.Equal(first.Durability, store.Inventory.Stash.Items.Single(item => item.InstanceId == first.InstanceId).Durability);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -110,7 +110,7 @@ public sealed class ShieldTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.LightShield, DateTimeOffset.UnixEpoch);
         return store;

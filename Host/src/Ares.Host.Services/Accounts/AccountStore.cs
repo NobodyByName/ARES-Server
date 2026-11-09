@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,7 +9,7 @@ using Ares.Structs.Backend.Accounts;
 namespace Ares.Host.Services.Accounts;
 
 /// <summary>
-/// The local account's persistent settings (display name, persistent player keys), stored in
+/// One account's persistent game settings (the game's persistent player keys), stored in
 /// MongoDB. Writes are atomic and check the version read by the operation.
 /// </summary>
 public sealed class AccountStore
@@ -25,73 +24,18 @@ public sealed class AccountStore
     };
 
     private readonly HostDatabase _database;
+    private readonly long _userId;
     private long _version;
     private long _transientRevision;
     private Dictionary<string, StoredKey> _transientKeys = new(StringComparer.Ordinal);
-    private readonly TimeProvider _time;
     private readonly Lock _lock = new();
 
-    /// <summary>Creates an account store backed by the Host database.</summary>
-    public AccountStore(HostDatabase database, TimeProvider time)
+    /// <summary>Opens the settings of player <paramref name="userId"/>.</summary>
+    public AccountStore(HostDatabase database, long userId)
     {
         _database = database;
-        _time = time;
+        _userId = userId;
         _ = Read();
-    }
-
-    /// <summary>Display-name overrides, or null for the defaults.</summary>
-    public AccountProfileOverrides Profile
-    {
-        get
-        {
-            lock (_lock)
-            {
-                return Read().Profile ?? AccountProfileOverrides.None;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Display-name rules: 3–32 characters, no surrounding whitespace, printable, and no
-    /// <c>#</c>, tab or line breaks.
-    /// </summary>
-    public static bool IsValidDisplayName(string? name)
-    {
-        if (name is null || name != name.Trim())
-        {
-            return false;
-        }
-
-        int count = 0;
-        foreach (Rune rune in name.EnumerateRunes())
-        {
-            count++;
-            if (rune.Value is '#' or '\r' or '\n' or '\t' || !IsPrintable(rune))
-            {
-                return false;
-            }
-        }
-
-        return count is >= 3 and <= 32;
-    }
-
-    /// <summary>Sets the display name and starts the 30-day rename cooldown.</summary>
-    /// <returns>False when the name is invalid.</returns>
-    public bool SetDisplayName(string? name)
-    {
-        if (!IsValidDisplayName(name))
-        {
-            return false;
-        }
-
-        lock (_lock)
-        {
-            AccountStateDocument state = Read();
-            long cooldown = _time.GetUtcNow().ToUnixTimeSeconds() + (30 * 86400);
-            Save(state with { Profile = new AccountProfileOverrides(name, cooldown) });
-        }
-
-        return true;
     }
 
     /// <summary>All persistent keys: presets first overridden by stored values, sorted by key.</summary>
@@ -171,7 +115,7 @@ public sealed class AccountStore
 
             if (durable)
             {
-                Save(state with { PersistentPlayerKeys = stored, Revision = revision });
+                Save(new AccountStateDocument(stored, revision));
             }
 
             _transientKeys = transient;
@@ -180,31 +124,16 @@ public sealed class AccountStore
         }
     }
 
-    // Printable: every Unicode category except "Other" and "Separator", plus the ASCII space.
-    private static bool IsPrintable(Rune rune)
-    {
-        if (rune.Value == ' ')
-        {
-            return true;
-        }
-
-        UnicodeCategory category = Rune.GetUnicodeCategory(rune);
-        return category is not (UnicodeCategory.Control or UnicodeCategory.Format or UnicodeCategory.Surrogate
-            or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned or UnicodeCategory.SpaceSeparator
-            or UnicodeCategory.LineSeparator or UnicodeCategory.ParagraphSeparator);
-    }
-
     private AccountStateDocument Read()
     {
-        (AccountStateDocument state, long version) = _database.Read<AccountStateDocument>(LocalPlayer.TenancyUserId, "account", SerializationOptions);
+        (AccountStateDocument state, long version) = _database.Read<AccountStateDocument>(_userId, "settings", SerializationOptions);
         _version = version;
         return Validate(state);
     }
 
     private static AccountStateDocument Validate(AccountStateDocument state)
     {
-        if (state.Revision < 0 || state.Profile is { DisplayName: { } name } && !IsValidDisplayName(name)
-            || state.Profile?.DisplayNameCooldownEndsAt is < 0
+        if (state.Revision < 0
             || state.PersistentPlayerKeys?.Any(pair => pair.Key.Length is < 1 or > 256
                 || IsTransientKey(pair.Key) || pair.Value is not { Value.Length: <= 8192, ETag.Length: > 0 }) == true)
         {
@@ -218,18 +147,9 @@ public sealed class AccountStore
 
     private void Save(AccountStateDocument state)
     {
-        _database.Save(LocalPlayer.TenancyUserId, "account", Validate(state), _version, SerializationOptions);
+        _database.Save(_userId, "settings", Validate(state), _version, SerializationOptions);
         _version = checked(_version + 1);
     }
-}
-
-/// <summary>Display-name overrides of the local account.</summary>
-public sealed record AccountProfileOverrides(
-    [property: JsonPropertyName("displayName"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName,
-    [property: JsonPropertyName("displayNameCooldownEndsAt"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? DisplayNameCooldownEndsAt)
-{
-    /// <summary>The default display name and initial rename cooldown.</summary>
-    public static AccountProfileOverrides None { get; } = new(null, null);
 }
 
 /// <summary>A stored persistent player key.</summary>
@@ -237,9 +157,8 @@ public sealed record StoredKey(
     [property: JsonPropertyName("value")] string Value,
     [property: JsonPropertyName("etag")] string ETag);
 
-/// <summary>The persistent account section of a player document.</summary>
+/// <summary>The game-settings section of an account document.</summary>
 public sealed record AccountStateDocument(
-    [property: JsonPropertyName("profile")] AccountProfileOverrides? Profile,
     [property: JsonPropertyName("persistentPlayerKeys")] IReadOnlyDictionary<string, StoredKey>? PersistentPlayerKeys,
     [property: JsonPropertyName("revision")] long Revision)
 {
@@ -247,5 +166,5 @@ public sealed record AccountStateDocument(
     public static IReadOnlyDictionary<string, StoredKey> NoKeys { get; } = new Dictionary<string, StoredKey>();
 
     /// <summary>A new account.</summary>
-    public static AccountStateDocument Empty { get; } = new(AccountProfileOverrides.None, NoKeys, 0);
+    public static AccountStateDocument Empty { get; } = new(NoKeys, 0);
 }
