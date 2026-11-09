@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Security.Cryptography;
 using Ares.Structs.Core.Serialization;
@@ -184,8 +185,19 @@ public sealed class RaidConnections
         }
         catch (InvalidPacketException error)
         {
-            return new ConnectionResult(null, ConnectionEvent.InvalidPacket, error.Message);
+            return new ConnectionResult(null, ConnectionEvent.InvalidPacket, $"{error.Message} (at {Origin(error)})");
         }
+    }
+
+    // The innermost methods that threw, so a rejected packet can be traced from the log alone.
+    private static string Origin(Exception error)
+    {
+        IEnumerable<string> methods = new StackTrace(error).GetFrames()
+            .Select(frame => frame.GetMethod())
+            .Where(method => method is not null)
+            .Take(6)
+            .Select(method => $"{method!.DeclaringType?.Name}.{method.Name}");
+        return string.Join(" < ", methods);
     }
 
     /// <summary>Sends due retries and keepalives without waiting for client traffic.</summary>
