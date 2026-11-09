@@ -13,7 +13,8 @@ namespace Ares.Raid;
 
 /// <summary>
 /// The raid's single reservation: reserved by the Host for its party, expiring unless the player keeps
-/// it alive, and admitting that player through its routing credential.
+/// it alive, and admitting that player through its routing credential. A Raid process hosts one raid:
+/// it closes once that reservation is released, or when none arrives in time.
 /// </summary>
 public sealed class RaidAllocations : IAllocationService, IRouteResolver
 {
@@ -28,14 +29,16 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     private readonly Func<double> _clock;
     private readonly double _timeout;
     private readonly int _maxPlayers;
+    private readonly double _idleDeadline;
     private Reservation? _current;
+    private bool _released;
 
     /// <summary>Creates the service.</summary>
     /// <param name="endpoint">Where players connect (its routing token is filled in per reservation).</param>
     /// <param name="worlds">Prepares the raid world.</param>
     /// <param name="clock">Monotonic clock in seconds.</param>
     /// <param name="maxPlayers">Largest party a reservation may hold.</param>
-    /// <param name="initializationTimeout">Seconds a reservation lives without activity (up to 600).</param>
+    /// <param name="initializationTimeout">Seconds a reservation lives without activity, and the first one may take to arrive (up to 600).</param>
     public RaidAllocations(GameServerEndpoint endpoint, IWorldLifecycle worlds, Func<double>? clock = null, int maxPlayers = 1,
         double initializationTimeout = DefaultInitializationTimeout)
     {
@@ -52,6 +55,20 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
         _clock = clock ?? (() => Stopwatch.GetElapsedTime(started).TotalSeconds);
         _timeout = initializationTimeout;
         _maxPlayers = maxPlayers;
+        _idleDeadline = _clock() + initializationTimeout;
+    }
+
+    /// <summary>True once this raid is over: its reservation was released, or none arrived in time.</summary>
+    public bool Closed
+    {
+        get
+        {
+            lock (_lock)
+            {
+                Maintain();
+                return _released || (_current is null && _clock() >= _idleDeadline);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -87,15 +104,18 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
         lock (_lock)
         {
             Maintain();
-            if (_current is { } existing)
+            switch (_current)
             {
-                return existing.TicketId != request.TicketId
-                    ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached")
-                    : !existing.Players.SequenceEqual(request.PartyMemberIds)
-                        || !existing.Profiles.SequenceEqual(profiles)
-                        || !existing.Loadouts.Zip(loadouts).All(pair => InventorySnapshots.Same(pair.First, pair.Second))
-                        ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_allocation_conflict")
-                        : AllocationResult.Success(Status(existing));
+                case null when _released || _clock() >= _idleDeadline:
+                    return AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached");
+                case { } existing:
+                    return existing.TicketId != request.TicketId
+                        ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached")
+                        : !existing.Players.SequenceEqual(request.PartyMemberIds)
+                            || !existing.Profiles.SequenceEqual(profiles)
+                            || !existing.Loadouts.Zip(loadouts).All(pair => InventorySnapshots.Same(pair.First, pair.Second))
+                            ? AllocationResult.Failure(StatusCodes.Status409Conflict, "session_allocation_conflict")
+                            : AllocationResult.Success(Status(existing));
             }
 
             Reservation candidate = new(request.TicketId, Guid.NewGuid().ToString(), [.. request.PartyMemberIds],
@@ -172,6 +192,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
 
         _worlds.Release(item.MatchId);
         _current = null;
+        _released = true;
     }
 
     private Allocation Status(Reservation item)

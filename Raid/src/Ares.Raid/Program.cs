@@ -78,6 +78,7 @@ RaidServer server = new(socket, connections, log, Clock);
 CancellationToken stopping = app.Lifetime.ApplicationStopping;
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(stopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);
+Task closingTask = StopWhenClosedAsync(app.Lifetime.StopApplication, stopping);
 try
 {
     await Task.Factory.StartNew(() => server.Run(stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
@@ -86,8 +87,32 @@ finally
 {
     await consoleStopping.CancelAsync().ConfigureAwait(false);
     await consoleTask.ConfigureAwait(false);
+    await closingTask.ConfigureAwait(false);
     await app.StopAsync().ConfigureAwait(false);
 }
 return 0;
+
+// One raid per process: stop once it is over, so the Host can start a fresh one.
+async Task StopWhenClosedAsync(Action stop, CancellationToken cancellationToken)
+{
+    using PeriodicTimer timer = new(TimeSpan.FromSeconds(1));
+    try
+    {
+        while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+        {
+            if (!allocations.Closed)
+            {
+                continue;
+            }
+
+            log.Write("raid", "closed");
+            stop();
+            return;
+        }
+    }
+    catch (OperationCanceledException)
+    {
+    }
+}
 
 double Clock() => 1 + Stopwatch.GetElapsedTime(started).TotalSeconds;

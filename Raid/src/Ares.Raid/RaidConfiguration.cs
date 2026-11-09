@@ -16,7 +16,7 @@ public sealed record RaidConfiguration
     public static readonly string Usage = $"""
         Usage: ARES-Raid [options]
 
-        ARES raid server: hosts one Dam raid at a time for the party the Host reserves it for.
+        ARES raid server: hosts one Dam raid for the party the Host reserves it for, then exits.
 
           --port <n>                  UDP game port (default {DefaultPort})
           --bind <ip>                 Game listen address (default 127.0.0.1)
@@ -24,7 +24,7 @@ public sealed record RaidConfiguration
           --control-port <n>          Allocation API port, on loopback (required)
           --control-token-file <f>    Operator token shared with the Host (required)
           --max-players <n>           Largest party one raid accepts (default 1)
-          --lighting <tag>            Lighting of every raid (default: picked by the map's weights)
+          --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
           --help                      Show this help
@@ -49,7 +49,7 @@ public sealed record RaidConfiguration
     /// <summary>Largest party one raid accepts.</summary>
     public int MaxPlayers { get; private init; } = 1;
 
-    /// <summary>Lighting of every raid, or null for a weighted pick.</summary>
+    /// <summary>Lighting of the raid, or null for a weighted pick.</summary>
     public string? Lighting { get; private init; }
 
     /// <summary>Optional structured log file, independent of terminal output.</summary>

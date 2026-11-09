@@ -78,22 +78,33 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
-    public void An_ended_world_releases_its_ticket_immediately_and_another_raid_can_be_reserved()
+    public void An_ended_world_releases_its_ticket_immediately_and_closes_the_raid()
     {
         RaidAllocations allocations = Allocations();
         Allocation allocation = allocations.Reserve(Request()).Allocation!;
         byte[] token = Convert.FromBase64String(allocation.Gameserver.RoutingToken);
         Assert.NotNull(allocations.Route(token, renew: true));
+        Assert.False(allocations.Closed);
         _worlds.Ended.Add(allocation.MatchId);
 
         Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
         Assert.Null(allocations.Route(token, renew: true));
         Assert.Equal([allocation.MatchId], _worlds.Released);
-        Allocation next = allocations.Reserve(Request(OtherTicket)).Allocation!;
-        Assert.NotEqual(allocation.MatchId, next.MatchId);
-        Assert.Equal(200, allocations.Status(new AllocationStatusRequest(next.MatchId)).StatusCode);
-        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(allocation.MatchId)).StatusCode);
-        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Assert.True(allocations.Closed);
+        Assert.Equal((409, "session_capacity_reached"), (allocations.Reserve(Request(OtherTicket)).StatusCode, allocations.Reserve(Request(OtherTicket)).Error));
+        Assert.Equal([allocation.MatchId], _worlds.Prepared);
+    }
+
+    [Fact]
+    public void A_raid_without_a_reservation_closes_after_the_initialization_timeout()
+    {
+        RaidAllocations allocations = Allocations();
+        _now[0] = 119;
+        Assert.False(allocations.Closed);
+        _now[0] = 120;
+        Assert.True(allocations.Closed);
+        Assert.Equal(409, allocations.Reserve(Request()).StatusCode);
+        Assert.Empty(_worlds.Prepared);
     }
 
     [Fact]
@@ -122,7 +133,8 @@ public sealed class RaidAllocationTests
         _now[0] = 221;
         Assert.Null(allocations.Route(token, renew: false));
         Assert.Equal([allocation.MatchId], _worlds.Released);
-        Assert.Equal(200, allocations.Reserve(Request(OtherTicket)).StatusCode);
+        Assert.True(allocations.Closed);
+        Assert.Equal(409, allocations.Reserve(Request(OtherTicket)).StatusCode);
     }
 
     [Fact]
