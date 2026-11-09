@@ -1,4 +1,3 @@
-using Ares.Common.Control;
 using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
@@ -18,11 +17,11 @@ public static class HostApplication
     /// <param name="configuration">Validated configuration.</param>
     /// <param name="log">Structured event output.</param>
     /// <param name="time">Clock; the system clock by default.</param>
-    /// <param name="allocatorHandler">Optional HTTP handler for the Raid allocation client (tests).</param>
+    /// <param name="raidStarter">Optional Raid server starter (tests); by default Host starts the configured ARES-Raid.</param>
     /// <param name="configureBuilder">Optional builder customisation (tests use an in-memory server).</param>
     /// <param name="loggerProvider">Optional framework log destination.</param>
     public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, TimeProvider? time = null,
-        HttpMessageHandler? allocatorHandler = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null)
+        IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null)
     {
         time ??= TimeProvider.System;
         HostSettings settings = configuration.Settings;
@@ -63,16 +62,15 @@ public static class HostApplication
             throw;
         }
 
-        SessionAllocatorClient? allocator = configuration.SessionControlUrl is null
-            ? null
-            : new SessionAllocatorClient(configuration.SessionControlUrl, configuration.OperatorToken!, allocatorHandler);
+        raidStarter ??= configuration.Raids is { } launch ? new RaidProcesses(launch, log) : null;
+        RaidFleet? raids = raidStarter is null ? null : new RaidFleet(raidStarter, settings.RaidCapacity, time);
         builder.Services.AddSingleton<HostDatabase>(_ => database);
         builder.Services.AddSingleton(inventory);
         ProfileFactory profiles = new(accounts, time);
         IdentityService identity = new(settings, profiles, time, inventory);
         BackendGate gate = new();
         PartyService party = new(gate, profiles, log, time);
-        MatchmakingService matchmaking = new(gate, party, profiles, allocator, log, inventory);
+        MatchmakingService matchmaking = new(gate, party, profiles, raids, log, inventory);
         builder.Services.AddSingleton(matchmaking);
         builder.Services.AddHostedService(_ => new InventoryReservationRecovery(matchmaking, time));
         BackendRoutes routes = new(identity, profiles, accounts, party, matchmaking, inventory, time);
@@ -82,7 +80,7 @@ public static class HostApplication
         _ = app.Services.GetRequiredService<HostDatabase>();
         app.Lifetime.ApplicationStopped.Register(() =>
         {
-            allocator?.Dispose();
+            raids?.Dispose();
             gate.Dispose();
         });
         app.Run(dispatcher.HandleAsync);

@@ -9,6 +9,7 @@ using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Status;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
@@ -56,10 +57,8 @@ public sealed class HostTests : IAsyncLifetime
             },
             Bind = IPAddress.Loopback,
             Port = 18080,
-            SessionControlUrl = new Uri("http://localhost"),
-            OperatorToken = OperatorToken,
         };
-        _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), allocatorHandler: _raidApp!.GetTestServer().CreateHandler(),
+        _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), raidStarter: new TestRaidStarter(_raidApp!),
             configureBuilder: builder => builder.WebHost.UseTestServer());
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client = _host.GetTestClient();
@@ -269,23 +268,12 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData(false, false, HttpStatusCode.Conflict)]
-    [InlineData(true, false, HttpStatusCode.ServiceUnavailable)]
-    [InlineData(false, true, HttpStatusCode.Conflict)]
-    [InlineData(true, true, HttpStatusCode.ServiceUnavailable)]
-    public async Task A_ready_swap_preserves_a_live_or_unreachable_raid_reservation(bool unavailable, bool restartHost, HttpStatusCode expected)
+    [InlineData(false, HttpStatusCode.Conflict)]
+    [InlineData(true, HttpStatusCode.ServiceUnavailable)]
+    public async Task A_ready_swap_preserves_a_live_or_unreachable_raid_reservation(bool unavailable, HttpStatusCode expected)
     {
         (string bearer, InventoryStore store, string ticket, InventoryOperationsRequest swap) = await ReserveLootingAugment();
         _raid.StatusUnavailable = unavailable;
-        if (restartHost)
-        {
-            _client!.Dispose();
-            await _host!.DisposeAsync();
-            await StartHost();
-            store = _host!.Services.GetRequiredService<InventoryStore>();
-            await Post("/v1/shared/social/party/v2/create", new { });
-        }
-
         string saved = _database.InventoryJson;
 
         Assert.Equal(expected, (await Post("/v1/pioneer/v1/batch-operation", swap, bearer)).StatusCode);
@@ -297,12 +285,14 @@ public sealed class HostTests : IAsyncLifetime
             item => item.GameAssetId == AugmentItems.LootingMk1AssetId).InstanceId);
     }
 
-    [Fact]
-    public async Task Startup_releases_a_confirmed_lost_reservation_before_any_client_or_console_request()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Startup_releases_the_reservation_of_a_raid_stopped_with_the_previous_Host(bool unavailable)
     {
         (_, InventoryStore store, _, _) = await ReserveLootingAugment();
         PlayerInventory before = store.Inventory;
-        _raid.Forget();
+        _raid.StatusUnavailable = unavailable;
         _client!.Dispose();
         await _host!.DisposeAsync();
         await StartHost();
@@ -316,36 +306,13 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Contains(store.Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Startup_keeps_a_live_or_unverified_reservation_locked(bool unavailable)
-    {
-        (_, _, string ticket, _) = await ReserveLootingAugment();
-        _raid.StatusUnavailable = unavailable;
-        string saved = _database.InventoryJson;
-        _client!.Dispose();
-        await _host!.DisposeAsync();
-        await StartHost();
-        InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
-
-        Assert.Equal(ticket, store.ReservedTicketId);
-        Assert.Throws<InvalidOperationException>(() => store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch));
-        Assert.Equal(saved, _database.InventoryJson);
-    }
-
     [Fact]
-    public async Task Recovery_retries_when_Raid_becomes_available_without_waiting_for_client_traffic()
+    public async Task Recovery_releases_the_reservation_once_the_raid_ends_without_waiting_for_client_traffic()
     {
         await ReserveLootingAugment();
-        _raid.StatusUnavailable = true;
-        _client!.Dispose();
-        await _host!.DisposeAsync();
-        await StartHost();
         InventoryStore store = _host!.Services.GetRequiredService<InventoryStore>();
         Assert.NotNull(store.ReservedTicketId);
         _raid.Forget();
-        _raid.StatusUnavailable = false;
 
         using CancellationTokenSource timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(10));
@@ -533,6 +500,21 @@ public sealed class HostTests : IAsyncLifetime
             return _allocation is not null && (request.MatchId is null ? _allocation.TicketId == request.TicketId : _allocation.MatchId == request.MatchId)
                 ? AllocationResult.Success(_allocation)
                 : AllocationResult.Failure(404, "unknown_session_allocation");
+        }
+    }
+
+    /// <summary>Hands Host the in-memory Raid allocation API instead of starting a process.</summary>
+    private sealed class TestRaidStarter(WebApplication raid) : IRaidStarter
+    {
+        public IRaidServer Start(int slot) => new Server(new SessionAllocatorClient(new Uri("http://localhost"), OperatorToken, raid.GetTestServer().CreateHandler()));
+
+        private sealed class Server(SessionAllocatorClient allocator) : IRaidServer
+        {
+            public SessionAllocatorClient Allocator => allocator;
+
+            public bool HasExited => false;
+
+            public void Dispose() => allocator.Dispose();
         }
     }
 }

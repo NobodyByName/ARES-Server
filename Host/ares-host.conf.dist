@@ -23,7 +23,7 @@ server-name = "ARES-Host"
 motd = ""
 # Empty: the Steam build supported by this ARES release.
 game-build =
-# Advertised concurrent raid capacity: 0-10000; currently only one raid is implemented.
+# Most raids Host runs at once (one ARES-Raid process each): 0-10000.
 raid-capacity = 1
 
 # STORAGE AND KEYS
@@ -38,11 +38,22 @@ archive-keys-file = "archive-keys.txt"
 # Optional identity signing key file (32-4096 bytes). Empty: identity tokens are unchecked.
 auth-key-file =
 
-# RAID ALLOCATION
+# RAIDS
+# Host starts one ARES-Raid process per raid during matchmaking; it exits when its raid ends.
 # Set both values to enable matchmaking. Empty: matchmaking stays in MATCHING.
-# The API must use loopback HTTP or HTTPS. Keep tokens in a separate private file.
-session-control-url =
+# The operator token (at least 32 ASCII characters) secures the Raid's loopback allocation API.
+# Keep it in a separate private file.
+raid-executable =
 session-control-token-file =
+# Largest party one raid accepts: at least 1.
+raid-players = 1
+# Raids listen on Host's bind address and advertise the public-origin host to players.
+# UDP game port of the first raid; each further raid uses the next port.
+raid-port = 7777
+# Loopback allocation API port of the first raid, counted the same way. Must not include port.
+raid-control-port = 17778
+# Lighting of every raid, e.g. Lighting.GreyMorning. Empty: picked by the map's weights.
+raid-lighting =
 
 # CONSOLE AND LOGGING
 # auto, interactive, plain or json. auto selects interactive output in a terminal.

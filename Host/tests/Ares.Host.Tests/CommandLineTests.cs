@@ -26,7 +26,7 @@ public sealed class CommandLineTests : IDisposable
 
         Assert.Equal("http://127.0.0.1:18080", configuration.Settings.PublicOrigin);
         Assert.Equal("http://127.0.0.1:18080/", configuration.Settings.Issuer);
-        Assert.Null(configuration.SessionControlUrl);
+        Assert.Null(configuration.Raids);
         Assert.Equal(ArchiveKeysTests.DummySha256, configuration.Settings.ArchiveKeys.Fingerprint());
     }
 
@@ -82,6 +82,10 @@ public sealed class CommandLineTests : IDisposable
     [InlineData("--public-origin", "https://127.0.0.1:18080")]
     [InlineData("--public-origin", "http://127.0.0.1:18080/path")]
     [InlineData("--session-control-url", "http://127.0.0.1:17778")]
+    [InlineData("--raid-players", "0")]
+    [InlineData("--raid-control-port", "18080")]
+    [InlineData("--raid-port", "65536")]
+    [InlineData("--raid-executable", "/nonexistent/ARES-Raid")]
     [InlineData("--game-build", "abc")]
     [InlineData("--http-only", "x")]
     [InlineData("--data-dir", "/tmp/x")]

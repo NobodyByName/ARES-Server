@@ -8,7 +8,7 @@ using Ares.Common.Security;
 namespace Ares.Common.Control;
 
 /// <summary>
-/// Host side of the allocation API. It only talks to an independently running Raid; it never
+/// Host side of the allocation API of one Raid server. It only talks to that server; it never
 /// starts a server or a client. Replies are validated before Host relays anything to players.
 /// </summary>
 public sealed class SessionAllocatorClient : IDisposable

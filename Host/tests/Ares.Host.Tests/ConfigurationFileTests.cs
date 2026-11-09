@@ -64,8 +64,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Empty(configuration.Settings.Motd);
         Assert.Equal(GameBuild.SteamBuildId.ToString(System.Globalization.CultureInfo.InvariantCulture), configuration.Settings.GameBuild);
         Assert.Equal(HostSettings.DefaultRaidCapacity, configuration.Settings.RaidCapacity);
-        Assert.Null(configuration.SessionControlUrl);
-        Assert.Null(configuration.OperatorToken);
+        Assert.Null(configuration.Raids);
         Assert.Null(configuration.Settings.IdentityKey);
         Assert.Null(configuration.LogFile);
         Assert.Equal("auto", configuration.ConsoleMode);
@@ -84,6 +83,7 @@ public sealed class ConfigurationFileTests : IDisposable
     public void File_configures_all_settings_and_resolves_paths_from_its_own_directory()
     {
         File.WriteAllText(Path.Combine(_directory, "operator-token"), new string('a', 64));
+        File.WriteAllText(Path.Combine(_directory, "ARES-Raid"), "");
         File.WriteAllBytes(Path.Combine(_directory, "identity-key"), new byte[32]);
         Write("""
             # Full-line comment
@@ -97,8 +97,12 @@ public sealed class ConfigurationFileTests : IDisposable
             raid-capacity = 2
             archive-keys-file = archive-keys.txt
             auth-key-file = identity-key
-            session-control-url = http://127.0.0.1:17778
+            raid-executable = ARES-Raid
             session-control-token-file = operator-token
+            raid-players = 4
+            raid-port = 7000
+            raid-control-port = 17000
+            raid-lighting = Lighting.GreyMorning
             console = json
             log-file = logs/host.log
             """);
@@ -113,8 +117,8 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal("12345", configuration.Settings.GameBuild);
         Assert.Equal(2, configuration.Settings.RaidCapacity);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
-        Assert.Equal(new string('a', 64), configuration.OperatorToken);
-        Assert.Equal(new Uri("http://127.0.0.1:17778"), configuration.SessionControlUrl);
+        Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
+            "192.0.2.4", 7000, 17000, 4, "Lighting.GreyMorning"), configuration.Raids);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
     }
@@ -173,7 +177,10 @@ public sealed class ConfigurationFileTests : IDisposable
     [InlineData("raid-capacity = -1", "Invalid --raid-capacity")]
     [InlineData("game-build = abc", "Invalid --server-name/--motd/--game-build")]
     [InlineData("console = invalid", "must be auto")]
-    [InlineData("session-control-url = http://127.0.0.1:17778", "requires both")]
+    [InlineData("session-control-token-file = operator-token", "requires both")]
+    [InlineData("raid-players = 0", "--raid-players must be at least 1")]
+    [InlineData("raid-control-port = 18079\nraid-capacity = 2", "must not include the Host --port")]
+    [InlineData("raid-port = 65535\nraid-capacity = 2", "one port from 1 to 65535")]
     [InlineData("archive-keys-file =", "must not be empty")]
     [InlineData("config = another.conf", "unknown setting")]
     public void Bad_files_fail_explicitly(string content, string expected)

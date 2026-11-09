@@ -53,7 +53,9 @@ log.Write(new JsonObject
     ["listening"] = $"{configuration.Bind}:{configuration.Port}",
     ["public_origin"] = configuration.Settings.PublicOrigin,
     ["network_clients"] = configuration.AllowNetworkClients,
-    ["matchmaking"] = configuration.SessionControlUrl is not null,
+    ["matchmaking"] = configuration.Raids is not null,
+    ["raid_capacity"] = configuration.Settings.RaidCapacity,
+    ["raid_players"] = configuration.Raids?.Players,
     ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "unchecked",
 });

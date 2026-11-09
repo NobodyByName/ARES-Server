@@ -17,11 +17,11 @@ using ServerInitializationStates = Ares.Structs.Backend.Matchmaking.ServerInitia
 namespace Ares.Host.Services.Matchmaking;
 
 /// <summary>
-/// Normal queue lifecycle: start a ticket, reserve a raid on the independently running Raid
-/// server while the client polls, relay the game server, and cancel. Without a configured
-/// Raid, tickets stay <c>MATCHING</c>.
+/// Normal queue lifecycle: start a ticket, start a Raid server and reserve its raid while the
+/// client polls, relay the game server, and cancel. Without configured Raid servers, tickets
+/// stay <c>MATCHING</c>.
 /// </summary>
-public sealed class MatchmakingService(BackendGate gate, PartyService party, ProfileFactory profiles, SessionAllocatorClient? allocator, JsonEventLog log,
+public sealed class MatchmakingService(BackendGate gate, PartyService party, ProfileFactory profiles, RaidFleet? raids, JsonEventLog log,
     InventoryStore inventory)
 {
     /// <summary>Seconds between client polls.</summary>
@@ -33,8 +33,8 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
     private Allocation? _assignment;
     private bool _assignmentExpired;
 
-    /// <summary>True when a Raid allocation API is configured.</summary>
-    public bool HasAllocator => allocator is not null;
+    /// <summary>True when Host starts Raid servers.</summary>
+    public bool HasAllocator => raids is not null;
 
     /// <summary>Reconciles a persisted inventory lock independently of menu or matchmaking traffic.</summary>
     public async Task ReconcileInventoryAsync(CancellationToken cancellationToken)
@@ -138,7 +138,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
     public async Task<ServiceReply> GameServerAsync(GameServerStatusRequest request, CancellationToken cancellationToken)
     {
         using BackendGate.Releaser held = await gate.EnterAsync(cancellationToken).ConfigureAwait(false);
-        if (_assignment is null || allocator is null || request.MatchId != _assignment.MatchId)
+        if (_assignment is null || raids is null || request.MatchId != _assignment.MatchId)
         {
             return ServiceReply.Error(404, "unknown_local_match");
         }
@@ -146,7 +146,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         Allocation allocation;
         try
         {
-            allocation = await allocator.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
+            allocation = await raids.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
         }
         catch (AllocationExpiredException)
         {
@@ -203,6 +203,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             return ServiceReply.Ok(new CancelMatchResponse(ticket.TicketId, HasAssignment: true));
         }
 
+        raids?.Cancel(ticket.TicketId);
         _ticket = null;
         _assignment = null;
         _assignmentExpired = false;
@@ -226,7 +227,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
 
     private async Task RefreshAssignmentLockedAsync(CancellationToken cancellationToken)
     {
-        if (_assignmentExpired || allocator is null)
+        if (_assignmentExpired || raids is null)
         {
             return;
         }
@@ -241,11 +242,11 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         {
             if (_assignment is not null)
             {
-                await allocator.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
+                await raids.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                await allocator.StatusByTicketAsync(ticket, inventory.Reserve(ticket), cancellationToken).ConfigureAwait(false);
+                await raids.StatusByTicketAsync(ticket, inventory.Reserve(ticket), cancellationToken).ConfigureAwait(false);
             }
         }
         catch (AllocationExpiredException)
@@ -263,7 +264,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             return ServiceReply.Error(404, "unknown_local_ticket");
         }
 
-        if (!allocate || allocator is null || _assignment is not null)
+        if (!allocate || raids is null || _assignment is not null)
         {
             return ServiceReply.Ok(_ticket);
         }
@@ -275,7 +276,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             EmbarkProfile profile = profiles.Create();
             CompactPlayerProfile compact = new(new TenancyUserId((ulong)profile.TenancyUserId), profile.DisplayName.Name, profile.DisplayName.Discriminator,
                 profile.ThirdPartyUserId, profile.ThirdPartyLastSeenAccountName);
-            allocation = await allocator.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds, [loadout], [compact]), cancellationToken).ConfigureAwait(false);
+            allocation = await raids.ReserveAsync(new AllocationRequest(_ticket.TicketId, _ticket.ScenarioName, _ticket.PartyMemberIds, [loadout], [compact]), cancellationToken).ConfigureAwait(false);
         }
         catch (InvalidOperationException)
         {
