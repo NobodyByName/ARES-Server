@@ -28,4 +28,11 @@ public sealed class CommandLineTests
     {
         Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse([]));
     }
+
+    [Fact]
+    public void Max_players_must_be_at_least_one()
+    {
+        Assert.Contains("--max-players", Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse(["--max-players", "0"])).Message,
+            StringComparison.Ordinal);
+    }
 }

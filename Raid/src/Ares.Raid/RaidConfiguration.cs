@@ -16,13 +16,14 @@ public sealed record RaidConfiguration
     public static readonly string Usage = $"""
         Usage: ARES-Raid [options]
 
-        ARES raid server: hosts one Dam raid at a time for the player the Host reserves it for.
+        ARES raid server: hosts one Dam raid at a time for the party the Host reserves it for.
 
           --port <n>                  UDP game port (default {DefaultPort})
           --bind <ip>                 Game listen address (default 127.0.0.1)
           --advertise-host <host>     Host name or IPv4 address players connect to (required)
           --control-port <n>          Allocation API port, on loopback (required)
           --control-token-file <f>    Operator token shared with the Host (required)
+          --max-players <n>           Largest party one raid accepts (default 1)
           --lighting <tag>            Lighting of every raid (default: picked by the map's weights)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
@@ -44,6 +45,9 @@ public sealed record RaidConfiguration
 
     /// <summary>Operator token of the allocation API.</summary>
     public required string OperatorToken { get; init; }
+
+    /// <summary>Largest party one raid accepts.</summary>
+    public int MaxPlayers { get; private init; } = 1;
 
     /// <summary>Lighting of every raid, or null for a weighted pick.</summary>
     public string? Lighting { get; private init; }
@@ -77,12 +81,18 @@ public sealed record RaidConfiguration
         int controlPort = arguments.GetInt32("control-port", 0);
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
+        int maxPlayers = arguments.GetInt32("max-players", 1);
         string consoleMode = arguments.GetString("console", "auto")!;
         string? logFile = arguments.GetString("log-file");
         arguments.RejectUnknown();
         if (consoleMode is not ("auto" or "interactive" or "plain" or "json"))
         {
             throw new CommandLineException("--console must be auto, interactive, plain or json");
+        }
+
+        if (maxPlayers < 1)
+        {
+            throw new CommandLineException("--max-players must be at least 1");
         }
 
         if (port is < 1 or > 65535 || controlPort is < 1 or > 65535 || port == controlPort)
@@ -117,6 +127,7 @@ public sealed record RaidConfiguration
                 ControlPort = controlPort,
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
+                MaxPlayers = maxPlayers,
             };
         }
         catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException)

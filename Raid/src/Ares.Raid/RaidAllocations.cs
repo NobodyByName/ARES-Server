@@ -12,7 +12,7 @@ using ScenarioNames = Ares.Structs.Backend.Matchmaking.ScenarioNames;
 namespace Ares.Raid;
 
 /// <summary>
-/// The raid's single reservation: reserved by the Host for one player, expiring unless the player keeps
+/// The raid's single reservation: reserved by the Host for its party, expiring unless the player keeps
 /// it alive, and admitting that player through its routing credential.
 /// </summary>
 public sealed class RaidAllocations : IAllocationService, IRouteResolver
@@ -27,14 +27,17 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     private readonly IWorldLifecycle _worlds;
     private readonly Func<double> _clock;
     private readonly double _timeout;
+    private readonly int _maxPlayers;
     private Reservation? _current;
 
     /// <summary>Creates the service.</summary>
     /// <param name="endpoint">Where players connect (its routing token is filled in per reservation).</param>
     /// <param name="worlds">Prepares the raid world.</param>
     /// <param name="clock">Monotonic clock in seconds.</param>
+    /// <param name="maxPlayers">Largest party a reservation may hold.</param>
     /// <param name="initializationTimeout">Seconds a reservation lives without activity (up to 600).</param>
-    public RaidAllocations(GameServerEndpoint endpoint, IWorldLifecycle worlds, Func<double>? clock = null, double initializationTimeout = DefaultInitializationTimeout)
+    public RaidAllocations(GameServerEndpoint endpoint, IWorldLifecycle worlds, Func<double>? clock = null, int maxPlayers = 1,
+        double initializationTimeout = DefaultInitializationTimeout)
     {
         _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
         _worlds = worlds ?? throw new ArgumentNullException(nameof(worlds));
@@ -43,9 +46,12 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             throw new ArgumentOutOfRangeException(nameof(initializationTimeout));
         }
 
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxPlayers, 1);
+
         long started = Stopwatch.GetTimestamp();
         _clock = clock ?? (() => Stopwatch.GetElapsedTime(started).TotalSeconds);
         _timeout = initializationTimeout;
+        _maxPlayers = maxPlayers;
     }
 
     /// <inheritdoc />
@@ -53,7 +59,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     {
         ArgumentNullException.ThrowIfNull(request);
         if (!SessionAllocatorClient.IsCanonicalUuid(request.TicketId) || request.ScenarioName != ScenarioNames.TheDam
-            || request.PartyMemberIds is not [> 0])
+            || request.PartyMemberIds.Count < 1 || request.PartyMemberIds.Count > _maxPlayers || request.PartyMemberIds.Any(player => player <= 0))
         {
             return AllocationResult.Failure(StatusCodes.Status400BadRequest, "unsupported_session_allocation");
         }

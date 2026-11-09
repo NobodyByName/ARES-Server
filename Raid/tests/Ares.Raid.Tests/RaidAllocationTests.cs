@@ -97,6 +97,19 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void A_reservation_holds_at_most_the_configured_party_size()
+    {
+        RaidAllocations single = Allocations();
+        Assert.Equal((400, "unsupported_session_allocation"), (single.Reserve(Request() with { PartyMemberIds = [42, 43] }).StatusCode,
+            single.Reserve(Request() with { PartyMemberIds = [42, 43] }).Error));
+
+        RaidAllocations squad = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 3);
+        Assert.Equal(200, squad.Reserve(Request() with { PartyMemberIds = [42, 43, 44] }).StatusCode);
+        Assert.Equal(400, new RaidAllocations(s_endpoint, _worlds, () => _now[0], maxPlayers: 3)
+            .Reserve(Request() with { PartyMemberIds = [42, 43, 44, 45] }).StatusCode);
+    }
+
+    [Fact]
     public void Reservations_expire_unless_the_player_is_active()
     {
         RaidAllocations allocations = Allocations();

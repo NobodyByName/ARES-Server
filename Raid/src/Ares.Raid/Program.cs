@@ -44,7 +44,8 @@ socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
 int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
 
 DamWorlds worlds = new(Clock, configuration.Lighting);
-RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock);
+RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
+    configuration.MaxPlayers);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
 RaidConnections connections = new(handshake, new RoutingAuthenticator(allocations), worlds, packet => UdpPadding.Remove(packet), Clock);
 
@@ -70,6 +71,7 @@ log.Write(new JsonObject
     ["allocation_api"] = $"127.0.0.1:{configuration.ControlPort}",
     ["network_version"] = GameBuild.NetworkChecksum,
     ["lighting"] = configuration.Lighting ?? "weighted",
+    ["max_players"] = configuration.MaxPlayers,
 });
 
 RaidServer server = new(socket, connections, log, Clock);
