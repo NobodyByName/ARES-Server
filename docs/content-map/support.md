@@ -8,7 +8,7 @@ moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons,
 the main menu.
 
 Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
-and each process exits when its raid is over. Host persists the local account's stash and selected
+and each process exits when its raid is over. Host persists each account's stash and selected
 loadout. A raid's loadout stays locked until that raid is over; restarting Host ends its raids and
 unlocks the loadout. A raid currently admits one player, whatever party size is configured.
 The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
@@ -51,9 +51,9 @@ reject grants. Starter provisioning still supplies only one rubber duck.
 
 Limitations:
 
-- One player and one raid at a time; Dam only.
-- Identity is synthetic: every player uses one local account, with no real sign-in or separate
-  player accounts and progression yet.
+- One player per raid (several accounts can play, each in its own raid); Dam only.
+- Accounts are made by the operator on the Host console; players sign in through ARES-Launcher.
+  There is no progression yet.
 - Movement is trusted from the client; the server does not check it yet.
 - No damage, loot, death or match results yet.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
