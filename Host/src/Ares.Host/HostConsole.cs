@@ -4,7 +4,10 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common;
 using Ares.Common.Logging;
+using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Persistence;
+using Ares.Host.Services.Players;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
@@ -66,7 +69,9 @@ internal sealed class HostConsole : ILoggerProvider
 
     public JsonEventLog Log { get; }
 
-    internal InventoryStore? Inventory { get; set; }
+    internal AccountDirectory? Accounts { get; set; }
+
+    internal PlayerRegistry? Players { get; set; }
 
     public async Task RunAsync(Action stop, CancellationToken cancellationToken)
     {
@@ -178,20 +183,27 @@ internal sealed class HostConsole : ILoggerProvider
                 return;
             }
 
-            AddLine($"> {SafeText(name)}");
-            switch (name.ToLowerInvariant())
+            AddLine($"> {SafeText(HasPassword(name) ? MaskPassword(name) : name)}");
+            string[] words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            switch (words[0].ToLowerInvariant())
             {
-                case "help":
+                case "help" when words.Length == 1:
                     AddLine("help    Show commands");
                     AddLine("status  Show Host configuration and latest activity");
                     AddLine("clear   Clear this console's log view");
                     AddLine("stop    Gracefully stop ARES-Host");
-                    AddLine("inventory  Show stored items and the loadout reservation");
-                    AddLine("inventory import <path>  Replace an idle inventory from a JSON file");
-                    AddLine("inventory add <technical-name> [quantity]  Add one supported stack to the stash");
+                    AddLine("account list  List accounts");
+                    AddLine("account create <name> <password>  Create an account");
+                    AddLine("account password <name> <password>  Set a new password");
+                    AddLine("account rename <name> <new-name>  Rename an account (also its in-game name)");
+                    AddLine("account ban <name> / account unban <name>  Block or allow sign-in");
+                    AddLine("account delete <name>  Delete an account and all its player data");
+                    AddLine("inventory <account>  Show stored items and the loadout reservation");
+                    AddLine("inventory <account> import <path>  Replace an idle inventory from a JSON file");
+                    AddLine("inventory <account> add <technical-name> [quantity]  Add one supported stack to the stash");
                     AddLine("Tab completes commands, subcommands and item names; Shift+Tab cycles backward");
                     break;
-                case "status":
+                case "status" when words.Length == 1:
                     AddLine($@"ARES-Host {AresVersion.Current} | Steam build {GameBuild.SteamBuildId} | uptime {DateTimeOffset.Now - _started:hh\:mm\:ss}");
                     foreach ((string key, string value) in _status)
                     {
@@ -199,35 +211,20 @@ internal sealed class HostConsole : ILoggerProvider
                     }
 
                     break;
-                case "clear":
+                case "clear" when words.Length == 1:
                     _lines.Clear();
                     _scroll = 0;
                     _dirty = true;
                     break;
-                case "stop":
+                case "stop" when words.Length == 1:
                     AddLine("Stopping ARES-Host...");
                     stop();
                     break;
-                case "inventory":
-                    if (Inventory is { } inventory)
-                    {
-                        PlayerInventory state = inventory.Inventory;
-                        AddLine($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {state.Stash.SlotCount}, backpack capacity {state.Loadout.BackpackCapacity}");
-                        AddLine($"QuickUse capacity {state.Loadout.QuickUseCapacity}, Safe Pocket capacity {state.Loadout.SafePocketCapacity}");
-                        AddLine($"Augment: {state.Loadout.Augment?.Type ?? "none"}");
-                        AddLine($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
-                    }
-                    else
-                    {
-                        AddLine("Inventory is unavailable.");
-                    }
-
+                case "account":
+                    RunGuarded("Account command", () => AccountCommand(words));
                     break;
-                case not null when name.StartsWith("inventory import ", StringComparison.OrdinalIgnoreCase):
-                    ImportInventory(name["inventory import ".Length..].Trim().Trim('"'));
-                    break;
-                case not null when name.StartsWith("inventory add ", StringComparison.OrdinalIgnoreCase):
-                    AddInventoryItem(name["inventory add ".Length..].Trim());
+                case "inventory" when words.Length >= 2:
+                    RunGuarded("Inventory command", () => InventoryCommand(words, name));
                     break;
                 default:
                     AddLine("Unknown command. Type help for commands.");
@@ -236,14 +233,131 @@ internal sealed class HostConsole : ILoggerProvider
         }
     }
 
-    private void ImportInventory(string path)
+    private void RunGuarded(string what, Action command)
     {
-        if (Inventory is not { } inventory)
+        if (Accounts is null || Players is null)
         {
-            AddLine("Inventory is unavailable.");
+            AddLine("Accounts are unavailable.");
             return;
         }
 
+        try
+        {
+            command();
+        }
+        catch (Exception error) when (error is PersistenceException or InvalidDataException)
+        {
+            AddLine($"{what} failed: {SafeText(error.Message)}");
+        }
+    }
+
+    private void AccountCommand(string[] words)
+    {
+        AccountDirectory accounts = Accounts!;
+        switch (words.Length > 1 ? words[1].ToLowerInvariant() : "")
+        {
+            case "list" when words.Length == 2:
+                IReadOnlyList<Account> all = accounts.List();
+                foreach (Account account in all)
+                {
+                    AddLine($"{account.Name}  id {account.UserId}{(account.Record.Banned ? "  banned" : "")}");
+                }
+
+                AddLine($"{all.Count} account(s).");
+                break;
+            case "create" when words.Length == 4:
+                AddLine(accounts.Create(words[2], words[3]) switch
+                {
+                    AccountCreateResult.Created => $"Account {words[2]} created.",
+                    AccountCreateResult.InvalidName => "Account names are 3-32 letters, digits, '_', '-' or '.'.",
+                    AccountCreateResult.InvalidPassword => $"Passwords are {AccountDirectory.MinimumPasswordLength}-{AccountDirectory.MaximumPasswordLength} characters without spaces.",
+                    AccountCreateResult.NameTaken => $"An account named {words[2]} already exists.",
+                    _ => "Account not created.",
+                });
+                break;
+            case "password" when words.Length == 4:
+                AddLine(accounts.SetPassword(words[2], words[3])
+                    ? $"Password of {words[2]} changed; its launch key was revoked."
+                    : $"No account {words[2]}, or the password is not {AccountDirectory.MinimumPasswordLength}-{AccountDirectory.MaximumPasswordLength} characters.");
+                break;
+            case "rename" when words.Length == 4:
+                (AccountRenameResult result, Account? renamed) = accounts.Rename(words[2], words[3]);
+                if (renamed is not null)
+                {
+                    Players!.Update(renamed);
+                }
+
+                AddLine(result switch
+                {
+                    AccountRenameResult.Renamed => $"Account {words[2]} renamed to {renamed!.Name}. Players see the new name after restarting the game.",
+                    AccountRenameResult.NotFound => $"No account {words[2]}.",
+                    AccountRenameResult.InvalidName => "Account names are 3-32 letters, digits, '_', '-' or '.'.",
+                    _ => $"An account named {words[3]} already exists.",
+                });
+                break;
+            case "ban" or "unban" when words.Length == 3:
+                bool banned = words[1].Equals("ban", StringComparison.OrdinalIgnoreCase);
+                if (accounts.SetBanned(words[2], banned) is { } changed)
+                {
+                    Players!.Update(changed);
+                    AddLine(banned ? $"Account {changed.Name} banned." : $"Account {changed.Name} unbanned.");
+                }
+                else
+                {
+                    AddLine($"No account {words[2]}.");
+                }
+
+                break;
+            case "delete" when words.Length == 3:
+                if (accounts.Delete(words[2]) is { } deleted)
+                {
+                    Players!.Forget(deleted.UserId);
+                    AddLine($"Account {deleted.Name} and its player data deleted.");
+                }
+                else
+                {
+                    AddLine($"No account {words[2]}.");
+                }
+
+                break;
+            default:
+                AddLine("Use account list|create|password|rename|ban|unban|delete. Type help for details.");
+                break;
+        }
+    }
+
+    private void InventoryCommand(string[] words, string line)
+    {
+        if (Accounts!.Find(words[1]) is not { } account || Players!.Find(account.UserId) is not { } player)
+        {
+            AddLine($"No account {words[1]}.");
+            return;
+        }
+
+        InventoryStore inventory = player.Inventory;
+        switch (words.Length > 2 ? words[2].ToLowerInvariant() : "")
+        {
+            case "":
+                PlayerInventory state = inventory.Inventory;
+                AddLine($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {state.Stash.SlotCount}, backpack capacity {state.Loadout.BackpackCapacity}");
+                AddLine($"QuickUse capacity {state.Loadout.QuickUseCapacity}, Safe Pocket capacity {state.Loadout.SafePocketCapacity}");
+                AddLine($"Augment: {state.Loadout.Augment?.Type ?? "none"}");
+                AddLine($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
+                break;
+            case "import" when words.Length >= 4:
+                ImportInventory(inventory, Remainder(line, 3).Trim('"'));
+                break;
+            case "add":
+                AddInventoryItem(inventory, words[3..]);
+                break;
+            default:
+                AddLine("Use inventory <account> [add|import]. Type help for details.");
+                break;
+        }
+    }
+
+    private void ImportInventory(InventoryStore inventory, string path)
+    {
         try
         {
             inventory.ImportFile(path, inventory.Inventory.Revision);
@@ -256,21 +370,14 @@ internal sealed class HostConsole : ILoggerProvider
         }
     }
 
-    private void AddInventoryItem(string arguments)
+    private void AddInventoryItem(InventoryStore inventory, string[] parts)
     {
-        if (Inventory is not { } inventory)
-        {
-            AddLine("Inventory is unavailable.");
-            return;
-        }
-
         try
         {
-            string[] parts = arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             long quantity = 1;
             if (parts.Length is < 1 or > 2 || parts.Length == 2 && !long.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out quantity))
             {
-                throw new InvalidDataException("Use inventory add <technical-name> [quantity]");
+                throw new InvalidDataException("Use inventory <account> add <technical-name> [quantity]");
             }
 
             inventory.AddItem(parts[0], DateTimeOffset.UtcNow, quantity);
@@ -280,6 +387,33 @@ internal sealed class HostConsole : ILoggerProvider
         {
             AddLine($"Inventory add rejected: {SafeText(error.Message)}");
         }
+    }
+
+    // The text after the first <paramref name="words"/> words.
+    private static string Remainder(string line, int words)
+    {
+        string rest = line.Trim();
+        for (int word = 0; word < words; word++)
+        {
+            int space = rest.IndexOf(' ');
+            rest = space < 0 ? "" : rest[(space + 1)..].TrimStart();
+        }
+
+        return rest;
+    }
+
+    // Commands that carry a password: shown masked and kept out of the history.
+    private static bool HasPassword(string command)
+    {
+        string[] words = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return words.Length >= 3 && words[0].Equals("account", StringComparison.OrdinalIgnoreCase)
+            && (words[1].Equals("create", StringComparison.OrdinalIgnoreCase) || words[1].Equals("password", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string MaskPassword(string command)
+    {
+        string[] words = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Join(' ', words.Take(3)) + (words.Length > 3 ? " ********" : "");
     }
 
     internal void HandleKey(ConsoleKeyInfo key, Action stop, int height)
@@ -301,7 +435,7 @@ internal sealed class HostConsole : ILoggerProvider
                 _cursor = 0;
                 if (!string.IsNullOrWhiteSpace(command))
                 {
-                    if (_history.Count == 0 || _history[^1] != command)
+                    if (!HasPassword(command) && (_history.Count == 0 || _history[^1] != command))
                     {
                         _history.Add(command);
                         if (_history.Count > HistoryLimit)
@@ -386,9 +520,10 @@ internal sealed class HostConsole : ILoggerProvider
             string[] preceding = input[.._completionStart].Split(' ', StringSplitOptions.RemoveEmptyEntries);
             IEnumerable<string> candidates = preceding switch
             {
-                [] => ["help", "status", "clear", "stop", "inventory"],
-                [var command] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
-                [var command, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
+                [] => ["help", "status", "clear", "stop", "account", "inventory"],
+                [var command] when command.Equals("account", StringComparison.OrdinalIgnoreCase) => ["list", "create", "password", "rename", "ban", "unban", "delete"],
+                [var command, _] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
+                [var command, _, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
                     && subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => ItemTechnicalNames.AssetIds.Keys,
                 _ => [],
             };

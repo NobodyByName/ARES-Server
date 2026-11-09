@@ -1,6 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Ares.Common.Logging;
+using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Players;
 using Ares.Structs.Backend.Progression;
 using Microsoft.Extensions.Logging;
 
@@ -13,10 +16,10 @@ public sealed class ConsoleTests
     [InlineData("INV", "inventory")]
     [InlineData("he", "help")]
     [InlineData("cl", "clear")]
-    [InlineData("inventory a", "inventory add")]
-    [InlineData("inventory im", "inventory import")]
-    [InlineData("  INVENTORY   a", "  INVENTORY   add")]
-    [InlineData("inventory import inv", "inventory import inv")]
+    [InlineData("inventory tester a", "inventory tester add")]
+    [InlineData("inventory tester im", "inventory tester import")]
+    [InlineData("  INVENTORY  tester  a", "  INVENTORY  tester  add")]
+    [InlineData("inventory tester import inv", "inventory tester import inv")]
     [InlineData("unknown inv", "unknown inv")]
     public void Completion_uses_the_command_context(string input, string expected)
     {
@@ -55,11 +58,11 @@ public sealed class ConsoleTests
         using HostConsole console = new("plain", TextWriter.Null);
         Type(console, "inv");
         Key(console, ConsoleKey.Tab);
-        Type(console, " ");
+        Type(console, " tester ");
         Key(console, ConsoleKey.Tab);
         Type(console, " augment");
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.CombatMk1 + "\e[0m", console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.CombatMk1 + "\e[0m", console.Render(120, 24), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -68,88 +71,88 @@ public sealed class ConsoleTests
     public void Partial_name_completion_cycles_all_matching_items_and_excludes_unrelated_items(string query)
     {
         using HostConsole console = new("plain", TextWriter.Null);
-        Type(console, "inventory add " + query);
+        Type(console, "inventory tester add " + query);
         string[] matches = [ItemTechnicalNames.CombatMk1, ItemTechnicalNames.LootingMk1, ItemTechnicalNames.TacticalMk1, ItemTechnicalNames.CombatMk1];
         foreach (string name in matches)
         {
             Key(console, ConsoleKey.Tab);
-            Assert.Contains("> inventory add " + name, console.Render(120, 24), StringComparison.Ordinal);
+            Assert.Contains("> inventory tester add " + name, console.Render(120, 24), StringComparison.Ordinal);
         }
 
         Key(console, ConsoleKey.Tab, shift: true);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.TacticalMk1, console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.TacticalMk1, console.Render(120, 24), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Item_name_completion_extends_the_common_prefix_then_cycles_in_both_directions()
     {
         using HostConsole console = new("plain", TextWriter.Null);
-        Type(console, "inventory add da_item_aug");
+        Type(console, "inventory tester add da_item_aug");
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add DA_Item_Augment_", console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add DA_Item_Augment_", console.Render(120, 24), StringComparison.Ordinal);
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.CombatMk1, console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.CombatMk1, console.Render(120, 24), StringComparison.Ordinal);
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.LootingMk1, console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.LootingMk1, console.Render(120, 24), StringComparison.Ordinal);
         Key(console, ConsoleKey.Tab, shift: true);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.CombatMk1, console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.CombatMk1, console.Render(120, 24), StringComparison.Ordinal);
         Key(console, ConsoleKey.Tab, shift: true);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.TacticalMk1, console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.TacticalMk1, console.Render(120, 24), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Completion_replaces_the_whole_name_at_the_cursor_and_resets_after_editing()
     {
         using HostConsole console = new("plain", TextWriter.Null);
-        Type(console, "inventory add da_item_augment_combINVALID suffix");
+        Type(console, "inventory tester add da_item_augment_combINVALID suffix");
         Key(console, ConsoleKey.Home, control: true);
-        for (int i = 0; i < "inventory add da_item_augment_comb".Length; i++)
+        for (int i = 0; i < "inventory tester add da_item_augment_comb".Length; i++)
         {
             Key(console, ConsoleKey.RightArrow);
         }
 
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add " + ItemTechnicalNames.CombatMk1 + " suffix", console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add " + ItemTechnicalNames.CombatMk1 + " suffix", console.Render(120, 24), StringComparison.Ordinal);
         Key(console, ConsoleKey.Escape);
-        Type(console, "inventory add no_match");
+        Type(console, "inventory tester add no_match");
         Key(console, ConsoleKey.Tab);
-        Assert.Contains("> inventory add no_match", console.Render(120, 24), StringComparison.Ordinal);
+        Assert.Contains("> inventory tester add no_match", console.Render(120, 24), StringComparison.Ordinal);
     }
 
     [Fact]
     public void Completing_an_item_name_does_not_add_it_until_the_command_is_submitted()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         using HostConsole console = new("plain", TextWriter.Null);
-        console.Inventory = inventory;
-        Type(console, "inventory add combat");
+        using PlayerRegistry players = Attach(console, database);
+        Type(console, "inventory tester add combat");
         Key(console, ConsoleKey.Tab);
         Assert.Single(inventory.Inventory.Stash.Items);
         Key(console, ConsoleKey.Enter);
-        Assert.Contains(new InventoryStore(database.Store).Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+        Assert.Contains(new InventoryStore(database.Store, TestDatabase.UserId).Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
     }
 
     [Fact]
     public void Quantity_grants_add_one_ammo_stack_and_reject_invalid_commands_without_writes()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         using StringWriter output = new();
         using HostConsole console = new("plain", output);
-        console.Inventory = inventory;
-        console.ExecuteCommand("inventory add " + ItemTechnicalNames.HeavyAmmo + " 60", () => { });
+        using PlayerRegistry players = Attach(console, database);
+        console.ExecuteCommand("inventory tester add " + ItemTechnicalNames.HeavyAmmo + " 60", () => { });
         Assert.Equal(60, inventory.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.HeavyAmmo).Quantity);
         string saved = database.InventoryJson;
         foreach (string arguments in new[] { "0", "61", "-1", "abc", "9223372036854775808", "60 extra" })
         {
-            console.ExecuteCommand("inventory add " + ItemTechnicalNames.HeavyAmmo + " " + arguments, () => { });
+            console.ExecuteCommand("inventory tester add " + ItemTechnicalNames.HeavyAmmo + " " + arguments, () => { });
             Assert.Equal(saved, database.InventoryJson);
         }
 
-        console.ExecuteCommand("inventory add " + ItemTechnicalNames.FerroI, () => { });
+        console.ExecuteCommand("inventory tester add " + ItemTechnicalNames.FerroI, () => { });
         Assert.Single(inventory.Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.FerroI);
         Assert.Contains("Inventory add rejected:", output.ToString(), StringComparison.Ordinal);
     }
@@ -166,12 +169,12 @@ public sealed class ConsoleTests
             File.WriteAllText(path, JsonSerializer.Serialize(PlayerInventory.Empty, InventoryStore.SerializationOptions));
             using StringWriter output = new();
             using HostConsole console = new("plain", output);
-            console.Inventory = new InventoryStore(database.Store);
-            console.ExecuteCommand($"inventory import \"{path}\"", () => { });
-            console.ExecuteCommand("inventory", () => { });
+            using PlayerRegistry players = Attach(console, database);
+            console.ExecuteCommand($"inventory tester import \"{path}\"", () => { });
+            console.ExecuteCommand("inventory tester", () => { });
 
-            Assert.Equal(1, new InventoryStore(database.Store).Snapshot.Revision);
-            Assert.Contains("Imported 0 items at revision 1", output.ToString(), StringComparison.Ordinal);
+            Assert.Equal(2, new InventoryStore(database.Store, TestDatabase.UserId).Snapshot.Revision);
+            Assert.Contains("Imported 0 items at revision 2", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("Reserved ticket: none", output.ToString(), StringComparison.Ordinal);
         }
         finally
@@ -384,6 +387,48 @@ public sealed class ConsoleTests
                 console.Log.Write(new JsonObject { ["worker"] = worker, ["index"] = index });
             }
         });
+    }
+
+    [Fact]
+    public void Account_commands_manage_accounts_and_keep_passwords_out_of_the_log_and_history()
+    {
+        using TestDatabase database = new();
+        using StringWriter output = new();
+        using HostConsole console = new("plain", output);
+        using PlayerRegistry players = Attach(console, database);
+        Type(console, "account create Alice secret-password");
+        Key(console, ConsoleKey.Enter);
+        console.ExecuteCommand("account create alice other-password", () => { });
+        console.ExecuteCommand("account create x secret-password", () => { });
+        console.ExecuteCommand("account create Bob short", () => { });
+        console.ExecuteCommand("account ban alice", () => { });
+        console.ExecuteCommand("account list", () => { });
+        string log = output.ToString();
+        Assert.Contains("Account Alice created.", log, StringComparison.Ordinal);
+        Assert.Contains("An account named alice already exists.", log, StringComparison.Ordinal);
+        Assert.Contains("Account names are", log, StringComparison.Ordinal);
+        Assert.Contains("Passwords are", log, StringComparison.Ordinal);
+        Assert.Contains("Alice  id ", log, StringComparison.Ordinal);
+        Assert.Contains("  banned", log, StringComparison.Ordinal);
+        Assert.Contains("2 account(s).", log, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret-password", log, StringComparison.Ordinal);
+        Assert.DoesNotContain("other-password", log, StringComparison.Ordinal);
+        Assert.Contains("> account create Alice ********", log, StringComparison.Ordinal);
+        Key(console, ConsoleKey.UpArrow);
+        Assert.DoesNotContain("secret-password", console.Render(120, 24), StringComparison.Ordinal);
+
+        console.ExecuteCommand("account delete ALICE", () => { });
+        Assert.Contains("Account Alice and its player data deleted.", output.ToString(), StringComparison.Ordinal);
+        Assert.Single(new AccountDirectory(database.Store, TimeProvider.System).List());
+    }
+
+    private static PlayerRegistry Attach(HostConsole console, TestDatabase database)
+    {
+        AccountDirectory accounts = new(database.Store, TimeProvider.System);
+        PlayerRegistry players = new(database.Store, accounts, null, new JsonEventLog(TextWriter.Null), TimeProvider.System);
+        console.Accounts = accounts;
+        console.Players = players;
+        return players;
     }
 
     private static void Type(HostConsole console, string text)
