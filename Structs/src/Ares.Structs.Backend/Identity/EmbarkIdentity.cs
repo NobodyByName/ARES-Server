@@ -29,6 +29,22 @@ public static class ExternalProviders
     public const string SteamName = "steam";
 }
 
+/// <summary>Form fields of <c>POST /oauth2/token</c>.</summary>
+public static class OAuthTokenForm
+{
+    /// <summary>The configured <c>[EmbarkOnline] ClientSecret</c>.</summary>
+    public const string ClientSecret = "client_secret";
+
+    /// <summary>The grant type.</summary>
+    public const string GrantType = "grant_type";
+
+    /// <summary>A previously issued refresh token.</summary>
+    public const string RefreshToken = "refresh_token";
+
+    /// <summary>The <see cref="GrantType"/> that renews a sign-in with <see cref="RefreshToken"/>.</summary>
+    public const string RefreshTokenGrant = "refresh_token";
+}
+
 /// <summary>Response of <c>POST /oauth2/token</c>.</summary>
 public sealed record OAuthTokenResponse(
     [property: JsonPropertyName("access_token")] string AccessToken,
