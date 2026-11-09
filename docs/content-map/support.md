@@ -7,8 +7,10 @@ into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets th
 moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
 the main menu.
 
-Host persists the local account's stash and selected loadout. Persisted raid reservations are
-checked at startup and periodically; inventory unlocks when Raid confirms the old reservation is gone.
+Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
+and each process exits when its raid is over. Host persists the local account's stash and selected
+loadout. A raid's loadout stays locked until that raid is over; restarting Host ends its raids and
+unlocks the loadout. A raid currently admits one player, whatever party size is configured.
 The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
 moves between compatible slots are
 validated by Raid. Inventory and map screens show their shared menu frame.

@@ -12,7 +12,7 @@ the game-session server that runs its raids. Players connect with
 
 | Component | Role |
 | --- | --- |
-| [Host](Host/) | ARES-Host: backend for sign-in, the main menu, parties, matchmaking and raid assignment. |
+| [Host](Host/) | ARES-Host: backend for sign-in, the main menu, parties and matchmaking; starts a Raid server for each raid. |
 | [Raid](Raid/) | ARES-Raid: independent game-session server that runs the raid. |
 | [Structs](Structs/) | Standalone library of decoded ARC Raiders structures, wire formats and game data for community projects. |
 | [Common](Common/) | Shared server logic used by Host and Raid. |
