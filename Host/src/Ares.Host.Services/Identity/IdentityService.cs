@@ -4,8 +4,9 @@ using System.Text;
 using System.Text.Json;
 using Ares.Common.Game.Identity;
 using Ares.Common.Security;
+using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
-using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Routing;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Bootstrap;
 using Ares.Structs.Backend.Eos;
@@ -15,50 +16,79 @@ using Ares.Structs.Core;
 
 namespace Ares.Host.Services.Identity;
 
-/// <summary>Synthetic sign-in, EOS and bootstrap replies for the local account.</summary>
-public sealed class IdentityService(HostSettings settings, ProfileFactory profiles, TimeProvider time, InventoryStore inventory)
+/// <summary>Sign-in of ARES accounts, token checks, and synthetic EOS and bootstrap replies.</summary>
+public sealed class IdentityService(HostSettings settings, AccountDirectory accounts, TimeProvider time)
 {
     /// <summary>
-    /// Per-run signing key for synthetic third-party and EOS tokens, and identity tokens in open mode.
+    /// Per-run signing key for synthetic third-party and EOS tokens, and identity tokens when the
+    /// operator configured no identity key.
     /// </summary>
     private static readonly byte[] s_unverifiedKey = RandomNumberGenerator.GetBytes(32);
 
-    /// <summary>Reply of <c>POST /oauth2/token</c>: a token issued by this Host.</summary>
-    public OAuthTokenResponse SignIn()
+    /// <summary>Audience of refresh tokens, so they never pass as access tokens.</summary>
+    private const string RefreshAudience = "ares-host-refresh";
+
+    private byte[] IdentityKey => settings.IdentityKey ?? s_unverifiedKey;
+
+    /// <summary>
+    /// Reply of <c>POST /oauth2/token</c>: tokens for the account owning the launch key in
+    /// <c>client_secret</c>, or for the account of a valid refresh token. Null when neither
+    /// names an unbanned account.
+    /// </summary>
+    public (OAuthTokenResponse? Response, Account? Account) SignIn(BackendRequest request)
     {
-        return OAuth(settings.Issuer, settings.IdentityKey ?? s_unverifiedKey);
+        Account? account = request.FormValue(OAuthTokenForm.GrantType) == OAuthTokenForm.RefreshTokenGrant
+            ? RefreshTokenOwner(request.FormValue(OAuthTokenForm.RefreshToken))
+            : accounts.RedeemLaunchKey(request.FormValue(OAuthTokenForm.ClientSecret));
+        return account is null ? (null, null) : (OAuth(account, settings.Issuer, IdentityKey), account);
+    }
+
+    /// <summary>The user id of a valid <c>Bearer</c> identity token, or null.</summary>
+    public long? Authenticate(string? authorization)
+    {
+        if (authorization is null || !authorization.StartsWith("Bearer ", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        try
+        {
+            return IdentityTokens.Validate(authorization[7..], IdentityKey, settings.Issuer, time.GetUtcNow()).UserId;
+        }
+        catch (TokenRejectedException)
+        {
+            return null;
+        }
     }
 
     /// <summary>Reply of <c>GET /v1/shared/auth/third-party-access-token</c>.</summary>
-    public ThirdPartyAccessTokenResponse ThirdPartyAccessToken()
+    public ThirdPartyAccessTokenResponse ThirdPartyAccessToken(Account account)
     {
-        string token = OAuth(EmbarkIdentity.OfficialIssuer, s_unverifiedKey).AccessToken;
+        string token = OAuth(account, EmbarkIdentity.OfficialIssuer, s_unverifiedKey).AccessToken;
         long expiresAt = time.GetUtcNow().ToUnixTimeSeconds() + IdentityTokens.LifetimeSeconds;
         return new ThirdPartyAccessTokenResponse(token, token, token, IdentityTokens.LifetimeSeconds, IdentityTokens.LifetimeSeconds, expiresAt);
     }
 
     /// <summary>Reply of <c>GET /v1/pioneer/raiders</c>.</summary>
-    public static RaidersResponse Raiders()
+    public static RaidersResponse Raiders(long userId)
     {
-        return new RaidersResponse([new Raider(LocalPlayer.RaiderId, RaiderStates.Active, LocalPlayer.RaiderCreatedAt)]);
+        return new RaidersResponse([new Raider(PlayerDefaults.RaiderId(userId), RaiderStates.Active, PlayerDefaults.RaiderCreatedAt)]);
     }
 
-    /// <summary>Reply of <c>POST /v1/shared/profile/by-thirdparty-userid</c>: the local profile when its platform id was asked for.</summary>
-    public (PlatformProfilesResponse Response, bool Matched) PlatformProfiles(PlatformProfilesRequest request)
+    /// <summary>Reply of <c>POST /v1/shared/profile/by-thirdparty-userid</c>: the caller's profile when its platform id was asked for.</summary>
+    public static (PlatformProfilesResponse Response, bool Matched) PlatformProfiles(EmbarkProfile profile, PlatformProfilesRequest request)
     {
-        EmbarkProfile profile = profiles.Create();
         bool matched = profile.ThirdPartyUserId.Length > 0 && (request.Ids ?? []).Contains(profile.ThirdPartyUserId);
         Dictionary<string, EmbarkProfile> found = matched ? new Dictionary<string, EmbarkProfile> { [profile.ThirdPartyUserId] = profile } : [];
         return (new PlatformProfilesResponse(found), matched);
     }
 
     /// <summary>Reply of <c>POST /v1/shared/manifest</c>.</summary>
-    public ManifestResponse Manifest(ManifestRequest request)
+    public ManifestResponse Manifest(ManifestRequest request, string contentHash)
     {
         long now = time.GetUtcNow().ToUnixTimeSeconds();
         long id = request.ManifestId is { } manifestId and not 0 ? manifestId : BackendContent.Manifest.DefaultId;
         string buildId = request.BuildId ?? GameBuild.BuildIdentifier;
-        string contentHash = inventory.DefinitionHash();
         return new ManifestResponse(id, buildId, request.PlaytestId ?? 0,
             contentHash, contentHash,
             new UnknownManifestBody(), new UnknownManifestBody(), now, now - 3600, now + 86400);
@@ -102,26 +132,43 @@ public sealed class IdentityService(HostSettings settings, ProfileFactory profil
         return (response, user);
     }
 
-    private OAuthTokenResponse OAuth(string issuer, byte[] key)
+    private Account? RefreshTokenOwner(string? token)
+    {
+        try
+        {
+            long userId = IdentityTokens.Validate(token, IdentityKey, settings.Issuer, time.GetUtcNow(), RefreshAudience).UserId;
+            return accounts.Find(userId) is { Record.Banned: false } account ? account : null;
+        }
+        catch (TokenRejectedException)
+        {
+            return null;
+        }
+    }
+
+    private OAuthTokenResponse OAuth(Account account, string issuer, byte[] key)
+    {
+        string token = IdentityTokens.Sign(Claims(account, issuer, EmbarkIdentity.Audience, IdentityTokens.LifetimeSeconds), key);
+        string refresh = IdentityTokens.Sign(Claims(account, issuer, RefreshAudience, (int)AccountDirectory.LaunchKeySession.TotalSeconds), key);
+        return new OAuthTokenResponse(token, token, refresh, IdentityTokens.LifetimeSeconds, "Bearer", "openid profile");
+    }
+
+    private IdentityTokenClaims Claims(Account account, string issuer, string audience, int lifetime)
     {
         long now = time.GetUtcNow().ToUnixTimeSeconds();
-        string userId = LocalPlayer.TenancyUserId.ToString(CultureInfo.InvariantCulture);
-        IdentityTokenClaims claims = new(
-            Subject: userId,
+        return new IdentityTokenClaims(
+            Subject: account.UserId.ToString(CultureInfo.InvariantCulture),
             Issuer: issuer,
-            Audience: [EmbarkIdentity.Audience],
-            ExpiresAt: now + IdentityTokens.LifetimeSeconds,
+            Audience: [audience],
+            ExpiresAt: now + lifetime,
             IssuedAt: now - 30,
             NotBefore: now - 30,
             TokenId: Guid.NewGuid().ToString("D"),
             Scopes: ["openid", "profile"],
-            TenancyId: LocalPlayer.Tenancy,
-            TenancyName: LocalPlayer.Tenancy,
+            TenancyId: PlayerDefaults.Tenancy,
+            TenancyName: PlayerDefaults.Tenancy,
             Extension: new IdentityTokenExtension(EmbarkIdentity.Audience, EmbarkIdentity.Company,
-                LocalPlayer.EmbarkUserId.ToString(CultureInfo.InvariantCulture), LocalPlayer.Tenancy, LocalPlayer.Tenancy,
-                LocalPlayer.ExternalProvider, "", UnknownNxgu: false, UnknownNxgb: false, ""));
-        string token = IdentityTokens.Sign(claims, key);
-        return new OAuthTokenResponse(token, token, "ares-host-refresh-only", IdentityTokens.LifetimeSeconds, "Bearer", "openid profile");
+                account.Record.EmbarkUserId.ToString(CultureInfo.InvariantCulture), PlayerDefaults.Tenancy, PlayerDefaults.Tenancy,
+                PlayerDefaults.ExternalProvider, "", UnknownNxgu: false, UnknownNxgb: false, ""));
     }
 
     private static string? BasicAuthClientId(string? authorization)

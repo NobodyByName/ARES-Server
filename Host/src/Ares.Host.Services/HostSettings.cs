@@ -31,7 +31,7 @@ public sealed record HostSettings
     /// <summary>Identity token issuer: <see cref="PublicOrigin"/> plus "/". The client compares it to its configured endpoint.</summary>
     public string Issuer => PublicOrigin.TrimEnd('/') + "/";
 
-    /// <summary>Operator key that signs and checks identity tokens; null to issue unchecked tokens and leave protected routes open.</summary>
+    /// <summary>Operator key that signs and checks identity tokens; null to use a random key for this run only.</summary>
     public byte[]? IdentityKey { get; init; }
 
     /// <summary>Game archive keys served to ARES-Launcher, supplied by the operator.</summary>
