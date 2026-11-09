@@ -79,6 +79,7 @@ CancellationToken stopping = app.Lifetime.ApplicationStopping;
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(stopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);
 Task closingTask = StopWhenClosedAsync(app.Lifetime.StopApplication, stopping);
+Task parentTask = configuration.StopOnInputClose ? StopWhenInputClosesAsync(app.Lifetime.StopApplication, stopping) : Task.CompletedTask;
 try
 {
     await Task.Factory.StartNew(() => server.Run(stopping), stopping, TaskCreationOptions.LongRunning, TaskScheduler.Default).ConfigureAwait(false);
@@ -88,6 +89,7 @@ finally
     await consoleStopping.CancelAsync().ConfigureAwait(false);
     await consoleTask.ConfigureAwait(false);
     await closingTask.ConfigureAwait(false);
+    await parentTask.ConfigureAwait(false);
     await app.StopAsync().ConfigureAwait(false);
 }
 return 0;
@@ -109,6 +111,25 @@ async Task StopWhenClosedAsync(Action stop, CancellationToken cancellationToken)
             stop();
             return;
         }
+    }
+    catch (OperationCanceledException)
+    {
+    }
+}
+
+// The Host keeps standard input open while it runs; end of input means it is gone.
+async Task StopWhenInputClosesAsync(Action stop, CancellationToken cancellationToken)
+{
+    await using Stream input = Console.OpenStandardInput();
+    byte[] buffer = new byte[256];
+    try
+    {
+        while (await input.ReadAsync(buffer, cancellationToken).ConfigureAwait(false) > 0)
+        {
+        }
+
+        log.Write("raid", "host_gone");
+        stop();
     }
     catch (OperationCanceledException)
     {

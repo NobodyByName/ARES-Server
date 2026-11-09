@@ -17,6 +17,7 @@ public sealed record RaidConfiguration
         Usage: ARES-Raid [options]
 
         ARES raid server: hosts one Dam raid for the party the Host reserves it for, then exits.
+        ARES-Host starts it during matchmaking.
 
           --port <n>                  UDP game port (default {DefaultPort})
           --bind <ip>                 Game listen address (default 127.0.0.1)
@@ -24,6 +25,7 @@ public sealed record RaidConfiguration
           --control-port <n>          Allocation API port, on loopback (required)
           --control-token-file <f>    Operator token shared with the Host (required)
           --max-players <n>           Largest party one raid accepts (default 1)
+          --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
@@ -49,6 +51,9 @@ public sealed record RaidConfiguration
     /// <summary>Largest party one raid accepts.</summary>
     public int MaxPlayers { get; private init; } = 1;
 
+    /// <summary>Stop when standard input closes, so a Raid never outlives the Host that started it.</summary>
+    public bool StopOnInputClose { get; private init; }
+
     /// <summary>Lighting of the raid, or null for a weighted pick.</summary>
     public string? Lighting { get; private init; }
 
@@ -64,7 +69,7 @@ public sealed record RaidConfiguration
     /// <exception cref="CommandLineException">Invalid usage.</exception>
     public static RaidConfiguration Parse(IReadOnlyList<string> args)
     {
-        CommandLineArguments arguments = CommandLineArguments.Parse(args, new HashSet<string> { "help", "version" });
+        CommandLineArguments arguments = CommandLineArguments.Parse(args, new HashSet<string> { "help", "version", "stop-on-input-close" });
         if (arguments.HelpRequested)
         {
             throw new HelpRequestedException();
@@ -82,6 +87,7 @@ public sealed record RaidConfiguration
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
         int maxPlayers = arguments.GetInt32("max-players", 1);
+        bool stopOnInputClose = arguments.Has("stop-on-input-close");
         string consoleMode = arguments.GetString("console", "auto")!;
         string? logFile = arguments.GetString("log-file");
         arguments.RejectUnknown();
@@ -128,6 +134,7 @@ public sealed record RaidConfiguration
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
                 MaxPlayers = maxPlayers,
+                StopOnInputClose = stopOnInputClose,
             };
         }
         catch (Exception error) when (error is ArgumentException or IOException or UnauthorizedAccessException)
