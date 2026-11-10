@@ -77,4 +77,7 @@ public static class PendulumInput
 
     /// <summary>Request of a button press. Other request values are not decoded yet.</summary>
     public const int PressRequest = 2;
+
+    /// <summary>Flag added to a press request when the interaction first takes out the raider tool.</summary>
+    public const int EquipToolRequestFlag = 32;
 }
