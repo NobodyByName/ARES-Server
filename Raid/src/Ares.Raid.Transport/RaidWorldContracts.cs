@@ -55,6 +55,11 @@ public interface IPlayerChannels
     /// <param name="now">Current time in seconds.</param>
     void Service(ChannelIo io, double now);
 
+    /// <summary>The server time the player's packets carry: the world time of the player's raid.</summary>
+    /// <param name="now">Current time in seconds.</param>
+    /// <returns>Server time in seconds.</returns>
+    double ServerSeconds(double now);
+
     /// <summary>The client failed to create the actor of a channel.</summary>
     /// <param name="channel">Channel index.</param>
     void ActorChannelFailed(int channel);

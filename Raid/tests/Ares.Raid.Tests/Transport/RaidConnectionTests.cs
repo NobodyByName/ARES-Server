@@ -115,6 +115,22 @@ public sealed class RaidConnectionTests
     }
 
     [Fact]
+    public void Packets_carry_the_raids_time_once_the_player_is_in_it()
+    {
+        (RaidConnections _, Client client) = Start();
+        ConnectionResult hello = client.Send(Client.Control(new ControlHello(Version, "42", 0)));
+        Assert.Null(ConnectionEnvelope.Decode(hello.Reply!, fromServer: true).ServerTimeMs);
+        _world.Ready = true;
+        client.SendControl(new ControlLogin("0", "?EncryptionToken=42", new UniqueNetId(5, "42", "", false, false), "WIN"));
+        client.SendControl(new ControlNetspeed(50000), new ControlJoin());
+
+        _now[0] += 2.5;
+        ConnectionResult joined = client.Send(Client.Control(new ControlNetspeed(50000)));
+
+        Assert.Equal((uint)(_now[0] * 1000), ConnectionEnvelope.Decode(joined.Reply!, fromServer: true).ServerTimeMs);
+    }
+
+    [Fact]
     public void Polling_sends_keepalives_and_retries()
     {
         (RaidConnections connections, Client client) = Start();
@@ -157,6 +173,8 @@ public sealed class RaidConnectionTests
         public List<int> Failures { get; private init; } = [];
 
         public IPlayerChannels Copy() => new FakePlayer(Principal, Login, world) { Failures = [.. Failures] };
+
+        public double ServerSeconds(double now) => now;
 
         public void Acknowledge(ChannelIo io, NotificationHeader header) => io.Sender.Acknowledge(header);
 

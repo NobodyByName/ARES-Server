@@ -65,11 +65,43 @@ public sealed class PendulumCodecTests
     {
         foreach ((uint baseline, uint latest, bool reset, int flags, string body, long bodyBits, string encoded, long bits) in PendulumCodecVectors.Updates)
         {
+            PendulumFieldFlags fields = (PendulumFieldFlags)flags;
             byte[]? frame = body.Length == 0 ? null : Convert.FromHexString(body);
-            Assert.Equal((encoded, bits), Encode(writer => BlackboardUpdate.Write(writer, baseline, latest, reset, flags, frame, bodyBits)));
+            Assert.Equal((encoded, bits), Encode(writer => BlackboardUpdate.Write(writer, baseline, latest, reset, fields, frame, bodyBits)));
+            Assert.Equal(new BlackboardUpdateHeader(baseline, latest, reset, fields), BlackboardUpdate.ReadHeader(new BitReader(Convert.FromHexString(encoded), bits)));
         }
 
-        Assert.Throws<InvalidPacketException>(() => BlackboardUpdate.Write(new BitWriter(), 5, 5, false, 1, null, 0));
+        Assert.Throws<InvalidPacketException>(() => BlackboardUpdate.Write(new BitWriter(), 5, 5, false, PendulumFieldFlags.Owner, null, 0));
+        Assert.Throws<InvalidPacketException>(() => BlackboardUpdate.Write(new BitWriter(), 5, 6, false, PendulumFieldFlags.None, null, 0));
+    }
+
+    [Fact]
+    public void Observed_blackboard_open_uses_the_short_header()
+    {
+        Assert.Equal(("0000f009000004", 52L),
+            Encode(writer => BlackboardUpdate.Write(writer, 0, 318, true, PendulumFieldFlags.Others, [], 0, preferShortHeader: true)));
+    }
+
+    // The receiver reads a body with the field set its header names, so every header form must name the set the
+    // body was written with: a short baseline, the last one the short header holds, and wider ones.
+    [Theory]
+    [InlineData(0U, false)]
+    [InlineData(318U, false)]
+    [InlineData(0x7FFFU, false)]
+    [InlineData(BlackboardUpdate.ShortBaselineRange - 1, false)]
+    [InlineData(BlackboardUpdate.ShortBaselineRange, true)]
+    [InlineData(200_000U, true)]
+    public void Blackboard_update_headers_name_the_field_set_of_the_body(uint baseline, bool wide)
+    {
+        foreach (PendulumFieldFlags fields in new[] { PendulumFieldFlags.Owner, PendulumFieldFlags.Others })
+        {
+            BitWriter writer = new();
+            BlackboardUpdate.Write(writer, baseline, baseline + 40, baseline == 0, fields, [], 0, preferShortHeader: true);
+            BitReader reader = new(writer.ToArray(), writer.Length);
+            Assert.Equal(wide, new BitReader(writer.ToArray(), writer.Length).ReadBit());
+            Assert.Equal(new BlackboardUpdateHeader(baseline, baseline + 40, baseline == 0, fields), BlackboardUpdate.ReadHeader(reader));
+            Assert.Equal(0, reader.Remaining);
+        }
     }
 
     private static PendulumSlot[] PawnSlots(int tick, (double X, double Y, double Z)? position)

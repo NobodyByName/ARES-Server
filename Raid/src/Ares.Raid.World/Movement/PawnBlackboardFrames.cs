@@ -30,6 +30,9 @@ public static class PawnBlackboardFrames
     private static readonly PendulumQuaternionField s_actionRotation = (PendulumQuaternionField)PendulumRegistry.Descriptors[
         PawnBlackboard.InitialState.First(variable => variable.Slot == PawnBlackboard.ActionStateSlot).DescriptorId].Fields[PawnBlackboard.ActionRotationField];
 
+    private static readonly PendulumScalarField s_timeOffset = (PendulumScalarField)PendulumRegistry.Descriptors[
+        PawnBlackboard.InitialState.First(variable => variable.Slot == PawnBlackboard.GraphStateSlot).DescriptorId].Fields[PawnBlackboard.TimeOffsetField];
+
     private static readonly IReadOnlyList<PendulumField> s_movementFields =
         PendulumRegistry.Descriptors[PawnBlackboard.InitialState.First(variable => variable.Slot == PawnBlackboard.MovementStateSlot).DescriptorId].Fields;
 
@@ -39,10 +42,17 @@ public static class PawnBlackboardFrames
     /// <param name="focus">Interaction the character may use (its focused button), or 0 for none.</param>
     /// <param name="inventory">The player's container state.</param>
     /// <param name="weapons">Weapon simulation variables replacing or extending the initial state.</param>
+    /// <param name="timeOffset">Time units from the tick's simulation time to the server's time (see <see cref="PawnBlackboard.TimeOffsetField"/>).</param>
     /// <returns>The slots by index.</returns>
     public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
-        IReadOnlyList<PendulumVariable>? weapons = null)
+        IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0)
     {
+        long storedOffset = s_timeOffset.Default + timeOffset;
+        if (storedOffset < 0 || storedOffset >= s_timeOffset.Maximum)
+        {
+            throw new InvalidPacketException("Time offset outside its range");
+        }
+
         if (tick is < FirstTick or > LastTick)
         {
             throw new InvalidPacketException("Blackboard tick outside its range");
@@ -59,6 +69,7 @@ public static class PawnBlackboardFrames
                 case PawnBlackboard.GraphStateSlot:
                     values.Add(new PendulumIntegerValue(PawnBlackboard.TickField, tick));
                     values.Add(new PendulumIntegerValue(PawnBlackboard.TimeField, (ulong)tick * PawnBlackboard.TimePerTick));
+                    Replace(values, new PendulumIntegerValue(PawnBlackboard.TimeOffsetField, (ulong)storedOffset));
                     if (motion.Character is { } flashlight)
                     {
                         ulong flags = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.FlashlightFlagsField)?.Value ?? 0;
@@ -117,10 +128,12 @@ public static class PawnBlackboardFrames
     /// <param name="writer">Destination.</param>
     /// <param name="state">The frame's state.</param>
     /// <param name="previous">The previous frame's state (empty for the reset frame).</param>
-    public static void Write(BitWriter writer, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous)
+    /// <param name="codec">The codec: the owner's (default) or <see cref="PendulumCodec.Others"/> for other clients.</param>
+    public static void Write(BitWriter writer, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous,
+        PendulumCodec? codec = null)
     {
         ArgumentNullException.ThrowIfNull(state);
-        PendulumCodec.Default.WriteFrame(writer, state.Values, previous);
+        (codec ?? PendulumCodec.Default).WriteFrame(writer, state.Values, previous);
     }
 
     private static void Replace(List<PendulumValue> values, PendulumValue value)

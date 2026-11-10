@@ -1,5 +1,7 @@
 using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Movement;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
@@ -8,6 +10,7 @@ namespace Ares.Raid.World;
 public sealed class RaidPlayer
 {
     private bool _left;
+    private PlayerMotion? _motion;
 
     internal RaidPlayer(long id, PlayerLoadout loadout, IReadOnlyList<CompactPlayerProfile> profiles, SpawnPlacement spawn)
     {
@@ -40,6 +43,18 @@ public sealed class RaidPlayer
     /// <summary>The player has left the raid (surrendered, or their reservation ended); they cannot rejoin it.</summary>
     public bool Left => Volatile.Read(ref _left);
 
+    /// <summary>The character's latest simulated movement, which other players see; null before its simulation starts.</summary>
+    public PlayerMotion? Motion => Volatile.Read(ref _motion);
+
     internal void Leave() => Volatile.Write(ref _left, true);
+
+    internal void Publish(PlayerMotion motion) => Volatile.Write(ref _motion, motion);
 }
 
+/// <summary>A character's movement and held weapons at one of its simulation ticks.</summary>
+/// <param name="Tick">The owning client's input frame the movement belongs to.</param>
+/// <param name="Motion">Position, velocity, facing, stance and locomotion.</param>
+/// <param name="Weapons">Weapon simulation variables (equipped guns by item type, without item links).</param>
+/// <param name="Pitch">Aim pitch in radians, positive up.</param>
+/// <param name="TimeOffset">Time units from the tick's simulation time to the raid's server time.</param>
+public sealed record PlayerMotion(uint Tick, PawnMotion Motion, IReadOnlyList<PendulumVariable> Weapons, double Pitch, long TimeOffset);

@@ -14,6 +14,13 @@ public static class PendulumFrames
     /// <summary>Exclusive upper bound of a baseline frame number.</summary>
     public const uint BaselineRange = 0xFFFF_FFFF;
 
+    /// <summary>
+    /// Received frames the client keeps as baselines, stored by frame number modulo this count. A newer frame
+    /// overwrites an older one in the same place, so a baseline is only safe while the frame coded against it is
+    /// fewer than this many frame numbers ahead.
+    /// </summary>
+    public const uint History = 34;
+
     /// <summary>Reads a frame number relative to <paramref name="baseline"/>: equal, a short delta, or absolute.</summary>
     /// <param name="reader">Source.</param>
     /// <param name="baseline">Baseline frame.</param>
@@ -99,40 +106,61 @@ public sealed record PendulumInputHeader(uint Baseline, uint Latest)
     }
 }
 
+/// <summary>Header of a pawn blackboard update.</summary>
+/// <param name="Baseline">Frame the body is coded against (0 for the defaults).</param>
+/// <param name="Latest">Frame number.</param>
+/// <param name="Reset">Whether the receiver clears its stored frames first (wide header only).</param>
+/// <param name="Fields">The field set the body carries; the receiver reads the body with exactly this set.</param>
+public sealed record BlackboardUpdateHeader(uint Baseline, uint Latest, bool Reset, PendulumFieldFlags Fields);
+
 /// <summary>
-/// The server pawn's blackboard update (a delta-serialized property): baseline, reset flag, frame number,
-/// two flag bits, then the frame body coded against the baseline (or the defaults on reset).
+/// The server pawn's blackboard update (a delta-serialized property): a header, then the frame body coded against
+/// the baseline (or the defaults when the baseline is 0). The wide header holds a full-range baseline and a reset
+/// bit; the short header holds a small baseline and no reset bit. Both end with the frame number and the body's
+/// field set. The receiver picks the fields it reads from the header alone, so a body written with another field
+/// set than its header names cannot be read.
 /// </summary>
 public static class BlackboardUpdate
 {
     /// <summary>Bits of a frame body with no changes from its baseline.</summary>
     public const int UnchangedFrameBits = 74;
 
-    /// <summary>Flag bits the game's frames carry.</summary>
-    public const int DefaultFlags = 1;
+    /// <summary>Exclusive upper bound of a baseline frame number in the short header.</summary>
+    public const uint ShortBaselineRange = 0xFFFF;
 
     /// <summary>Writes an update.</summary>
     /// <param name="writer">Destination.</param>
     /// <param name="baseline">Baseline frame (0 on reset).</param>
     /// <param name="latest">Frame number, above the baseline.</param>
     /// <param name="reset">Whether the client resets its blackboard frames first.</param>
-    /// <param name="flags">Two flag bits (received frames carry 1).</param>
+    /// <param name="fields">The field set the body was written with (<see cref="PendulumCodec.Fields"/>).</param>
     /// <param name="body">Frame body bits, or null for an unchanged frame.</param>
     /// <param name="bodyBits">Number of body bits.</param>
-    public static void Write(BitWriter writer, uint baseline, uint latest, bool reset, int flags, byte[]? body, long bodyBits)
+    /// <param name="preferShortHeader">Use the short header when it can represent the baseline.</param>
+    public static void Write(BitWriter writer, uint baseline, uint latest, bool reset, PendulumFieldFlags fields, byte[]? body, long bodyBits,
+        bool preferShortHeader = false)
     {
         ArgumentNullException.ThrowIfNull(writer);
-        if (flags is < 0 or > 3 || baseline >= latest || latest >= PendulumFrames.Range)
+        if (fields is PendulumFieldFlags.None or > (PendulumFieldFlags.Owner | PendulumFieldFlags.Others) || baseline >= latest || latest >= PendulumFrames.Range)
         {
             throw new InvalidPacketException("Invalid blackboard update header");
         }
 
-        writer.WriteBit(true);
-        writer.WriteBounded(baseline, PendulumFrames.BaselineRange);
-        writer.WriteBit(reset);
+        bool shortHeader = preferShortHeader && baseline < ShortBaselineRange && reset == (baseline == 0);
+        writer.WriteBit(!shortHeader);
+        if (shortHeader)
+        {
+            writer.WriteBounded(baseline, ShortBaselineRange);
+        }
+        else
+        {
+            writer.WriteBounded(baseline, PendulumFrames.BaselineRange);
+            writer.WriteBit(reset);
+        }
+
         PendulumFrames.WriteRelative(writer, latest, baseline);
-        writer.WriteBit((flags & 2) != 0);
-        writer.WriteBit((flags & 1) != 0);
+        writer.WriteBit((fields & PendulumFieldFlags.Others) != 0);
+        writer.WriteBit((fields & PendulumFieldFlags.Owner) != 0);
         if (body is null)
         {
             writer.WriteBits(new byte[(UnchangedFrameBits + 7) / 8], UnchangedFrameBits);
@@ -141,5 +169,20 @@ public static class BlackboardUpdate
         {
             writer.WriteBits(body, bodyBits);
         }
+    }
+
+    /// <summary>Reads an update's header; the frame body follows.</summary>
+    /// <param name="reader">Source, at the start of the update.</param>
+    /// <returns>The header.</returns>
+    public static BlackboardUpdateHeader ReadHeader(BitReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        bool wide = reader.ReadBit();
+        uint baseline = reader.ReadBounded(wide ? PendulumFrames.BaselineRange : ShortBaselineRange);
+        bool reset = wide ? reader.ReadBit() : baseline == 0;
+        uint latest = PendulumFrames.ReadRelative(reader, baseline);
+        PendulumFieldFlags fields = (reader.ReadBit() ? PendulumFieldFlags.Others : PendulumFieldFlags.None)
+            | (reader.ReadBit() ? PendulumFieldFlags.Owner : PendulumFieldFlags.None);
+        return new BlackboardUpdateHeader(baseline, latest, reset, fields);
     }
 }

@@ -41,6 +41,16 @@ public static class PendulumRotations
         return Math.Atan2(2.0 * ((w * z) + (x * y)), 1.0 - (2.0 * ((y * y) + (z * z))));
     }
 
+    /// <summary>The pitch (up/down angle, positive up) of a rotation.</summary>
+    /// <param name="quaternion">The quantized rotation.</param>
+    /// <param name="field">Its field.</param>
+    /// <returns>The pitch in radians.</returns>
+    public static double Pitch(PendulumQuaternion quaternion, PendulumQuaternionField field)
+    {
+        (double x, double y, double z, double w) = Components(quaternion, field);
+        return Math.Asin(Math.Clamp(2.0 * ((w * y) - (z * x)), -1.0, 1.0));
+    }
+
     /// <summary>A rotation about the vertical axis only.</summary>
     /// <param name="yaw">Heading in radians.</param>
     /// <param name="field">The field it is stored in.</param>

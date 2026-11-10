@@ -106,6 +106,19 @@ public static class PawnBlackboard
     /// <summary>Simulation time units per tick.</summary>
     public const int TimePerTick = 20;
 
+    /// <summary>Simulation time units per second.</summary>
+    public const int TimePerSecond = 600;
+
+    /// <summary>
+    /// Field of the graph-state variable holding the character's time offset: its simulation time plus this offset
+    /// is the server's time (the time server packets carry), in simulation time units. Clients place other
+    /// characters' frames on the server's clock with it. The field's default is an offset of zero.
+    /// </summary>
+    public const int TimeOffsetField = 4;
+
+    /// <summary>The game moves a character's time offset in steps of this many time units.</summary>
+    public const int TimeOffsetStep = 3 * TimePerTick;
+
     /// <summary>
     /// World units mapped onto the 24-bit position range around the origin:
     /// quantized = round((world + PositionRange) * (2^24 - 1) / (2 * PositionRange)).

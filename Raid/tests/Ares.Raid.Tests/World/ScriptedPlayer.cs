@@ -90,6 +90,14 @@ internal sealed class ScriptedPlayer
         set => _now[0] = value;
     }
 
+    // Whether the client reports the next packet as not received.
+    public bool LoseNextPacket { get; set; }
+
+    public bool HoldAcknowledgements { get; set; }
+
+    public void AcknowledgeSent() =>
+        Channels.Acknowledge(Io, new NotificationHeader(1, (_packet - 1) & PacketSequence.Mask, [uint.MaxValue]));
+
     public void Flush(string label)
     {
         Trace.Add($"# {label}");
@@ -98,12 +106,22 @@ internal sealed class ScriptedPlayer
             foreach (ChannelBunch bunch in Io.Sender.Bunches(keys))
             {
                 Sent.Add(bunch);
+                if (bunch is { Channel: 6, Opened: true })
+                {
+                    _spawnTimeOffset = Channels.TimeOffset ?? 0;
+                }
+
                 string close = bunch.CloseReason?.ToString(CultureInfo.InvariantCulture) ?? "None";
                 Trace.Add($"{bunch.Channel}|{bunch.Sequence}|{(bunch.Opened ? 1 : 0)}|{close}|{(bunch.PackageExports ? 1 : 0)}|{(bunch.MustBeMapped ? 1 : 0)}|{bunch.PayloadBits}|{Convert.ToHexStringLower(bunch.Payload.AsSpan(0, (int)((bunch.PayloadBits + 7) / 8)))}");
             }
 
             Io.Sender.Sent(_packet, keys, Now);
-            Channels.Acknowledge(Io, new NotificationHeader(1, _packet, [uint.MaxValue]));
+            if (!HoldAcknowledgements)
+            {
+                Channels.Acknowledge(Io, new NotificationHeader(1, _packet, [LoseNextPacket ? uint.MaxValue - 1 : uint.MaxValue]));
+            }
+
+            LoseNextPacket = false;
             _packet = (_packet + 1) & PacketSequence.Mask;
         }
     }
@@ -251,25 +269,33 @@ internal sealed class ScriptedPlayer
     // The state the character opens with: the spawn frame inside the pawn's opening bunch.
     public Dictionary<int, PendulumSlot> SpawnState => new(PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
         new PawnMotion(Member.Spawn.Location, Yaw: Member.Spawn.Yaw * Math.PI / 180), 0, Member.Inventory.InitialBlackboard,
-        Member.Weapons.Variables(PawnBlackboardFrames.FirstTick)));
+        Member.Weapons.Variables(PawnBlackboardFrames.FirstTick), _spawnTimeOffset));
 
-    // The one pawn blackboard frame among the bunches sent since the last clear, decoded against the state of
-    // the frame before it (empty for a full frame).
-    public Dictionary<int, PendulumSlot> PawnFrame(Dictionary<int, PendulumSlot> previous)
+    // The time offset of the spawn frame, kept when the character's opening bunch is sent.
+    private long _spawnTimeOffset;
+
+    public (uint Baseline, uint Latest) LastFrameNumbers { get; private set; }
+
+    // The one pawn blackboard frame on a character's channel (the player's own by default) among the bunches sent
+    // since the last clear, decoded against the state of the frame before it (empty for a full frame) with the codec
+    // the receiving client uses (the owner's by default); its baseline and frame numbers are kept in LastFrameNumbers.
+    public Dictionary<int, PendulumSlot> PawnFrame(Dictionary<int, PendulumSlot> previous, int channel = 6, PendulumCodec? codec = null)
     {
-        ChannelBunch bunch = Assert.Single(Sent, item => item.Channel == 6 && (item.Payload[0] & 3) == 2);
+        ChannelBunch bunch = Assert.Single(Sent, item => item.Channel == channel && (item.Payload[0] & 3) == 2);
         ActorContentBlock block = ActorContentBlock.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
         NetFieldTable fields = Raid.State.Replication.Calls().Fields(PlayerClasses.Pawn.Class);
         ActorFieldPayload payload = ActorFieldPayload.Read(new BitReader(block.Payload, block.PayloadBits), fields.Count);
         Assert.Equal(PropertyNames.BlackBoardReplicationPtr, fields.FieldAt(payload.Index).Name);
         BitReader reader = new(payload.Payload, payload.PayloadBits);
         Assert.True(reader.ReadBit());
-        Assert.True(reader.ReadBit());
-        uint baseline = reader.ReadBounded(PendulumFrames.BaselineRange);
-        Assert.Equal(previous.Count == 0, reader.ReadBit());
-        PendulumFrames.ReadRelative(reader, baseline);
-        reader.ReadBits(2);
-        Dictionary<int, PendulumSlot> result = PendulumCodec.Default.ReadFrame(reader, previous);
+        BlackboardUpdateHeader header = BlackboardUpdate.ReadHeader(reader);
+        Assert.Equal(previous.Count == 0, header.Reset);
+        LastFrameNumbers = (header.Baseline, header.Latest);
+        // Like the client, read the body with the field set the header names.
+        PendulumCodec decoder = header.Fields == PendulumFieldFlags.Others ? PendulumCodec.Others : PendulumCodec.Default;
+        Assert.Same(codec ?? PendulumCodec.Default, decoder);
+        Assert.Equal(decoder.Fields, header.Fields);
+        Dictionary<int, PendulumSlot> result = decoder.ReadFrame(reader, previous);
         Assert.Equal(0, reader.Remaining);
         return result;
     }

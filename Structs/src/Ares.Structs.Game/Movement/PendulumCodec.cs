@@ -28,7 +28,6 @@ public sealed class PendulumCodec
     // Shared by every user of Default, possibly on several threads.
     private readonly ConcurrentDictionary<int, byte[]> _defaults = new();
     private readonly int _registryCount;
-    private readonly PendulumFieldFlags _serialized;
     private readonly PendulumFieldFlags _delta;
 
     /// <summary>Creates a codec.</summary>
@@ -44,12 +43,18 @@ public sealed class PendulumCodec
     {
         _registryCount = registryCount;
         _descriptors = descriptors ?? throw new ArgumentNullException(nameof(descriptors));
-        _serialized = serialized;
+        Fields = serialized;
         _delta = delta;
     }
 
-    /// <summary>The codec for the game's registry, with every field sent and coded against the previous frame.</summary>
+    /// <summary>The codec for the game's registry as the owning client reads it (its input and its own pawn frames).</summary>
     public static PendulumCodec Default { get; } = new(PendulumRegistry.Count, PendulumRegistry.Descriptors);
+
+    /// <summary>The codec for other clients' copies of a character: only the fields sent to other players.</summary>
+    public static PendulumCodec Others { get; } = new(PendulumRegistry.Count, PendulumRegistry.Descriptors, PendulumFieldFlags.Others, PendulumFieldFlags.Others);
+
+    /// <summary>The field set this codec sends and reads; a blackboard update's header names it to the receiver.</summary>
+    public PendulumFieldFlags Fields { get; }
 
     /// <summary>The default value of a descriptor.</summary>
     /// <param name="descriptorId">Descriptor id.</param>
@@ -305,7 +310,7 @@ public sealed class PendulumCodec
 
     // Values.
 
-    private bool Sent(PendulumField field) => (field.Flags & _serialized) != 0;
+    private bool Sent(PendulumField field) => (field.Flags & Fields) != 0;
 
     private byte[] BaselineOf(PendulumField field, byte[] previous, byte[] defaults) => (field.Flags & _delta) != 0 ? previous : defaults;
 

@@ -99,7 +99,8 @@ public enum DeliveryPhase
 /// <summary>
 /// One player's actor channels after Join: exports, controller/player state and HUD before world play,
 /// then the squad, character, components and restart; after possession, input acknowledgements, the first blackboard frame,
-/// level streaming requests, ability grants, and the doors and ladders of visible cells.
+/// level streaming requests, ability grants, the doors and ladders of visible cells, and the other players of the
+/// raid with their movement.
 /// </summary>
 public sealed partial class PlayerChannels : IPlayerChannels
 {
@@ -121,6 +122,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private const int AbilityExportsPerBunch = 3;
     private const ulong FirstAbilityGuid = 0x100001;
     private const ulong PathReference = 1;
+
+    // Other players' movement is sent at most this often.
+    private const double ObservedFrameInterval = 0.05;
+    private const int MaxObservedFramesInFlight = 32;
 
     private static readonly HashSet<string> s_startupCalls = new(StringComparer.Ordinal)
     {
@@ -194,6 +199,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private double? _mapActorsAllowedAt;
     private Dictionary<int, (LadderChannel State, ReliableKey? Key)> _ladders = [];
     private HashSet<int> _failedLadders = [];
+    private Dictionary<long, ObservedPlayer> _observed = [];
 
     /// <summary>Creates the channels of a joined player.</summary>
     /// <param name="raid">The raid.</param>
@@ -216,6 +222,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
         Opening,
         Open,
         Closing,
+    }
+
+    private enum ObservedStage
+    {
+        Hidden,
+        StateOpening,
+        PawnOpening,
+        Linking,
+        Visible,
+        Gone,
     }
 
     private enum LadderChannel
@@ -254,6 +270,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
     public int BlackboardFrames { get; private set; }
+
+    /// <summary>
+    /// The character's time offset in its newest frame (see <see cref="PawnBlackboard.TimeOffsetField"/>), or null
+    /// before its first frame.
+    /// </summary>
+    public long? TimeOffset { get; private set; }
 
     /// <summary>The character's simulated state after the latest simulated input frame, or null before the reset frame.</summary>
     public CharacterState? SimulatedCharacter => _movement?.Latest;
@@ -325,6 +347,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._weaponRequests = [.. _weaponRequests];
         copy._ladders = new Dictionary<int, (LadderChannel, ReliableKey?)>(_ladders);
         copy._failedLadders = [.. _failedLadders];
+        copy._observed = new Dictionary<long, ObservedPlayer>(_observed);
         return copy;
     }
 
@@ -352,9 +375,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
     {
         ArgumentNullException.ThrowIfNull(io);
         ArgumentNullException.ThrowIfNull(bunch);
-        if (bunch.Channel == SquadChannel || DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null)
+        if (bunch.Channel == SquadChannel || DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null
+            || ObservedIndex(bunch.Channel) is not null)
         {
-            // The client owns no squad, door or ladder; it only sends channel bookkeeping there.
+            // The client owns no squad, door, ladder or other player; it only sends channel bookkeeping there.
             return;
         }
 
@@ -447,12 +471,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         ServiceInputAcknowledgement(io.Sender);
-        ServiceBlackboard(io.Sender);
+        ServiceBlackboard(io.Sender, now);
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
         ServiceDoors(io.Sender, now);
         ServiceLadders(io.Sender, now);
+        ServiceObserved(io.Sender, now);
     }
+
+    /// <inheritdoc />
+    public double ServerSeconds(double now) => _raid.WorldSeconds(now);
 
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
@@ -464,6 +492,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         else if (LadderIndex(channel) is { } ladder)
         {
             _failedLadders.Add(ladder);
+        }
+        else if (ObservedIndex(channel) is { } observed && observed < _raid.Players.Count)
+        {
+            _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
         }
     }
 
@@ -540,6 +572,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             _weaponRequests.Clear();
         }
+
+        PublishMotion(now);
     }
 
     /// <inheritdoc />
@@ -725,7 +759,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         WorldActor pawn = Actor(_player.Pawn);
         IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
             new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, _member.Inventory.InitialBlackboard,
-            _member.Weapons.Variables(PawnBlackboardFrames.FirstTick));
+            _member.Weapons.Variables(PawnBlackboardFrames.FirstTick), TimeOffsetAt(PawnBlackboardFrames.FirstTick, _raid.Clock()));
         uint delivery = checked((uint)BlackboardFrames);
         ActorContentBlock frame = _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState);
         _blackboardState = state;
@@ -987,7 +1021,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
     // the latest input. They are sent when the usable focused button changes: the client's interaction (and
     // its animation) only starts once the server says it may use the button.
-    private void ServiceBlackboard(ReliableSender sender)
+    private void ServiceBlackboard(ReliableSender sender, double now)
     {
         if (InputFrame is not { } latest || latest is < PawnBlackboardFrames.FirstTick or > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending))
         {
@@ -1042,7 +1076,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             WorldActor pawn = Actor(_player.Pawn);
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
-                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects));
+                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now));
             _movement = new PlayerMovement(frame, pawn.Location, yaw);
         }
         else
@@ -1062,7 +1096,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             // Vertical motion is not simulated yet; it stays the reported position change.
             Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
             state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _member.Inventory.Blackboard,
-                _member.Weapons.Variables(frame, weaponObjects));
+                _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now));
         }
 
         // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
@@ -1258,6 +1292,199 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
     }
 
+    // Gives other players this character's movement: the input tick before the newest input, at the position the
+    // client reported, with the simulated velocity, stance and locomotion (as the character's own frames carry it),
+    // the held weapons and the aim pitch. Other clients have no item objects of this player, so the weapons go
+    // without item links: the client draws an equipped gun from its item type.
+    private void PublishMotion(double now)
+    {
+        if (Phase != DeliveryPhase.Possessed || _blackboardFrame == 0 || InputFrame is not { } latest || latest <= PawnBlackboardFrames.FirstTick)
+        {
+            return;
+        }
+
+        uint tick = latest - 1;
+        if ((_member.Motion is { } published && published.Tick >= tick) || _input.Position(latest) is not { } position
+            || _input.Position(tick) is not { } before || _input.Yaw(tick) is not { } yaw || _movement?.State(tick) is not { } character
+            || _input.Pitch(tick) is not { } pitch)
+        {
+            return;
+        }
+
+        Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
+        _member.Publish(new PlayerMotion(tick, new PawnMotion(position, velocity, yaw, character), _member.Weapons.Variables(tick), pitch, TimeOffsetAt(tick, now)));
+    }
+
+    // The character's time offset: a tick's simulation time plus the offset is the raid's world time, which is
+    // also the server time on this raid's packets. The client's ticks drift against the raid's clock; like the
+    // game, the offset follows in whole steps, so it stays put while the drift is under one step.
+    private long TimeOffsetAt(uint tick, double now)
+    {
+        long ideal = (long)Math.Round(_raid.WorldSeconds(now) * PawnBlackboard.TimePerSecond) - ((long)tick * PawnBlackboard.TimePerTick);
+        long offset = TimeOffset is { } current
+            ? current + (PawnBlackboard.TimeOffsetStep * ((ideal - current) / PawnBlackboard.TimeOffsetStep))
+            : ideal - (ideal % PawnBlackboard.TimePerTick);
+        TimeOffset = offset;
+        return offset;
+    }
+
+    // Shows the client the other players of the raid once their characters move: opens each one's player state
+    // as a simulated actor, then its character at its latest movement, links them and gives the character its
+    // appearance; then sends that character's movement as it changes, unreliably, each frame coded
+    // against the newest frame the client confirmed. A player who leaves the raid is removed.
+    // Everyone is shown everywhere; far-away players are not filtered out yet.
+    private void ServiceObserved(ReliableSender sender, double now)
+    {
+        if (!MapActorsAllowed(now))
+        {
+            return;
+        }
+
+        IReadOnlyList<RaidPlayer> players = _raid.Players;
+        for (int index = 0; index < players.Count; index++)
+        {
+            RaidPlayer member = players[index];
+            ObservedPlayer observed = _observed.GetValueOrDefault(member.Id, new ObservedPlayer(ObservedStage.Hidden));
+            if (member.Id == _member.Id || observed.Stage == ObservedStage.Gone || observed.Keys.Any(sender.Pending)
+                || _raid.State.FindPlayer(member.Id) is not { } other)
+            {
+                continue;
+            }
+
+            int stateChannel = FirstObservedChannel + (2 * index);
+            int pawnChannel = stateChannel + 1;
+            if (member.Left)
+            {
+                if (observed.Stage >= ObservedStage.PawnOpening)
+                {
+                    sender.Queue(Bunches.Close(pawnChannel, Bunches.Destroyed));
+                }
+
+                if (observed.Stage >= ObservedStage.StateOpening)
+                {
+                    sender.Queue(Bunches.Close(stateChannel, Bunches.Destroyed));
+                }
+
+                _observed[member.Id] = new ObservedPlayer(ObservedStage.Gone);
+                continue;
+            }
+
+            if (member.Motion is not { } motion)
+            {
+                continue;
+            }
+
+            _observed[member.Id] = observed.Stage switch
+            {
+                ObservedStage.Hidden => OpenObservedState(sender, other, stateChannel),
+                ObservedStage.StateOpening => OpenObservedPawn(sender, other, pawnChannel, motion, now),
+                ObservedStage.PawnOpening => LinkObservedPawn(sender, other, stateChannel, observed),
+                ObservedStage.Linking => observed with
+                {
+                    Stage = ObservedStage.Visible,
+                    Keys = [sender.Queue(Bunches.Actor(pawnChannel, _raid.State.AppearanceContent(other).Write))],
+                },
+                _ when motion.Tick > observed.SentTick && now - observed.SentAt >= ObservedFrameInterval =>
+                    SendObservedFrame(sender, pawnChannel, observed, motion, now),
+                _ => observed,
+            };
+        }
+    }
+
+    private ObservedPlayer OpenObservedState(ReliableSender sender, WorldPlayer other, int channel)
+    {
+        ActorSpawn spawn = new(other.PlayerState, _raid.Imports.Archetypes[Actor(other.PlayerState).ClassPath], 0, default);
+        ActorInitialization open = new(spawn, null, [_raid.State.ObservedPlayerStateProperties(other)]);
+        return new ObservedPlayer(ObservedStage.StateOpening) { Keys = [sender.Queue(open.ToBunch(channel, sender.NextSequence(channel), []))] };
+    }
+
+    // The character opens as a simulated proxy with its movement's first (reset) frame.
+    // Other players' frames carry only the fields the game sends to other clients (PendulumCodec.Others).
+    // Frames are numbered by the character's simulation tick (about 30 per second).
+    private ObservedPlayer OpenObservedPawn(ReliableSender sender, WorldPlayer other, int channel, PlayerMotion motion, double now)
+    {
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
+        Rotator facing = new(0, (motion.Motion.Yaw ?? 0) * 180 / Math.PI, 0);
+        ActorSpawn spawn = new(other.Pawn, _raid.Imports.Archetypes[Actor(other.Pawn).ClassPath], 0, motion.Motion.Position, facing);
+        ushort pitch = WorldState.CompressedPitch(motion.Pitch);
+        ActorInitialization open = new(spawn, null,
+            [WorldState.Merge(_raid.State.ObservedPawnProperties(other, pitch), _raid.State.BlackboardFrame(0, motion.Tick, state, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others))]);
+        return new ObservedPlayer(ObservedStage.PawnOpening, motion.Tick, state, now, pitch, motion.Tick)
+        {
+            Keys = [sender.Queue(open.ToBunch(channel, sender.NextSequence(channel), []))],
+        };
+    }
+
+    private ObservedPlayer LinkObservedPawn(ReliableSender sender, WorldPlayer other, int stateChannel, ObservedPlayer observed)
+    {
+        _mapped.UnionWith([other.PlayerState, other.Pawn]);
+        (ObjectExports exports, ulong appearance) = _raid.State.AppearanceExports(other);
+        return observed with
+        {
+            Stage = ObservedStage.Linking,
+            Keys =
+            [
+                sender.Queue(Bunches.Actor(stateChannel, _raid.State.ObservedPawnLinks(other))),
+                sender.Queue(Bunches.Exports(exports, [appearance])),
+            ],
+        };
+    }
+
+    private ObservedPlayer SendObservedFrame(ReliableSender sender, int channel, ObservedPlayer observed, PlayerMotion motion, double now)
+    {
+        observed = Confirmed(sender, observed);
+        // A reset clears the receiver's history. Wait for its outcome before sending another frame.
+        if (observed.State is null && observed.InFlight.Length != 0)
+        {
+            return observed;
+        }
+
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
+        // The client may already have overwritten a baseline this far back; a reset frame starts from the defaults.
+        bool reset = observed.State is null || motion.Tick - observed.Tick >= PendulumFrames.History;
+        ActorContentBlock frame = reset
+            ? _raid.State.BlackboardFrame(0, motion.Tick, state, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others)
+            : _raid.State.BlackboardFrame(observed.Tick, motion.Tick, state, observed.State!, PendulumCodec.Others);
+        // Aim pitch rides with the frame in one block when it changed.
+        ushort pitch = WorldState.CompressedPitch(motion.Pitch);
+        if (pitch != observed.Pitch)
+        {
+            frame = WorldState.Merge(_raid.State.ObservedPitch(pitch), frame);
+        }
+
+        ObservedFrame sent = new(sender.QueueUnreliable(Bunches.Actor(channel, frame)), motion.Tick, state, pitch);
+        return observed with
+        {
+            Stage = ObservedStage.Visible,
+            State = reset ? null : observed.State,
+            SentAt = now,
+            SentTick = motion.Tick,
+            InFlight = reset ? [sent] : [.. observed.InFlight.TakeLast(MaxObservedFramesInFlight - 1), sent],
+            Keys = [],
+        };
+    }
+
+    // The observed player with its baseline moved to the newest frame the client confirmed; lost or forgotten
+    // frames are dropped.
+    private static ObservedPlayer Confirmed(ReliableSender sender, ObservedPlayer observed)
+    {
+        ObservedPlayer result = observed;
+        List<ObservedFrame> waiting = [];
+        foreach (ObservedFrame frame in observed.InFlight)
+        {
+            if (sender.Arrived(frame.Key) is true && frame.Tick > result.Tick)
+            {
+                result = result with { Tick = frame.Tick, State = frame.State, Pitch = frame.Pitch };
+            }
+            else if (sender.Pending(frame.Key))
+            {
+                waiting.Add(frame);
+            }
+        }
+
+        return result with { InFlight = [.. waiting.Where(frame => frame.Tick > result.Tick)] };
+    }
+
     // Doors and ladders wait until the character simulation has started and settled.
     private bool MapActorsAllowed(double now)
     {
@@ -1280,6 +1507,13 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private int? DoorIndex(int channel) =>
         channel - FirstDoorChannel is var index && index >= 0 && index < _raid.Doors.Doors.Count ? index : null;
 
+    // Index in the raid's player list of the player an observed-player channel belongs to; each player has a
+    // player-state channel and a character channel after the ladders.
+    private int? ObservedIndex(int channel) =>
+        (channel - FirstObservedChannel) / 2 is var index && channel >= FirstObservedChannel && index < _raid.Players.Count ? index : null;
+
+    private int FirstObservedChannel => FirstDoorChannel + _raid.Doors.Doors.Count + _raid.Ladders.Ladders.Count;
+
     private int? LadderIndex(int channel) =>
         channel - FirstDoorChannel - _raid.Doors.Doors.Count is var index && index >= 0 && index < _raid.Ladders.Ladders.Count ? index : null;
 
@@ -1291,4 +1525,18 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private int ChannelOf(ulong actor) => Array.Find(_bindings, binding => binding.Guid == actor).Channel;
 
     private void Count(string name) => _ignoredCalls[name] = _ignoredCalls.GetValueOrDefault(name) + 1;
+
+    // What this client has of another player: how far its actors' delivery got, the reliable bunches it waits
+    // for, the newest movement frame it confirmed (tick, state, aim pitch), when and which tick was last sent, and
+    // the unreliable frames whose delivery is not known yet.
+    private readonly record struct ObservedPlayer(ObservedStage Stage, uint Tick = 0,
+        IReadOnlyDictionary<int, PendulumSlot>? State = null, double SentAt = 0, ushort Pitch = 0, uint SentTick = 0)
+    {
+        public ReliableKey[] Keys { get; init; } = [];
+
+        public ObservedFrame[] InFlight { get; init; } = [];
+    }
+
+    // An unreliable movement frame sent to this client.
+    private readonly record struct ObservedFrame(ReliableKey Key, uint Tick, IReadOnlyDictionary<int, PendulumSlot> State, ushort Pitch);
 }

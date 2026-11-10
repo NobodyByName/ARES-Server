@@ -50,6 +50,20 @@ public sealed class PawnBlackboardFramesTests
     }
 
     [Fact]
+    public void Every_turn_between_two_headings_can_be_written()
+    {
+        for (int from = -180; from < 180; from += 5)
+        {
+            IReadOnlyDictionary<int, PendulumSlot> previous = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Yaw: from * Math.PI / 180), 0);
+            for (int to = -1800; to < 1800; to++)
+            {
+                IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(41, new PawnMotion(s_spawn, Yaw: to * Math.PI / 1800), 0);
+                PawnBlackboardFrames.Write(new BitWriter(), state, previous);
+            }
+        }
+    }
+
+    [Fact]
     public void A_moving_frame_carries_the_velocity_and_facing()
     {
         // 375 world units per second (12.5 per tick) along X, facing a quarter turn to the left.

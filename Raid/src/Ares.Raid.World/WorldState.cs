@@ -237,6 +237,97 @@ public sealed class WorldState
         }
     }
 
+    /// <summary>A player's actors, if that player has joined the world.</summary>
+    /// <param name="userId">The player's user id.</param>
+    /// <returns>The player, or null.</returns>
+    public WorldPlayer? FindPlayer(long userId)
+    {
+        lock (_lock)
+        {
+            return _players.GetValueOrDefault(userId);
+        }
+    }
+
+    /// <summary>Another player's player state as an observer sees it: simulated, with its id and unique id.</summary>
+    /// <param name="other">The observed player.</param>
+    /// <returns>The opening properties.</returns>
+    public ActorContentBlock ObservedPlayerStateProperties(WorldPlayer other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        WorldActor state = Actor(other.PlayerState);
+        return Replication.Encode(state.ClassPath, new Dictionary<string, object?>
+        {
+            [PropertyNames.Role] = (ulong)NetRole.Authority,
+            [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
+            [PropertyNames.PlayerId] = state.Properties[PropertyNames.PlayerId],
+            [PropertyNames.UniqueId] = state.Properties[PropertyNames.UniqueId],
+        }, Objects([]));
+    }
+
+    /// <summary>
+    /// Another player's character as an observer sees it: a simulated proxy linked to its player state, with its
+    /// aim pitch; its movement arrives in blackboard frames.
+    /// </summary>
+    /// <param name="other">The observed player.</param>
+    /// <param name="pitch">Aim pitch, compressed (see <see cref="CompressedPitch"/>).</param>
+    /// <returns>The opening properties.</returns>
+    public ActorContentBlock ObservedPawnProperties(WorldPlayer other, ushort pitch = 0)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return Replication.Encode(PlayerClasses.Pawn.Class, new Dictionary<string, object?>
+        {
+            [PropertyNames.Role] = (ulong)NetRole.Authority,
+            [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
+            [PropertyNames.PlayerState] = other.PlayerState,
+            [PropertyNames.ReplicateMovement] = false,
+            [PropertyNames.Hidden] = false,
+            [PropertyNames.RemoteViewPitch16] = pitch,
+        }, Objects([other.PlayerState]));
+    }
+
+    /// <summary>Another player's aim pitch, as an observer's copy of the character receives it.</summary>
+    /// <param name="pitch">Aim pitch, compressed (see <see cref="CompressedPitch"/>).</param>
+    /// <returns>The character's properties.</returns>
+    public ActorContentBlock ObservedPitch(ushort pitch) =>
+        Replication.Encode(PlayerClasses.Pawn.Class, new Dictionary<string, object?> { [PropertyNames.RemoteViewPitch16] = pitch }, Objects([]));
+
+    /// <summary>An aim pitch as the pawn replicates it: 65536 steps per turn, negative angles wrapped.</summary>
+    /// <param name="radians">Pitch in radians, positive up.</param>
+    /// <returns>The compressed pitch.</returns>
+    public static ushort CompressedPitch(double radians) => (ushort)((int)Math.Round(radians * 32768 / Math.PI) & 0xFFFF);
+
+    /// <summary>One content block with properties followed by field payloads (a blackboard frame).</summary>
+    /// <param name="properties">Property content (with its layout flag).</param>
+    /// <param name="fields">Field content (without layout).</param>
+    /// <returns>The merged block.</returns>
+    public static ActorContentBlock Merge(ActorContentBlock properties, ActorContentBlock fields)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+        ArgumentNullException.ThrowIfNull(fields);
+        if (!properties.HasRepLayout || fields.HasRepLayout)
+        {
+            throw new InvalidPacketException("Merging needs a property block and a field block");
+        }
+
+        BitWriter writer = new();
+        writer.WriteBits(properties.Payload, properties.PayloadBits);
+        writer.WriteBits(fields.Payload, fields.PayloadBits);
+        return new ActorContentBlock(writer.ToArray(), writer.Length, true);
+    }
+
+    /// <summary>Links another player's player state to its character once the observer has both.</summary>
+    /// <param name="other">The observed player.</param>
+    /// <returns>The player-state properties.</returns>
+    public ActorContentBlock ObservedPawnLinks(WorldPlayer other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return Replication.Encode(PlayerClasses.PlayerState.Class, new Dictionary<string, object?>
+        {
+            [PropertyNames.PioneerCharacter] = other.Pawn,
+            [PropertyNames.CurrentPawn] = other.Pawn,
+        }, Objects([other.PlayerState, other.Pawn]));
+    }
+
     /// <summary>An actor.</summary>
     /// <param name="guid">Its id.</param>
     /// <returns>The actor.</returns>
@@ -674,14 +765,19 @@ public sealed class WorldState
     /// <param name="frame">The next delivery number, independent of the simulation tick in the state.</param>
     /// <param name="state">The frame's state.</param>
     /// <param name="previous">The previous frame's state (empty for a reset).</param>
+    /// <param name="codec">The codec: the owner's (default) or <see cref="PendulumCodec.Others"/> for another player's character.</param>
     /// <returns>The pawn content.</returns>
-    public ActorContentBlock BlackboardFrame(uint baseline, uint frame, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous) =>
+    public ActorContentBlock BlackboardFrame(uint baseline, uint frame, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous,
+        PendulumCodec? codec = null) =>
         Field(PlayerClasses.Pawn.Class, PropertyNames.BlackBoardReplicationPtr, writer =>
         {
+            PendulumCodec encoder = codec ?? PendulumCodec.Default;
             writer.WriteBit(true); // The server supports the delta-struct form.
             BitWriter body = new();
-            PawnBlackboardFrames.Write(body, state, previous);
-            BlackboardUpdate.Write(writer, baseline, frame, baseline == 0, BlackboardUpdate.DefaultFlags, body.ToArray(), body.Length);
+            PawnBlackboardFrames.Write(body, state, previous, encoder);
+            // The header names the body's field set: the client reads the body with the set the header names.
+            BlackboardUpdate.Write(writer, baseline, frame, baseline == 0, encoder.Fields, body.ToArray(), body.Length,
+                preferShortHeader: encoder == PendulumCodec.Others);
         });
 
     /// <summary>Records that the client confirmed possessing its character.</summary>

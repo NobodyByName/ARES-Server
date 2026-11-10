@@ -84,6 +84,16 @@ public sealed class InputHistory
             ? PendulumRotations.Yaw(PendulumCodec.Quaternion(s_rotationField, slot.Value), s_rotationField)
             : null;
 
+    /// <summary>The pitch of the client's control rotation in a frame it sent (where it aims up or down).</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The pitch in radians, or null when the frame is unknown.</returns>
+    public double? Pitch(uint frame) =>
+        _frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+        && slots.TryGetValue(PendulumInput.ControlRotationSlot, out PendulumSlot? slot)
+        && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]
+            ? PendulumRotations.Pitch(PendulumCodec.Quaternion(s_rotationField, slot.Value), s_rotationField)
+            : null;
+
     /// <summary>The movement axes and buttons of a frame the client sent.</summary>
     /// <param name="frame">Input frame.</param>
     /// <returns>The movement input, or null when the frame is unknown.</returns>

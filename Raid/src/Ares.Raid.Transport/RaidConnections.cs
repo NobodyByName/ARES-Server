@@ -88,7 +88,7 @@ public sealed class RaidConnections
     public const int MaxPacketBytes = 1024;
 
     // Envelope bits around the connection payload, rounded up to whole bytes.
-    private static readonly long s_envelopeBits = new ConnectionEnvelope(0, 0, [], 0).Encode(fromServer: true).Length * 8L;
+    private static readonly long s_envelopeBits = new ConnectionEnvelope(0, 0, [], 0) { ServerTimeMs = 0 }.Encode(fromServer: true).Length * 8L;
 
     private const int InitialControlMessages = 256;
 
@@ -506,7 +506,10 @@ public sealed class RaidConnections
     {
         BitWriter writer = new();
         new ConnectionPacket(state.Window.NextHeader(), state.Io.Sender.Bunches(selected)).Write(writer, fromServer: true, MaxPacketBytes);
-        byte[] datagram = new ConnectionEnvelope(_handshake.SessionId, connection.ClientId, writer.ToArray(), writer.Length).Encode(fromServer: true);
+        // Packets of a player in a raid carry the raid's time: the client places other characters' movement on it.
+        uint? serverTime = state.Player is { } player ? (uint)Math.Min(player.ServerSeconds(now) * 1000, uint.MaxValue - 1) : null;
+        byte[] datagram = new ConnectionEnvelope(_handshake.SessionId, connection.ClientId, writer.ToArray(), writer.Length) { ServerTimeMs = serverTime }
+            .Encode(fromServer: true);
         if (datagram.Length > MaxPacketBytes)
         {
             throw new InvalidPacketException("Datagram larger than the client accepts");

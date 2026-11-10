@@ -7,6 +7,9 @@ namespace Ares.Raid.Replication;
 /// <summary>Reliable bunches the server queues; the sender assigns their sequence numbers.</summary>
 public static class Bunches
 {
+    /// <summary>Channel close reason when the actor no longer exists.</summary>
+    public const int Destroyed = 0;
+
     /// <summary>Channel close reason when the actor's level is no longer visible.</summary>
     public const int LevelUnloaded = 2;
 
