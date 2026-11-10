@@ -10,7 +10,13 @@ the main menu.
 Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
 and each process exits when its raid is over. Host persists each account's stash and selected
 loadout. A raid's loadout stays locked until that raid is over; restarting Host ends its raids and
-unlocks the loadout. A raid currently admits one player, whatever party size is configured.
+unlocks the loadout.
+
+A raid holds up to `raid-players` players across its parties (default 1). A new party joins a
+running raid that has room during that raid's first `raid-fill-seconds` (default 60); otherwise
+Host starts another raid. Players in the same raid see each other's characters walk, crouch, hold
+their gun and aim. Each player leaves on their own, and the raid ends when the last one leaves.
+
 The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
 moves between compatible slots are
 validated by Raid. Inventory and map screens show their shared menu frame.
@@ -51,7 +57,9 @@ reject grants. Starter provisioning still supplies only one rubber duck.
 
 Limitations:
 
-- One player per raid (several accounts can play, each in its own raid); Dam only.
+- Shared raids are a first version with known issues: players see each other's movement, held gun
+  and aim only. Shots, effects, health and interactions between players are not shared yet, and
+  every player is sent to everyone whatever the distance. Parties hold one player; Dam only.
 - Accounts are made by the operator on the Host console; players sign in through ARES-Launcher.
   There is no progression yet.
 - Movement is trusted from the client; the server does not check it yet.
