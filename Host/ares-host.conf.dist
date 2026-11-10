@@ -45,8 +45,11 @@ auth-key-file =
 # Keep it in a separate private file.
 raid-executable =
 session-control-token-file =
-# Largest party one raid accepts: at least 1.
+# Most players in one raid, across every party: at least 1. A new party joins a running raid
+# that has room, else Host starts another raid.
 raid-players = 1
+# Seconds after a raid's first party during which other parties may join it (0 to 600).
+raid-fill-seconds = 60
 # Raids listen on Host's bind address and advertise the public-origin host to players.
 # UDP game port of the first raid; each further raid uses the next port.
 raid-port = 7777

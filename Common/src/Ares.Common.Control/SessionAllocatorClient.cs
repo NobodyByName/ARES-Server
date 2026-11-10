@@ -72,7 +72,7 @@ public sealed class SessionAllocatorClient : IDisposable
     /// <exception cref="AllocationUnavailableException">Raid unreachable or the reservation's identity changed.</exception>
     public async Task<Allocation> StatusAsync(Allocation allocation, CancellationToken cancellationToken = default)
     {
-        Allocation? reply = await PostAsync(AllocationApi.StatusPath, new AllocationStatusRequest(allocation.MatchId), cancellationToken).ConfigureAwait(false);
+        Allocation? reply = await PostAsync(AllocationApi.StatusPath, new AllocationStatusRequest(allocation.MatchId, allocation.TicketId), cancellationToken).ConfigureAwait(false);
         if (reply is null || reply.MatchId != allocation.MatchId || reply.TicketId != allocation.TicketId
             || reply.ScenarioName != allocation.ScenarioName || !reply.PartyMemberIds.SequenceEqual(allocation.PartyMemberIds)
             || (allocation.Loadouts is not null && (reply.Loadouts is null

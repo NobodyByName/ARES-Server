@@ -14,6 +14,7 @@ public sealed class RaidAllocationTests
 {
     private const string Ticket = "0b7f6c3e-9d0a-4c1b-8e2f-3a4b5c6d7e8f";
     private const string OtherTicket = "1b7f6c3e-9d0a-4c1b-8e2f-3a4b5c6d7e8f";
+    private const string ThirdTicket = "2b7f6c3e-9d0a-4c1b-8e2f-3a4b5c6d7e8f";
 
     private static readonly GameServerEndpoint s_endpoint = new("ares-raid", "127.0.0.1", 7777, "", "", false, "LOCAL");
 
@@ -38,10 +39,67 @@ public sealed class RaidAllocationTests
         Assert.Null(allocations.Route(new byte[16], renew: false));
 
         Assert.Equal(allocation.MatchId, allocations.Reserve(Request()).Allocation!.MatchId);
-        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(OtherTicket)).Error);
+        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(OtherTicket, player: 43)).Error);
         Assert.Equal("session_allocation_conflict", allocations.Reserve(Request(player: 43)).Error);
-        Assert.Equal(allocation.MatchId, allocations.Status(new AllocationStatusRequest(allocation.MatchId)).Allocation!.MatchId);
-        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(Ticket)).StatusCode);
+        Assert.Equal(allocation.MatchId, allocations.Status(new AllocationStatusRequest(allocation.MatchId, Ticket)).Allocation!.MatchId);
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(Ticket, Ticket)).StatusCode);
+    }
+
+    [Fact]
+    public void Other_parties_join_the_raid_while_it_has_room_and_its_fill_window_is_open()
+    {
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 3, fillWindow: 30);
+        Allocation first = allocations.Reserve(Request()).Allocation!;
+        _now[0] = 29;
+        Allocation second = allocations.Reserve(Request(OtherTicket, player: 43)).Allocation!;
+        Assert.Equal(first.MatchId, second.MatchId);
+        Assert.Equal([first.MatchId], _worlds.Prepared);
+        Assert.Equal([first.MatchId], _worlds.Joined);
+        Assert.NotEqual(first.Gameserver.RoutingToken, second.Gameserver.RoutingToken);
+        Assert.Equal(new SessionPrincipal(42, first.MatchId), allocations.Route(Convert.FromBase64String(first.Gameserver.RoutingToken), renew: false));
+        Assert.Equal(new SessionPrincipal(43, first.MatchId), allocations.Route(Convert.FromBase64String(second.Gameserver.RoutingToken), renew: false));
+        Assert.Equal([43L], allocations.Status(new AllocationStatusRequest(first.MatchId, OtherTicket)).Allocation!.PartyMemberIds);
+
+        Assert.Equal("session_allocation_conflict", allocations.Reserve(Request(ThirdTicket, player: 43)).Error);
+        _now[0] = 30;
+        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(ThirdTicket, player: 44)).Error);
+    }
+
+    [Fact]
+    public void A_full_raid_or_a_world_that_refuses_the_party_sends_it_elsewhere()
+    {
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        Allocation first = allocations.Reserve(Request() with { PartyMemberIds = [42, 43] }).Allocation!;
+        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(OtherTicket, player: 44)).Error);
+
+        RaidAllocations refused = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        _worlds.RefuseJoin = true;
+        Allocation kept = refused.Reserve(Request()).Allocation!;
+        Assert.Equal((409, "session_capacity_reached"), (refused.Reserve(Request(OtherTicket, player: 43)).StatusCode,
+            refused.Reserve(Request(OtherTicket, player: 43)).Error));
+        Assert.NotNull(refused.Route(Convert.FromBase64String(kept.Gameserver.RoutingToken), renew: false));
+        Assert.DoesNotContain(kept.MatchId, _worlds.Released);
+        Assert.DoesNotContain(first.MatchId, _worlds.Released);
+    }
+
+    [Fact]
+    public void The_raid_closes_once_every_party_has_been_released()
+    {
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        Allocation first = allocations.Reserve(Request()).Allocation!;
+        _now[0] = 50;
+        Allocation second = allocations.Reserve(Request(OtherTicket, player: 43)).Allocation!;
+        _now[0] = 121;
+        Assert.Null(allocations.Route(Convert.FromBase64String(first.Gameserver.RoutingToken), renew: false));
+        Assert.NotNull(allocations.Route(Convert.FromBase64String(second.Gameserver.RoutingToken), renew: false));
+        Assert.Empty(_worlds.Released);
+        Assert.Equal([42L], _worlds.Expired);
+        Assert.False(allocations.Closed);
+
+        _now[0] = 171;
+        Assert.True(allocations.Closed);
+        Assert.Equal([42L, 43L], _worlds.Expired);
+        Assert.Equal([first.MatchId], _worlds.Released);
     }
 
     [Fact]
@@ -60,7 +118,7 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
-    public void Ticket_status_is_read_only_and_requires_one_valid_lookup_key()
+    public void Ticket_status_is_read_only_and_requires_a_valid_ticket()
     {
         RaidAllocations allocations = Allocations();
         Allocation allocation = allocations.Reserve(Request()).Allocation!;
@@ -68,8 +126,8 @@ public sealed class RaidAllocationTests
         Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, OtherTicket)).StatusCode);
         Assert.Equal(400, allocations.Status(new AllocationStatusRequest(null)).StatusCode);
         Assert.Equal(400, allocations.Status(new AllocationStatusRequest(null, "invalid")).StatusCode);
-        Assert.Equal(400, allocations.Status(new AllocationStatusRequest(allocation.MatchId, Ticket)).StatusCode);
-        Assert.Equal(400, allocations.Status(new AllocationStatusRequest("invalid")).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest(allocation.MatchId)).StatusCode);
+        Assert.Equal(400, allocations.Status(new AllocationStatusRequest("invalid", Ticket)).StatusCode);
         Assert.Equal([allocation.MatchId], _worlds.Prepared);
         _now[0] = 121;
         Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
@@ -78,21 +136,28 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
-    public void An_ended_world_releases_its_ticket_immediately_and_closes_the_raid()
+    public void A_party_that_left_ends_its_ticket_at_once_and_the_last_one_closes_the_raid()
     {
-        RaidAllocations allocations = Allocations();
-        Allocation allocation = allocations.Reserve(Request()).Allocation!;
-        byte[] token = Convert.FromBase64String(allocation.Gameserver.RoutingToken);
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        Allocation first = allocations.Reserve(Request()).Allocation!;
+        Allocation second = allocations.Reserve(Request(OtherTicket, player: 43)).Allocation!;
+        byte[] token = Convert.FromBase64String(first.Gameserver.RoutingToken);
         Assert.NotNull(allocations.Route(token, renew: true));
-        Assert.False(allocations.Closed);
-        _worlds.Ended.Add(allocation.MatchId);
+        _worlds.Left.Add(42);
 
         Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
         Assert.Null(allocations.Route(token, renew: true));
-        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Assert.NotNull(allocations.Route(Convert.FromBase64String(second.Gameserver.RoutingToken), renew: false));
+        Assert.Empty(_worlds.Released);
+        Assert.False(allocations.Closed);
+
+        _worlds.Left.Add(43);
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, OtherTicket)).StatusCode);
+        Assert.Equal([first.MatchId], _worlds.Released);
         Assert.True(allocations.Closed);
-        Assert.Equal((409, "session_capacity_reached"), (allocations.Reserve(Request(OtherTicket)).StatusCode, allocations.Reserve(Request(OtherTicket)).Error));
-        Assert.Equal([allocation.MatchId], _worlds.Prepared);
+        Assert.Equal((409, "session_capacity_reached"), (allocations.Reserve(Request(ThirdTicket, player: 44)).StatusCode, allocations.Reserve(Request(ThirdTicket, player: 44)).Error));
+        Assert.Equal([first.MatchId], _worlds.Prepared);
+        Assert.Empty(_worlds.Expired);
     }
 
     [Fact]
@@ -251,7 +316,9 @@ public sealed class RaidAllocationTests
 
         public List<string> Released { get; } = [];
 
-        public HashSet<string> Ended { get; } = [];
+        public HashSet<long> Left { get; } = [];
+
+        public List<long> Expired { get; } = [];
 
         public bool Fail { get; set; }
 
@@ -270,10 +337,30 @@ public sealed class RaidAllocationTests
             }
         }
 
+        public List<string> Joined { get; } = [];
+
+        public bool RefuseJoin { get; set; }
+
+        public void Join(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)
+        {
+            if (RefuseJoin)
+            {
+                throw new WorldPreparationException("test");
+            }
+
+            Joined.Add(matchId);
+        }
+
+        public void Leave(string matchId, IReadOnlyList<long> players)
+        {
+            Expired.AddRange(players);
+            Left.UnionWith(players);
+        }
+
         public void Release(string matchId) => Released.Add(matchId);
 
         public bool AcceptingPlayers(string matchId) => Prepared.Contains(matchId) && !Released.Contains(matchId);
 
-        public bool HasEnded(string matchId) => Ended.Contains(matchId);
+        public bool HasLeft(string matchId, long player) => Left.Contains(player);
     }
 }

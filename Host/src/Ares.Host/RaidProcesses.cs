@@ -18,7 +18,8 @@ namespace Ares.Host;
 /// <param name="AdvertiseHost">Host name or address players connect to.</param>
 /// <param name="GamePort">UDP game port of slot 0; slot n uses the port plus n.</param>
 /// <param name="ControlPort">Loopback allocation API port of slot 0; slot n uses the port plus n.</param>
-/// <param name="Players">Largest party one raid accepts.</param>
+/// <param name="Players">Most players in one raid, across every party.</param>
+/// <param name="FillSeconds">Seconds after a raid's first party during which other parties may join.</param>
 /// <param name="Lighting">Lighting of every raid, or null for the map's weighted pick.</param>
 public sealed record RaidLaunch(
     string Executable,
@@ -29,6 +30,7 @@ public sealed record RaidLaunch(
     int GamePort,
     int ControlPort,
     int Players,
+    int FillSeconds,
     string? Lighting);
 
 /// <summary>Starts ARES-Raid as child processes and forwards their events to the Host log.</summary>
@@ -51,6 +53,7 @@ internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaid
         [
             "--port", Text(gamePort), "--bind", launch.Bind.ToString(), "--advertise-host", launch.AdvertiseHost,
             "--control-port", Text(controlPort), "--control-token-file", launch.TokenFile, "--max-players", Text(launch.Players),
+            "--fill-seconds", Text(launch.FillSeconds),
             "--console", "json", "--stop-on-input-close",
         ];
         foreach (string argument in arguments)

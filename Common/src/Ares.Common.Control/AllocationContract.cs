@@ -14,9 +14,9 @@ namespace Ares.Common.Control;
 public sealed record AllocationRequest(string TicketId, string ScenarioName, IReadOnlyList<long> PartyMemberIds,
     IReadOnlyList<PlayerLoadout>? Loadouts = null, IReadOnlyList<CompactPlayerProfile>? Profiles = null);
 
-/// <summary>Host → Raid: poll a reservation.</summary>
+/// <summary>Host → Raid: poll a reservation. Several tickets can share one raid, so the ticket is the key.</summary>
 /// <param name="MatchId">The match id returned by the reservation, or null to look up a persisted ticket.</param>
-/// <param name="TicketId">The persisted ticket id. Exactly one lookup key must be supplied.</param>
+/// <param name="TicketId">The ticket the reservation was made for.</param>
 public sealed record AllocationStatusRequest(string? MatchId, string? TicketId = null);
 
 /// <summary>Raid → Host: the state of one reservation.</summary>

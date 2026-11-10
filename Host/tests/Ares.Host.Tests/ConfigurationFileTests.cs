@@ -100,6 +100,7 @@ public sealed class ConfigurationFileTests : IDisposable
             raid-executable = ARES-Raid
             session-control-token-file = operator-token
             raid-players = 4
+            raid-fill-seconds = 45
             raid-port = 7000
             raid-control-port = 17000
             raid-lighting = Lighting.GreyMorning
@@ -118,7 +119,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal(2, configuration.Settings.RaidCapacity);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
-            "192.0.2.4", 7000, 17000, 4, "Lighting.GreyMorning"), configuration.Raids);
+            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning"), configuration.Raids);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
     }
@@ -179,6 +180,7 @@ public sealed class ConfigurationFileTests : IDisposable
     [InlineData("console = invalid", "must be auto")]
     [InlineData("session-control-token-file = operator-token", "requires both")]
     [InlineData("raid-players = 0", "--raid-players must be at least 1")]
+    [InlineData("raid-fill-seconds = 601", "--raid-fill-seconds must be from 0 to 600")]
     [InlineData("raid-control-port = 18079\nraid-capacity = 2", "must not include the Host --port")]
     [InlineData("raid-port = 65535\nraid-capacity = 2", "one port from 1 to 65535")]
     [InlineData("archive-keys-file =", "must not be empty")]

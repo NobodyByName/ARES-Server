@@ -45,7 +45,8 @@ public sealed record HostConfiguration
           --mongodb-database <name>         Database for this Host/private server (default ares_host)
           --raid-executable <path>          ARES-Raid executable Host starts for matchmaking (default: none; tickets stay MATCHING)
           --session-control-token-file <f>  Operator token Host shares with the Raid servers it starts
-          --raid-players <n>                Largest party one raid accepts (default 1)
+          --raid-players <n>                Most players in one raid, across every party (default 1)
+          --raid-fill-seconds <n>           Seconds after a raid's first party during which other parties may join (0 to 600, default 60)
           --raid-port <n>                   UDP game port of the first raid; each further raid uses the next port (default {DefaultRaidPort})
           --raid-control-port <n>           Loopback allocation API port of the first raid, counted the same way (default {DefaultRaidControlPort})
           --raid-lighting <tag>             Lighting of every raid (default: picked by the map's weights)
@@ -118,6 +119,7 @@ public sealed record HostConfiguration
         string? raidExecutable = file.GetPath("raid-executable");
         string? controlTokenFile = file.GetPath("session-control-token-file");
         int raidPlayers = file.GetInt32("raid-players", 1);
+        int raidFillSeconds = file.GetInt32("raid-fill-seconds", 60);
         int raidPort = file.GetInt32("raid-port", DefaultRaidPort);
         int raidControlPort = file.GetInt32("raid-control-port", DefaultRaidControlPort);
         string? raidLighting = EmptyToNull(file.GetString("raid-lighting"));
@@ -199,7 +201,7 @@ public sealed record HostConfiguration
             throw new CommandLineException("A non-loopback --public-origin requires --allow-network-clients");
         }
 
-        RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidPort, raidControlPort, raidLighting,
+        RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
             bind, originUri.Host, port);
         byte[]? identityKey = authKeyFile is null ? null : ReadIdentityKey(authKeyFile);
         ArchiveKeys archiveKeys = ReadArchiveKeys(archiveKeysFile, archiveKeysSha256);
@@ -230,12 +232,17 @@ public sealed record HostConfiguration
 
     private static string? EmptyToNull(string? value) => value == "" ? null : value;
 
-    private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int gamePort, int controlPort,
-        string? lighting, IPAddress bind, string advertiseHost, int hostPort)
+    private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
+        int controlPort, string? lighting, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {
             throw new CommandLineException("--raid-players must be at least 1");
+        }
+
+        if (fillSeconds is < 0 or > 600)
+        {
+            throw new CommandLineException("--raid-fill-seconds must be from 0 to 600");
         }
 
         int last = Math.Max(capacity, 1) - 1;
@@ -269,7 +276,7 @@ public sealed record HostConfiguration
         {
             string fullTokenFile = Path.GetFullPath(tokenFile);
             return new RaidLaunch(fullExecutable, fullTokenFile, SecretFiles.ReadOperatorToken(fullTokenFile), bind,
-                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, lighting);
+                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting);
         }
         catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException)
         {

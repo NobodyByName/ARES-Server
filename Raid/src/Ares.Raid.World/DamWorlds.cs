@@ -313,12 +313,27 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     }
 
     /// <inheritdoc />
+    public bool HasLeft(string matchId, long player) => HasEnded(matchId);
+
+    /// <summary>Whether a prepared world has ended.</summary>
+    /// <param name="matchId">Match id.</param>
+    /// <returns>Whether it has ended.</returns>
     public bool HasEnded(string matchId)
     {
         lock (_lock)
         {
             return _current is { Ended: true } current && current.MatchId == matchId;
         }
+    }
+
+    /// <inheritdoc />
+    public void Join(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null,
+        IReadOnlyList<CompactPlayerProfile>? profiles = null) =>
+        throw new WorldPreparationException("A raid holds one party");
+
+    /// <inheritdoc />
+    public void Leave(string matchId, IReadOnlyList<long> players)
+    {
     }
 
     /// <inheritdoc />

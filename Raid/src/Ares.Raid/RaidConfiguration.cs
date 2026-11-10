@@ -24,7 +24,8 @@ public sealed record RaidConfiguration
           --advertise-host <host>     Host name or IPv4 address players connect to (required)
           --control-port <n>          Allocation API port, on loopback (required)
           --control-token-file <f>    Operator token shared with the Host (required)
-          --max-players <n>           Largest party one raid accepts (default 1)
+          --max-players <n>           Most players in one raid, across every party (default 1)
+          --fill-seconds <n>          Seconds after the first party during which other parties may join (0 to 600, default 60)
           --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
@@ -48,8 +49,11 @@ public sealed record RaidConfiguration
     /// <summary>Operator token of the allocation API.</summary>
     public required string OperatorToken { get; init; }
 
-    /// <summary>Largest party one raid accepts.</summary>
+    /// <summary>Most players in one raid, across every party.</summary>
     public int MaxPlayers { get; private init; } = 1;
+
+    /// <summary>Seconds after the first party during which other parties may join.</summary>
+    public int FillSeconds { get; private init; } = 60;
 
     /// <summary>Stop when standard input closes, so a Raid never outlives the Host that started it.</summary>
     public bool StopOnInputClose { get; private init; }
@@ -87,6 +91,7 @@ public sealed record RaidConfiguration
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
         int maxPlayers = arguments.GetInt32("max-players", 1);
+        int fillSeconds = arguments.GetInt32("fill-seconds", 60);
         bool stopOnInputClose = arguments.Has("stop-on-input-close");
         string consoleMode = arguments.GetString("console", "auto")!;
         string? logFile = arguments.GetString("log-file");
@@ -99,6 +104,11 @@ public sealed record RaidConfiguration
         if (maxPlayers < 1)
         {
             throw new CommandLineException("--max-players must be at least 1");
+        }
+
+        if (fillSeconds is < 0 or > 600)
+        {
+            throw new CommandLineException("--fill-seconds must be from 0 to 600");
         }
 
         if (port is < 1 or > 65535 || controlPort is < 1 or > 65535 || port == controlPort)
@@ -134,6 +144,7 @@ public sealed record RaidConfiguration
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
                 MaxPlayers = maxPlayers,
+                FillSeconds = fillSeconds,
                 StopOnInputClose = stopOnInputClose,
             };
         }

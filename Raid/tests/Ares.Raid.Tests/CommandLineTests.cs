@@ -35,4 +35,13 @@ public sealed class CommandLineTests
         Assert.Contains("--max-players", Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse(["--max-players", "0"])).Message,
             StringComparison.Ordinal);
     }
+
+    [Theory]
+    [InlineData("-1")]
+    [InlineData("601")]
+    public void Fill_seconds_must_be_from_zero_to_ten_minutes(string value)
+    {
+        Assert.Contains("--fill-seconds", Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse(["--fill-seconds", value])).Message,
+            StringComparison.Ordinal);
+    }
 }

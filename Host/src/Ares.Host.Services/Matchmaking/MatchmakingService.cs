@@ -200,7 +200,10 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
             return ServiceReply.Ok(new CancelMatchResponse(ticket.TicketId, HasAssignment: true));
         }
 
-        raids?.Cancel(ticket.TicketId);
+        if (raids is not null)
+        {
+            await raids.CancelAsync(ticket.TicketId, cancellationToken).ConfigureAwait(false);
+        }
         _ticket = null;
         _assignment = null;
         _assignmentExpired = false;

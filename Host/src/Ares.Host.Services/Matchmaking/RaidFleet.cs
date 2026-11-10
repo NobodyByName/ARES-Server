@@ -24,38 +24,115 @@ public interface IRaidStarter
 
 /// <summary>
 /// The Raid servers Host starts during matchmaking: one per raid, at most <c>capacity</c> at once.
-/// A slot is freed when its server exits, which it does once its raid is over. Callers hold the
-/// backend gate.
+/// A new ticket joins a running raid that still takes parties, else starts a new server. A slot is
+/// freed when its server exits, which it does once its raid is over. Every account shares one fleet,
+/// so calls take turns.
 /// </summary>
 /// <param name="starter">Starts the servers.</param>
 /// <param name="capacity">Most raids running at once.</param>
+/// <param name="players">Most players in one raid; above 1, a new ticket waits for a starting raid instead of starting another.</param>
 /// <param name="time">Clock for the startup timeout.</param>
-public sealed class RaidFleet(IRaidStarter starter, int capacity, TimeProvider time) : IDisposable
+public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, TimeProvider time) : IDisposable
 {
     /// <summary>How long a new server may take to answer its allocation API.</summary>
     private static readonly TimeSpan s_startupTimeout = TimeSpan.FromSeconds(30);
 
     private readonly Dictionary<int, Slot> _slots = [];
+    private readonly SemaphoreSlim _lock = new(1, 1);
 
     /// <summary>
-    /// Reserves a raid for <paramref name="request"/>, starting a Raid server for a new ticket. Returns
-    /// null while the server starts or while every slot is busy; the client keeps polling.
+    /// Reserves a raid for <paramref name="request"/>: the ticket's own raid, a running raid that takes
+    /// it, or a newly started server. Returns null while a server starts or while every slot is busy; the
+    /// client keeps polling.
     /// </summary>
     /// <exception cref="AllocationUnavailableException">The server failed to start or rejected the request.</exception>
     public async Task<Allocation?> ReserveAsync(AllocationRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await ReserveLockedAsync(request, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>Polls a reservation.</summary>
+    /// <exception cref="AllocationExpiredException">Its reservation or raid is over.</exception>
+    /// <exception cref="AllocationUnavailableException">Its server is unreachable or replied inconsistently.</exception>
+    public Task<Allocation> StatusAsync(Allocation allocation, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(allocation);
+        return ReservedAsync(allocation.TicketId, item => item.MatchId == allocation.MatchId,
+            client => client.StatusAsync(allocation, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>Looks up a persisted reservation by its ticket.</summary>
+    /// <exception cref="AllocationExpiredException">No running raid holds the ticket.</exception>
+    /// <exception cref="AllocationUnavailableException">Its server is unreachable or the reservation differs.</exception>
+    public Task<Allocation> StatusByTicketAsync(string ticketId, PlayerLoadout loadout, CancellationToken cancellationToken)
+    {
+        return ReservedAsync(ticketId, item => item.MatchId is not null,
+            client => client.StatusByTicketAsync(ticketId, loadout, cancellationToken), cancellationToken);
+    }
+
+    /// <summary>Stops the server started for a cancelled ticket that has no raid yet.</summary>
+    public async Task CancelAsync(string ticketId, CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            (int index, Slot? slot) = Find(item => item.MatchId is null && item.Tickets.Contains(ticketId));
+            if (slot is not null)
+            {
+                Stop(index);
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    /// <summary>Stops every server.</summary>
+    public void Dispose()
+    {
+        _lock.Wait();
+        try
+        {
+            foreach (int index in _slots.Keys.ToArray())
+            {
+                Stop(index);
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
+    private async Task<Allocation?> ReserveLockedAsync(AllocationRequest request, CancellationToken cancellationToken)
+    {
         RemoveExited();
-        (int index, Slot? slot) = Find(item => item.TicketId == request.TicketId);
+        (int index, Slot? slot) = Find(item => item.Tickets.Contains(request.TicketId));
         if (slot is null)
         {
-            if (_slots.Count >= capacity)
+            if (await JoinAsync(request, cancellationToken).ConfigureAwait(false) is { } joined)
+            {
+                return joined;
+            }
+
+            if (_slots.Count >= capacity || (players > 1 && _slots.Values.Any(item => item.MatchId is null)))
             {
                 return null;
             }
 
             index = Enumerable.Range(0, capacity).First(free => !_slots.ContainsKey(free));
-            slot = new Slot(request.TicketId, starter.Start(index), time.GetTimestamp());
+            slot = new Slot(starter.Start(index), time.GetTimestamp());
+            slot.Tickets.Add(request.TicketId);
             _slots[index] = slot;
         }
 
@@ -77,8 +154,8 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, TimeProvider t
 
         if (allocation is null)
         {
-            // The server's raid is already over; the next poll starts a fresh one.
-            Stop(index);
+            // The raid no longer holds this ticket; the next poll looks for another raid.
+            Leave(index, slot, request.TicketId);
             return null;
         }
 
@@ -86,61 +163,62 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, TimeProvider t
         return allocation;
     }
 
-    /// <summary>Polls a reservation.</summary>
-    /// <exception cref="AllocationExpiredException">Its raid is over.</exception>
-    /// <exception cref="AllocationUnavailableException">Its server is unreachable or replied inconsistently.</exception>
-    public Task<Allocation> StatusAsync(Allocation allocation, CancellationToken cancellationToken)
+    /// <summary>Offers the ticket to each running raid that still takes parties.</summary>
+    private async Task<Allocation?> JoinAsync(AllocationRequest request, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(allocation);
-        return ReservedAsync(item => item.MatchId == allocation.MatchId, client => client.StatusAsync(allocation, cancellationToken));
-    }
-
-    /// <summary>Looks up a persisted reservation by its ticket.</summary>
-    /// <exception cref="AllocationExpiredException">No running raid holds the ticket.</exception>
-    /// <exception cref="AllocationUnavailableException">Its server is unreachable or the reservation differs.</exception>
-    public Task<Allocation> StatusByTicketAsync(string ticketId, PlayerLoadout loadout, CancellationToken cancellationToken)
-    {
-        return ReservedAsync(item => item.MatchId is not null && item.TicketId == ticketId,
-            client => client.StatusByTicketAsync(ticketId, loadout, cancellationToken));
-    }
-
-    /// <summary>Stops the server started for a cancelled ticket that has no raid yet.</summary>
-    public void Cancel(string ticketId)
-    {
-        (int index, Slot? slot) = Find(item => item.TicketId == ticketId && item.MatchId is null);
-        if (slot is not null)
+        foreach (Slot slot in _slots.OrderBy(pair => pair.Key).Select(pair => pair.Value).Where(item => item.MatchId is not null && !item.Full))
         {
-            Stop(index);
-        }
-    }
+            Allocation? allocation;
+            try
+            {
+                allocation = await slot.Server.Allocator.ReserveAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (AllocationUnavailableException)
+            {
+                allocation = null;
+            }
 
-    /// <summary>Stops every server.</summary>
-    public void Dispose()
-    {
-        foreach (int index in _slots.Keys.ToArray())
-        {
-            Stop(index);
-        }
-    }
+            if (allocation?.MatchId != slot.MatchId)
+            {
+                // Full, its fill window closed, or it failed this request: it takes no more parties.
+                slot.Full = true;
+                continue;
+            }
 
-    private async Task<Allocation> ReservedAsync(Func<Slot, bool> match, Func<SessionAllocatorClient, Task<Allocation>> status)
-    {
-        RemoveExited();
-        (int index, Slot? slot) = Find(match);
-        if (slot is null)
-        {
-            throw new AllocationExpiredException("The raid is over");
+            slot.Tickets.Add(request.TicketId);
+            return allocation;
         }
 
+        return null;
+    }
+
+    private async Task<Allocation> ReservedAsync(string ticketId, Func<Slot, bool> match, Func<SessionAllocatorClient, Task<Allocation>> status,
+        CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            return await status(slot.Server.Allocator).ConfigureAwait(false);
+            RemoveExited();
+            (int index, Slot? slot) = Find(item => item.Tickets.Contains(ticketId) && match(item));
+            if (slot is null)
+            {
+                throw new AllocationExpiredException("The raid is over");
+            }
+
+            try
+            {
+                return await status(slot.Server.Allocator).ConfigureAwait(false);
+            }
+            catch (AllocationExpiredException)
+            {
+                // This ticket's reservation is over; the server exits on its own once its raid is.
+                Leave(index, slot, ticketId);
+                throw;
+            }
         }
-        catch (AllocationExpiredException)
+        finally
         {
-            // The raid is over; its server is about to exit on its own.
-            Stop(index);
-            throw;
+            _lock.Release();
         }
     }
 
@@ -155,6 +233,16 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, TimeProvider t
         }
 
         return (-1, null);
+    }
+
+    /// <summary>Forgets a ticket; a raid left without tickets is stopped.</summary>
+    private void Leave(int index, Slot slot, string ticketId)
+    {
+        slot.Tickets.Remove(ticketId);
+        if (slot.Tickets.Count == 0)
+        {
+            Stop(index);
+        }
     }
 
     private void RemoveExited()
@@ -176,14 +264,18 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, TimeProvider t
         }
     }
 
-    private sealed class Slot(string ticketId, IRaidServer server, long started)
+    private sealed class Slot(IRaidServer server, long started)
     {
-        public string TicketId { get; } = ticketId;
+        /// <summary>Tickets reserved in this raid.</summary>
+        public HashSet<string> Tickets { get; } = [];
 
         public IRaidServer Server { get; } = server;
 
         public long Started { get; } = started;
 
         public string? MatchId { get; set; }
+
+        /// <summary>True once the raid turned a party away; it is not offered more.</summary>
+        public bool Full { get; set; }
     }
 }

@@ -83,6 +83,7 @@ public sealed class CommandLineTests : IDisposable
     [InlineData("--public-origin", "http://127.0.0.1:18080/path")]
     [InlineData("--session-control-url", "http://127.0.0.1:17778")]
     [InlineData("--raid-players", "0")]
+    [InlineData("--raid-fill-seconds", "601")]
     [InlineData("--raid-control-port", "18080")]
     [InlineData("--raid-port", "65536")]
     [InlineData("--raid-executable", "/nonexistent/ARES-Raid")]
