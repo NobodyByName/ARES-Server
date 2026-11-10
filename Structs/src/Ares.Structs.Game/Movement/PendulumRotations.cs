@@ -58,7 +58,11 @@ public static class PendulumRotations
 
         byte signs = z < 0 ? (byte)(AllNonNegative & ~(1 << 2)) : AllNonNegative;
         return Math.Abs(z) <= w
-            ? new PendulumQuaternion(0, 0, (uint)Math.Round(Math.Abs(z) * scale), 0, signs, 0, 1, 2)
-            : new PendulumQuaternion(0, 0, 0, (uint)Math.Round(w * scale), signs, 0, 1, 3);
+            ? new PendulumQuaternion(0, 0, Stored(Math.Abs(z), scale, field), 0, signs, 0, 1, 2)
+            : new PendulumQuaternion(0, 0, 0, Stored(w, scale, field), signs, 0, 1, 3);
     }
+
+    // A stored component; near a quarter turn it can round up to the field's exclusive bound on coarse fields.
+    private static uint Stored(double component, double scale, PendulumQuaternionField field) =>
+        Math.Min((uint)Math.Round(component * scale), field.Maximum - 1);
 }

@@ -33,6 +33,18 @@ public sealed class PendulumRotationTests
         });
     }
 
+    [Theory]
+    [InlineData(90.2)]
+    [InlineData(-89.8)]
+    public void A_sideways_heading_fits_a_coarse_rotation_field(double degrees)
+    {
+        // The pawn's action rotation: a component rounds to 64 near a quarter turn.
+        PendulumQuaternionField coarse = s_field with { Maximum = 64U, Total = 8100UL };
+        PendulumQuaternion rotation = PendulumRotations.FromYaw(degrees * Math.PI / 180.0, coarse);
+        Assert.Equal(63U, Math.Max(rotation.Component2, rotation.Component3));
+        Assert.InRange(Math.Abs((PendulumRotations.Yaw(rotation, coarse) * 180.0 / Math.PI) - degrees), 0.0, 1.0);
+    }
+
     [Fact]
     public void A_heading_rotation_stores_the_smaller_vertical_component()
     {
