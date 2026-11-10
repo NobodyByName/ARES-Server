@@ -16,6 +16,9 @@ public readonly record struct DoorPlacement(string Cell, string Actor)
 
     /// <summary>Starts powered (<c>bStartAsPowered</c>); the door class default is true.</summary>
     public bool StartAsPowered { get; init; } = true;
+
+    /// <summary>Opens once breached (<c>bBreachOpensDoor</c>); otherwise it stays closed without its barricade.</summary>
+    public bool BreachOpensDoor { get; init; }
 }
 
 /// <summary>Replicated open state of a door (<c>EDoorOpenState</c>).</summary>

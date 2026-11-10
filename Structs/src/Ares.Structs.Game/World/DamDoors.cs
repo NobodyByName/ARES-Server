@@ -30,6 +30,15 @@ public static class DamDoors
     /// <summary>Names of the door button components.</summary>
     public static IReadOnlyList<string> InteractionComponents { get; } = ["OpenCloseInteraction_Exterior", "OpenCloseInteraction_Interior"];
 
+    /// <summary>Name of the door breach button component (a hold interaction).</summary>
+    public const string BreachInteractionComponent = "BreachInteraction";
+
+    /// <summary>Seconds the breach button is held, after its alignment.</summary>
+    public const double BreachHoldSeconds = 10.0;
+
+    /// <summary>Seconds the character aligns with the breach button before the hold starts.</summary>
+    public const double BreachAlignmentSeconds = 1.0;
+
     /// <summary>The interaction-state enum as replication needs it.</summary>
     public static EnumDefinition InteractionState { get; } = new("/Script/Angelscript.ECurrentInteractionState", 8, ["Uninitialized", "Disabled", "Idle", "Ongoing", "Succeeding", "Cancelling", "SuccessIdle", "SuccessDisabled"]);
 
