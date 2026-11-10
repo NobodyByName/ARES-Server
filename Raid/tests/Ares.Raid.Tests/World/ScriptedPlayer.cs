@@ -33,6 +33,7 @@ internal sealed class ScriptedPlayer
     private int _pawnSequence = ReceiverSeed & (ChannelBunch.SequenceCount - 1);
     private ulong _focus;
     private Vector3D? _position;
+    private readonly Dictionary<uint, sbyte> _movementInputs = [];
     private readonly Dictionary<uint, InventoryCommand> _inventoryInputs = [];
     private readonly Dictionary<uint, ulong> _weaponInputs = [];
 
@@ -176,15 +177,20 @@ internal sealed class ScriptedPlayer
             [PropertyNames.LevelVisibilities] = levels.Select(object? (level, index) => new LevelVisibility(level.Package, level.Package, level.Visible, false, new VisibilityTransaction(index == 0 ? 1 : 0, level.Client))).ToArray(),
         });
 
-    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null, InventoryCommand? inventory = null, ulong weaponFlags = 0)
+    public void Input(uint baseline, uint latest, ulong? press = null, ulong focus = 0, Vector3D? position = null, InventoryCommand? inventory = null, ulong weaponFlags = 0, sbyte? forward = null, int request = PendulumInput.PressRequest)
     {
+        if (forward is { } axis)
+        {
+            _movementInputs[latest] = axis;
+        }
+
         if (inventory is not null)
         {
             _inventoryInputs[latest] = inventory;
         }
 
         _weaponInputs[latest] = weaponFlags;
-        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs, _weaponInputs));
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs, _weaponInputs, _movementInputs, request));
         (_focus, _position) = (focus, position);
         Channels.Commit();
     }
@@ -195,7 +201,7 @@ internal sealed class ScriptedPlayer
     // The client's input history: a header and the last frames, every slot at its descriptor default
     // (the new frames optionally report a position and focus a button, and the latest frame optionally presses one).
     private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported, Dictionary<uint, InventoryCommand> inventory,
-        Dictionary<uint, ulong>? weapons = null)
+        Dictionary<uint, ulong>? weapons = null, Dictionary<uint, sbyte>? movement = null, int request = PendulumInput.PressRequest)
     {
         BitWriter writer = new();
         writer.WriteBit(true);
@@ -236,11 +242,17 @@ internal sealed class ScriptedPlayer
                         List<PendulumValue> claim = [new PendulumIntegerValue(PendulumInput.InteractionFocusField, frame == baseline ? focus.Baseline : focus.Latest)];
                         if (press is { } target && frame == latest)
                         {
-                            claim.Add(new PendulumIntegerValue(PendulumInput.InteractionRequestField, PendulumInput.PressRequest));
+                            claim.Add(new PendulumIntegerValue(PendulumInput.InteractionRequestField, (ulong)request));
                             claim.Add(new PendulumIntegerValue(PendulumInput.InteractionTargetField, target));
                         }
 
                         value = PendulumCodec.Default.Value(descriptor, claim);
+                        break;
+                    case PendulumInput.MovementSlot when movement is not null && movement.TryGetValue(frame, out sbyte forward):
+                        value = PendulumCodec.Default.Value(descriptor, [
+                            new PendulumIntegerValue(PendulumInput.ForwardField, (ulong)(forward + PendulumInput.MovementAxisBias)),
+                            new PendulumIntegerValue(PendulumInput.RightField, PendulumInput.MovementAxisBias),
+                        ]);
                         break;
                     case PendulumInput.PositionSlot when (frame == baseline ? reported.Baseline : reported.Latest) is { } at:
                         value = PendulumCodec.Default.Value(descriptor, [

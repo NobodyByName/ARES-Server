@@ -18,7 +18,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization.
-    private const string ReferenceTrace = "68f72b4de5198c60a9803a60d0fa4c382408fdc7657174d0014a26168a5dc957";
+    private const string ReferenceTrace = "d6ad70f5ed565ee7b9769ea5e161969306228fbb0d06db03f7ccd7e969df3795";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -171,7 +171,125 @@ public sealed class RaidSessionTests
         Assert.Contains(session.Sent, bunch => bunch is { Opened: true } && bunch.Channel == 64 + barricaded.Index);
         Assert.Equal((0, 1), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
         Assert.Equal((DoorOpenState.Closed, DoorSealState.Sealed, 0), (state.Open, state.Seal, revision));
-        Assert.Equal(CurrentInteractionState.Disabled, session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle), session.Raid.DoorStates.Buttons(barricaded.Index));
+    }
+
+    [Fact]
+    public void Holding_the_breach_button_removes_the_barricade_after_the_hold_time()
+    {
+        ScriptedPlayer session = new();
+        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        session.Possess();
+        session.ReportVisible((barricaded.Cell, true, false));
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
+        {
+            session.Service(at);
+        }
+
+        session.Input(30, 33, barricaded.Breach);
+        session.Service(123.5);
+        Assert.Equal(1, session.Channels.DoorBreaches);
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Ongoing), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);
+
+        int sent = session.Sent.Count;
+        session.Service(123.5 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds + 0.1);
+
+        DoorState state = session.Raid.DoorStates.Get(barricaded.Index).State;
+        Assert.Equal((DoorOpenState.Closed, DoorSealState.Unsealed), (state.Open, state.Seal));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Idle, CurrentInteractionState.SuccessDisabled), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Contains(session.Sent.Skip(sent), bunch => bunch.Channel == 64 + barricaded.Index);
+        Assert.Equal(1, session.Channels.BreachRequests[PendulumInput.PressRequest]);
+    }
+
+    [Fact]
+    public void Moving_during_a_breach_cancels_it_and_the_door_can_be_breached_again()
+    {
+        ScriptedPlayer session = new();
+        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        session.Possess();
+        session.ReportVisible((barricaded.Cell, true, false));
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
+        {
+            session.Service(at);
+        }
+
+        session.Input(30, 33, barricaded.Breach);
+        session.Service(123.5);
+        session.Input(33, 36);
+        Assert.True(session.Raid.DoorStates.Breaching(barricaded.Index));
+
+        session.Input(36, 39, forward: 100);
+        Assert.Equal(1, session.Channels.CancelledBreaches);
+        Assert.False(session.Raid.DoorStates.Breaching(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle), session.Raid.DoorStates.Buttons(barricaded.Index));
+
+        session.Service(123.5 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds + 0.1);
+        Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);
+
+        session.Input(39, 42, barricaded.Breach);
+        Assert.Equal(2, session.Channels.DoorBreaches);
+    }
+
+    [Fact]
+    public void A_breach_pressed_with_the_raider_tool_holstered_starts_on_that_press()
+    {
+        ScriptedPlayer session = new();
+        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        session.Possess();
+        session.ReportVisible((barricaded.Cell, true, false));
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
+        {
+            session.Service(at);
+        }
+
+        session.Input(30, 33, barricaded.Breach, request: PendulumInput.PressRequest | PendulumInput.EquipToolRequestFlag);
+        Assert.Equal((1, 0), (session.Channels.DoorBreaches, session.Channels.IgnoredDoorRequests));
+        Assert.True(session.Raid.DoorStates.Breaching(barricaded.Index));
+    }
+
+    [Fact]
+    public void No_pawn_frame_resets_the_clients_breach_until_its_ending_played()
+    {
+        ScriptedPlayer session = new();
+        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        session.Possess();
+        session.ReportVisible((barricaded.Cell, true, false));
+        foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
+        {
+            session.Service(at);
+        }
+
+        Vector3D reported = new(1.0, 2.0, 3.0);
+        session.Input(30, 33, focus: barricaded.Breach, position: reported);
+        session.Service(123.5);
+        int frames = session.Channels.BlackboardFrames;
+        session.Input(33, 36, barricaded.Breach, focus: barricaded.Breach, position: reported);
+        session.Service(124.0);
+
+        // The barricade comes off, so the focused breach button is no longer usable: that frame waits.
+        const double End = 124.0 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds;
+        session.Service(End + 0.1);
+        session.Input(36, 39, focus: barricaded.Breach, position: reported);
+        session.Service(End + 1);
+        Assert.Equal(frames, session.Channels.BlackboardFrames);
+
+        session.Input(39, 42, focus: barricaded.Breach, position: reported);
+        session.Service(End + 3);
+        Assert.Equal(frames + 1, session.Channels.BlackboardFrames);
+    }
+
+    [Fact]
+    public void A_breach_is_started_once_and_a_door_breaches_open_when_its_map_flag_says_so()
+    {
+        DoorStates states = new([new DoorPlacement("cell", "door") { StartAsSealed = true, BreachOpensDoor = true }]);
+        Assert.True(states.StartBreach(0, 10.0));
+        Assert.False(states.StartBreach(0, 10.5));
+        Assert.False(states.Press(0, 10.5));
+
+        states.Advance(10.0 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds);
+        Assert.Equal((DoorOpenState.Opening, DoorSealState.Unsealed), (states.Get(0).State.Open, states.Get(0).State.Seal));
+        Assert.False(states.StartBreach(0, 30.0));
     }
 
     [Fact]

@@ -110,6 +110,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private const int SquadChannel = 48;
     private const int FirstDoorChannel = 64;
     private const int MaxDoorsInFlight = 8;
+
+    // Time after a breach succeeds during which no pawn frame is sent, so the client keeps its Succeeded
+    // interaction event long enough to play the ending.
+    private const double BreachEndingSeconds = 2.0;
     private const int MaxLaddersInFlight = 8;
 
     // Map actors sent before the character simulation settles crashed the client.
@@ -183,6 +187,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private Dictionary<int, ReliableKey> _doorUpdates = [];
     private HashSet<int> _failedDoors = [];
     private List<InteractionRequest> _requests = [];
+    private Dictionary<int, int> _breachRequests = [];
+    private (int Door, uint Checked)? _breach;
+    private double _framesHeldUntil;
     private List<InventoryRequest> _inventoryRequests = [];
     private List<WeaponInput> _weaponRequests = [];
     private uint _weaponVersion;
@@ -289,6 +296,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Door requests ignored (not a press, door not open on this connection, or still moving).</summary>
     public int IgnoredDoorRequests { get; private set; }
 
+    /// <summary>Door breaches started.</summary>
+    public int DoorBreaches { get; private set; }
+
+    /// <summary>Door breaches this player stopped by moving.</summary>
+    public int CancelledBreaches { get; private set; }
+
+    /// <summary>Request values received on breach buttons, with their counts (a hold sends more than a press).</summary>
+    public IReadOnlyDictionary<int, int> BreachRequests => _breachRequests;
+
     /// <summary>Whole-stack inventory swaps accepted.</summary>
     public int InventoryMoves { get; private set; }
 
@@ -342,6 +358,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._doorRevisions = new Dictionary<int, int>(_doorRevisions);
         copy._doorUpdates = new Dictionary<int, ReliableKey>(_doorUpdates);
         copy._failedDoors = [.. _failedDoors];
+        copy._breachRequests = new Dictionary<int, int>(_breachRequests);
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
@@ -517,10 +534,25 @@ public sealed partial class PlayerChannels : IPlayerChannels
         double now = _raid.Clock();
         foreach (InteractionRequest request in _requests)
         {
-            Door? door = UsableDoor(request.Target);
-            if (request.Request == PendulumInput.PressRequest && door is not null && _raid.DoorStates.Press(door.Index, now))
+            if (_raid.Doors.ByBreach(request.Target) is not null)
+            {
+                _breachRequests[request.Request] = _breachRequests.GetValueOrDefault(request.Request) + 1;
+            }
+
+            // The request is a set of flags; a press has the press flag, with the take-out-raider-tool flag when
+            // the breach is pressed with the tool holstered. Other flags are not decoded yet.
+            if ((request.Request & PendulumInput.PressRequest) == 0)
+            {
+                IgnoredDoorRequests++;
+            }
+            else if (UsableDoor(request.Target) is { } door && _raid.DoorStates.Press(door.Index, now))
             {
                 DoorPresses++;
+            }
+            else if (BreachableDoor(request.Target) is { } barricaded && _raid.DoorStates.StartBreach(barricaded.Index, now))
+            {
+                DoorBreaches++;
+                _breach = (barricaded.Index, request.Frame);
             }
             else
             {
@@ -529,6 +561,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         _requests.Clear();
+        CancelBreachOnMovement(now);
         if (Phase == DeliveryPhase.Possessed)
         {
             foreach (InventoryRequest request in _inventoryRequests)
@@ -1081,7 +1114,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
         else
         {
-            focus = UsableDoor(_input.Focus) is null ? 0 : _input.Focus;
+            if (InteractionFramesHeld(now))
+            {
+                return;
+            }
+
+            focus = UsableDoor(_input.Focus) is null && BreachableDoor(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
@@ -1119,11 +1157,52 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // The door of a button the client may use: possessed, door replicated on this connection, cell visible,
     // and the door not barricaded, locked or without power.
     private Door? UsableDoor(ulong button) =>
-        _raid.Doors.ByButton(button) is { } door && Phase == DeliveryPhase.Possessed && !_failedDoors.Contains(door.Index)
-        && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open && _visibleLevels.Contains(door.Cell)
-        && _raid.DoorStates.Usable(door.Index)
-            ? door
-            : null;
+        _raid.Doors.ByButton(button) is { } door && Replicated(door) && _raid.DoorStates.Usable(door.Index) ? door : null;
+
+    // Pawn frames carry no interaction state, so the client's own one (requested, holding, succeeded) is reset by
+    // each frame; none are sent while this player breaches and just after it succeeds.
+    private bool InteractionFramesHeld(double now) => _breach is not null || now < _framesHeldUntil;
+
+    // The breach is a hold that movement input cancels (the client stops it on its side). The client sends no
+    // request when it does, so the server watches the breaching player's movement axes after the start frame.
+    private void CancelBreachOnMovement(double now)
+    {
+        if (_breach is not { } breach)
+        {
+            return;
+        }
+
+        if (!_raid.DoorStates.Breaching(breach.Door))
+        {
+            _breach = null;
+            _framesHeldUntil = now + BreachEndingSeconds;
+            return;
+        }
+
+        uint latest = InputFrame ?? breach.Checked;
+        for (uint frame = breach.Checked + 1; frame <= latest; frame++)
+        {
+            if (_input.Movement(frame) is null or { Forward: 0, Right: 0 })
+            {
+                continue;
+            }
+
+            _raid.DoorStates.CancelBreach(breach.Door);
+            CancelledBreaches++;
+            _breach = null;
+            return;
+        }
+
+        _breach = breach with { Checked = Math.Max(breach.Checked, latest) };
+    }
+
+    // The door of a breach button the client may use: replicated as above and still barricaded.
+    private Door? BreachableDoor(ulong button) =>
+        _raid.Doors.ByBreach(button) is { } door && Replicated(door) && _raid.DoorStates.Breachable(door.Index) ? door : null;
+
+    private bool Replicated(Door door) =>
+        Phase == DeliveryPhase.Possessed && !_failedDoors.Contains(door.Index)
+        && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open && _visibleLevels.Contains(door.Cell);
 
     // Asks the client to finish loading the levels around it, while streaming still changes and before the
     // character simulation starts; the client decides what it loads.
