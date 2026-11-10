@@ -52,6 +52,37 @@ public sealed class ReliableChannelTests
     }
 
     [Fact]
+    public void Unreliable_bunches_are_sent_once_and_report_whether_they_arrived()
+    {
+        ReliableSender sender = new(10);
+        ReliableKey open = sender.Queue(Queued(3, "A", opened: true));
+        sender.Sent(10, [open], 0);
+        sender.Acknowledge(Ack(0, 10, 1));
+
+        ReliableKey lost = sender.QueueUnreliable(Queued(3, "B"));
+        ReliableKey arrived = sender.QueueUnreliable(Queued(3, "C"));
+        Assert.All(sender.Bunches([lost, arrived]), bunch => Assert.True(bunch.Sequence is null && bunch.Name is null));
+        Assert.Equal([lost, arrived], sender.Select(0, 1000));
+        sender.Sent(11, [lost], 0);
+        Assert.Equal([arrived], sender.Select(5, 1000));
+        sender.Sent(12, [arrived], 5);
+        Assert.Null(sender.Arrived(arrived));
+
+        // Packet 12 arrived, packet 11 did not: nothing is resent.
+        sender.Acknowledge(Ack(1, 12, 1));
+        Assert.Equal((false, true), (sender.Arrived(lost), sender.Arrived(arrived)));
+        Assert.False(sender.Pending(lost) || sender.Pending(arrived));
+        Assert.Empty(sender.Select(10, 1000));
+
+        // Closing the channel drops unreliable data not sent yet.
+        ReliableKey unsent = sender.QueueUnreliable(Queued(3, "D"));
+        ReliableKey close = sender.Queue(Queued(3, close: 1));
+        Assert.False(sender.Arrived(unsent));
+        Assert.Equal([close], sender.Select(10, 1000));
+        Assert.Throws<InvalidPacketException>(() => sender.QueueUnreliable(Queued(3, "E")));
+    }
+
+    [Fact]
     public void Retries_resend_the_same_bunch_in_new_packets()
     {
         ReliableSender sender = new(50);

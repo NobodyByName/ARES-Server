@@ -47,14 +47,15 @@ public sealed record OutgoingBunch(ReliableKey Key, ChannelBunch Bunch, long Wir
         + $"{Attempts} sends over {now - (FirstSentAt ?? now):0.0} s, {Naks} reported lost, {Evictions} unanswered";
 }
 
-/// <summary>Identifies a queued reliable bunch.</summary>
+/// <summary>Identifies a queued bunch.</summary>
 /// <param name="Channel">Channel index.</param>
-/// <param name="Sequence">Absolute reliable sequence on that channel.</param>
+/// <param name="Sequence">Absolute reliable sequence on that channel, or a negative number for an unreliable bunch.</param>
 public readonly record struct ReliableKey(int Channel, int Sequence);
 
 /// <summary>
 /// Outgoing reliable delivery: per-channel sequences seeded from the handshake cookie, retries with the
 /// same bunch in new packets, and in-order completion per channel when packets are acknowledged.
+/// Unreliable bunches are sent once; the sender keeps whether their packet arrived.
 /// Bunches that would need fragmentation are rejected.
 /// </summary>
 public sealed class ReliableSender
@@ -64,6 +65,7 @@ public sealed class ReliableSender
     private const int MaxAttempts = 64;
     private const int MaxPacketHistory = 256;
     private const int FragmentReserveBits = 512;
+    private const int MaxOutcomes = 256;
 
     private readonly int _seed;
     private readonly double _retryInterval;
@@ -77,6 +79,9 @@ public sealed class ReliableSender
     private readonly HashSet<int> _active = [0];
     private readonly HashSet<int> _closing = [];
     private readonly HashSet<int> _openAcknowledged = [];
+    private readonly Dictionary<ReliableKey, bool> _outcomes = [];
+    private readonly Queue<ReliableKey> _outcomeOrder = new();
+    private int _nextUnreliable;
 
     /// <summary>Creates a sender.</summary>
     /// <param name="outgoingSeed">First outgoing packet sequence (from the handshake cookie).</param>
@@ -113,6 +118,9 @@ public sealed class ReliableSender
         _active = [.. other._active];
         _closing = [.. other._closing];
         _openAcknowledged = [.. other._openAcknowledged];
+        _outcomes = new Dictionary<ReliableKey, bool>(other._outcomes);
+        _outcomeOrder = new Queue<ReliableKey>(other._outcomeOrder);
+        _nextUnreliable = other._nextUnreliable;
     }
 
     /// <summary>Last packet sent.</summary>
@@ -187,13 +195,50 @@ public sealed class ReliableSender
             _openAcknowledged.Remove(channel);
         }
 
-        if (bunch.CloseReason is not null)
+        if (bunch.CloseReason is null)
         {
-            _closing.Add(channel);
+            return key;
+        }
+
+        _closing.Add(channel);
+        foreach (ReliableKey unsent in _order.Where(item => item.Channel == channel && item.Sequence < 0 && _records[item].LastSentAt is null).ToArray())
+        {
+            Settle(unsent, false);
         }
 
         return key;
     }
+
+    /// <summary>Queues an unreliable bunch on an open actor channel; it is sent once and never resent.</summary>
+    /// <param name="bunch">The bunch (no sequence, name, open or close).</param>
+    /// <returns>Its key; <see cref="Arrived"/> later tells whether it arrived.</returns>
+    public ReliableKey QueueUnreliable(ChannelBunch bunch)
+    {
+        ArgumentNullException.ThrowIfNull(bunch);
+        bunch = bunch with { Name = null };
+        if (bunch.Channel is <= 0 or >= ChannelBunch.ChannelCount || bunch.Sequence is not null || bunch.Opened || bunch.CloseReason is not null
+            || !_active.Contains(bunch.Channel) || _closing.Contains(bunch.Channel))
+        {
+            throw new InvalidPacketException("Unreliable data needs an open actor channel");
+        }
+
+        BitWriter writer = new();
+        bunch.Write(writer, _maxPacketBytes);
+        if (writer.Length > (_maxPacketBytes * 8L) - FragmentReserveBits || _records.Count >= MaxRecords)
+        {
+            throw new InvalidPacketException("Unreliable bunch does not fit");
+        }
+
+        ReliableKey key = new(bunch.Channel, --_nextUnreliable);
+        _records[key] = new OutgoingBunch(key, bunch, writer.Length);
+        _order.Add(key);
+        return key;
+    }
+
+    /// <summary>Whether an unreliable bunch arrived: true or false once its packet was answered, else null (also once forgotten).</summary>
+    /// <param name="key">Its key.</param>
+    /// <returns>The outcome.</returns>
+    public bool? Arrived(ReliableKey key) => _outcomes.TryGetValue(key, out bool arrived) ? arrived : null;
 
     /// <summary>Whether a queued bunch is still waiting for completion.</summary>
     /// <param name="key">Its key.</param>
@@ -224,7 +269,8 @@ public sealed class ReliableSender
         foreach (ReliableKey key in _order)
         {
             OutgoingBunch record = _records[key];
-            if (record.Acknowledged || (record is { LastSentAt: { } sentAt, RetryNow: false } && now - sentAt < _retryInterval))
+            if (record.Acknowledged || (record is { LastSentAt: { } sentAt, RetryNow: false } && now - sentAt < _retryInterval)
+                || (record.Key.Sequence < 0 && record.LastSentAt is not null))
             {
                 continue;
             }
@@ -306,6 +352,12 @@ public sealed class ReliableSender
                     continue;
                 }
 
+                if (key.Sequence < 0)
+                {
+                    Settle(key, false);
+                    continue;
+                }
+
                 record.RetryNow = true;
                 record.Evictions++;
             }
@@ -344,7 +396,11 @@ public sealed class ReliableSender
                     continue;
                 }
 
-                if (received)
+                if (key.Sequence < 0)
+                {
+                    Settle(key, received);
+                }
+                else if (received)
                 {
                     record.Acknowledged = true;
                 }
@@ -400,6 +456,19 @@ public sealed class ReliableSender
         }
 
         return delivered;
+    }
+
+    // An unreliable bunch's packet was answered (or forgotten): it leaves the queue and its outcome is kept a while.
+    private void Settle(ReliableKey key, bool arrived)
+    {
+        _records.Remove(key);
+        _order.Remove(key);
+        _outcomes[key] = arrived;
+        _outcomeOrder.Enqueue(key);
+        while (_outcomeOrder.Count > MaxOutcomes)
+        {
+            _outcomes.Remove(_outcomeOrder.Dequeue());
+        }
     }
 }
 
