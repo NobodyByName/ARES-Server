@@ -39,8 +39,8 @@ public sealed class PendulumCodec
     public PendulumCodec(
         int registryCount,
         IReadOnlyDictionary<int, PendulumDescriptor> descriptors,
-        PendulumFieldFlags serialized = PendulumFieldFlags.Replicated,
-        PendulumFieldFlags delta = PendulumFieldFlags.Replicated)
+        PendulumFieldFlags serialized = PendulumFieldFlags.Owner,
+        PendulumFieldFlags delta = PendulumFieldFlags.Owner)
     {
         _registryCount = registryCount;
         _descriptors = descriptors ?? throw new ArgumentNullException(nameof(descriptors));
@@ -111,7 +111,7 @@ public sealed class PendulumCodec
         return field switch
         {
             PendulumScalarField scalar => Get(buffer, scalar.Offset, scalar.Width),
-            PendulumBitSetField set => Get(buffer, set.Offset, set.BitCount / 8),
+            PendulumBitSetField set => Get(buffer, set.Offset, (set.BitCount + 7) / 8),
             PendulumBitfieldField bits => Get(buffer, bits.Offset, (bits.BitCount + 7) / 8) & Mask(bits.BitCount),
             PendulumBitField bit => buffer[bit.Offset] & 1UL,
             PendulumBoundedField bounded => Get(buffer, bounded.Offset, bounded.Width),
@@ -324,7 +324,7 @@ public sealed class PendulumCodec
                 case PendulumBitSetField set:
                     if (reader.ReadBit())
                     {
-                        Put(data, set.Offset, set.BitCount / 8, ReadBitfield(reader, Get(data, set.Offset, set.BitCount / 8), set.BitCount));
+                        Put(data, set.Offset, (set.BitCount + 7) / 8, ReadBitfield(reader, Get(data, set.Offset, (set.BitCount + 7) / 8), set.BitCount));
                     }
 
                     break;
@@ -347,14 +347,14 @@ public sealed class PendulumCodec
                 case PendulumObjectField objectField:
                     if (reader.ReadBit())
                     {
-                        Put(data, objectField.Offset, 8, reader.ReadPacked());
+                        Put(data, objectField.Offset, 8, ReadObject(reader));
                     }
 
                     break;
-                case PendulumNameField:
+                case PendulumNameField nameField:
                     if (reader.ReadBit())
                     {
-                        throw new InvalidPacketException("Changed name values are not supported");
+                        Put(data, nameField.Offset, 8, ReadName(reader));
                     }
 
                     break;
@@ -383,8 +383,8 @@ public sealed class PendulumCodec
                     WriteScalar(writer, Get(value, scalar.Offset, scalar.Width), Get(baseline, scalar.Offset, scalar.Width), scalar.Maximum, scalar.Delta, true);
                     break;
                 case PendulumBitSetField set:
-                    ulong newSet = Get(value, set.Offset, set.BitCount / 8);
-                    ulong oldSet = Get(baseline, set.Offset, set.BitCount / 8);
+                    ulong newSet = Get(value, set.Offset, (set.BitCount + 7) / 8);
+                    ulong oldSet = Get(baseline, set.Offset, (set.BitCount + 7) / 8);
                     writer.WriteBit(newSet != oldSet);
                     if (newSet != oldSet)
                     {
@@ -443,13 +443,16 @@ public sealed class PendulumCodec
 
         if (!reader.ReadBit())
         {
-            return reader.ReadBounded(maximum);
+            return Bounded(reader, maximum);
         }
 
         bool positive = reader.ReadBit();
-        long change = reader.ReadBounded(delta);
+        long change = Bounded(reader, delta);
         return (ulong)((long)previous + (positive ? change : -change));
     }
+
+    // A bounded integer as the game reads it: a bound of 0 or 1 (possible for computed quaternion bounds) has no bits.
+    private static uint Bounded(BitReader reader, uint maximum) => maximum <= 1 ? 0 : reader.ReadBounded(maximum);
 
     private static void WriteScalar(BitWriter writer, ulong value, ulong previous, uint maximum, uint delta, bool unchanged)
     {
@@ -633,6 +636,57 @@ public sealed class PendulumCodec
     // Quaternions: the three smallest components, the largest first; later components are bounded by
     // what the earlier ones leave of the total.
 
+    // An object reference as the engine sends it: its packed network id; id 1 (by path) carries export flags, then
+    // with a path its outer reference, the path and, when flagged, a checksum. Kept as the id.
+    private static ulong ReadObject(BitReader reader, int depth = 0)
+    {
+        uint id = reader.ReadPacked();
+        if (id != 1)
+        {
+            return id;
+        }
+
+        uint flags = (uint)reader.ReadBits(8);
+        if ((flags & 1) == 0)
+        {
+            return id;
+        }
+
+        if (depth > 16)
+        {
+            throw new InvalidPacketException("Object path too deep");
+        }
+
+        ReadObject(reader, depth + 1);
+        reader.ReadString();
+        if ((flags & 4) != 0)
+        {
+            reader.ReadBits(32);
+        }
+
+        return id;
+    }
+
+    // A name as the engine sends it: a built-in name's packed index, or its text and number. Kept as the built-in
+    // index, or as a hash of the text and number with the top bit set (ARES never sends names, it only reads them).
+    private static ulong ReadName(BitReader reader)
+    {
+        if (reader.ReadBit())
+        {
+            return reader.ReadPacked();
+        }
+
+        string text = reader.ReadString();
+        uint number = (uint)reader.ReadBits(32);
+        ulong hash = 14695981039346656037UL;
+        foreach (char character in text.AsSpan())
+        {
+            hash = (hash ^ character) * 1099511628211UL;
+        }
+
+        return ((hash ^ number) * 1099511628211UL) | (1UL << 63);
+    }
+
     private static void ReadQuaternion(BitReader reader, byte[] data, PendulumQuaternionField field)
     {
         int at = field.Offset;
@@ -648,15 +702,13 @@ public sealed class PendulumCodec
             int smallest = (int)reader.ReadBounded(4);
             int middle = (int)reader.ReadBounded(4);
             int largest = (int)reader.ReadBounded(4);
-            if (smallest == middle || middle == largest || smallest == largest)
-            {
-                throw new InvalidPacketException("Invalid quaternion order");
-            }
-
             data[at + 17] = (byte)smallest;
             data[at + 18] = (byte)middle;
             data[at + 19] = (byte)largest;
-            data[at + 20] = (byte)(6 - smallest - middle - largest);
+
+            // As the game reads it: the omitted component is the first index none of the three names; repeated
+            // indices are accepted.
+            data[at + 20] = (byte)Enumerable.Range(0, 4).First(index => index != smallest && index != middle && index != largest);
         }
 
         int omitted = data[at + 20];
@@ -795,7 +847,9 @@ public sealed class PendulumCodec
     private static byte[] Item(byte[] value, PendulumArrayField field, int index) =>
         value[(field.Offset + (index * field.Stride))..(field.Offset + ((index + 1) * field.Stride))];
 
-    private static (int Count, int OldCount) Counts(PendulumArrayField field, byte[] value, byte[] baseline, IReadOnlyList<PendulumField> siblings)
+    // The element count and the count it is coded against. As the game reads it, the old count comes from the
+    // baseline only when the count field itself is delta-coded; otherwise every element up to the count is new.
+    private (int Count, int OldCount) Counts(PendulumArrayField field, byte[] value, byte[] baseline, IReadOnlyList<PendulumField> siblings)
     {
         if (field.CountField is not { } index)
         {
@@ -804,7 +858,7 @@ public sealed class PendulumCodec
 
         PendulumScalarField counter = siblings[index] as PendulumScalarField ?? throw new InvalidPacketException("Invalid array count field");
         ulong count = Get(value, counter.Offset, counter.Width);
-        ulong oldCount = Get(baseline, counter.Offset, counter.Width);
+        ulong oldCount = (counter.Flags & _delta) != 0 ? Get(baseline, counter.Offset, counter.Width) : 0;
         return count <= (ulong)field.Capacity && oldCount <= (ulong)field.Capacity
             ? ((int)count, (int)oldCount)
             : throw new InvalidPacketException("Array count above its capacity");
@@ -839,7 +893,7 @@ public sealed class PendulumCodec
                     Put(buffer, scalar.Offset, scalar.Width, scalar.Default);
                     break;
                 case PendulumBitSetField set:
-                    Put(buffer, set.Offset, set.BitCount / 8, set.Default);
+                    Put(buffer, set.Offset, (set.BitCount + 7) / 8, set.Default);
                     break;
                 case PendulumBitfieldField bits:
                     Put(buffer, bits.Offset, (bits.BitCount + 7) / 8, bits.Default);
@@ -873,7 +927,7 @@ public sealed class PendulumCodec
                 Put(buffer, scalar.Offset, scalar.Width, value);
                 break;
             case PendulumBitSetField set:
-                Put(buffer, set.Offset, set.BitCount / 8, value);
+                Put(buffer, set.Offset, (set.BitCount + 7) / 8, value);
                 break;
             case PendulumBitfieldField bits:
                 int width = (bits.BitCount + 7) / 8;
@@ -911,7 +965,7 @@ public sealed class PendulumCodec
     {
         PendulumScalarField scalar => scalar.Width,
         PendulumBoundedField bounded => bounded.Width,
-        PendulumBitSetField set => set.BitCount / 8,
+        PendulumBitSetField set => (set.BitCount + 7) / 8,
         PendulumBitfieldField bits => (bits.BitCount + 7) / 8,
         PendulumBitField => 1,
         PendulumObjectField or PendulumNameField => 8,

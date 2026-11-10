@@ -15,11 +15,11 @@ public enum PendulumFieldFlags
     /// <summary>No flags.</summary>
     None = 0,
 
-    /// <summary>Set on every field; both the client input and the server pawn streams send these fields.</summary>
-    Replicated = 1,
+    /// <summary>Sent between the server and the character's owning client (its input and its own pawn frames).</summary>
+    Owner = 1,
 
-    /// <summary>Set on some fields only. Meaning not established yet.</summary>
-    Unknown1 = 2,
+    /// <summary>Sent to other clients' copies of the character (simulated characters of other players).</summary>
+    Others = 2,
 }
 
 /// <summary>An encoded field of a Pendulum value.</summary>

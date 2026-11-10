@@ -4,7 +4,7 @@ namespace Ares.Structs.Tests.Game;
 
 public sealed class PendulumRotationTests
 {
-    private static readonly PendulumQuaternionField s_field = new(0, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Replicated);
+    private static readonly PendulumQuaternionField s_field = new(0, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner);
 
     [Theory]
     [InlineData(44U, 881U, 286U, 0U, 11, 0, 2, 1, -5.8)]
