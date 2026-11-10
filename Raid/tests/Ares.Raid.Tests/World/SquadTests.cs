@@ -32,7 +32,7 @@ public sealed class SquadTests
 
         Dictionary<string, object?> squad = Decode(codec, PlayerClasses.Squad.Class, squadUpdates[1]);
         Assert.Equal([player.SquadMember], Assert.IsType<IReadOnlyList<object?>>(squad[PropertyNames.Members], exactMatch: false));
-        Assert.Equal(player.Principal.MatchId, squad[PropertyNames.SquadId]);
+        Assert.Equal($"{player.Principal.MatchId}-0", squad[PropertyNames.SquadId]);
         Assert.Equal(false, squad[PropertyNames.IsGeneratedSquad]);
         ChannelBunch roster = Assert.Single(session.Sent, bunch => bunch is { Channel: RaidWorld.GameStateChannel, Opened: false });
         Dictionary<string, object?> rosterValues = Decode(codec, session.Raid.State.GameState.ClassPath, roster);

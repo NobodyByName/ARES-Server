@@ -98,15 +98,15 @@ public sealed class InventoryTests
         PropertyCodec codec = new(new ValueCodec(GameReplication.Catalog, []));
         Dictionary<string, object?> handles = codec.Decode(new PropertyLayout(GameReplication.Catalog, ClassPaths.InventoryComponent), content.Content);
         Assert.Equal(LoadoutItems.StandardFrameAssetId, handles[PropertyNames.EquippedLoadoutFrameItemAssetId]);
-        Assert.Equal(session.Raid.Inventory.Backpack, handles[$"{PropertyNames.Backpack}.{PropertyNames.Id}"]);
+        Assert.Equal(session.Member.Inventory.Backpack, handles[$"{PropertyNames.Backpack}.{PropertyNames.Id}"]);
         Assert.Equal((ushort)0, handles[$"{PropertyNames.Backpack}.{PropertyNames.Revision}"]);
-        Assert.Equal(session.Raid.Inventory.Loadout, handles[$"{PropertyNames.Loadout}.{PropertyNames.Id}"]);
+        Assert.Equal(session.Member.Inventory.Loadout, handles[$"{PropertyNames.Loadout}.{PropertyNames.Id}"]);
 
         session.Service(100);
         Assert.Equal(2, session.Channels.BlackboardFrames);
         uint tick = session.Channels.InputFrame!.Value;
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(tick, new PawnMotion(session.Raid.Spawn.Location), 0, session.Raid.Inventory.Blackboard);
-        IReadOnlyDictionary<int, PendulumSlot> original = PawnBlackboardFrames.State(tick, new PawnMotion(session.Raid.Spawn.Location), 0);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(tick, new PawnMotion(session.Member.Spawn.Location), 0, session.Member.Inventory.Blackboard);
+        IReadOnlyDictionary<int, PendulumSlot> original = PawnBlackboardFrames.State(tick, new PawnMotion(session.Member.Spawn.Location), 0);
         Assert.All(state.Values.Where(slot => slot.Slot != InventoryBlackboard.Slot), slot => Assert.Equal(original[slot.Slot].Value, slot.Value));
         BitWriter writer = new();
         PawnBlackboardFrames.Write(writer, state, new Dictionary<int, PendulumSlot>());
@@ -124,7 +124,7 @@ public sealed class InventoryTests
         Assert.Equal(0x81234567UL, PendulumCodec.Integer(items.ElementFields[InventoryBlackboard.GuidAField], item));
         Assert.Equal(0x09abcdefUL, PendulumCodec.Integer(items.ElementFields[InventoryBlackboard.GuidAField + 1], item));
 
-        IReadOnlyDictionary<int, PendulumSlot> after = PawnBlackboardFrames.State(tick + 1, new PawnMotion(session.Raid.Spawn.Location), 123, session.Raid.Inventory.Blackboard);
+        IReadOnlyDictionary<int, PendulumSlot> after = PawnBlackboardFrames.State(tick + 1, new PawnMotion(session.Member.Spawn.Location), 123, session.Member.Inventory.Blackboard);
         BitWriter delta = new();
         PawnBlackboardFrames.Write(delta, after, decoded);
         Dictionary<int, PendulumSlot> next = PendulumCodec.Default.ReadFrame(new BitReader(delta.ToArray(), delta.Length), decoded);
@@ -196,25 +196,25 @@ public sealed class InventoryTests
         ScriptedPlayer session = new(loadout: StandardLoadout());
         session.Possess();
         (uint start, double at) = session.Settle(30, 100);
-        session.Input(start, start + 1, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7));
+        session.Input(start, start + 1, position: session.Member.Spawn.Location, inventory: Swap(session.Member.Inventory.Backpack, 3, session.Member.Inventory.Backpack, 7));
         Assert.Equal(1, session.Channels.InventoryMoves);
         session.Service(at);
         Assert.Equal(ScriptedPlayer.SettledFrames, session.Channels.BlackboardFrames);
-        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
+        session.Input(start + 1, start + 2, position: session.Member.Spawn.Location);
         session.Service(at + 0.1);
         Assert.Equal(ScriptedPlayer.SettledFrames + 1, session.Channels.BlackboardFrames);
         Assert.Equal(1, session.Channels.InventoryMoves);
         Assert.Equal(0, session.Channels.RejectedInventoryRequests);
-        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
+        session.Input(start + 1, start + 2, position: session.Member.Spawn.Location);
         Assert.Equal(1, session.Channels.InventoryMoves);
-        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
-        session.Input(start + 2, start + 3, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 7, session.Raid.Inventory.Loadout, 0));
-        session.Input(start + 3, start + 4, position: session.Raid.Spawn.Location);
+        Assert.NotNull(session.Member.Inventory.Containers[session.Member.Inventory.Backpack].Items[7]);
+        session.Input(start + 2, start + 3, position: session.Member.Spawn.Location, inventory: Swap(session.Member.Inventory.Backpack, 7, session.Member.Inventory.Loadout, 0));
+        session.Input(start + 3, start + 4, position: session.Member.Spawn.Location);
         session.Service(at + 0.2);
         Assert.Equal(ScriptedPlayer.SettledFrames + 2, session.Channels.BlackboardFrames);
         Assert.Equal(1, session.Channels.RejectedInventoryRequests);
-        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
-        Assert.Null(session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
+        Assert.NotNull(session.Member.Inventory.Containers[session.Member.Inventory.Backpack].Items[7]);
+        Assert.Null(session.Member.Inventory.Containers[session.Member.Inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
     }
 
     [Fact]
@@ -222,21 +222,21 @@ public sealed class InventoryTests
     {
         ScriptedPlayer session = new(loadout: StandardLoadout());
         session.Possess();
-        InventoryCommand command = Swap(session.Raid.Inventory.Backpack, 3, session.Raid.Inventory.Backpack, 7);
+        InventoryCommand command = Swap(session.Member.Inventory.Backpack, 3, session.Member.Inventory.Backpack, 7);
         byte[] payload = ScriptedPlayer.InventoryPayload(30, 31, command);
         IPlayerChannels speculative = session.Channels.Copy();
         Assert.True(speculative.ObserveDirect(PendulumInput.DirectStreamKind, payload));
-        Assert.Equal(2U, session.Raid.Inventory.Version);
-        Assert.Null(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+        Assert.Equal(2U, session.Member.Inventory.Version);
+        Assert.Null(session.Member.Inventory.Containers[session.Member.Inventory.Backpack].Items[7]);
 
         Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, [.. payload, 0xFF]));
         session.Channels.Commit();
         Assert.Equal(1, session.Channels.InputDecodeFailures);
-        Assert.Equal(2U, session.Raid.Inventory.Version);
+        Assert.Equal(2U, session.Member.Inventory.Version);
         Assert.True(session.Channels.ObserveDirect(PendulumInput.DirectStreamKind, payload));
         session.Channels.Commit();
         Assert.Equal(1, session.Channels.InventoryMoves);
-        Assert.NotNull(session.Raid.Inventory.Containers[session.Raid.Inventory.Backpack].Items[7]);
+        Assert.NotNull(session.Member.Inventory.Containers[session.Member.Inventory.Backpack].Items[7]);
     }
 
     private static Dictionary<string, object?> CharacterAttributes(ScriptedPlayer session)
@@ -280,7 +280,7 @@ public sealed class InventoryTests
     {
         PlayerLoadout loadout = StandardLoadout(asset);
         ScriptedPlayer session = new(loadout: loadout);
-        RaidInventory inventory = session.Raid.Inventory;
+        RaidInventory inventory = session.Member.Inventory;
         Assert.Equal(asset, inventory.AugmentAssetId);
         Assert.Equal(AugmentItems.FrameAssetIds[asset], inventory.FrameAssetId);
         Assert.Equal([5, backpack, belt, 1, 0], inventory.Containers.Select(container => container.Items.Count));

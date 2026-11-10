@@ -80,7 +80,7 @@ public sealed class PlayerInitializationTests
         Assert.Equal(new PlayerControllerOpen(0, 7, 0), PlayerControllerOpen.Read(reader));
         Dictionary<string, object?> opening = Properties(session, PlayerClasses.PlayerController.Class, ActorContentBlock.Read(reader));
         Assert.Equal(0, reader.Remaining);
-        Assert.Equal(session.Raid.Spawn.Location, opening[PropertyNames.SpawnLocation]);
+        Assert.Equal(session.Member.Spawn.Location, opening[PropertyNames.SpawnLocation]);
         Assert.Equal(3, opening.Count);
 
         foreach (ChannelBunch bunch in session.Sent.Where(bunch => bunch is { Channel: 2, Opened: false }))
@@ -111,9 +111,9 @@ public sealed class PlayerInitializationTests
         session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
         session.Flush("loaded");
         ChannelBunch open = Assert.Single(session.Sent, bunch => bunch is { Channel: 6, Opened: true });
-        Assert.NotEqual(0, session.Raid.Spawn.Yaw);
-        ActorSpawn spawn = new(session.Player.Pawn, session.Raid.Imports.Archetypes[PlayerClasses.Pawn.Class], 0, session.Raid.Spawn.Location,
-            new Rotator(0, session.Raid.Spawn.Yaw, 0));
+        Assert.NotEqual(0, session.Member.Spawn.Yaw);
+        ActorSpawn spawn = new(session.Player.Pawn, session.Raid.Imports.Archetypes[PlayerClasses.Pawn.Class], 0, session.Member.Spawn.Location,
+            new Rotator(0, session.Member.Spawn.Yaw, 0));
         ActorContentBlock frame = session.Raid.State.BlackboardFrame(0, 1, session.SpawnState, new Dictionary<int, PendulumSlot>());
         ChannelBunch expected = new ActorInitialization(spawn, null, [frame]).ToBunch(6, open.Sequence!.Value, []);
         Assert.Equal(expected.PayloadBits, open.PayloadBits);
@@ -181,8 +181,8 @@ public sealed class PlayerInitializationTests
         Assert.Equal(2, session.Channels.BlackboardFrames);
         uint frame = session.Channels.InputFrame!.Value;
         ActorContentBlock expected = session.Raid.State.BlackboardFrame(1, 2,
-            PawnBlackboardFrames.State(frame, new PawnMotion(session.Raid.Spawn.Location, Yaw: session.Raid.Spawn.Yaw * Math.PI / 180), 0,
-                session.Raid.Inventory.InitialBlackboard, session.Raid.Weapons.Variables(frame)),
+            PawnBlackboardFrames.State(frame, new PawnMotion(session.Member.Spawn.Location, Yaw: session.Member.Spawn.Yaw * Math.PI / 180), 0,
+                session.Member.Inventory.InitialBlackboard, session.Member.Weapons.Variables(frame)),
             session.SpawnState);
         ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);
         ActorContentBlock actual = Block(first);
@@ -197,11 +197,11 @@ public sealed class PlayerInitializationTests
         session.Possess();
         session.Sent.Clear();
         session.Service(100);
-        session.Input(30, 1000, position: session.Raid.Spawn.Location);
+        session.Input(30, 1000, position: session.Member.Spawn.Location);
         session.Service(100.1);
         session.Service(100.2);
         session.Service(100.3);
-        session.Input(1000, 1003, position: session.Raid.Spawn.Location);
+        session.Input(1000, 1003, position: session.Member.Spawn.Location);
         session.Service(100.4);
 
         ChannelBunch[] frames = [.. session.Sent.Where(bunch => bunch.Channel == 6 && (bunch.Payload[0] & 3) == 2)];

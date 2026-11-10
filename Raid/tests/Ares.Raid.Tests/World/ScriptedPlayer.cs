@@ -39,20 +39,36 @@ internal sealed class ScriptedPlayer
     public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null)
     {
         Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
+        Principal = new SessionPrincipal(42, MatchId);
         Worlds.Prepare(MatchId, [42], loadouts: loadout is null ? null : [loadout], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
-        Channels = (PlayerChannels)Worlds.StartPlayer(Principal, new PlayerLogin(7, 0, UniqueId), Io);
+        Channels = Start();
     }
 
-    private static SessionPrincipal Principal { get; } = new(42, MatchId);
+    // Another party of one joining the raid of an earlier scripted player; both share its clock.
+    public ScriptedPlayer(ScriptedPlayer host, long userId, PlayerLoadout? loadout = null)
+    {
+        _now = host._now;
+        Worlds = host.Worlds;
+        Principal = new SessionPrincipal(userId, MatchId);
+        Worlds.Join(MatchId, [userId], loadouts: loadout is null ? null : [loadout]);
+        Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
+        Channels = Start();
+    }
 
-    private static UniqueNetId UniqueId { get; } = new(5, "42", "", false, false);
+    public SessionPrincipal Principal { get; }
+
+    private UniqueNetId UniqueId => new(5, Principal.UserId.ToString(CultureInfo.InvariantCulture), "", false, false);
 
     public DamWorlds Worlds { get; }
 
     public RaidWorld Raid => Worlds.Current!;
 
+    public RaidPlayer Member => Raid.Player(Principal.UserId)!;
+
     public WorldPlayer Player => Raid.State.Player(Principal);
+
+    private PlayerChannels Start() => (PlayerChannels)Worlds.StartPlayer(Principal, new PlayerLogin(7, 0, UniqueId), Io);
 
     // The first door a press can open; Possess makes its cell visible.
     public Door Door => Raid.Doors.Doors.First(door => Raid.DoorStates.Usable(door.Index));
@@ -234,8 +250,8 @@ internal sealed class ScriptedPlayer
 
     // The state the character opens with: the spawn frame inside the pawn's opening bunch.
     public Dictionary<int, PendulumSlot> SpawnState => new(PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
-        new PawnMotion(Raid.Spawn.Location, Yaw: Raid.Spawn.Yaw * Math.PI / 180), 0, Raid.Inventory.InitialBlackboard,
-        Raid.Weapons.Variables(PawnBlackboardFrames.FirstTick)));
+        new PawnMotion(Member.Spawn.Location, Yaw: Member.Spawn.Yaw * Math.PI / 180), 0, Member.Inventory.InitialBlackboard,
+        Member.Weapons.Variables(PawnBlackboardFrames.FirstTick)));
 
     // The one pawn blackboard frame among the bunches sent since the last clear, decoded against the state of
     // the frame before it (empty for a full frame).
@@ -285,7 +301,7 @@ internal sealed class ScriptedPlayer
     {
         for (int step = 0; step < 10 && Channels.BlackboardFrames < SettledFrames; step++)
         {
-            Input(frame, frame + 3, position: position ?? Raid.Spawn.Location);
+            Input(frame, frame + 3, position: position ?? Member.Spawn.Location);
             Service(at);
             (frame, at) = (frame + 3, at + 0.1);
         }

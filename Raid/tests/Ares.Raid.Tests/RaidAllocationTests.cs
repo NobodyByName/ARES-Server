@@ -229,6 +229,33 @@ public sealed class RaidAllocationTests
     }
 
     [Fact]
+    public void Two_tickets_share_the_real_dam_world_and_an_expired_one_leaves_it_alone()
+    {
+        DamWorlds worlds = new(() => _now[0], "Lighting.GreyMorning", () => 123456789);
+        RaidAllocations allocations = new(s_endpoint, worlds, () => _now[0], maxPlayers: 2);
+        Allocation first = allocations.Reserve(Request()).Allocation!;
+        Allocation second = allocations.Reserve(Request(OtherTicket, player: 43)).Allocation!;
+        Assert.Equal(first.MatchId, second.MatchId);
+        Assert.Equal([42L, 43L], worlds.Current!.Players.Select(player => player.Id));
+        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(ThirdTicket, player: 44)).Error);
+
+        byte[] token = Convert.FromBase64String(second.Gameserver.RoutingToken);
+        _now[0] = 100;
+        Assert.NotNull(allocations.Route(token, renew: true));
+        _now[0] = 121;
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
+        Assert.True(worlds.HasLeft(first.MatchId, 42));
+        Assert.Null(worlds.WelcomeFor(new SessionPrincipal(42, first.MatchId)));
+        Assert.NotNull(worlds.WelcomeFor(new SessionPrincipal(43, first.MatchId)));
+        Assert.Equal(200, allocations.Status(new AllocationStatusRequest(null, OtherTicket)).StatusCode);
+        Assert.False(allocations.Closed);
+
+        _now[0] = 221;
+        Assert.True(allocations.Closed);
+        Assert.Null(worlds.Current);
+    }
+
+    [Fact]
     public void A_ferro_and_heavy_ammo_loadout_can_be_reserved_against_the_real_dam_world()
     {
         DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
@@ -251,7 +278,7 @@ public sealed class RaidAllocationTests
         int duck = Array.FindIndex(items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
         items[duck] = items[duck] with { Amount = 5 };
 
-        Assert.Equal(4, Assert.Single(worlds.Current!.Loadouts).Items[duck].Amount);
+        Assert.Equal(4, Assert.Single(worlds.Current!.Players).Loadout.Items[duck].Amount);
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], loadouts));
     }
 
@@ -276,7 +303,7 @@ public sealed class RaidAllocationTests
 
         DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
         worlds.Prepare(Ticket, [42], profiles: [profile]);
-        Assert.Equal(profile, Assert.Single(worlds.Current!.Profiles));
+        Assert.Equal(profile, Assert.Single(Assert.Single(worlds.Current!.Players).Profiles));
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], profiles: profiles));
     }
 

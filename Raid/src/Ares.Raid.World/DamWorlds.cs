@@ -3,7 +3,6 @@ using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
-using Ares.Raid.World.Inventory;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;
@@ -14,10 +13,12 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
 
-/// <summary>A prepared Dam raid: its seed, round, lighting, spawn, actors, doors and ladders.</summary>
+/// <summary>A prepared Dam raid: its seed, round, lighting, players, actors, doors and ladders.</summary>
 public sealed class RaidWorld
 {
-    private bool _ended;
+    private readonly Lock _lock = new();
+    private readonly IReadOnlyList<PlayerStart> _starts;
+    private readonly List<RaidPlayer> _players = [];
 
     /// <summary>Channel of the level script actor.</summary>
     private const int LevelScriptChannel = 4;
@@ -31,24 +32,18 @@ public sealed class RaidWorld
     /// <summary>First channel of the global actors.</summary>
     private const int FirstGlobalChannel = 8;
 
-    internal RaidWorld(DamWorlds worlds, string matchId, IReadOnlyList<long> players, int seed, string lighting, IReadOnlyList<PlayerLoadout> loadouts, IReadOnlyList<CompactPlayerProfile> profiles)
+    internal RaidWorld(DamWorlds worlds, string matchId, int seed, string lighting)
     {
         MatchId = matchId;
-        Players = players;
-        Loadouts = loadouts;
-        Inventory = new RaidInventory(loadouts.Single());
-        Weapons = new RaidWeapons(Inventory);
-        Profiles = profiles;
         Seed = seed;
         RoundConfiguration round = DamRounds.All[seed % DamRounds.All.Count];
         Lighting = lighting;
-        IReadOnlyList<PlayerStart> starts = Spawns.Eligible(round);
-        if (starts.Count == 0)
+        _starts = Spawns.Eligible(round);
+        if (_starts.Count == 0)
         {
             throw new WorldPreparationException("The round has no eligible player start");
         }
 
-        Spawn = Spawns.Place(starts[seed % starts.Count], 0);
         Imports = worlds.Imports;
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
@@ -81,25 +76,40 @@ public sealed class RaidWorld
     /// <summary>Match id of the reservation.</summary>
     public string MatchId { get; }
 
-    /// <summary>The surrendered player's connection has closed; no raid result is recorded.</summary>
-    public bool Ended => Volatile.Read(ref _ended);
+    /// <summary>Every player of the raid has left it.</summary>
+    public bool Ended
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _players.Count > 0 && _players.TrueForAll(player => player.Left);
+            }
+        }
+    }
 
-    internal void EndSurrender() => Volatile.Write(ref _ended, true);
+    /// <summary>The raid's players, in the order their parties joined.</summary>
+    public IReadOnlyList<RaidPlayer> Players
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return [.. _players];
+            }
+        }
+    }
 
-    /// <summary>Reserved players.</summary>
-    public IReadOnlyList<long> Players { get; }
-
-    /// <summary>The frozen loadout per player.</summary>
-    public IReadOnlyList<PlayerLoadout> Loadouts { get; }
-
-    /// <summary>The reserved player's inventory containers.</summary>
-    public RaidInventory Inventory { get; }
-
-    /// <summary>The reserved player's weapon simulation.</summary>
-    public RaidWeapons Weapons { get; }
-
-    /// <summary>The frozen public squad profiles.</summary>
-    public IReadOnlyList<CompactPlayerProfile> Profiles { get; }
+    /// <summary>A player of the raid.</summary>
+    /// <param name="id">User id.</param>
+    /// <returns>The player, or null when not in this raid.</returns>
+    public RaidPlayer? Player(long id)
+    {
+        lock (_lock)
+        {
+            return _players.Find(player => player.Id == id);
+        }
+    }
 
     /// <summary>Session seed.</summary>
     public int Seed { get; }
@@ -109,9 +119,6 @@ public sealed class RaidWorld
 
     /// <summary>Names of the active data layers: lighting, round content and those active from the start.</summary>
     public IReadOnlyList<string> ActiveDataLayers { get; }
-
-    /// <summary>Where the player spawns.</summary>
-    public SpawnPlacement Spawn { get; }
 
     /// <summary>The world's static exports.</summary>
     public WorldImports Imports { get; }
@@ -133,6 +140,36 @@ public sealed class RaidWorld
 
     /// <summary>Spawned world actors replicated before the player actors.</summary>
     public IReadOnlyList<SpawnedWorldActor> SpawnedActors { get; }
+
+    /// <summary>
+    /// Adds a party: it spawns at the group start the seed selects, one spawn point each.
+    /// </summary>
+    internal void AddParty(IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout> loadouts, IReadOnlyList<CompactPlayerProfile> profiles)
+    {
+        lock (_lock)
+        {
+            if (_players.Exists(player => players.Contains(player.Id)))
+            {
+                throw new WorldPreparationException("A player of the party is already in this raid");
+            }
+
+            // Temporary: every party shares the seed's group start, each player on the next free spawn point, so
+            // players meet right away while parties cannot be joined yet.
+            PlayerStart start = _starts[Seed % _starts.Count];
+            int firstSlot = _players.Count;
+            if (firstSlot + players.Count > start.SpawnPoints.Count)
+            {
+                throw new WorldPreparationException("The shared player start has no free spawn point");
+            }
+
+            _players.AddRange(players.Select((id, slot) => new RaidPlayer(id, loadouts[slot], profiles, Spawns.Place(start, firstSlot + slot))));
+        }
+    }
+
+    /// <summary>Whether a party is already in this raid with the same loadouts and profiles.</summary>
+    internal bool HasParty(IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout> loadouts, IReadOnlyList<CompactPlayerProfile> profiles) =>
+        players.Select(Player).Zip(loadouts).All(pair => pair.First is { } player
+            && InventorySnapshots.Same(player.Loadout, pair.Second) && player.Profiles.SequenceEqual(profiles));
 
     /// <summary>Level packages the client may report: the map and its streaming cells.</summary>
     public static IReadOnlySet<string> LevelPackages { get; } = new HashSet<string>([DamMap.MapPackage, .. DamStreamingCells.Packages], StringComparer.Ordinal);
@@ -191,8 +228,9 @@ public sealed class RaidWorld
 }
 
 /// <summary>
-/// The Dam raid of this server: prepared for one reservation at a time, released when it ends. Players of
-/// the reservation are welcomed to the map and get their actors after they join it.
+/// The Dam raid of this server: prepared by the first party's reservation, joined by later parties, released
+/// when its reservations end. Players of the raid are welcomed to the map and get their actors after they
+/// join it.
 /// </summary>
 public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 {
@@ -255,30 +293,12 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)
     {
         ArgumentNullException.ThrowIfNull(matchId);
-        ArgumentNullException.ThrowIfNull(players);
-        if (players is not [> 0])
-        {
-            throw new WorldPreparationException("The Dam supports one reserved player");
-        }
-
-        IReadOnlyList<PlayerLoadout> snapshots;
-        IReadOnlyList<CompactPlayerProfile> profileSnapshots;
-        try
-        {
-            snapshots = InventorySnapshots.ForPlayers(players, loadouts);
-            profileSnapshots = SquadProfiles.ForPlayers(players, profiles);
-        }
-        catch (InvalidDataException error)
-        {
-            throw new WorldPreparationException(error.Message);
-        }
-
+        (IReadOnlyList<PlayerLoadout> snapshots, IReadOnlyList<CompactPlayerProfile> profileSnapshots) = Party(players, loadouts, profiles);
         lock (_lock)
         {
             if (_current is { } current)
             {
-                if (current.MatchId != matchId || !current.Players.SequenceEqual(players) || !current.Profiles.SequenceEqual(profileSnapshots)
-                    || !current.Loadouts.Zip(snapshots).All(pair => InventorySnapshots.Same(pair.First, pair.Second)))
+                if (current.MatchId != matchId || !current.HasParty(players, snapshots, profileSnapshots))
                 {
                     throw new WorldPreparationException("Another reservation owns this server");
                 }
@@ -287,7 +307,43 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
             }
 
             int seed = _random();
-            _current = new RaidWorld(this, matchId, [.. players], seed, _lighting ?? PickLighting(_random()), snapshots, profileSnapshots);
+            RaidWorld raid = new(this, matchId, seed, _lighting ?? PickLighting(_random()));
+            raid.AddParty(players, snapshots, profileSnapshots);
+            _current = raid;
+        }
+    }
+
+    /// <inheritdoc />
+    public void Join(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)
+    {
+        ArgumentNullException.ThrowIfNull(matchId);
+        (IReadOnlyList<PlayerLoadout> snapshots, IReadOnlyList<CompactPlayerProfile> profileSnapshots) = Party(players, loadouts, profiles);
+        lock (_lock)
+        {
+            if (_current is not { Ended: false } current || current.MatchId != matchId)
+            {
+                throw new WorldPreparationException("The raid is not running");
+            }
+
+            current.AddParty(players, snapshots, profileSnapshots);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Leave(string matchId, IReadOnlyList<long> players)
+    {
+        ArgumentNullException.ThrowIfNull(players);
+        lock (_lock)
+        {
+            if (_current?.MatchId != matchId)
+            {
+                return;
+            }
+
+            foreach (long id in players)
+            {
+                _current.Player(id)?.Leave();
+            }
         }
     }
 
@@ -313,27 +369,12 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     }
 
     /// <inheritdoc />
-    public bool HasLeft(string matchId, long player) => HasEnded(matchId);
-
-    /// <summary>Whether a prepared world has ended.</summary>
-    /// <param name="matchId">Match id.</param>
-    /// <returns>Whether it has ended.</returns>
-    public bool HasEnded(string matchId)
+    public bool HasLeft(string matchId, long player)
     {
         lock (_lock)
         {
-            return _current is { Ended: true } current && current.MatchId == matchId;
+            return _current?.MatchId == matchId && _current.Player(player) is { Left: true };
         }
-    }
-
-    /// <inheritdoc />
-    public void Join(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null,
-        IReadOnlyList<CompactPlayerProfile>? profiles = null) =>
-        throw new WorldPreparationException("A raid holds one party");
-
-    /// <inheritdoc />
-    public void Leave(string matchId, IReadOnlyList<long> players)
-    {
     }
 
     /// <inheritdoc />
@@ -343,24 +384,47 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     public IPlayerChannels StartPlayer(SessionPrincipal principal, PlayerLogin login, ChannelIo io)
     {
         ArgumentNullException.ThrowIfNull(login);
-        RaidWorld raid = Raid(principal) ?? throw new InvalidPacketException("The raid ended");
-        PlayerChannels channels = new(raid, raid.State.PlayerFor(principal, login.UniqueId, raid.Spawn.Location, new Rotator(0, raid.Spawn.Yaw, 0), raid.Inventory), login);
+        (RaidWorld raid, RaidPlayer member) = Raid(principal) ?? throw new InvalidPacketException("The player has left the raid");
+        SpawnPlacement spawn = member.Spawn;
+        PlayerChannels channels = new(raid, member, raid.State.PlayerFor(principal, login.UniqueId, spawn.Location, new Rotator(0, spawn.Yaw, 0), member.Inventory), login);
         channels.Start(io);
         return channels;
     }
 
-    private RaidWorld? Raid(SessionPrincipal principal)
+    // Parties are one player each until party invites exist: a reservation's routing credential admits its first player.
+    private static (IReadOnlyList<PlayerLoadout> Loadouts, IReadOnlyList<CompactPlayerProfile> Profiles) Party(IReadOnlyList<long> players,
+        IReadOnlyList<PlayerLoadout>? loadouts, IReadOnlyList<CompactPlayerProfile>? profiles)
+    {
+        ArgumentNullException.ThrowIfNull(players);
+        if (players is not [> 0])
+        {
+            throw new WorldPreparationException("The Dam supports parties of one player");
+        }
+
+        try
+        {
+            return (InventorySnapshots.ForPlayers(players, loadouts), SquadProfiles.ForPlayers(players, profiles));
+        }
+        catch (InvalidDataException error)
+        {
+            throw new WorldPreparationException(error.Message);
+        }
+    }
+
+    // The raid and the principal's player in it, or null when the raid is gone or the player has left.
+    private (RaidWorld Raid, RaidPlayer Player)? Raid(SessionPrincipal principal)
     {
         ArgumentNullException.ThrowIfNull(principal);
         RaidWorld? raid = Current;
-        if (raid is null || raid.Ended)
+        if (raid is null)
         {
             return null;
         }
 
-        return raid.MatchId == principal.MatchId && raid.Players.Contains(principal.UserId)
-            ? raid
+        RaidPlayer member = raid.MatchId == principal.MatchId && raid.Player(principal.UserId) is { } player
+            ? player
             : throw new InvalidPacketException("Player does not own this raid");
+        return member.Left ? null : (raid, member);
     }
 
     // A weighted pick among the location's lightings.

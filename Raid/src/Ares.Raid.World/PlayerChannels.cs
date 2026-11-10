@@ -140,6 +140,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     };
 
     private readonly RaidWorld _raid;
+    private readonly RaidPlayer _member;
     private readonly WorldPlayer _player;
     private readonly PlayerLogin _login;
     private readonly (int Channel, ulong Guid)[] _bindings;
@@ -196,11 +197,13 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
     /// <summary>Creates the channels of a joined player.</summary>
     /// <param name="raid">The raid.</param>
+    /// <param name="member">The player's raid state: inventory, weapons and profiles.</param>
     /// <param name="player">The player's actors.</param>
     /// <param name="login">What the player's login gives its actors.</param>
-    public PlayerChannels(RaidWorld raid, WorldPlayer player, PlayerLogin login)
+    public PlayerChannels(RaidWorld raid, RaidPlayer member, WorldPlayer player, PlayerLogin login)
     {
         _raid = raid ?? throw new ArgumentNullException(nameof(raid));
+        _member = member ?? throw new ArgumentNullException(nameof(member));
         _player = player ?? throw new ArgumentNullException(nameof(player));
         _login = login ?? throw new ArgumentNullException(nameof(login));
         _bindings = [(ControllerChannel, player.Controller), (PlayerStateChannel, player.PlayerState), (PawnChannel, player.Pawn)];
@@ -267,8 +270,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Whole-stack inventory swaps accepted.</summary>
     public int InventoryMoves { get; private set; }
 
-    public int ShotsFired => _raid.Weapons.ShotsFired;
-    public int ReloadsCompleted => _raid.Weapons.ReloadsCompleted;
+    public int ShotsFired => _member.Weapons.ShotsFired;
+    public int ReloadsCompleted => _member.Weapons.ReloadsCompleted;
 
     /// <summary>Inventory requests rejected and corrected.</summary>
     public int RejectedInventoryRequests { get; private set; }
@@ -297,7 +300,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             .Concat(_raid.SpawnedActors.SelectMany(actor => actor.RequiredGuids))
             .Concat(_bindings.Select(binding => _raid.Imports.Archetypes[_raid.State.Actor(binding.Guid).ClassPath]))
             .Append(_raid.Imports.Archetypes[PlayerClasses.Squad.Class]);
-        roots = roots.Concat(_raid.Inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+        roots = roots.Concat(_member.Inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
             .Where(item => _player.HeldItems.ContainsKey(item.Id)).Select(item => _raid.Imports.Classes[WorldImports.HeldItemClasses[item.AssetIndex]]));
 
         _keys = [.. roots.Distinct().Select(root => io.Sender.Queue(Bunches.Exports(_raid.Imports.Exports, [root])))];
@@ -498,7 +501,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             foreach (InventoryRequest request in _inventoryRequests)
             {
-                if (_raid.Inventory.Apply(request.Command))
+                if (_member.Inventory.Apply(request.Command))
                 {
                     InventoryMoves++;
                 }
@@ -520,15 +523,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
             {
                 while (weapons.TryPeek(out WeaponInput input) && input.Frame <= movement.Frame + 1)
                 {
-                    _raid.Weapons.Apply(weapons.Dequeue(), _weaponReferencesMapped ? _player.HeldItems : null);
+                    _member.Weapons.Apply(weapons.Dequeue(), _weaponReferencesMapped ? _player.HeldItems : null);
                 }
 
-                movement.Advance(_input, _raid.Weapons.Armed);
+                movement.Advance(_input, _member.Weapons.Armed);
             }
 
             foreach (WeaponInput input in weapons)
             {
-                _raid.Weapons.Apply(input, _weaponReferencesMapped ? _player.HeldItems : null);
+                _member.Weapons.Apply(input, _weaponReferencesMapped ? _player.HeldItems : null);
             }
 
             _weaponRequests.RemoveAll(input => input.Frame < latest);
@@ -545,8 +548,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         if (_surrendered)
         {
             // Keep the reservation valid while the reliable return-to-menu reply drains.
-            // Only an accepted surrender followed by connection removal ends the world.
-            _raid.EndSurrender();
+            // Only an accepted surrender followed by connection removal takes the player out of the raid.
+            _member.Leave();
         }
     }
 
@@ -624,11 +627,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.PlayerPropertiesPending;
                 return true;
             case DeliveryPhase.PlayerPropertiesPending when delivered:
-                if (_raid.Profiles.Count > 0)
+                if (_member.Profiles.Count > 0)
                 {
                     sender.Queue(Bunches.Actor(ControllerChannel, _raid.State.Replication.Calls(_raid.State.Objects(_mapped)).Call(
                         PlayerClasses.PlayerController.Class, FunctionNames.ClientReceiveSquadPlayersProfiles,
-                        ProfileParameters(_raid.Profiles), RpcDirection.Client)));
+                        ProfileParameters(_member.Profiles), RpcDirection.Client)));
                 }
 
                 Phase = DeliveryPhase.InitialLevelsPending;
@@ -664,10 +667,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
             case DeliveryPhase.InventoryExportsPending when delivered:
                 _keys =
                 [
-                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InventoryContent(_player, _raid.Inventory).Write)),
-                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _raid.Inventory).Write)),
+                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InventoryContent(_player, _member.Inventory).Write)),
+                    sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _member.Inventory).Write)),
                 ];
-                _shield = _raid.Inventory.Shield;
+                _shield = _member.Inventory.Shield;
                 Phase = DeliveryPhase.InventoryContentPending;
                 return true;
             case DeliveryPhase.InventoryContentPending when delivered:
@@ -683,7 +686,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 Phase = DeliveryPhase.AbilityComponentPending;
                 return true;
             case DeliveryPhase.AbilityComponentPending when delivered:
-                IReadOnlyList<DynamicSubobjectContent> sets = _raid.State.AttributeSetCreation(_player, _raid.Inventory);
+                IReadOnlyList<DynamicSubobjectContent> sets = _raid.State.AttributeSetCreation(_player, _member.Inventory);
                 _keys = [sender.Queue(Bunches.Actor(PawnChannel, writer =>
                 {
                     foreach (DynamicSubobjectContent set in sets)
@@ -721,8 +724,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
     {
         WorldActor pawn = Actor(_player.Pawn);
         IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
-            new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, _raid.Inventory.InitialBlackboard,
-            _raid.Weapons.Variables(PawnBlackboardFrames.FirstTick));
+            new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, _member.Inventory.InitialBlackboard,
+            _member.Weapons.Variables(PawnBlackboardFrames.FirstTick));
         uint delivery = checked((uint)BlackboardFrames);
         ActorContentBlock frame = _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState);
         _blackboardState = state;
@@ -790,7 +793,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 {
                     case FunctionNames.ServerRequestSquadPlayersProfiles:
                         IReadOnlyList<object?> requested = parameters[PropertyNames.TenancyUserIds] as IReadOnlyList<object?> ?? [];
-                        replies.Add((FunctionNames.ClientReceiveSquadPlayersProfiles, ProfileParameters(_raid.Profiles.IntersectBy(requested.OfType<TenancyUserId>(), profile => profile.TenancyUserId))));
+                        replies.Add((FunctionNames.ClientReceiveSquadPlayersProfiles, ProfileParameters(_member.Profiles.IntersectBy(requested.OfType<TenancyUserId>(), profile => profile.TenancyUserId))));
                         break;
                     case FunctionNames.ServerNotifyHasLoadedInitialLevels:
                         _initialLevelsLoaded = true;
@@ -997,7 +1000,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             if (!_weaponCreationSent)
             {
-                _weaponCreationKeys = [.. _raid.State.WeaponItemCreation(_player, _raid.Inventory)
+                _weaponCreationKeys = [.. _raid.State.WeaponItemCreation(_player, _member.Inventory)
                     .Select(item => sender.Queue(Bunches.Actor(PawnChannel, item.Write)))];
                 _weaponCreationSent = true;
                 return;
@@ -1039,15 +1042,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
             WorldActor pawn = Actor(_player.Pawn);
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
-                _raid.Inventory.InitialBlackboard, _raid.Weapons.Variables(frame, weaponObjects));
+                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects));
             _movement = new PlayerMovement(frame, pawn.Location, yaw);
         }
         else
         {
             focus = UsableDoor(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
-            bool inventoryChanged = _inventoryVersion != _raid.Inventory.Version;
-            bool weaponsChanged = _weaponVersion != _raid.Weapons.Version;
+            bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
+            bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
             if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
                 || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0)
@@ -1058,23 +1061,23 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
             // Vertical motion is not simulated yet; it stays the reported position change.
             Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _raid.Inventory.Blackboard,
-                _raid.Weapons.Variables(frame, weaponObjects));
+            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _member.Inventory.Blackboard,
+                _member.Weapons.Variables(frame, weaponObjects));
         }
 
         // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
         uint delivery = checked((uint)BlackboardFrames);
         List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
-        if (_shield != _raid.Inventory.Shield)
+        if (_shield != _member.Inventory.Shield)
         {
-            keys.Add(sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _raid.Inventory).Write)));
-            _shield = _raid.Inventory.Shield;
+            keys.Add(sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _member.Inventory).Write)));
+            _shield = _member.Inventory.Shield;
         }
 
         _blackboardKeys = [.. keys];
         (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
-        _inventoryVersion = initializingContainers ? 1 : _raid.Inventory.Version;
-        _weaponVersion = _raid.Weapons.Version;
+        _inventoryVersion = initializingContainers ? 1 : _member.Inventory.Version;
+        _weaponVersion = _member.Weapons.Version;
         _populatedInventorySent = !initializingContainers;
         BlackboardFrames++;
     }

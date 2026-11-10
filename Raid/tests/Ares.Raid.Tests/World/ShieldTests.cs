@@ -23,21 +23,21 @@ public sealed class ShieldTests
         ScriptedPlayer session = new(loadout: WithShield(augment));
         session.Possess();
         session.Sent.Clear();
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
+        session.Input(30, 33, position: session.Member.Spawn.Location);
         session.Service(100);
         Dictionary<int, PendulumSlot> first = session.PawnFrame(session.SpawnState);
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.ArmorSlot));
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.LoadoutSlotCount + 3));
-        Assert.NotNull(session.Raid.Inventory.Shield);
+        Assert.NotNull(session.Member.Inventory.Shield);
 
-        session.Input(33, 36, position: session.Raid.Spawn.Location);
+        session.Input(33, 36, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.1);
         Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
         Assert.Equal(ShieldItems.LightShieldUsableIndex, AssetIndex(second, InventoryBlackboard.ArmorSlot));
         Assert.Equal(InventoryBlackboard.RubberDuckIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 3));
         Assert.Equal(3, session.Channels.BlackboardFrames);
-        session.Input(36, 39, position: session.Raid.Spawn.Location);
+        session.Input(36, 39, position: session.Member.Spawn.Location);
         session.Service(100.2);
         Assert.Equal(3, session.Channels.BlackboardFrames);
     }
@@ -53,7 +53,7 @@ public sealed class ShieldTests
         InventoryItem selected = loadout.Items.Single(item => item.GameAssetId == ShieldItems.LightShieldAssetId);
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
-        RaidInventory inventory = session.Raid.Inventory;
+        RaidInventory inventory = session.Member.Inventory;
         Assert.Equal(new ContainerItem(3, Guid.Parse(selected.InstanceId), 1, 0.5) { ModContainerId = 5 }, inventory.Shield);
         Assert.Empty(inventory.Containers[5].Items);
         Assert.Equal(6.2, inventory.Weight, precision: 6);
@@ -106,13 +106,13 @@ public sealed class ShieldTests
         session.Possess();
         Assert.Equal(0.0, ShieldProperties(session, Assert.Single(ShieldDeliveries(session)).Content)[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
         (uint start, double at) = session.Settle(30, 100);
-        session.Input(start, start + 1, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Backpack, 5, session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot));
-        session.Input(start + 1, start + 2, position: session.Raid.Spawn.Location);
+        session.Input(start, start + 1, position: session.Member.Spawn.Location, inventory: Swap(session.Member.Inventory.Backpack, 5, session.Member.Inventory.Loadout, InventoryBlackboard.ArmorSlot));
+        session.Input(start + 1, start + 2, position: session.Member.Spawn.Location);
         session.Service(at);
         Assert.Equal(2, ShieldDeliveries(session).Count);
         Assert.Equal(40.0, ShieldProperties(session, ShieldDeliveries(session)[^1].Content)[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
-        session.Input(start + 2, start + 3, position: session.Raid.Spawn.Location, inventory: Swap(session.Raid.Inventory.Loadout, InventoryBlackboard.ArmorSlot, session.Raid.Inventory.Backpack, 5));
-        session.Input(start + 3, start + 4, position: session.Raid.Spawn.Location);
+        session.Input(start + 2, start + 3, position: session.Member.Spawn.Location, inventory: Swap(session.Member.Inventory.Loadout, InventoryBlackboard.ArmorSlot, session.Member.Inventory.Backpack, 5));
+        session.Input(start + 3, start + 4, position: session.Member.Spawn.Location);
         session.Service(at + 0.1);
         Assert.Equal(3, ShieldDeliveries(session).Count);
         Assert.Equal(0.0, ShieldProperties(session, ShieldDeliveries(session)[^1].Content)[$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"]);

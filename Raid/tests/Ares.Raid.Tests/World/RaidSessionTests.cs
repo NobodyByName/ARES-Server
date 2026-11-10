@@ -18,7 +18,7 @@ namespace Ares.Raid.Tests.World;
 public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization.
-    private const string ReferenceTrace = "99881dc575782c5f018d8b57bc00eed3425bda0c9c9e16d1531085538594e2fe";
+    private const string ReferenceTrace = "0bb22f9c4e315ba6182981d73b88089fb14ec1eac85b6b72dbb2b28a49c7e989";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -64,7 +64,7 @@ public sealed class RaidSessionTests
 
         session.Call(FunctionNames.ServerSurrender, []);
         Assert.False(raid.Ended);
-        Assert.False(session.Worlds.HasEnded(raid.MatchId));
+        Assert.False(session.Worlds.HasLeft(raid.MatchId, 42));
         Assert.True(session.Worlds.AcceptingPlayers(raid.MatchId));
         session.Flush("surrender");
         ChannelBunch reply = Assert.Single(session.Sent, bunch => bunch is { Channel: 2, PackageExports: false });
@@ -78,12 +78,12 @@ public sealed class RaidSessionTests
         session.Channels.Closed();
 
         Assert.True(raid.Ended);
-        Assert.True(session.Worlds.HasEnded(raid.MatchId));
-        Assert.False(session.Worlds.HasEnded("another-match"));
+        Assert.True(session.Worlds.HasLeft(raid.MatchId, 42));
+        Assert.False(session.Worlds.HasLeft("another-match", 42));
         Assert.False(session.Worlds.AcceptingPlayers(raid.MatchId));
         Assert.Null(session.Worlds.WelcomeFor(new SessionPrincipal(42, raid.MatchId)));
         session.Channels.Closed();
-        Assert.Equal(4, Assert.Single(raid.Loadouts).Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId).Amount);
+        Assert.Equal(4, Assert.Single(raid.Players).Loadout.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId).Amount);
     }
 
     [Fact]

@@ -92,10 +92,6 @@ public sealed class WorldState
             [PropertyNames.GameModeClass] = imports.Classes[DamMap.GameModeClass],
             [PropertyNames.ReplicatedHasBegunPlay] = true,
             [PropertyNames.SessionSeed] = sessionSeed,
-            [PropertyNames.MaxPlayers] = 1,
-            [PropertyNames.MaxSquads] = 1,
-            [PropertyNames.MaxSquadSize] = 1,
-            [PropertyNames.NumExpectedPlayersToJoin] = 1,
             [PropertyNames.LocationTag] = new GameplayTag(DamMap.LocationTag),
             [PropertyNames.MatchState] = new NetworkName(MatchStates.InProgress, 0),
             [PropertyNames.GamePhase] = (ulong)GamePhase.PreGame,
@@ -198,7 +194,7 @@ public sealed class WorldState
             {
                 [PropertyNames.Role] = (ulong)NetRole.Authority,
                 [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
-                [PropertyNames.SquadId] = MatchId,
+                [PropertyNames.SquadId] = $"{MatchId}-{_players.Count}",
                 [PropertyNames.IsGeneratedSquad] = false,
             };
             WorldActor squad = Add(PlayerClasses.Squad.Class, default, squadValues);

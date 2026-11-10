@@ -36,16 +36,16 @@ public sealed class WeaponTests
     {
         ScriptedPlayer session = new(loadout: WithWeapons());
         session.Possess();
-        ContainerItem gun = session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items[0]!;
+        ContainerItem gun = session.Member.Inventory.Containers[session.Member.Inventory.Loadout].Items[0]!;
         ulong itemGuid = session.Player.HeldItems[gun.Id];
         Assert.DoesNotContain(session.Sent, bunch => bunch.Channel == 6 && Subobject(bunch) == itemGuid);
         session.Sent.Clear();
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
+        session.Input(30, 33, position: session.Member.Spawn.Location);
         session.Service(100);
         Dictionary<int, PendulumSlot> initial = session.PawnFrame(session.SpawnState);
         Assert.Equal((ulong)WeaponProtocol.FirstWeaponSlot, Inventory(initial, WeaponProtocol.InventoryCurrentField));
         Assert.Equal(0UL, ItemReference(initial, WeaponProtocol.FirstWeaponSlot));
-        session.Input(33, 36, position: session.Raid.Spawn.Location);
+        session.Input(33, 36, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.1);
         Dictionary<int, PendulumSlot> populated = session.PawnFrame(initial);
@@ -77,7 +77,7 @@ public sealed class WeaponTests
         StableSubobjectContent known = StableSubobjectContent.Read(new BitReader(references.Payload, references.PayloadBits));
         Assert.Equal(session.Player.HeldItems.Values.Select(guid => (object?)guid), Assert.IsType<IReadOnlyList<object?>>(codec.Decode(
             new PropertyLayout(GameReplication.Catalog, ClassPaths.InventoryComponent), known.Content)[PropertyNames.KnownReplicatedItems], exactMatch: false));
-        session.Input(36, 39, position: session.Raid.Spawn.Location);
+        session.Input(36, 39, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.4);
         Dictionary<int, PendulumSlot> linked = session.PawnFrame(populated);
@@ -86,13 +86,13 @@ public sealed class WeaponTests
             [(InventoryBlackboard.MeleeSlot, HandItems.RaiderToolHandle, HandItems.RaiderToolItemInstanceField),
                 (InventoryBlackboard.UnarmedSlot, WeaponProtocol.UnarmedHandle, HandItems.UnarmedItemInstanceField)])
         {
-            ContainerItem hand = session.Raid.Inventory.Containers[session.Raid.Inventory.Loadout].Items[slot]!;
+            ContainerItem hand = session.Member.Inventory.Containers[session.Member.Inventory.Loadout].Items[slot]!;
             PendulumSlot node = linked[handle];
             Assert.Equal(session.Player.HeldItems[hand.Id], PendulumCodec.Integer(
                 PendulumRegistry.Descriptors[Assert.NotNull(node.DescriptorId)].Fields[field], node.Value));
         }
-        Assert.True(session.Raid.Inventory.Apply(Swap(session.Raid.Inventory.Loadout, 0, session.Raid.Inventory.Loadout, 1)));
-        session.Input(39, 42, position: session.Raid.Spawn.Location);
+        Assert.True(session.Member.Inventory.Apply(Swap(session.Member.Inventory.Loadout, 0, session.Member.Inventory.Loadout, 1)));
+        session.Input(39, 42, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.5);
         Dictionary<int, PendulumSlot> moved = session.PawnFrame(linked);
@@ -301,20 +301,20 @@ public sealed class WeaponTests
     {
         ScriptedPlayer session = new(loadout: WithWeapons());
         session.Possess();
-        Empty(session.Raid.Inventory);
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
+        Empty(session.Member.Inventory);
+        session.Input(30, 33, position: session.Member.Spawn.Location);
         session.Service(100);
-        session.Input(33, 36, position: session.Raid.Spawn.Location);
+        session.Input(33, 36, position: session.Member.Spawn.Location);
         session.Service(100.1);
-        session.Input(36, 100, position: session.Raid.Spawn.Location, weaponFlags: Reload);
-        session.Input(100, 103, position: session.Raid.Spawn.Location);
-        session.Input(103, 245, position: session.Raid.Spawn.Location);
+        session.Input(36, 100, position: session.Member.Spawn.Location, weaponFlags: Reload);
+        session.Input(100, 103, position: session.Member.Spawn.Location);
+        session.Input(103, 245, position: session.Member.Spawn.Location);
         Assert.Equal(1, session.Channels.ReloadsCompleted);
-        session.Input(245, 246, position: session.Raid.Spawn.Location, weaponFlags: Fire);
-        session.Input(246, 249, position: session.Raid.Spawn.Location);
+        session.Input(245, 246, position: session.Member.Spawn.Location, weaponFlags: Fire);
+        session.Input(246, 249, position: session.Member.Spawn.Location);
         Assert.Equal(1, session.Channels.ShotsFired);
         Assert.Equal(0, session.Channels.InputDecodeFailures);
-        Assert.Equal(58, session.Raid.Inventory.HeavyAmmo);
+        Assert.Equal(58, session.Member.Inventory.HeavyAmmo);
     }
 
     [Theory]
@@ -327,7 +327,7 @@ public sealed class WeaponTests
         PlayerLoadout loadout = WithWeapons(augment);
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
-        RaidInventory inventory = session.Raid.Inventory;
+        RaidInventory inventory = session.Member.Inventory;
         InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
         InventoryItem ammo = loadout.Items.Single(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId);
         Assert.Equal(new ContainerItem(WeaponItems.FerroIUsableIndex, Guid.Parse(gun.InstanceId), 1, .65) { AmmoInClip = 1, ModContainerId = 5 }, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
@@ -335,11 +335,11 @@ public sealed class WeaponTests
         Assert.Equal(12.2, inventory.Weight, precision: 6);
 
         session.Sent.Clear();
-        session.Input(30, 33, position: session.Raid.Spawn.Location);
+        session.Input(30, 33, position: session.Member.Spawn.Location);
         session.Service(100);
         Dictionary<int, PendulumSlot> first = session.PawnFrame(session.SpawnState);
         Assert.Equal(ushort.MaxValue, AssetIndex(first, InventoryBlackboard.Firearm1Slot));
-        session.Input(33, 36, position: session.Raid.Spawn.Location);
+        session.Input(33, 36, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.1);
         Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
@@ -428,7 +428,7 @@ public sealed class WeaponTests
                 .Select(item => item.Slots.Contains(gun.InstanceId) ? item with { Slots = [] } : item)],
         };
         ScriptedPlayer session = new(loadout: loadout);
-        RaidInventory inventory = session.Raid.Inventory;
+        RaidInventory inventory = session.Member.Inventory;
         Assert.NotNull(inventory.InitialBlackboard);
         Assert.Equal(4.2, inventory.Weight, precision: 6);
         Assert.Equal(2, session.Player.HeldItems.Count);
