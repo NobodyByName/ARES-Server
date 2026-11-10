@@ -81,7 +81,7 @@ globalThis.AresContent = {
                   "name": "Regular doors",
                   "technical": "DamDoors.All",
                   "status": "partial",
-                  "note": "120 placed regular doors; door buttons work. Full locks, breaching, barricading and multiplayer interactions need assessment."
+                  "note": "120 placed regular doors; door buttons work and barricaded doors can be breached (moving cancels the breach). Unlocking, door blockers and multiplayer interactions need assessment."
                 },
                 {
                   "name": "Placed ladders",

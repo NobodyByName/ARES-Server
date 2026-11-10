@@ -4,8 +4,8 @@
 
 A stock client goes from a fresh launch through sign-in, the main menu and normal Dam matchmaking
 into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets the default Raider,
-moves (walk, sprint, crouch, slide, jump), climbs ladders and uses door buttons, then leaves back to
-the main menu.
+moves (walk, sprint, crouch, slide, jump), climbs ladders, uses door buttons and breaches barricaded
+doors, then leaves back to the main menu.
 
 Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
 and each process exits when its raid is over. Host persists each account's stash and selected
@@ -63,6 +63,8 @@ Limitations:
 - Accounts are made by the operator on the Host console; players sign in through ARES-Launcher.
   There is no progression yet.
 - Movement is trusted from the client; the server does not check it yet.
+- Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
+  its progress.
 - No damage, loot, death or match results yet.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.

@@ -38,7 +38,7 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 
 | Content | Status | Details |
 | --- | --- | --- |
-| <a id="content-root-0-0-2-0"></a>Regular doors | Partial | 120 placed regular doors; door buttons work. Full locks, breaching, barricading and multiplayer interactions need assessment. |
+| <a id="content-root-0-0-2-0"></a>Regular doors | Partial | 120 placed regular doors; door buttons work and barricaded doors can be breached (moving cancels the breach). Unlocking, door blockers and multiplayer interactions need assessment. |
 | <a id="content-root-0-0-2-1"></a>Placed ladders | Partial | 43 placed ladders; climbing is stock-client verified. Multiplayer and traversal validation remain. |
 
 <a id="content-root-0-1"></a>
