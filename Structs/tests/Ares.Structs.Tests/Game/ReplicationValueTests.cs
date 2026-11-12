@@ -99,6 +99,19 @@ public sealed class ReplicationValueTests
     }
 
     [Fact]
+    public void Struct_parameters_given_as_null_are_not_sent()
+    {
+        RpcCodec codec = new(Values());
+        ActorContentBlock block = codec.Call(PlayerClasses.PlayerController.Class, FunctionNames.ReceiveXpData,
+            new Dictionary<string, object?> { [PropertyNames.XpEventLog] = null, [PropertyNames.XpBasedRewardsLog] = null }, RpcDirection.Client);
+
+        (NetField field, ActorFieldPayload payload) = Assert.Single(codec.ReadFields(PlayerClasses.PlayerController.Class, block, RpcDirection.Client));
+        Assert.Equal((FunctionNames.ReceiveXpData, 2L), (field.Name, payload.PayloadBits));
+        Assert.Equal([0], payload.Payload);
+        Dictionary<string, object?> decoded = codec.ReadParameters(field, payload);
+        Assert.Empty(Assert.IsType<IReadOnlyList<object>>(Assert.IsType<Dictionary<string, object?>>(decoded[PropertyNames.XpEventLog])[PropertyNames.Entries], exactMatch: false));
+    }
+    [Fact]
     public void Parameters_at_their_default_are_omitted_and_decode_with_their_type()
     {
         RpcCodec codec = new(Values());

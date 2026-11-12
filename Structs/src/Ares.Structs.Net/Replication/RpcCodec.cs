@@ -7,7 +7,8 @@ namespace Ares.Structs.Net.Replication;
 /// <summary>
 /// Network function calls: a field payload addressed by the class's field table, holding the parameters.
 /// Each parameter except booleans has a presence bit; parameters at their default are not sent (structs
-/// always are). A struct without its own serializer is sent as its members, given as a dictionary by name.
+/// always are, unless given as null). A struct without its own serializer is sent as its members, given as a
+/// dictionary by name.
 /// </summary>
 /// <param name="values">Value codec.</param>
 public sealed class RpcCodec(ValueCodec values)
@@ -160,6 +161,13 @@ public sealed class RpcCodec(ValueCodec values)
                     if (property.Kind == PropertyKind.NameProperty && value is string text)
                     {
                         value = new NetworkName(text, 0);
+                    }
+
+                    // A struct given as null is not sent: the receiver uses the struct's defaults.
+                    if (property.Kind == PropertyKind.StructProperty && value is null)
+                    {
+                        writer.WriteBit(false);
+                        break;
                     }
 
                     BitWriter raw = new();
