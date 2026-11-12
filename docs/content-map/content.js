@@ -12,7 +12,7 @@ globalThis.AresContent = {
               "name": "Dam Battlegrounds",
               "technical": "DA_Level_TheDam_02_P",
               "status": "partial",
-              "note": "Stock-client entry, lighting, movement, regular doors and ladders work; combat, loot and extraction remain."
+              "note": "Stock-client entry, lighting, movement, regular doors, ladders and elevator extraction work; combat, loot and settlement remain."
             },
             {
               "name": "Weather & conditions",
@@ -6418,8 +6418,8 @@ globalThis.AresContent = {
             {
               "name": "North Complex",
               "technical": "DA_ExtractionPoint_NorthComplex",
-              "status": "pending",
-              "note": "Map binding is unresolved; do not infer a map from a generic name."
+              "status": "partial",
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
             },
             {
               "name": "Old Baron",
@@ -6454,8 +6454,8 @@ globalThis.AresContent = {
             {
               "name": "Red Lake Balcony",
               "technical": "DA_ExtractionPoint_RedLakeBalcony",
-              "status": "pending",
-              "note": "Map binding is unresolved; do not infer a map from a generic name."
+              "status": "partial",
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
             },
             {
               "name": "Spillway",
@@ -6472,14 +6472,14 @@ globalThis.AresContent = {
             {
               "name": "Swamp Lift",
               "technical": "DA_ExtractionPoint_SwampLift",
-              "status": "pending",
-              "note": "Map binding is unresolved; do not infer a map from a generic name."
+              "status": "partial",
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
             },
             {
               "name": "Swampside",
               "technical": "DA_ExtractionPoint_Swampside",
-              "status": "pending",
-              "note": "Map binding is unresolved; do not infer a map from a generic name."
+              "status": "partial",
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
             },
             {
               "name": "TBG Airshaft Central",
