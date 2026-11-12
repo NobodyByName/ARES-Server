@@ -68,7 +68,7 @@ public sealed class LadderTests
         int firstChannel = 64 + session.Raid.Doors.Doors.Count;
         Assert.Equal(
             visible.Select(ladder => firstChannel + ladder.Index).Order(),
-            session.Sent.Where(bunch => bunch is { Opened: true } && bunch.Channel >= firstChannel).Select(bunch => bunch.Channel).Order());
+            session.Sent.Where(bunch => bunch is { Opened: true } && bunch.Channel >= firstChannel && bunch.Channel < firstChannel + session.Raid.Ladders.Ladders.Count).Select(bunch => bunch.Channel).Order());
 
         // Leaving the cell keeps the ladders: the game's own ladder actors outlive their cell.
         session.Sent.Clear();

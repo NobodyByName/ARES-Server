@@ -47,6 +47,7 @@ public sealed class RaidWorld
         Imports = worlds.Imports;
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
+        Loot = worlds.Loot;
         Clock = worlds.Clock;
         StartedAt = Clock();
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
@@ -129,8 +130,14 @@ public sealed class RaidWorld
     /// <summary>The map ladders.</summary>
     public LadderCatalog Ladders { get; }
 
+    /// <summary>The loot containers.</summary>
+    public LootCatalog Loot { get; }
+
     /// <summary>Door state of this raid.</summary>
     public DoorStates DoorStates { get; } = new(DamDoors.All);
+
+    /// <summary>Loot container contents of this raid.</summary>
+    public LootStates LootStates { get; } = new(DamLoot.All.Count);
 
     /// <summary>Server actors of this raid.</summary>
     public WorldState State { get; }
@@ -261,6 +268,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         MapPaths paths = new();
         Doors = new DoorCatalog(Replication, paths);
         Ladders = new LadderCatalog(Replication, paths);
+        Loot = new LootCatalog(Replication);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>
@@ -288,6 +296,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal DoorCatalog Doors { get; }
 
     internal LadderCatalog Ladders { get; }
+
+    internal LootCatalog Loot { get; }
 
     /// <inheritdoc />
     public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)

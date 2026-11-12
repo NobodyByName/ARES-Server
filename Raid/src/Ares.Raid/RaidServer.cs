@@ -166,6 +166,8 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["rejected_inventory_requests"] = channels.RejectedInventoryRequests,
                 ["ladders_ready"] = channels.LaddersReady,
                 ["ladders_in_progress"] = channels.LaddersInProgress,
+                ["loot_ready"] = channels.LootReady,
+                ["loot_requests"] = string.Join(' ', channels.LootRequests),
                 ["unhandled_calls"] = calls,
             });
         }
