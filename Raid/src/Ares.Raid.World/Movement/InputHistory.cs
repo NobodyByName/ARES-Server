@@ -7,7 +7,7 @@ namespace Ares.Raid.World.Movement;
 
 /// <summary>A button press the client asked for in an input frame.</summary>
 /// <param name="Frame">Input frame.</param>
-/// <param name="Target">The pressed object (a button id).</param>
+/// <param name="Target">The pressed object (a button id), or zero when the request names none.</param>
 /// <param name="Request">The request.</param>
 public readonly record struct InteractionRequest(uint Frame, ulong Target, int Request);
 
@@ -187,7 +187,7 @@ public sealed class InputHistory
     {
         int request = (int)Claim(frame, PendulumInput.InteractionRequestField);
         ulong target = Claim(frame, PendulumInput.InteractionTargetField);
-        return request != 0 && target != 0 ? new InteractionRequest(number, target, request) : null;
+        return request != 0 ? new InteractionRequest(number, target, request) : null;
     }
 
     // A field of the frame's interaction claim (0 when the frame has none).
