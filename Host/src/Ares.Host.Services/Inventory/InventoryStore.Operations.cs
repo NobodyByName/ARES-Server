@@ -15,7 +15,8 @@ public sealed partial class InventoryStore
     {
         if ((!string.IsNullOrEmpty(request.RequestId) && !ValidRequestId(request.RequestId))
             || request.Operations is not { Count: <= MaximumOperations } operations
-            || operations.Any(operation => operation is not SetItemParents { ItemInstanceId.Length: > 0, ParentInstanceIds: [{ Length: > 0 }] }))
+            || operations.Any(operation => operation is not (SetItemParents { ItemInstanceId.Length: > 0, ParentInstanceIds: [{ Length: > 0 }] }
+                or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 })))
         {
             return ServiceReply.Error(400, "invalid_inventory_operations");
         }
@@ -41,15 +42,27 @@ public sealed partial class InventoryStore
             long revision = checked(_state.Revision + 1);
             bool changed = false;
             Dictionary<string, InventoryItem> before = _projection.Snapshot.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
-            HashSet<string> movedIds = [.. operations.Cast<SetItemParents>().Select(operation => operation.ItemInstanceId)];
-            HashSet<string> predictedParents = [.. operations.Cast<SetItemParents>().SelectMany(operation => operation.ParentInstanceIds)];
+            SetItemParents[] parentMoves = [.. operations.OfType<SetItemParents>()];
+            HashSet<string> movedIds = [.. parentMoves.Select(operation => operation.ItemInstanceId)];
+            HashSet<string> predictedParents = [.. parentMoves.SelectMany(operation => operation.ParentInstanceIds)];
             try
             {
+                // Amount moves only change quantities and create split stacks; the parent moves then
+                // decide the final layout, which also places every newly split stack.
+                HashSet<string> created = new(StringComparer.Ordinal);
+                HashSet<string> consumed = new(StringComparer.Ordinal);
+                string etag = "ares-host-inventory-" + revision.ToString(CultureInfo.InvariantCulture);
+                foreach (MoveItemAmount transfer in operations.OfType<MoveItemAmount>())
+                {
+                    candidate = MoveAmount(candidate, transfer, before, created, consumed, etag, now.ToUnixTimeMilliseconds());
+                    changed = true;
+                }
+
                 Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
-                    .SelectMany(area => InventoryCatalog.Items(_state, area).Select(item => (Area: area, Item: item)))
+                    .SelectMany(area => InventoryCatalog.Items(candidate, area).Select(item => (Area: area, Item: item)))
                     .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
                 Dictionary<string, SetItemParents> moves = new(StringComparer.Ordinal);
-                foreach (SetItemParents operation in operations.Cast<SetItemParents>())
+                foreach (SetItemParents operation in parentMoves.Where(operation => !consumed.Contains(operation.ItemInstanceId)))
                 {
                     if (!owned.ContainsKey(operation.ItemInstanceId))
                     {
@@ -57,6 +70,11 @@ public sealed partial class InventoryStore
                     }
 
                     moves[operation.ItemInstanceId] = operation;
+                }
+
+                if (!created.All(moves.ContainsKey))
+                {
+                    return ServiceReply.Error(400, "invalid_inventory_move");
                 }
 
                 // Remove every moving item first, so a swap or a capacity reduction is validated
@@ -98,7 +116,7 @@ public sealed partial class InventoryStore
                     OwnedItem placed = moved ? item with
                     {
                         Slot = InventoryCatalog.UsesSlots(target.Area) ? target.Index : null,
-                        ETag = "ares-host-inventory-" + revision.ToString(CultureInfo.InvariantCulture),
+                        ETag = etag,
                         UpdatedAt = now.ToUnixTimeMilliseconds(),
                     } : item;
                     candidate = InventoryCatalog.WithItems(candidate, target.Area, [.. destination, placed]);
@@ -143,6 +161,72 @@ public sealed partial class InventoryStore
             }));
         }
     }
+
+    /// <summary>
+    /// Moves part of a stackable stack into an existing stack of the same item or into a new stack named
+    /// by the target id. A source moved in full is removed. New stacks wait in the source's area for
+    /// their parent move.
+    /// </summary>
+    private static PlayerInventory MoveAmount(PlayerInventory inventory, MoveItemAmount transfer, Dictionary<string, InventoryItem> before,
+        HashSet<string> created, HashSet<string> consumed, string etag, long updatedAt)
+    {
+        (InventoryArea area, OwnedItem source) = Find(inventory, transfer.FromInstanceId) ?? throw new InvalidDataException("Unknown amount source");
+        ItemDescription definition = InventoryCatalog.ByAsset[InventoryCatalog.AssetId(source.Type)];
+        if (!definition.Stackable || transfer.Amount > source.Quantity || transfer.FromInstanceId == transfer.ToInstanceId)
+        {
+            throw new InvalidDataException("Invalid amount move");
+        }
+
+        bool emptied = transfer.Amount == source.Quantity;
+        PlayerInventory result = Replace(inventory, area, source.InstanceId,
+            emptied ? null : source with { Quantity = source.Quantity - transfer.Amount, ETag = etag, UpdatedAt = updatedAt });
+        if (Find(result, transfer.ToInstanceId) is var (targetArea, target))
+        {
+            if (target.Type != source.Type || target.Quantity + transfer.Amount > definition.MaxAmount)
+            {
+                throw new InvalidDataException("Invalid amount move");
+            }
+
+            result = Replace(result, targetArea, target.InstanceId, target with { Quantity = target.Quantity + transfer.Amount, ETag = etag, UpdatedAt = updatedAt });
+        }
+        else
+        {
+            if (!ValidRequestId(transfer.ToInstanceId) || before.ContainsKey(transfer.ToInstanceId) || consumed.Contains(transfer.ToInstanceId))
+            {
+                throw new InvalidDataException("Invalid split stack id");
+            }
+
+            OwnedItem split = source with { InstanceId = transfer.ToInstanceId, Quantity = transfer.Amount, Slot = null, ETag = etag, UpdatedAt = updatedAt };
+            result = InventoryCatalog.WithItems(result, area, [.. InventoryCatalog.Items(result, area), split]);
+            created.Add(split.InstanceId);
+        }
+
+        if (!emptied)
+        {
+            return result;
+        }
+
+        created.Remove(source.InstanceId);
+        consumed.Add(source.InstanceId);
+        return result;
+    }
+
+    private static (InventoryArea Area, OwnedItem Item)? Find(PlayerInventory inventory, string instanceId)
+    {
+        foreach (InventoryArea area in Enum.GetValues<InventoryArea>())
+        {
+            if (InventoryCatalog.Items(inventory, area).FirstOrDefault(item => item.InstanceId == instanceId) is { } found)
+            {
+                return (area, found);
+            }
+        }
+
+        return null;
+    }
+
+    private static PlayerInventory Replace(PlayerInventory inventory, InventoryArea area, string instanceId, OwnedItem? replacement) =>
+        InventoryCatalog.WithItems(inventory, area,
+            [.. InventoryCatalog.Items(inventory, area).Select(item => item.InstanceId == instanceId ? replacement : item).OfType<OwnedItem>()]);
 
     private static bool ValidRequestId(string? id) => id is { Length: > 0 and <= 128 }
         && !id.Any(character => char.IsControl(character) || char.IsWhiteSpace(character));
