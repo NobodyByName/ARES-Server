@@ -258,11 +258,11 @@ public sealed class RaidInventory
     public double MaxWeight => LoadoutDefinitions.MaximumWeight(AugmentAssetId);
 
     /// <summary>Current carried weight, counting stack amounts and excluding the equipped augment.</summary>
-    public double Weight => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+    public double Weight => Carried.SelectMany(container => container.Items).OfType<ContainerItem>()
         .Sum(item => (_unitWeights[item.AssetIndex] * item.Amount) + (item.AmmoInClip * WeaponItems.HeavyAmmoWeight));
 
     /// <summary>Heavy Ammo available in carried containers, excluding rounds already chambered.</summary>
-    public int HeavyAmmo => Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
+    public int HeavyAmmo => Carried.SelectMany(container => container.Items).OfType<ContainerItem>()
         .Where(item => item.AssetIndex == WeaponItems.HeavyAmmoUsableIndex).Sum(item => item.Amount);
 
     /// <summary>Changes a Ferro chamber, optionally loading the added rounds from carried Heavy Ammo atomically.</summary>
@@ -278,6 +278,12 @@ public sealed class RaidInventory
         List<(int Container, int Slot)> ammo = [];
         for (int container = 0; container < Containers.Count; container++)
         {
+            // Only carried items load or are loaded: not those of an open world container.
+            if (container == OpenLoot)
+            {
+                continue;
+            }
+
             for (int slot = 0; slot < Containers[container].Items.Count; slot++)
             {
                 ContainerItem? item = Containers[container].Items[slot];
@@ -321,7 +327,7 @@ public sealed class RaidInventory
 
         Containers = Array.AsReadOnly(updated);
         Version++;
-        Blackboard = ItemContainerState.Encode(Containers, Version);
+        Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
         return true;
 
         void Replace((int Container, int Slot) position, ContainerItem? item)
@@ -373,9 +379,55 @@ public sealed class RaidInventory
         ArgumentNullException.ThrowIfNull(command);
         bool applied = Swap(command);
         Version++;
-        Blackboard = ItemContainerState.Encode(Containers, Version);
+        Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
         return applied;
     }
+
+    /// <summary>The searched world container the player has open, as an extra container after the player's own.</summary>
+    public int? OpenLoot { get; private set; }
+
+    /// <summary>Items of the open world container.</summary>
+    public IReadOnlyList<ContainerItem?> LootItems => OpenLoot is { } id ? Containers[id].Items : throw new InvalidOperationException("No open container");
+
+    /// <summary>Opens a searched world container: its slots join the player's containers, any item may go in them.</summary>
+    /// <param name="items">Its slots.</param>
+    /// <param name="unitWeights">Unit weight of each item type it may hold, for when the player takes one.</param>
+    /// <returns>The container id the player sees.</returns>
+    public int OpenWorldContainer(IReadOnlyList<ContainerItem?> items, IReadOnlyDictionary<ushort, double> unitWeights)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(unitWeights);
+        foreach ((ushort index, double weight) in unitWeights)
+        {
+            _unitWeights.TryAdd(index, weight);
+        }
+
+        if (OpenLoot is not null)
+        {
+            throw new InvalidOperationException("A container is already open");
+        }
+
+        int id = Containers.Count;
+        Containers = Array.AsReadOnly([.. Containers, new ItemContainerState(id, Array.AsReadOnly<ContainerItem?>([.. items])) { Flags = InventoryBlackboard.LootContainerFlags }]);
+        OpenLoot = id;
+        Version++;
+        Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
+        return id;
+    }
+
+    /// <summary>Closes the open world container.</summary>
+    /// <returns>Its slots as the player left them.</returns>
+    public IReadOnlyList<ContainerItem?> CloseWorldContainer()
+    {
+        IReadOnlyList<ContainerItem?> items = LootItems;
+        Containers = Array.AsReadOnly(Containers.Take(Containers.Count - 1).ToArray());
+        OpenLoot = null;
+        Version++;
+        Blackboard = ItemContainerState.Encode(Containers, Version);
+        return items;
+    }
+
+    private IEnumerable<ItemContainerState> Carried => Containers.Where(container => container.Id != OpenLoot);
 
     private bool Swap(InventoryCommand command)
     {
@@ -414,6 +466,6 @@ public sealed class RaidInventory
     private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
         && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;
 
-    private bool Allows(ItemContainerSlot slot, ContainerItem item) => _allowedSlots.TryGetValue((slot.Parent.Id, slot.Index), out HashSet<int>? allowed)
+    private bool Allows(ItemContainerSlot slot, ContainerItem item) => slot.Parent.Id == OpenLoot || _allowedSlots.TryGetValue((slot.Parent.Id, slot.Index), out HashSet<int>? allowed)
         && allowed.Contains(item.AssetIndex);
 }
