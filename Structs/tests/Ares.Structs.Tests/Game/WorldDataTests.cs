@@ -40,6 +40,52 @@ public sealed class WorldDataTests
     }
 
     [Fact]
+    public void Extraction_elevators_have_one_call_button_two_descend_switches_and_three_repairs()
+    {
+        Assert.Equal(4, DamExtraction.All.Count);
+        Assert.Equal(4, DamExtraction.All.Select(point => point.Actor).Distinct().Count());
+        Assert.Equal(4, DamExtraction.All.Select(point => point.DataAsset).Distinct().Count());
+        Assert.True(Catalog.IsA(DamExtraction.ActorClass, ClassPaths.Actor));
+        Assert.All(DamExtraction.Buttons, button => Assert.True(Catalog.IsA(button.Class, ClassPaths.SceneComponent), button.Component));
+        Assert.Equal(DamExtraction.Buttons.Count, DamExtraction.Buttons.Select(button => button.Component).Distinct().Count());
+
+        ExtractionButton call = Assert.Single(DamExtraction.Buttons, button => button.Role == ExtractionButtonRole.Summon);
+        Assert.True(call.StartEnabled);
+        Assert.Equal(StandardInteractionType.Press, call.InteractionType);
+        Assert.Equal(DamExtraction.Settings.SummonHoldSeconds, call.HoldSeconds);
+        Assert.Null(call.AnimationContainer);
+
+        ExtractionButton[] descend = [.. DamExtraction.Buttons.Where(button => button.Role == ExtractionButtonRole.Descend)];
+        Assert.Equal(2, descend.Length);
+        foreach (ExtractionButton button in descend)
+        {
+            Assert.False(button.StartEnabled);
+            Assert.Equal(StandardInteractionType.Hold, button.InteractionType);
+            Assert.Equal(DamExtraction.Settings.ExtractionHoldSeconds, button.HoldSeconds);
+            Assert.NotNull(button.AnimationContainer);
+        }
+
+        ExtractionButton[] repair = [.. DamExtraction.Buttons.Where(button => button.Role == ExtractionButtonRole.Repair)];
+        Assert.Equal(3, repair.Length);
+        Assert.All(repair, button => Assert.False(button.StartEnabled));
+    }
+
+    [Fact]
+    public void Extraction_timings_and_zone_are_positive_game_values()
+    {
+        ExtractionSettings settings = DamExtraction.Settings;
+        Assert.True(settings.TimeToExtractReadySeconds > 0 && settings.DefaultExtractionSeconds > settings.TimeToExtractReadySeconds);
+        Assert.True(settings is { ExtractionHoldSeconds: > 0, ShutdownMaxExtractionSeconds: > 0 });
+        Assert.True(DamExtraction.ZoneHalfExtent is { X: > 0, Y: > 0, Z: > 0 });
+        Assert.True(DamExtraction.DoorsSeconds > 0 && DamExtraction.DoorsSeconds < settings.DefaultExtractionSeconds);
+        Assert.True(DamExtraction.NoHoldStartedTime < 0);
+        Assert.True(Math.Abs(DamExtraction.ZoneLocation.Z) < DamExtraction.ZoneHalfExtent.Z);
+        Assert.Equal(4, DamExtraction.All.Select(point => point.Location).Distinct().Count());
+        Assert.All(DamExtraction.All, point => Assert.True(point.Rotation is { Pitch: 0, Roll: 0 }, point.Actor));
+        Assert.StartsWith("GameMode.Salvage.ExtractionPoint.", DamExtraction.ExtractionType);
+    }
+
+    [Fact]
     public void Hud_is_a_reference_class_with_its_export_checksum()
     {
         Assert.True(Catalog.IsA(PlayerClasses.Hud, ClassPaths.Hud));
