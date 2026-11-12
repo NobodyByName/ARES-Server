@@ -64,6 +64,39 @@ public static class PawnBlackboard
     /// <summary>Field of the interactor-state variable holding the focused interaction.</summary>
     public const int FocusedInteractionField = 12;
 
+    /// <summary>Name of the character's interactor component.</summary>
+    public const string InteractorComponentName = "InteractorComponent";
+
+    /// <summary>Field of the interactor-state variable holding the interaction under way.</summary>
+    public const int CurrentInteractionField = 13;
+
+    /// <summary>Field of the interactor-state variable holding the last interaction event.</summary>
+    public const int LastInteractionEventField = 10;
+
+    /// <summary>Field of the interactor-state variable holding when the interaction was requested.</summary>
+    public const int InteractionRequestedTimeField = 0;
+
+    /// <summary>Field of the interactor-state variable holding when the character started lining up.</summary>
+    public const int AlignmentStartedTimeField = 1;
+
+    /// <summary>Field of the interactor-state variable holding when the interaction (or its hold) started.</summary>
+    public const int InteractionStartedTimeField = 2;
+
+    /// <summary>Field of the interactor-state variable holding where the interaction started, in the space of its prompt (X; Y and Z follow), quantized like the times.</summary>
+    public const int InteractionLocationXField = 3;
+
+    /// <summary>Field of the interactor-state variable holding the animation set of the character's last interaction.</summary>
+    public const int InteractionAnimationField = 14;
+
+    /// <summary>Field of the interactor-state variable counting the character's interactions.</summary>
+    public const int InteractionSequenceField = 8;
+
+    /// <summary>
+    /// Range in seconds of the interactor-state times: world time on the character's clock (world time minus the
+    /// time offset), quantized over the field's whole range from minus to plus this value.
+    /// </summary>
+    public const double InteractionTimeRange = 1000000.0;
+
     /// <summary>Ground normal represented as a quantized rotation.</summary>
     public const int GroundNormalField = 0;
 
@@ -375,4 +408,29 @@ public static class PawnBlackboard
             new PendulumIntegerValue(29, 20UL),
         ]),
     ];
+}
+
+/// <summary>Last interaction event in the interactor-state variable.</summary>
+public enum LastInteractionEvent
+{
+    /// <summary>No interaction.</summary>
+    None = 0,
+
+    /// <summary>The player asked to interact.</summary>
+    Requested = 1,
+
+    /// <summary>The character lines up with the interaction.</summary>
+    AlignmentStarted = 2,
+
+    /// <summary>The interaction (or its hold) runs.</summary>
+    Started = 3,
+
+    /// <summary>The hold is over and the interaction stays on (a searched container is open).</summary>
+    Restaged = 4,
+
+    /// <summary>The interaction ended successfully.</summary>
+    Succeeded = 5,
+
+    /// <summary>The interaction ended unsuccessfully.</summary>
+    Failed = 6,
 }

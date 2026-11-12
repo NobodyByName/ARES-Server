@@ -75,8 +75,14 @@ public static class PendulumInput
     /// <summary>Field of the control-rotation slot holding the rotation; the character faces its heading.</summary>
     public const int ControlRotationField = 0;
 
-    /// <summary>Request of a button press. Other request values are not decoded yet.</summary>
+    /// <summary>Flag set while the player's last interaction ended successfully. It asks for nothing.</summary>
+    public const int LastInteractionSuccessfulFlag = 1;
+
+    /// <summary>Request of a button press: the player asks to start the focused interaction.</summary>
     public const int PressRequest = 2;
+
+    /// <summary>Request sent when the player's looting menu closed: the open container closes.</summary>
+    public const int LootingMenuClosedRequest = 8;
 
     /// <summary>Flag added to a press request when the interaction first takes out the raider tool.</summary>
     public const int EquipToolRequestFlag = 32;
