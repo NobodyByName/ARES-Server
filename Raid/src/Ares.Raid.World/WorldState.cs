@@ -55,6 +55,9 @@ public sealed record WorldPlayer(
     /// <summary>The character's health and shield component.</summary>
     public ulong Health { get; init; }
 
+    /// <summary>The character's interactor component.</summary>
+    public ulong Interactor { get; init; }
+
     /// <summary>Replicated objects of the items the character can hold, keyed by their inventory identities.</summary>
     public IReadOnlyDictionary<Guid, ulong> HeldItems { get; init; } = new Dictionary<Guid, ulong>();
 
@@ -218,6 +221,7 @@ public sealed class WorldState
                     .OfType<ContainerItem>().Where(item => WorldImports.HeldItemClasses.ContainsKey(item.AssetIndex))
                     .ToDictionary(item => item.Id, _ => Next()) ?? [],
             };
+            player = player with { Interactor = Next() };
             _players[principal.UserId] = player;
             return player;
         }
@@ -554,6 +558,32 @@ public sealed class WorldState
         new StableSubobjectExport(player.Inventory, player.Pawn, InventoryBlackboard.ComponentName, Replication.Catalog.Class(ClassPaths.InventoryComponent).Checksum),
         new StableSubobjectExport(player.Health, player.Pawn, ShieldDefaults.ComponentName, Replication.Catalog.Class(ClassPaths.HealthComponent).Checksum),
     ]);
+
+    /// <summary>Names the character's interactor component.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The exports.</returns>
+    public ObjectExports InteractorExports(WorldPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return new([
+            new DynamicActorExport(player.Pawn),
+            new StableSubobjectExport(player.Interactor, player.Pawn, PawnBlackboard.InteractorComponentName, Replication.Catalog.Class(ClassPaths.InteractorComponent).Checksum),
+        ]);
+    }
+
+    /// <summary>A call on the character's interactor component about one interaction.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="function">Client function of the interactor component.</param>
+    /// <param name="interaction">The interaction component.</param>
+    /// <param name="interactionClass">Its class.</param>
+    /// <returns>The content.</returns>
+    public StableSubobjectContent InteractorCall(WorldPlayer player, string function, ulong interaction, string interactionClass)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        ActorContentBlock call = Replication.Calls(new Dictionary<ulong, string> { [interaction] = interactionClass })
+            .Call(ClassPaths.InteractorComponent, function, new Dictionary<string, object?> { [PropertyNames.Interaction] = interaction }, RpcDirection.Client);
+        return new StableSubobjectContent(player.Interactor, call);
+    }
 
     /// <summary>Replicates the equipped Light Shield's initial health for the Raid HUD.</summary>
     /// <param name="player">The player.</param>

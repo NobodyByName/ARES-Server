@@ -43,9 +43,10 @@ public static class PawnBlackboardFrames
     /// <param name="inventory">The player's container state.</param>
     /// <param name="weapons">Weapon simulation variables replacing or extending the initial state.</param>
     /// <param name="timeOffset">Time units from the tick's simulation time to the server's time (see <see cref="PawnBlackboard.TimeOffsetField"/>).</param>
+    /// <param name="interaction">The interaction under way and its last event, if the server runs one (an open container).</param>
     /// <returns>The slots by index.</returns>
     public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
-        IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0)
+        IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0, PawnInteraction? interaction = null)
     {
         long storedOffset = s_timeOffset.Default + timeOffset;
         if (storedOffset < 0 || storedOffset >= s_timeOffset.Maximum)
@@ -112,9 +113,35 @@ public static class PawnBlackboardFrames
                     }
 
                     break;
-                case PawnBlackboard.InteractorSlot when focus != 0:
-                    values.Add(new PendulumIntegerValue(PawnBlackboard.FocusedInteractionField, focus));
-                    values.Add(new PendulumIntegerValue(PawnBlackboard.InteractorFlagsField, PawnBlackboard.CanAccessFocusedInteractionFlag));
+                case PawnBlackboard.InteractorSlot when focus != 0 || interaction is not null:
+                    if (focus != 0)
+                    {
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.FocusedInteractionField, focus));
+                    }
+
+                    // A character busy with an interaction cannot use the focused one.
+                    if (focus != 0 && interaction is not { Event: LastInteractionEvent.Started or LastInteractionEvent.Restaged })
+                    {
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractorFlagsField, PawnBlackboard.CanAccessFocusedInteractionFlag));
+                    }
+
+                    if (interaction is { } current)
+                    {
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.CurrentInteractionField, current.Current));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.LastInteractionEventField, (ulong)current.Event));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionRequestedTimeField, InteractionTime(current.RequestedAt)));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.AlignmentStartedTimeField, InteractionTime(current.AlignedAt)));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionStartedTimeField, InteractionTime(current.StartedAt)));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionSequenceField, 0x80000000UL + current.Sequence));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionLocationXField, InteractionTime(current.Location.X)));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionLocationXField + 1, InteractionTime(current.Location.Y)));
+                        values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionLocationXField + 2, InteractionTime(current.Location.Z)));
+                        if (current.Animation != 0)
+                        {
+                            values.Add(new PendulumIntegerValue(PawnBlackboard.InteractionAnimationField, current.Animation));
+                        }
+                    }
+
                     break;
             }
 
@@ -155,4 +182,25 @@ public static class PawnBlackboardFrames
         double quantized = Math.Round((world + PawnBlackboard.PositionRange) * ((1 << PositionBits) - 1) / (2 * PawnBlackboard.PositionRange), MidpointRounding.ToEven);
         return quantized is >= 0 and < 1 << PositionBits ? (ulong)quantized : throw new InvalidPacketException("Position outside the blackboard range");
     }
+
+    // An interactor-state time (seconds on the character's clock) as its quantized field value.
+    private static ulong InteractionTime(double seconds)
+    {
+        const double Middle = 1 << 23;
+        double quantized = Math.Round(Middle + (seconds * Middle / PawnBlackboard.InteractionTimeRange));
+        return (ulong)Math.Clamp(quantized, 0, (2 * Middle) - 1);
+    }
 }
+
+/// <summary>An interaction the server runs for the character, as its interactor state shows it.</summary>
+/// <param name="Current">The interaction component.</param>
+/// <param name="Event">Its last event.</param>
+/// <param name="RequestedAt">When it was requested, in seconds on the character's clock.</param>
+/// <param name="AlignedAt">When the character started lining up.</param>
+/// <param name="StartedAt">When it (or its hold) started.</param>
+/// <param name="Sequence">The character's interaction count, this one included.</param>
+/// <param name="Location">Where it started, in the space of the interaction's prompt.</param>
+/// <param name="Animation">Animation set the character plays for it (0 for none).</param>
+public readonly record struct PawnInteraction(ulong Current, LastInteractionEvent Event, double RequestedAt, double AlignedAt, double StartedAt, uint Sequence,
+    Vector3D Location = default, ulong Animation = 0);
+
