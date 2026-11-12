@@ -23,11 +23,15 @@ public sealed record ContainerItem(ushort AssetIndex, Guid Id, int Amount, doubl
 /// <param name="Items">Slots in order.</param>
 public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> Items)
 {
+    /// <summary>Container flags: <see cref="InventoryBlackboard.ContainerFlags"/> for the player's own containers.</summary>
+    public int Flags { get; init; } = InventoryBlackboard.ContainerFlags;
+
     /// <summary>Encodes the complete container set into its pawn blackboard variable.</summary>
     /// <param name="containers">Containers in order.</param>
     /// <param name="mutation">Mutation counter shared by these containers.</param>
+    /// <param name="open">The world container the player has open, if any (one of <paramref name="containers"/>).</param>
     /// <returns>The blackboard variable.</returns>
-    public static PendulumVariable Encode(IReadOnlyList<ItemContainerState> containers, uint mutation = 1)
+    public static PendulumVariable Encode(IReadOnlyList<ItemContainerState> containers, uint mutation = 1, int? open = null)
     {
         ArgumentNullException.ThrowIfNull(containers);
         PendulumVariable template = PawnBlackboard.InitialState.Single(variable => variable.Slot == InventoryBlackboard.Slot);
@@ -36,7 +40,8 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
         PendulumArrayField itemArray = (PendulumArrayField)fields[InventoryBlackboard.SlotsField];
         int slotCount = containers.Sum(container => container.Items.Count);
         if (containers.Count > containerArray.Capacity || slotCount > itemArray.Capacity
-            || containers.Any(container => container.Id < 0) || containers.Select(container => container.Id).Distinct().Count() != containers.Count)
+            || containers.Any(container => container.Id < 0) || containers.Select(container => container.Id).Distinct().Count() != containers.Count
+            || (open is { } openId && containers.All(container => container.Id != openId)))
         {
             throw new InvalidPacketException("Invalid player container set");
         }
@@ -51,7 +56,7 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
             encodedContainers.Add(new PendulumArrayElement(encodedContainers.Count,
             [
                 new PendulumIntegerValue(InventoryBlackboard.ContainerIdField, Signed(container.Id)),
-                new PendulumIntegerValue(InventoryBlackboard.ContainerFlagsField, InventoryBlackboard.ContainerFlags),
+                new PendulumIntegerValue(InventoryBlackboard.ContainerFlagsField, (ulong)container.Flags),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerMutationField, mutation),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerRevisionField, 0),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerSizeField, (ulong)container.Items.Count),
@@ -102,10 +107,14 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
             }
         }
 
+        List<PendulumValue> current = open is { } id
+            ? [new PendulumIntegerValue(InventoryBlackboard.CurrentContainerIdField, Signed(id)), new PendulumIntegerValue(InventoryBlackboard.CurrentContainerRevisionField, 0)]
+            : [];
         return template with
         {
             Values =
             [
+                .. current,
                 new PendulumIntegerValue(InventoryBlackboard.RevealTimeField, 0),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerCountField, (ulong)containers.Count),
                 new PendulumIntegerValue(InventoryBlackboard.SlotCountField, (ulong)slotCount),

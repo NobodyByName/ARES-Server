@@ -90,6 +90,9 @@ public static class InventoryBlackboard
     /// <summary>ContainerFlags in the player container state.</summary>
     public const int ContainerFlags = 5;
 
+    /// <summary>LootContainerFlags in the player container state.</summary>
+    public const int LootContainerFlags = 7;
+
     /// <summary>RubberDuckIndex in the player container state.</summary>
     public const int RubberDuckIndex = 777;
 
