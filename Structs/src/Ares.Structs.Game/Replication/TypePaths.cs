@@ -46,6 +46,8 @@ public static class ClassPaths
     public const string ItemContainerComponent = "/Script/Angelscript.ItemContainerComponent";
     public const string ItemContainerComponentBase = "/Script/Angelscript.ItemContainerComponentBase";
     public const string LootComponentBase = "/Script/Angelscript.LootComponentBase";
+    public const string LootContainer = "/Script/Angelscript.LootContainer";
+    public const string LootContainerSingle = "/Script/Angelscript.LootContainerSingle";
     public const string LootInteractionComponent = "/Script/Angelscript.LootInteractionComponent";
     public const string MeleeWeaponItem = "/Script/Angelscript.MeleeWeaponItem";
     public const string ModifiableItemBase = "/Script/Angelscript.ModifiableItemBase";

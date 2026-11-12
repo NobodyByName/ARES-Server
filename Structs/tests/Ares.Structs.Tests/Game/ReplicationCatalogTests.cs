@@ -12,9 +12,9 @@ public sealed class ReplicationCatalogTests
     [Fact]
     public void Catalog_holds_every_class_and_property()
     {
-        // 152 classes with replication data plus the package, world and level classes.
-        Assert.Equal(155, Catalog.Classes.Count);
-        Assert.Equal(1645, Catalog.Properties.Count);
+        // 154 classes with replication data plus the package, world and level classes.
+        Assert.Equal(157, Catalog.Classes.Count);
+        Assert.Equal(1647, Catalog.Properties.Count);
         Assert.Equal(14, Catalog.ReferenceClasses.Count);
     }
 

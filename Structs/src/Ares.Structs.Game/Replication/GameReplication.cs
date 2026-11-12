@@ -321,6 +321,8 @@ public static class GameReplication
             new("/Script/Angelscript.ItemLootedEventEORD.ItemInstanceId", PropertyKind.StructProperty, "FGuid", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2, TypePath = "/Script/CoreUObject.Guid", StructFlags = (StructFlags)0x3E83BU, Children = ["/Script/CoreUObject.Guid.A", "/Script/CoreUObject.Guid.B", "/Script/CoreUObject.Guid.C", "/Script/CoreUObject.Guid.D"] },
             new("/Script/Angelscript.ItemLootedEventEORD.PickupLocation", PropertyKind.StructProperty, "FVector", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 4, TypePath = "/Script/CoreUObject.Vector", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Vector.X", "/Script/CoreUObject.Vector.Y", "/Script/CoreUObject.Vector.Z"] },
             new("/Script/Angelscript.ItemLootedEventEORD.Timestamp", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL),
+            new("/Script/Angelscript.LootContainer.bIsLootable", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001140000225UL),
+            new("/Script/Angelscript.LootContainerSingle.CurrentOpenTime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001140000220UL),
             new("/Script/Angelscript.LootInteractionComponent.FirstOpenedServerTime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001140000220UL) { LayoutIndex = 2 },
             new("/Script/Angelscript.LootInteractionComponent.bHasBeenOpened", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000221UL) { LayoutIndex = 1 },
             new("/Script/Angelscript.LootInteractionComponent.bUseWaitDelayForAnimationNonLocal", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000221UL),
@@ -1759,6 +1761,8 @@ public static class GameReplication
             new("/Script/Angelscript.ItemContainerComponent", (ClassFlags)0xE40804U, "/Script/Angelscript.ItemContainerComponentBase", ["/Script/Angelscript.ItemContainerComponent.OpenTime", "/Script/Angelscript.ItemContainerComponent.Content"], [], 0x4A9FB690U),
             new("/Script/Angelscript.ItemContainerComponentBase", (ClassFlags)0xE40804U, "/Script/Angelscript.LootComponentBase", ["/Script/Angelscript.ItemContainerComponentBase.SoundData"], [], 0x46721129U),
             new("/Script/Angelscript.LootComponentBase", (ClassFlags)0xE40804U, "/Script/Engine.SceneComponent", [], [], 0x8318505BU),
+            new("/Script/Angelscript.LootContainer", (ClassFlags)0xC40804U, "/Script/Angelscript.WorldItem", ["/Script/Angelscript.LootContainer.bIsLootable"], [], 0xA7965U),
+            new("/Script/Angelscript.LootContainerSingle", (ClassFlags)0xC40804U, "/Script/Angelscript.LootContainer", ["/Script/Angelscript.LootContainerSingle.CurrentOpenTime"], [], 0xDC0B2D60U),
             new("/Script/Angelscript.LootInteractionComponent", (ClassFlags)0xE40804U, "/Script/Angelscript.StandardInteractionComponent", ["/Script/Angelscript.LootInteractionComponent.bUseWaitDelayForAnimationNonLocal", "/Script/Angelscript.LootInteractionComponent.bHasBeenOpened", "/Script/Angelscript.LootInteractionComponent.FirstOpenedServerTime"], [], 0xFFE674C7U),
             new("/Script/Angelscript.PingManager", (ClassFlags)0xE40804U, "/Script/Engine.ActorComponent", [],
                 [

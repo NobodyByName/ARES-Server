@@ -198,6 +198,7 @@ public static class PropertyNames
     public const string CurrentInteractionState = "CurrentInteractionState";
     public const string CurrentMaxArmor = "CurrentMaxArmor";
     public const string CurrentNetSpeed = "CurrentNetSpeed";
+    public const string CurrentOpenTime = "CurrentOpenTime";
     public const string CurrentPawn = "CurrentPawn";
     public const string CurrentPlates = "CurrentPlates";
     public const string CurrentPredictionKey = "CurrentPredictionKey";
@@ -1072,6 +1073,7 @@ public static class PropertyNames
     public const string IsInhibited = "bIsInhibited";
     public const string IsLogging = "bIsLogging";
     public const string IsLoneWolf = "bIsLoneWolf";
+    public const string IsLootable = "bIsLootable";
     public const string IsOnboardingCharacter = "bIsOnboardingCharacter";
     public const string IsReply = "bIsReply";
     public const string IsServerInitiated = "bIsServerInitiated";
