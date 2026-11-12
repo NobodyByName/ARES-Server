@@ -35,7 +35,8 @@ has automated coverage; menu equipment, Raid shield bars and inventory display a
 Ferro I and Heavy Ammo have menu item definitions and persistent storage. Ferro I fits both
 weapon slots and the backpack; Heavy Ammo stacks hold 1–60 rounds and move as whole stacks through
 the stash, backpack and safe pocket. Raid accepts both, includes them in the carried weight and
-validates whole-stack moves. Every raider also holds the Raider Tool and empty hands.
+validates whole-stack moves. In the menu, stacks can also be split and merged up to their stack limit.
+Every raider also holds the Raider Tool and empty hands.
 The Ferro I shows its three empty mod slots (muzzle, underbarrel, stock) in the menu and in Raid.
 
 In Raid the slot-1 Ferro I starts drawn, and equipped guns start loaded from carried Heavy Ammo.
@@ -67,7 +68,7 @@ Limitations:
   its progress.
 - No damage, loot, death or match results yet.
 - Extraction leaves the raid without settling the player's inventory; broken-elevator repair and other extraction types are not implemented.
-- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack swaps are not implemented yet.
+- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves and menu splitting and merging are not implemented yet.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
   been tested yet.
