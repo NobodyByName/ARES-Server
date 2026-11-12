@@ -111,6 +111,28 @@ public sealed class ReplicationValueTests
         Dictionary<string, object?> decoded = codec.ReadParameters(field, payload);
         Assert.Empty(Assert.IsType<IReadOnlyList<object>>(Assert.IsType<Dictionary<string, object?>>(decoded[PropertyNames.XpEventLog])[PropertyNames.Entries], exactMatch: false));
     }
+
+    [Fact]
+    public void End_of_round_and_spectator_components_have_their_call_fields()
+    {
+        RpcCodec codec = new(Values());
+        ActorContentBlock quest = codec.Call(ClassPaths.EndOfRoundComponent, FunctionNames.ClientFinalizeQuestProgress,
+            new Dictionary<string, object?> { [PropertyNames.PlayerWon] = true }, RpcDirection.Client);
+        (NetField questField, ActorFieldPayload questPayload) = Assert.Single(codec.ReadFields(ClassPaths.EndOfRoundComponent, quest, RpcDirection.Client));
+        Assert.Equal((3, 1L), (questField.Index, questPayload.PayloadBits));
+
+        // The inventory parameter's members are not known: it can only be sent as not present.
+        ActorContentBlock inventory = codec.Call(ClassPaths.EndOfRoundComponent, FunctionNames.ClientFinalizeInventory,
+            new Dictionary<string, object?> { [PropertyNames.InData] = null }, RpcDirection.Client);
+        Assert.Equal((2, 1L), (codec.ReadFields(ClassPaths.EndOfRoundComponent, inventory, RpcDirection.Client)[0].Field.Index,
+            codec.ReadFields(ClassPaths.EndOfRoundComponent, inventory, RpcDirection.Client)[0].Payload.PayloadBits));
+        Assert.Throws<InvalidPacketException>(() => codec.Call(ClassPaths.EndOfRoundComponent, FunctionNames.ClientFinalizeInventory,
+            new Dictionary<string, object?> { [PropertyNames.InData] = new Dictionary<string, object?>() }, RpcDirection.Client));
+
+        NetFieldTable spectator = codec.Fields(ClassPaths.PioneerSpectatorManagerComponent);
+        Assert.Equal((5, 2), (spectator.Count, spectator.Field(FunctionNames.ServerReadyToSpectate).Index));
+    }
+
     [Fact]
     public void Parameters_at_their_default_are_omitted_and_decode_with_their_type()
     {

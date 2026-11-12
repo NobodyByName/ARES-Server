@@ -31,4 +31,10 @@ public static class PlayerClasses
 
     /// <summary>Class of <see cref="CorrectionComponent"/>. Its export checksum is not verified yet (0 skips the check).</summary>
     public const string CorrectionComponentClass = "/Script/PendulumRuntime.EmbarkBlackBoardCorrectionComponent";
+
+    /// <summary>Name of the player controller's end-of-round component (class <c>EndOfRoundComponent</c>).</summary>
+    public const string EndOfRoundComponent = "EORComponent";
+
+    /// <summary>Name of the player controller's spectator manager component (class <c>PioneerSpectatorManagerComponent</c>).</summary>
+    public const string SpectatorManagerComponent = "SpectatorManagerComponent";
 }

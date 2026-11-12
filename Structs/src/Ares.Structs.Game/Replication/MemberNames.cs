@@ -298,6 +298,7 @@ public static class PropertyNames
     public const string ExtraText = "ExtraText";
     public const string ExtractedPlayerIds = "ExtractedPlayerIds";
     public const string ExtractedPlayerIdsInner = "ExtractedPlayerIds_Inner";
+    public const string ExtractionDataAsset = "ExtractionDataAsset";
     public const string ExtractionInfo = "ExtractionInfo";
     public const string ExtractionInfoCount = "ExtractionInfoCount";
     public const string ExtractionInfoInner = "ExtractionInfo_Inner";
@@ -309,6 +310,8 @@ public static class PropertyNames
     public const string ExtractionPointInteractionCount = "ExtractionPointInteractionCount";
     public const string ExtractionPointLocation = "ExtractionPointLocation";
     public const string ExtractionPointName = "ExtractionPointName";
+    public const string ExtractionStartedTs = "ExtractionStartedTS";
+    public const string ExtractionTime = "ExtractionTime";
     public const string ExtractionType = "ExtractionType";
     public const string FaceIndex = "FaceIndex";
     public const string FadeAlpha = "FadeAlpha";
@@ -382,6 +385,7 @@ public static class PropertyNames
     public const string InAccel = "InAccel";
     public const string InAccel0 = "InAccel0";
     public const string InBytesPerSecond = "InBytesPerSecond";
+    public const string InData = "InData";
     public const string InEmoteActions = "InEmoteActions";
     public const string InLevel = "InLevel";
     public const string InLoc = "InLoc";
@@ -886,6 +890,8 @@ public static class PropertyNames
     public const string StartWorldTime = "StartWorldTime";
     public const string Started = "Started";
     public const string StartingArmorHealth = "StartingArmorHealth";
+    public const string State = "State";
+    public const string StateChangeTimestamp = "StateChangeTimestamp";
     public const string StaticMesh = "StaticMesh";
     public const string Strings = "Strings";
     public const string SubItemContainer = "SubItemContainer";
@@ -922,6 +928,7 @@ public static class PropertyNames
     public const string TimeDilation = "TimeDilation";
     public const string TimeLeft = "TimeLeft";
     public const string TimeLeftAfterShutdown = "TimeLeftAfterShutdown";
+    public const string TimeLeftAfterStartup = "TimeLeftAfterStartup";
     public const string TimeStamp0 = "TimeStamp0";
     public const string TimeToLive = "TimeToLive";
     public const string Timeout = "Timeout";
@@ -1012,6 +1019,7 @@ public static class PropertyNames
     public const string CanBeCanceled = "bCanBeCanceled";
     public const string CanBeDamaged = "bCanBeDamaged";
     public const string CanBeEndedByOtherInstance = "bCanBeEndedByOtherInstance";
+    public const string CanExtract = "bCanExtract";
     public const string CanRespawn = "bCanRespawn";
     public const string CanReviveFromDead = "bCanReviveFromDead";
     public const string CancelSyncedAnim = "bCancelSyncedAnim";
@@ -1064,6 +1072,7 @@ public static class PropertyNames
     public const string IsContinuousInteractionActive = "bIsContinuousInteractionActive";
     public const string IsCrouched = "bIsCrouched";
     public const string IsDetached = "bIsDetached";
+    public const string IsEnabled = "bIsEnabled";
     public const string IsFullbody = "bIsFullbody";
     public const string IsGeneratedSquad = "bIsGeneratedSquad";
     public const string IsHeadshot = "bIsHeadshot";
@@ -1185,6 +1194,8 @@ public static class FunctionNames
     public const string ClientEndInteractionSuccessfullyImplementation = "ClientEndInteractionSuccessfully_Implementation";
     public const string ClientEndInteractionUnsuccessfullyImplementation = "ClientEndInteractionUnsuccessfully_Implementation";
     public const string ClientEndOnlineSession = "ClientEndOnlineSession";
+    public const string ClientFinalizeInventory = "ClientFinalizeInventory";
+    public const string ClientFinalizeQuestProgress = "ClientFinalizeQuestProgress";
     public const string ClientFlushLevelStreaming = "ClientFlushLevelStreaming";
     public const string ClientForceGarbageCollection = "ClientForceGarbageCollection";
     public const string ClientGameEnded = "ClientGameEnded";
@@ -1355,7 +1366,9 @@ public static class FunctionNames
     public const string ServerPerformGroundPing = "ServerPerformGroundPing";
     public const string ServerPrintDebugRequest = "ServerPrintDebug_Request";
     public const string ServerPrintDebugRequestWithStrings = "ServerPrintDebug_RequestWithStrings";
+    public const string ServerReadyToSpectate = "ServerReadyToSpectate";
     public const string ServerRequestSquadPlayersProfiles = "ServerRequestSquadPlayersProfiles";
+    public const string ServerRequestStopSpectating = "ServerRequestStopSpectating";
     public const string ServerRestartPlayer = "ServerRestartPlayer";
     public const string ServerSaveHistory = "ServerSaveHistory";
     public const string ServerSendClientTelemetryInfo = "ServerSendClientTelemetryInfo";
@@ -1378,6 +1391,7 @@ public static class FunctionNames
     public const string ServerToggleDebugCameraPawn = "ServerToggleDebugCameraPawn";
     public const string ServerTryActivateAbility = "ServerTryActivateAbility";
     public const string ServerTryActivateAbilityWithEventData = "ServerTryActivateAbilityWithEventData";
+    public const string ServerTrySwitchSpectatedPlayer = "ServerTrySwitchSpectatedPlayer";
     public const string ServerUnblockPlayer = "ServerUnblockPlayer";
     public const string ServerUnmutePlayer = "ServerUnmutePlayer";
     public const string ServerUpdateCamera = "ServerUpdateCamera";

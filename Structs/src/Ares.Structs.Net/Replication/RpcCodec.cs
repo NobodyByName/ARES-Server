@@ -202,6 +202,11 @@ public sealed class RpcCodec(ValueCodec values)
 
         IReadOnlyDictionary<string, object?> members = value as IReadOnlyDictionary<string, object?> ?? throw new InvalidPacketException("Struct parameters need their members");
         PropertyDefinition[] definitions = [.. Members(property)];
+        if (property.Children.Count == 0)
+        {
+            throw new InvalidPacketException("The struct's members are not known; it can only be sent as not present");
+        }
+
         if (definitions.Length != members.Count || definitions.Any(member => !members.ContainsKey(member.Name)))
         {
             throw new InvalidPacketException("Members do not match the struct");

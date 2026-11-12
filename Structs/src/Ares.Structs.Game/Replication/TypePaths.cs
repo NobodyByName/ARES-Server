@@ -33,6 +33,7 @@ public static class ClassPaths
     public const string EmbarkLobbyGameState = "/Script/Angelscript.EmbarkLobbyGameState";
     public const string EmbarkPlayerState = "/Script/Angelscript.EmbarkPlayerState";
     public const string EmoteComponent = "/Script/Angelscript.EmoteComponent";
+    public const string EndOfRoundComponent = "/Script/Angelscript.EndOfRoundComponent";
     public const string ExtractionPointInfoComponent = "/Script/Angelscript.ExtractionPointInfoComponent";
     public const string FirearmItem = "/Script/Angelscript.FirearmItem";
     public const string GameModeAnnouncementComponent = "/Script/Angelscript.GameModeAnnouncementComponent";
@@ -87,10 +88,16 @@ public static class ClassPaths
     public const string PioneerPlayerQuestComponent = "/Script/Angelscript.PioneerPlayerQuestComponent";
     public const string PioneerPlayerState = "/Script/Angelscript.PioneerPlayerState";
     public const string PioneerSessionAttributeSet = "/Script/Angelscript.PioneerSessionAttributeSet";
+    public const string PioneerSpectatorManagerComponent = "/Script/Angelscript.PioneerSpectatorManagerComponent";
     public const string PioneerStepMovementAudioComponent = "/Script/Angelscript.PioneerStepMovementAudioComponent";
     public const string PioneerTraversalAttributeSet = "/Script/Angelscript.PioneerTraversalAttributeSet";
     public const string PlayableAreaAgentComponent = "/Script/Angelscript.PlayableAreaAgentComponent";
     public const string RemoteEffectPlayerProxy = "/Script/Angelscript.RemoteEffectPlayerProxy";
+    public const string RepairInteractionComponent = "/Script/Angelscript.RepairInteractionComponent";
+    public const string SalvageExtractionPoint = "/Script/Angelscript.SalvageExtractionPoint";
+    public const string SalvageExtractionPointBase = "/Script/Angelscript.SalvageExtractionPointBase";
+    public const string SalvageExtractionPointElevator = "/Script/Angelscript.SalvageExtractionPoint_Elevator";
+    public const string SalvageExtractionPointMajor = "/Script/Angelscript.SalvageExtractionPoint_Major";
     public const string SimpleDoorActor = "/Script/Angelscript.SimpleDoorActor";
     public const string StandardInteractionComponent = "/Script/Angelscript.StandardInteractionComponent";
     public const string SyncedEmoteInteraction = "/Script/Angelscript.SyncedEmoteInteraction";
@@ -200,8 +207,10 @@ public static class StructPaths
     public const string EmoteAnimationData = "/Script/Angelscript.EmoteAnimationData";
     public const string EmoteDialogueData = "/Script/Angelscript.EmoteDialogueData";
     public const string EmoteQuickReplyServerData = "/Script/Angelscript.EmoteQuickReplyServerData";
+    public const string EndOfRoundInventoryData = "/Script/Angelscript.EndOfRoundInventoryData";
     public const string EndOfRoundJourneyDataWrapper = "/Script/Angelscript.EndOfRoundJourneyDataWrapper";
     public const string EndOfRoundJourneySummary = "/Script/Angelscript.EndOfRoundJourneySummary";
+    public const string ExtractionInfo = "/Script/Angelscript.ExtractionInfo";
     public const string ExtractionInfoEord = "/Script/Angelscript.ExtractionInfoEORD";
     public const string ExtractionPointEventEord = "/Script/Angelscript.ExtractionPointEventEORD";
     public const string ExtractionPointReplicationInfo = "/Script/Angelscript.ExtractionPointReplicationInfo";
@@ -340,6 +349,7 @@ public static class EnumPaths
     public const string EEmoteHighestAllowedLocoMode = "/Script/Angelscript.EEmoteHighestAllowedLocoMode";
     public const string EEmoteQuickReplyDialogueState = "/Script/Angelscript.EEmoteQuickReplyDialogueState";
     public const string EExtractionPointEventType = "/Script/Angelscript.EExtractionPointEventType";
+    public const string EExtractionState = "/Script/Angelscript.EExtractionState";
     public const string EForceMagnitude = "/Script/Angelscript.EForceMagnitude";
     public const string EGamePhase = "/Script/Angelscript.EGamePhase";
     public const string EHoverDescriptionCategory = "/Script/Angelscript.EHoverDescriptionCategory";
