@@ -14,7 +14,7 @@ public readonly record struct Rotator(double Pitch, double Yaw, double Roll)
         Vector3D x = new(cp * cy, cp * sy, sp);
         Vector3D y = new((sr * sp * cy) - (cr * sy), (sr * sp * sy) + (cr * cy), -sr * cp);
         Vector3D z = new(-((cr * sp * cy) + (sr * sy)), (cy * sr) - (cr * sp * sy), cr * cp);
-        return new(
+        return new Vector3D(
             (vector.X * x.X) + (vector.Y * y.X) + (vector.Z * z.X),
             (vector.X * x.Y) + (vector.Y * y.Y) + (vector.Z * z.Y),
             (vector.X * x.Z) + (vector.Y * y.Z) + (vector.Z * z.Z));

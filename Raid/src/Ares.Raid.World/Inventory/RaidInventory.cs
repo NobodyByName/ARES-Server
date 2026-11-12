@@ -420,7 +420,7 @@ public sealed class RaidInventory
     public IReadOnlyList<ContainerItem?> CloseWorldContainer()
     {
         IReadOnlyList<ContainerItem?> items = LootItems;
-        Containers = Array.AsReadOnly(Containers.Take(Containers.Count - 1).ToArray());
+        Containers = [.. Containers.Take(Containers.Count - 1)];
         OpenLoot = null;
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version);

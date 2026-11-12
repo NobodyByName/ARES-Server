@@ -89,22 +89,22 @@ public sealed class LootTests
         Assert.Single(session.Sent, bunch => bunch is { Opened: true } && bunch.Channel == channel);
 
         // One press with the raider tool holstered starts the search; it is never taken for a door.
-        int pressWithTool = PendulumInput.PressRequest | PendulumInput.EquipToolRequestFlag;
-        session.Input(30, 33, container.Interaction, container.Interaction, AtPrompt(session, container), request: pressWithTool);
+        const int PressWithTool = PendulumInput.PressRequest | PendulumInput.EquipToolRequestFlag;
+        session.Input(30, 33, container.Interaction, container.Interaction, AtPrompt(session, container), request: PressWithTool);
         session.Service(125.0);
-        Assert.Equal([$"{pressWithTool}@33"], session.Channels.LootRequests);
+        Assert.Equal([$"{PressWithTool}@33"], session.Channels.LootRequests);
         Assert.Equal((1, 0, 0), (session.Channels.LootSearches, session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
         Assert.Null(session.Member.Inventory.OpenLoot);
 
         // Not before the tool is out, the character lined up and the breach held.
-        double drawn = 125.0 + FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds;
+        const double Drawn = 125.0 + FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds;
         session.Input(33, 36, focus: container.Interaction, position: AtPrompt(session, container));
-        session.Service(drawn + DamLoot.SearchAlignmentSeconds + DamLoot.SearchHoldSeconds - 0.1);
+        session.Service(Drawn + DamLoot.SearchAlignmentSeconds + DamLoot.SearchHoldSeconds - 0.1);
         Assert.Null(session.Member.Inventory.OpenLoot);
 
         // Then the container opens with its duck among the player's containers.
         session.Sent.Clear();
-        session.Service(drawn + DamLoot.SearchAlignmentSeconds + DamLoot.SearchHoldSeconds);
+        session.Service(Drawn + DamLoot.SearchAlignmentSeconds + DamLoot.SearchHoldSeconds);
         Assert.Equal(1, session.Channels.LootOpens);
         int loot = Assert.IsType<int>(session.Member.Inventory.OpenLoot);
         ContainerItem duck = Assert.IsType<ContainerItem>(session.Member.Inventory.LootItems[0]);
@@ -181,12 +181,12 @@ public sealed class LootTests
         Assert.NotNull(session.Member.Inventory.OpenLoot);
 
         // Closing the looting menu sends a request that names no target.
-        int closed = PendulumInput.LootingMenuClosedRequest | PendulumInput.LastInteractionSuccessfulFlag;
-        session.Input(39, 42, 0, container.Interaction, AtPrompt(session, container), request: closed);
+        const int Closed = PendulumInput.LootingMenuClosedRequest | PendulumInput.LastInteractionSuccessfulFlag;
+        session.Input(39, 42, 0, container.Interaction, AtPrompt(session, container), request: Closed);
         session.Sent.Clear();
         session.Service(131.0);
         Assert.Null(session.Member.Inventory.OpenLoot);
-        Assert.Equal([$"{PendulumInput.PressRequest}@33", $"{closed}@42"], session.Channels.LootRequests);
+        Assert.Equal([$"{PendulumInput.PressRequest}@33", $"{Closed}@42"], session.Channels.LootRequests);
 
         // From its first opening the search needs no raider tool, hold or breach animation.
         int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + container.Index;
@@ -240,8 +240,6 @@ public sealed class LootTests
         IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick, new PawnMotion(default), 0x380002, interaction: interaction);
         PendulumSlot slot = state[PawnBlackboard.InteractorSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[slot.DescriptorId!.Value].Fields;
-        ulong Field(int index) => PendulumCodec.Integer(fields[index], slot.Value);
-
         // Times and places are steps of about 0.12 around the middle of the field.
         Assert.Equal(8388608UL + 2999, Field(PawnBlackboard.AlignmentStartedTimeField));
         Assert.Equal(8388608UL + 3008, Field(PawnBlackboard.InteractionStartedTimeField));
@@ -251,6 +249,9 @@ public sealed class LootTests
         Assert.Equal(0UL, Field(PawnBlackboard.InteractorFlagsField));
         Assert.Equal([8388608UL + 640, 8388608UL + 52, 8388608UL - 1], Enumerable.Range(PawnBlackboard.InteractionLocationXField, 3).Select(Field));
         Assert.Equal(0x2F0007UL, Field(PawnBlackboard.InteractionAnimationField));
+        return;
+
+        ulong Field(int index) => PendulumCodec.Integer(fields[index], slot.Value);
     }
 
     // Where the test container's prompt is: the Raid places it 3 m along X from the player's spawn.

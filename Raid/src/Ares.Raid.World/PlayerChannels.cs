@@ -1918,8 +1918,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
         }
 
-        if (_lootPress is ({ } pressed, bool drawsTool) && _search is null && _openLoot is null)
+        if (_lootPress is { } lootPress && _search is null && _openLoot is null)
         {
+            (LootContainer pressed, bool drawsTool) = lootPress;
             // An opened container has no breach left: it opens again once the character is lined up. A press
             // that takes the raider tool out first lines up only once the held item is put away and the tool drawn.
             double requested = ServerSeconds(now) + (drawsTool ? ToolDrawSeconds : 0);
@@ -1934,24 +1935,24 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _lootPress = null;
         if (_search is { } search)
         {
-            if (MovedSince(search.Frame))
+            (LootContainer container, uint frame, double requestedAt, double opensAt) = search;
+            if (MovedSince(frame))
             {
-                double? opened = _raid.LootStates.OpenedAt(search.Container.Index);
-                sender.Queue(_raid.Loot.InteractionBunch(search.Container, ChannelOfLoot(search.Container),
+                double? opened = _raid.LootStates.OpenedAt(container.Index);
+                sender.Queue(_raid.Loot.InteractionBunch(container, ChannelOfLoot(container),
                     opened is null ? CurrentInteractionState.Idle : CurrentInteractionState.SuccessIdle, firstOpenedAt: opened));
                 _search = null;
                 CancelledSearches++;
             }
-            else if (now >= search.OpensAt && _interactorExported)
+            else if (now >= opensAt && _interactorExported)
             {
-                LootContainer container = search.Container;
                 int id = _member.Inventory.OpenWorldContainer(_raid.LootStates.Items(container.Index), LootStates.UnitWeights);
                 double openedAt = _raid.LootStates.Open(container.Index, ServerSeconds(now));
                 sender.Queue(_raid.Loot.OpenedBunch(container, ChannelOfLoot(container), id, openedAt));
                 sender.Queue(Bunches.Actor(PawnChannel, _raid.State.InteractorCall(_player, FunctionNames.ClientLootInteractionHoldCompleted, container.Interaction, DamLoot.InteractionClass).Write));
                 _openLoot = (container, container.Prompt(LootLocation));
-                _interaction = new PawnInteraction(container.Interaction, LastInteractionEvent.Restaged, search.RequestedAt, search.RequestedAt,
-                    search.RequestedAt + DamLoot.SearchAlignmentSeconds, ++_interactionCount, DamLoot.SearchLocation, _raid.Loot.SearchAnimation);
+                _interaction = new PawnInteraction(container.Interaction, LastInteractionEvent.Restaged, requestedAt, requestedAt,
+                    requestedAt + DamLoot.SearchAlignmentSeconds, ++_interactionCount, DamLoot.SearchLocation, _raid.Loot.SearchAnimation);
                 _search = null;
                 LootOpens++;
             }

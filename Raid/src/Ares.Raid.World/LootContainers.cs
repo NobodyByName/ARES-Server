@@ -1,7 +1,7 @@
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
-using Ares.Structs.Core.Geometry;
 using Ares.Structs.Backend.Progression;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -30,7 +30,7 @@ public sealed record LootContainer(int Index, LootPlacement Placement, ulong Gui
     public Vector3D Prompt(Vector3D location)
     {
         Vector3D offset = Placement.Rotation.Rotate(DamLoot.PromptLocation);
-        return new(location.X + offset.X, location.Y + offset.Y, location.Z + offset.Z);
+        return new Vector3D(location.X + offset.X, location.Y + offset.Y, location.Z + offset.Z);
     }
 
     private static readonly int s_itemContainer = DamLoot.Components.Select((name, index) => (name, index)).Single(entry => entry.name == DamLoot.ContainerComponent).index;
@@ -224,7 +224,7 @@ public sealed class LootCatalog
 /// <param name="count">Number of containers.</param>
 public sealed class LootStates(int count)
 {
-    private readonly Dictionary<int, IReadOnlyList<ContainerItem?>> _items = [];
+    private readonly Dictionary<int, IReadOnlyList<ContainerItem?>> _items = new(count);
     private readonly Dictionary<int, double> _openedAt = [];
 
     private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
@@ -242,14 +242,14 @@ public sealed class LootStates(int count)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, count);
-        if (!_items.TryGetValue(index, out IReadOnlyList<ContainerItem?>? items))
+        if (_items.TryGetValue(index, out IReadOnlyList<ContainerItem?>? items))
         {
-            ContainerItem?[] slots = new ContainerItem?[DamLoot.SlotCount];
-            slots[0] = new ContainerItem(s_duck, Guid.NewGuid(), 1, 1);
-            items = _items[index] = Array.AsReadOnly(slots);
+            return items;
         }
 
-        return items;
+        ContainerItem?[] slots = new ContainerItem?[DamLoot.SlotCount];
+        slots[0] = new ContainerItem(s_duck, Guid.NewGuid(), 1, 1);
+        return _items[index] = Array.AsReadOnly(slots);
     }
 
     /// <summary>Keeps what a player left in a container.</summary>
@@ -259,7 +259,7 @@ public sealed class LootStates(int count)
     {
         ArgumentNullException.ThrowIfNull(items);
         _ = Items(index);
-        _items[index] = Array.AsReadOnly(items.ToArray());
+        _items[index] = Array.AsReadOnly([.. items]);
     }
 
     /// <summary>When a container was first opened, if it has been.</summary>
