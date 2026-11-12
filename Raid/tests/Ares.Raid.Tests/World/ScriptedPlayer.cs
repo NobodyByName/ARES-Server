@@ -153,8 +153,8 @@ internal sealed class ScriptedPlayer
     }
 
     // A reliable call from the client on a component of its controller (channel 2) or character (any other
-    // channel) that the client names by path (the server has not replicated it).
-    public void ComponentCall(int channel, ulong outer, string component)
+    // channel) that the client names by path (the server has not replicated it); placeholder content unless given.
+    public void ComponentCall(int channel, ulong outer, string component, ActorContentBlock? content = null)
     {
         BitWriter writer = new();
         writer.WriteBit(false);
@@ -163,8 +163,17 @@ internal sealed class ScriptedPlayer
         writer.WriteByte(1);
         NetGuid.Write(writer, outer);
         writer.WriteString(component, 256);
-        writer.WritePacked(8);
-        writer.WriteByte(0x5a);
+        if (content is null)
+        {
+            writer.WritePacked(8);
+            writer.WriteByte(0x5a);
+        }
+        else
+        {
+            writer.WritePacked(checked((uint)content.PayloadBits));
+            writer.WriteBits(content.Payload, content.PayloadBits);
+        }
+
         ref int sequence = ref channel == 2 ? ref _clientSequence : ref _pawnSequence;
         sequence = (sequence + 1) & (ChannelBunch.SequenceCount - 1);
         Channels.Receive(Io, new ChannelBunch(channel, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Sequence = sequence });

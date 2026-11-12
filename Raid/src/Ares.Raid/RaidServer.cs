@@ -168,6 +168,17 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["ladders_in_progress"] = channels.LaddersInProgress,
                 ["loot_ready"] = channels.LootReady,
                 ["loot_requests"] = string.Join(' ', channels.LootRequests),
+                ["elevators_ready"] = channels.ElevatorsReady,
+                ["elevator_states"] = channels.ElevatorStates,
+                ["elevator_calls"] = channels.ElevatorCalls,
+                ["elevator_changes"] = string.Join(", ", channels.ElevatorChanges),
+                ["elevator_descents"] = channels.ElevatorDescents,
+                ["cancelled_descents"] = channels.CancelledDescents,
+                ["completed_descents"] = channels.CompletedDescents,
+                ["elevator_departures"] = channels.ElevatorDepartures,
+                ["departure"] = channels.Departure,
+                ["elevator_requests"] = string.Join(", ", channels.ElevatorRequests),
+                ["unknown_interaction_requests"] = string.Join(", ", channels.UnknownInteractionRequests),
                 ["unhandled_calls"] = calls,
             });
         }
