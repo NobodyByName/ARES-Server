@@ -44,6 +44,21 @@ public static class DamLoot
     /// <summary>Where the character's search of a server cabinet starts, in the space of the cabinet's prompt.</summary>
     public static Vector3D SearchLocation { get; } = new(76.3, 6.2, -0.1);
 
+    /// <summary>
+    /// The server cabinet's prompt (its search interaction component) relative to the cabinet: an open cabinet
+    /// measures the player's distance from it.
+    /// </summary>
+    public static Vector3D PromptLocation { get; } = new(76.37448040273613, 6.232721592968787, -1.147489288226943e-06);
+
+    /// <summary>
+    /// Prompt distance of an opened container: the standard prompt distance preset, since an opened container
+    /// has no hold and so leaves the player free to move.
+    /// </summary>
+    public const double OpenedPromptDistance = 135;
+
+    /// <summary>Distance the server adds to a prompt distance before an interaction under way ends.</summary>
+    public const double ServerPromptLeeway = 75;
+
     /// <summary>Hold start time of a search interaction nobody holds.</summary>
     public const double NoHoldStartedTime = -1;
 
