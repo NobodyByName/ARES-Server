@@ -10,6 +10,7 @@ namespace Ares.Raid.World;
 public sealed class RaidPlayer
 {
     private bool _left;
+    private bool _departed;
     private PlayerMotion? _motion;
 
     internal RaidPlayer(long id, PlayerLoadout loadout, IReadOnlyList<CompactPlayerProfile> profiles, SpawnPlacement spawn)
@@ -43,10 +44,18 @@ public sealed class RaidPlayer
     /// <summary>The player has left the raid (surrendered, or their reservation ended); they cannot rejoin it.</summary>
     public bool Left => Volatile.Read(ref _left);
 
+    /// <summary>
+    /// The player left with an extraction elevator: their character is gone from the raid while their client finishes
+    /// the round; they leave the raid (<see cref="Left"/>) when their connection closes.
+    /// </summary>
+    public bool Departed => Volatile.Read(ref _departed);
+
     /// <summary>The character's latest simulated movement, which other players see; null before its simulation starts.</summary>
     public PlayerMotion? Motion => Volatile.Read(ref _motion);
 
     internal void Leave() => Volatile.Write(ref _left, true);
+
+    internal void Depart() => Volatile.Write(ref _departed, true);
 
     internal void Publish(PlayerMotion motion) => Volatile.Write(ref _motion, motion);
 }

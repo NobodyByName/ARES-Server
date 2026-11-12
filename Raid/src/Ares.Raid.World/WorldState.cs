@@ -58,6 +58,9 @@ public sealed record WorldPlayer(
     /// <summary>The character's interactor component.</summary>
     public ulong Interactor { get; init; }
 
+    /// <summary>The controller's end-of-round component.</summary>
+    public ulong EndOfRound { get; init; }
+
     /// <summary>Replicated objects of the items the character can hold, keyed by their inventory identities.</summary>
     public IReadOnlyDictionary<Guid, ulong> HeldItems { get; init; } = new Dictionary<Guid, ulong>();
 
@@ -221,7 +224,7 @@ public sealed class WorldState
                     .OfType<ContainerItem>().Where(item => WorldImports.HeldItemClasses.ContainsKey(item.AssetIndex))
                     .ToDictionary(item => item.Id, _ => Next()) ?? [],
             };
-            player = player with { Interactor = Next() };
+            player = player with { Interactor = Next(), EndOfRound = Next() };
             _players[principal.UserId] = player;
             return player;
         }
@@ -565,7 +568,7 @@ public sealed class WorldState
     public ObjectExports InteractorExports(WorldPlayer player)
     {
         ArgumentNullException.ThrowIfNull(player);
-        return new([
+        return new ObjectExports([
             new DynamicActorExport(player.Pawn),
             new StableSubobjectExport(player.Interactor, player.Pawn, PawnBlackboard.InteractorComponentName, Replication.Catalog.Class(ClassPaths.InteractorComponent).Checksum),
         ]);
@@ -583,6 +586,29 @@ public sealed class WorldState
         ActorContentBlock call = Replication.Calls(new Dictionary<ulong, string> { [interaction] = interactionClass })
             .Call(ClassPaths.InteractorComponent, function, new Dictionary<string, object?> { [PropertyNames.Interaction] = interaction }, RpcDirection.Client);
         return new StableSubobjectContent(player.Interactor, call);
+    }
+
+    /// <summary>Names the controller's end-of-round component.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The exports.</returns>
+    public ObjectExports EndOfRoundExports(WorldPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return new ObjectExports([
+            new DynamicActorExport(player.Controller),
+            new StableSubobjectExport(player.EndOfRound, player.Controller, PlayerClasses.EndOfRoundComponent, Replication.Catalog.Class(ClassPaths.EndOfRoundComponent).Checksum),
+        ]);
+    }
+
+    /// <summary>A call on the controller's end-of-round component.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="function">Client function of the end-of-round component.</param>
+    /// <param name="parameters">Parameter values by name.</param>
+    /// <returns>The content.</returns>
+    public StableSubobjectContent EndOfRoundCall(WorldPlayer player, string function, IReadOnlyDictionary<string, object?> parameters)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return new StableSubobjectContent(player.EndOfRound, Replication.Calls().Call(ClassPaths.EndOfRoundComponent, function, parameters, RpcDirection.Client));
     }
 
     /// <summary>Replicates the equipped Light Shield's initial health for the Raid HUD.</summary>

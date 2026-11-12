@@ -13,7 +13,7 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
 
-/// <summary>A prepared Dam raid: its seed, round, lighting, players, actors, doors and ladders.</summary>
+/// <summary>A prepared Dam raid: its seed, round, lighting, players, actors, doors, ladders, loot and elevators.</summary>
 public sealed class RaidWorld
 {
     private readonly Lock _lock = new();
@@ -48,6 +48,8 @@ public sealed class RaidWorld
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
         Loot = worlds.Loot;
+        Extraction = worlds.Extraction;
+        ExtractionStates = new ExtractionStates(Extraction.Points.Count);
         Clock = worlds.Clock;
         StartedAt = Clock();
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
@@ -132,6 +134,24 @@ public sealed class RaidWorld
 
     /// <summary>The loot containers.</summary>
     public LootCatalog Loot { get; }
+
+    /// <summary>The extraction elevators.</summary>
+    public ExtractionCatalog Extraction { get; }
+
+    /// <summary>Extraction elevator state of this raid.</summary>
+    public ExtractionStates ExtractionStates { get; }
+
+    /// <summary>
+    /// The players still in the raid (not left, not departed with an elevator) whose last reported location is inside an
+    /// elevator's extraction zone.
+    /// </summary>
+    /// <param name="elevator">Elevator index.</param>
+    /// <returns>Their user ids.</returns>
+    public IReadOnlyList<long> PlayersInside(int elevator)
+    {
+        ExtractionPoint point = Extraction.Points[elevator];
+        return [.. Players.Where(player => player is { Left: false, Departed: false, Motion: { } motion } && point.Contains(motion.Motion.Position)).Select(player => player.Id)];
+    }
 
     /// <summary>Door state of this raid.</summary>
     public DoorStates DoorStates { get; } = new(DamDoors.All);
@@ -263,11 +283,12 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         Imports = new WorldImports(GameReplication.Catalog);
         Replication = new ReplicationContext(
             GameReplication.Catalog,
-            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DamDoors.InteractionState],
+            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DamDoors.InteractionState, DamExtraction.StateEnum],
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
         MapPaths paths = new();
         Doors = new DoorCatalog(Replication, paths);
         Ladders = new LadderCatalog(Replication, paths);
+        Extraction = new ExtractionCatalog(Replication, paths);
         Loot = new LootCatalog(Replication);
     }
 
@@ -298,6 +319,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal LadderCatalog Ladders { get; }
 
     internal LootCatalog Loot { get; }
+
+    internal ExtractionCatalog Extraction { get; }
 
     /// <inheritdoc />
     public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)
