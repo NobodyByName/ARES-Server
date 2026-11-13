@@ -101,6 +101,16 @@ public sealed class SessionAllocatorClient : IDisposable
         return reply;
     }
 
+    /// <summary>
+    /// Confirms that the results of the listed players are saved. Raid forgetting the reservation
+    /// (HTTP 404) counts as settled.
+    /// </summary>
+    /// <exception cref="AllocationUnavailableException">Raid unreachable or rejected the request.</exception>
+    public async Task SettleAsync(AllocationSettleRequest request, CancellationToken cancellationToken = default)
+    {
+        await PostAsync(AllocationApi.SettlePath, request, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>Runs an admin command on this Raid server (its admin API shares the allocation API's port and token).</summary>
     /// <param name="command">The command.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
@@ -178,10 +188,17 @@ public sealed class SessionAllocatorClient : IDisposable
                         : throw new AllocationConflictException("Session allocation conflicts with an existing reservation");
                 case HttpStatusCode.NotFound when path == AllocationApi.StatusPath:
                     throw new AllocationExpiredException("Session allocation no longer exists");
+                case HttpStatusCode.NotFound when path == AllocationApi.SettlePath:
+                    return null;
                 default:
                     if (!response.IsSuccessStatusCode)
                     {
                         throw new AllocationUnavailableException("Session allocation service rejected the request");
+                    }
+
+                    if (path == AllocationApi.SettlePath)
+                    {
+                        return null;
                     }
 
                     break;
@@ -258,6 +275,15 @@ public sealed class SessionAllocatorClient : IDisposable
             || !loadouts.Select(receipt => receipt.UserId).Order().SequenceEqual(reply.PartyMemberIds.Order())))
         {
             throw new InvalidDataException("Invalid allocation loadout receipt");
+        }
+
+        foreach (RaidResult result in reply.Results ?? [])
+        {
+            RaidResults.Validate(result);
+            if (result.TicketId != reply.TicketId || !reply.PartyMemberIds.Contains(result.UserId))
+            {
+                throw new InvalidDataException("Raid result does not belong to the allocation");
+            }
         }
 
         GameServerEndpoint endpoint = reply.Gameserver;

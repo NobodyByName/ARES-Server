@@ -29,6 +29,7 @@ public sealed record AllocationStatusRequest(string? MatchId, string? TicketId =
 /// <param name="PollingInterval">Seconds the client should wait between status polls.</param>
 /// <param name="Gameserver">Where players connect.</param>
 /// <param name="Loadouts">Receipts for the loadouts accepted by Raid, absent for older allocation services.</param>
+/// <param name="Results">Finished players' results awaiting settlement; absent while none.</param>
 public sealed record Allocation(
     string TicketId,
     string MatchId,
@@ -38,7 +39,14 @@ public sealed record Allocation(
     string ServerInitializationState,
     double PollingInterval,
     GameServerEndpoint Gameserver,
-    IReadOnlyList<LoadoutReceipt>? Loadouts = null);
+    IReadOnlyList<LoadoutReceipt>? Loadouts = null,
+    IReadOnlyList<RaidResult>? Results = null);
+
+/// <summary>Host → Raid: confirms the results for these players are saved. Idempotent.</summary>
+/// <param name="TicketId">The ticket the reservation was made for.</param>
+/// <param name="MatchId">The match id of the reservation.</param>
+/// <param name="UserIds">Players whose results Host has saved.</param>
+public sealed record AllocationSettleRequest(string TicketId, string MatchId, IReadOnlyList<long> UserIds);
 
 /// <summary>The player-reachable raid endpoint of an allocation.</summary>
 /// <param name="Name">Raid server name.</param>
@@ -95,6 +103,9 @@ public static class AllocationApi
 
     /// <summary>Status endpoint path.</summary>
     public const string StatusPath = "/allocations/status";
+
+    /// <summary>Settle endpoint path.</summary>
+    public const string SettlePath = "/allocations/settle";
 
     /// <summary>Largest request or response body, in bytes.</summary>
     public const int MaximumBodyBytes = 262144;

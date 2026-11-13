@@ -1,6 +1,7 @@
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Logging;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Structs.Backend.Progression;
@@ -337,6 +338,98 @@ public sealed class RaidAllocationTests
         Assert.Throws<AuthenticationRejectedException>(() => authenticator.Validate(login));
     }
 
+    [Fact]
+    public void A_finished_player_result_is_reported_until_settled_and_settling_ends_the_raid()
+    {
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        Allocation allocation = allocations.Reserve(Request() with { Loadouts = [new PlayerLoadout(42, 7, [])] }).Allocation!;
+        Assert.Null(allocation.Results);
+        _worlds.Ends[42] = new PlayerRaidEnd(RaidOutcomes.Extracted, []);
+        _worlds.Left.Add(42);
+
+        RaidResult result = Assert.Single(allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.Results!);
+        Assert.Equal(new RaidResult(Ticket, 42, 7, RaidOutcomes.Extracted, []), result with { Items = [] });
+        Assert.Null(allocations.Route(Convert.FromBase64String(allocation.Gameserver.RoutingToken), renew: true));
+        Assert.Equal("session_capacity_reached", allocations.Reserve(Request(OtherTicket, player: 43)).Error);
+        Assert.False(allocations.Closed);
+        Assert.Empty(_worlds.Released);
+
+        Assert.Equal(404, allocations.Settle(new AllocationSettleRequest(OtherTicket, allocation.MatchId, [42])).StatusCode);
+        Assert.Equal(404, allocations.Settle(new AllocationSettleRequest(Ticket, OtherTicket, [42])).StatusCode);
+        Assert.Equal(400, allocations.Settle(new AllocationSettleRequest("invalid", allocation.MatchId, [42])).StatusCode);
+        Assert.False(allocations.Closed);
+
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [42])).StatusCode);
+        Assert.Equal(404, allocations.Status(new AllocationStatusRequest(null, Ticket)).StatusCode);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Assert.True(allocations.Closed);
+        Assert.Equal(404, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [42])).StatusCode);
+    }
+
+    [Fact]
+    public void Settling_is_idempotent_and_a_party_ends_only_when_every_player_left_and_was_settled()
+    {
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], maxPlayers: 2);
+        Allocation allocation = allocations.Reserve(Request() with { PartyMemberIds = [42, 43] }).Allocation!;
+        _worlds.Ends[42] = new PlayerRaidEnd(RaidOutcomes.Lost, []);
+        _worlds.Ends[43] = new PlayerRaidEnd(RaidOutcomes.Extracted, []);
+        _worlds.Left.Add(42);
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [43])).StatusCode);
+        Assert.Equal([42L], allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.Results!.Select(result => result.UserId));
+
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [42, 99])).StatusCode);
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [42])).StatusCode);
+        Assert.Null(allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.Results);
+        Assert.False(allocations.Closed);
+
+        _worlds.Left.Add(43);
+        RaidResult result = Assert.Single(allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.Results!);
+        Assert.Equal((43L, RaidOutcomes.Extracted), (result.UserId, result.Outcome));
+        Assert.False(allocations.Closed);
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [43])).StatusCode);
+        Assert.True(allocations.Closed);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+    }
+
+    [Fact]
+    public void Unsettled_results_are_dropped_and_logged_after_the_settle_timeout()
+    {
+        using StringWriter output = new();
+        RaidAllocations allocations = new(s_endpoint, _worlds, () => _now[0], settleTimeout: 30, log: new JsonEventLog(output));
+        Allocation allocation = allocations.Reserve(Request()).Allocation!;
+        _worlds.Ends[42] = new PlayerRaidEnd(RaidOutcomes.Lost, []);
+        _now[0] = 10;
+        _worlds.Left.Add(42);
+        Assert.False(allocations.Closed);
+        _now[0] = 39;
+        Assert.False(allocations.Closed);
+        Assert.Empty(output.ToString());
+
+        _now[0] = 40;
+        Assert.True(allocations.Closed);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+        Assert.Contains("raid_results_unsettled", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void An_expired_reservation_keeps_its_results_until_settled_without_expiring_again()
+    {
+        RaidAllocations allocations = Allocations();
+        Allocation allocation = allocations.Reserve(Request()).Allocation!;
+        _worlds.Ends[42] = new PlayerRaidEnd(RaidOutcomes.Lost, []);
+        _now[0] = 121;
+        Assert.Null(allocations.Route(Convert.FromBase64String(allocation.Gameserver.RoutingToken), renew: true));
+        Assert.Equal(RaidOutcomes.Lost, Assert.Single(allocations.Status(new AllocationStatusRequest(null, Ticket)).Allocation!.Results!).Outcome);
+        _now[0] = 500;
+        Assert.False(allocations.Closed);
+        Assert.Equal([42L], _worlds.Expired);
+        Assert.Empty(_worlds.Released);
+
+        Assert.Equal(204, allocations.Settle(new AllocationSettleRequest(Ticket, allocation.MatchId, [42])).StatusCode);
+        Assert.True(allocations.Closed);
+        Assert.Equal([allocation.MatchId], _worlds.Released);
+    }
+
     private sealed class FakeWorlds : IWorldLifecycle
     {
         public List<string> Prepared { get; } = [];
@@ -389,5 +482,9 @@ public sealed class RaidAllocationTests
         public bool AcceptingPlayers(string matchId) => Prepared.Contains(matchId) && !Released.Contains(matchId);
 
         public bool HasLeft(string matchId, long player) => Left.Contains(player);
+
+        public Dictionary<long, PlayerRaidEnd> Ends { get; } = [];
+
+        public PlayerRaidEnd? Result(string matchId, long player) => Left.Contains(player) ? Ends.GetValueOrDefault(player) : null;
     }
 }

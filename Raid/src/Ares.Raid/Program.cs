@@ -52,7 +52,7 @@ log.Write(collision is null
     : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });
 DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision);
 RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
-    configuration.MaxPlayers, fillWindow: configuration.FillSeconds);
+    configuration.MaxPlayers, fillWindow: configuration.FillSeconds, log: log);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
 RaidConnections connections = new(handshake, new RoutingAuthenticator(allocations), worlds, packet => UdpPadding.Remove(packet), Clock);
 
@@ -99,7 +99,12 @@ finally
     await consoleStopping.CancelAsync().ConfigureAwait(false);
     await consoleTask.ConfigureAwait(false);
     await closingTask.ConfigureAwait(false);
-    await parentTask.ConfigureAwait(false);
+
+    // A pending read of standard input cannot be cancelled; when the raid stopped for another reason, don't wait for it.
+    if (parentTask.IsCompleted)
+    {
+        await parentTask.ConfigureAwait(false);
+    }
     await app.StopAsync().ConfigureAwait(false);
 }
 return 0;

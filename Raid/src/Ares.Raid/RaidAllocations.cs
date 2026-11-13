@@ -1,9 +1,11 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text.Json.Nodes;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Logging;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Structs.Net.Replication;
@@ -14,8 +16,9 @@ namespace Ares.Raid;
 /// <summary>
 /// The raid's reservations, one per matchmaking ticket. The first ticket prepares the raid; later
 /// tickets join it while it has room and its fill window is open. Each reservation expires unless its
-/// player keeps it alive and admits that player through its own routing credential. A Raid process
-/// hosts one raid: it closes once every reservation is released, or when none arrives in time.
+/// player keeps it alive and admits that player through its own routing credential. A party ends once all its
+/// players have left (or its reservation expired) and Host has settled their results, or when the settle timeout
+/// passes. A Raid process hosts one raid: it closes once every party has ended, or when none arrives in time.
 /// </summary>
 public sealed class RaidAllocations : IAllocationService, IRouteResolver
 {
@@ -24,6 +27,9 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
 
     /// <summary>Seconds after the first reservation during which other parties may join.</summary>
     private const double DefaultFillWindow = 60;
+
+    /// <summary>Seconds a finished party waits for Host to settle its results before they are dropped.</summary>
+    private const double DefaultSettleTimeout = 600;
 
     private const double PollingInterval = 2.0;
 
@@ -34,6 +40,8 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     private readonly double _timeout;
     private readonly int _maxPlayers;
     private readonly double _fillWindow;
+    private readonly double _settleTimeout;
+    private readonly JsonEventLog? _log;
     private readonly double _idleDeadline;
     private readonly List<Reservation> _parties = [];
     private string? _matchId;
@@ -47,8 +55,11 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     /// <param name="maxPlayers">Most players in the raid, across every party.</param>
     /// <param name="initializationTimeout">Seconds a reservation lives without activity, and the first one may take to arrive (up to 600).</param>
     /// <param name="fillWindow">Seconds after the first reservation during which other parties may join (0 to 600).</param>
+    /// <param name="settleTimeout">Seconds a finished party waits for Host to settle its results (more than 0).</param>
+    /// <param name="log">Where results dropped unsettled are reported, or null.</param>
     public RaidAllocations(GameServerEndpoint endpoint, IWorldLifecycle worlds, Func<double>? clock = null, int maxPlayers = 1,
-        double initializationTimeout = DefaultInitializationTimeout, double fillWindow = DefaultFillWindow)
+        double initializationTimeout = DefaultInitializationTimeout, double fillWindow = DefaultFillWindow,
+        double settleTimeout = DefaultSettleTimeout, JsonEventLog? log = null)
     {
         _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
         _worlds = worlds ?? throw new ArgumentNullException(nameof(worlds));
@@ -63,16 +74,19 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
         }
 
         ArgumentOutOfRangeException.ThrowIfLessThan(maxPlayers, 1);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(settleTimeout);
 
         long started = Stopwatch.GetTimestamp();
         _clock = clock ?? (() => Stopwatch.GetElapsedTime(started).TotalSeconds);
         _timeout = initializationTimeout;
         _maxPlayers = maxPlayers;
         _fillWindow = fillWindow;
+        _settleTimeout = settleTimeout;
+        _log = log;
         _idleDeadline = _clock() + initializationTimeout;
     }
 
-    /// <summary>True once this raid is over: every reservation was released, or none arrived in time.</summary>
+    /// <summary>True once this raid is over: every party has ended, or none arrived in time.</summary>
     public bool Closed
     {
         get
@@ -156,6 +170,30 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     }
 
     /// <inheritdoc />
+    public AllocationResult Settle(AllocationSettleRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (!SessionAllocatorClient.IsCanonicalUuid(request.TicketId) || !SessionAllocatorClient.IsCanonicalUuid(request.MatchId)
+            || Missing(request.UserIds))
+        {
+            return AllocationResult.Failure(StatusCodes.Status400BadRequest, "invalid_session_settlement");
+        }
+
+        lock (_lock)
+        {
+            Maintain();
+            if (_parties.Find(party => party.TicketId == request.TicketId) is not { } item || _matchId != request.MatchId)
+            {
+                return AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation");
+            }
+
+            item.Results.RemoveAll(result => request.UserIds.Contains(result.UserId));
+            Maintain();
+            return AllocationResult.NoContent();
+        }
+    }
+
+    /// <inheritdoc />
     public SessionPrincipal? Route(ReadOnlySpan<byte> token, bool renew)
     {
         if (token.Length != RoutingAuthenticator.TokenBytes)
@@ -176,6 +214,11 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
                 if (!CryptographicOperations.FixedTimeEquals(token, item.RoutingToken))
                 {
                     continue;
+                }
+
+                if (item.Finished is not null)
+                {
+                    return null;
                 }
 
                 if (renew)
@@ -218,7 +261,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     private AllocationResult Join(string matchId, AllocationRequest request, IReadOnlyList<PlayerLoadout> loadouts, IReadOnlyList<CompactPlayerProfile> profiles)
     {
         if (_clock() >= _fillDeadline || _parties.Sum(item => item.Players.Length) + request.PartyMemberIds.Count > _maxPlayers
-            || !_worlds.AcceptingPlayers(matchId))
+            || _parties.TrueForAll(item => item.Finished is not null) || !_worlds.AcceptingPlayers(matchId))
         {
             return AllocationResult.Failure(StatusCodes.Status409Conflict, "session_capacity_reached");
         }
@@ -254,15 +297,35 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             return;
         }
 
-        // A party whose players all left ends; one that expired is taken out of the world first.
+        // A party finishes once its players all left; one that expired is taken out of the world first. Results are
+        // collected as players leave, and a finished party ends once Host settled them or the settle timeout passed.
         double now = _clock();
-        _parties.RemoveAll(item => item.Players.All(player => _worlds.HasLeft(matchId, player)));
-        foreach (Reservation item in _parties.Where(item => now >= item.Deadline))
+        foreach (Reservation item in _parties.Where(item => item.Finished is null))
         {
-            _worlds.Leave(matchId, item.Players);
+            Collect(matchId, item);
+            if (item.Players.All(player => _worlds.HasLeft(matchId, player)))
+            {
+                item.Finished = now;
+            }
+            else if (now >= item.Deadline)
+            {
+                _worlds.Leave(matchId, item.Players);
+                Collect(matchId, item);
+                item.Finished = now;
+            }
         }
 
-        _parties.RemoveAll(item => now >= item.Deadline);
+        foreach (Reservation item in _parties.Where(item => item.Results.Count > 0 && now >= item.Finished + _settleTimeout))
+        {
+            _log?.Write(new JsonObject
+            {
+                ["raid_results_unsettled"] = item.TicketId,
+                ["users"] = new JsonArray([.. item.Results.Select(result => JsonValue.Create(result.UserId))]),
+            });
+            item.Results.Clear();
+        }
+
+        _parties.RemoveAll(item => item.Finished is not null && item.Results.Count == 0);
 
         if (_parties.Count > 0)
         {
@@ -273,6 +336,30 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
         _matchId = null;
         _released = true;
     }
+
+    // Each player's result is taken once, when the world reports them gone; one who never connected has none.
+    private void Collect(string matchId, Reservation item)
+    {
+        foreach (long player in item.Players)
+        {
+            if (item.Gone.Contains(player) || !_worlds.HasLeft(matchId, player))
+            {
+                continue;
+            }
+
+            item.Gone.Add(player);
+            if (_worlds.Result(matchId, player) is not { } end)
+            {
+                continue;
+            }
+
+            long revision = item.Loadouts.FirstOrDefault(loadout => loadout.UserId == player)?.Revision ?? 0;
+            item.Results.Add(new RaidResult(item.TicketId, player, revision, end.Outcome, end.Items));
+        }
+    }
+
+    // Settlement lists come from JSON, so a missing one must be rejected rather than trusted to be present.
+    private static bool Missing(IReadOnlyList<long>? values) => values is null;
 
     private Allocation Status(Reservation item)
     {
@@ -287,11 +374,21 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             accepting ? ServerInitializationStates.Ready : ServerInitializationStates.Initializing,
             PollingInterval,
             _endpoint with { RoutingToken = Convert.ToBase64String(item.RoutingToken) },
-            [.. item.Loadouts.Select(InventorySnapshots.Receipt)]);
+            [.. item.Loadouts.Select(InventorySnapshots.Receipt)],
+            item.Results.Count == 0 ? null : [.. item.Results]);
     }
 
     private sealed record Reservation(string TicketId, long[] Players, byte[] RoutingToken, IReadOnlyList<PlayerLoadout> Loadouts, IReadOnlyList<CompactPlayerProfile> Profiles)
     {
         public double Deadline { get; set; }
+
+        /// <summary>When the last player left or the reservation expired; null while the party plays.</summary>
+        public double? Finished { get; set; }
+
+        /// <summary>Players whose result was already taken.</summary>
+        public HashSet<long> Gone { get; } = [];
+
+        /// <summary>Collected results Host has not settled yet.</summary>
+        public List<RaidResult> Results { get; } = [];
     }
 }

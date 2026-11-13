@@ -1,6 +1,10 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Game.Inventory;
+using Ares.Structs.Backend.Progression;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 
@@ -126,6 +130,151 @@ public sealed class AllocationApiTests : IAsyncLifetime
         Assert.Throws<ArgumentException>(() => new SessionAllocatorClient(new Uri(url), Token));
     }
 
+    private static InventoryItem Item(string id, double durability = 1, double maxDurability = 1, IReadOnlyList<string>? slots = null, long amount = 1)
+    {
+        return new InventoryItem(id, 5, amount, slots ?? [], durability, maxDurability, "", "", 0);
+    }
+
+    private static RaidResult Result(string outcome = RaidOutcomes.Extracted, params CarriedItem[] items)
+    {
+        return new RaidResult(s_ticket, 42, 7, outcome, items);
+    }
+
+    private static Allocation WithResults(params RaidResult[] results)
+    {
+        return new Allocation(s_ticket, Guid.NewGuid().ToString("D"), "TheDam", [42], AllocationStates.Available,
+            ServerInitializationStates.Ready, 2.0, new GameServerEndpoint("raid", "127.0.0.1", 7777, "", "", false, "LOCAL"), null, results);
+    }
+
+    [Fact]
+    public void Allocation_results_round_trip_and_are_optional()
+    {
+        Allocation allocation = WithResults(Result(RaidOutcomes.Extracted, new CarriedItem(CarriedPlaces.Backpack, 3, Item("a"))));
+        byte[] json = JsonSerializer.SerializeToUtf8Bytes(allocation, AllocationApi.JsonOptions);
+        Allocation back = JsonSerializer.Deserialize<Allocation>(json, AllocationApi.JsonOptions)!;
+        RaidResult result = Assert.Single(back.Results!);
+        CarriedItem carried = Assert.Single(result.Items);
+        Assert.Equal((CarriedPlaces.Backpack, 3, "a"), (carried.Place, carried.Slot, carried.Item.InstanceId));
+        Assert.Equal(7, result.Revision);
+        SessionAllocatorClient.Validate(back);
+
+        string withoutResults = JsonSerializer.Serialize(allocation with { Results = null }, AllocationApi.JsonOptions).Replace(",\"results\":null", "", StringComparison.Ordinal);
+        Assert.DoesNotContain("results", withoutResults, StringComparison.Ordinal);
+        Assert.Null(JsonSerializer.Deserialize<Allocation>(withoutResults, AllocationApi.JsonOptions)!.Results);
+    }
+
+    [Fact]
+    public void Results_must_belong_to_the_allocation()
+    {
+        Assert.Throws<InvalidDataException>(() => SessionAllocatorClient.Validate(WithResults(Result() with { UserId = 43 })));
+        Assert.Throws<InvalidDataException>(() => SessionAllocatorClient.Validate(WithResults(Result() with { TicketId = Guid.NewGuid().ToString("D") })));
+    }
+
+    private static CarriedItem Carried(string place, int slot, InventoryItem? item = null) => new(place, slot, item ?? Item("a"));
+
+    private static RaidResult[] BuildBadResults()
+    {
+        return
+        [
+            Result() with { TicketId = "" },
+            Result() with { TicketId = s_ticket.ToUpperInvariant() },
+            Result() with { UserId = 0 },
+            Result() with { Revision = -1 },
+            Result("SURRENDERED"),
+            Result(RaidOutcomes.Extracted, Carried("pockets", 0)),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, -1)),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Shield, 1)),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 1), Carried(CarriedPlaces.Backpack, 1, Item("b"))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.MainWeapon, 0), Carried(CarriedPlaces.MainWeapon, 0, Item("b"))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0), Carried(CarriedPlaces.QuickUse, 0)),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item("a", slots: ["b"]))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item("a", amount: 0))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item("a", durability: double.NaN))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item("a", durability: -1))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item("a", durability: 2, maxDurability: 1))),
+            Result(RaidOutcomes.Extracted, Carried(CarriedPlaces.Backpack, 0, Item(""))),
+            Result(RaidOutcomes.Extracted, [.. Enumerable.Range(0, InventorySnapshots.MaximumItems + 1).Select(index => Carried(CarriedPlaces.Backpack, index, Item("i" + index)))]),
+            Result(RaidOutcomes.Lost, Carried(CarriedPlaces.Backpack, 0)),
+        ];
+    }
+
+    public static TheoryData<int> BadResults => [.. Enumerable.Range(0, BuildBadResults().Length)];
+
+    [Theory]
+    [MemberData(nameof(BadResults))]
+    public void Malformed_results_are_rejected(int index)
+    {
+        RaidResult result = BuildBadResults()[index];
+        Assert.Throws<InvalidDataException>(() => RaidResults.Validate(result));
+    }
+
+    [Fact]
+    public void Well_formed_results_are_accepted()
+    {
+        RaidResults.Validate(Result(RaidOutcomes.Extracted, new CarriedItem(CarriedPlaces.Augment, 0, Item("a")), new CarriedItem(CarriedPlaces.SafePockets, 1, Item("b"))));
+        RaidResults.Validate(Result(RaidOutcomes.Lost, new CarriedItem(CarriedPlaces.SafePockets, 0, Item("a"))));
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.NoContent, true)]
+    [InlineData(HttpStatusCode.OK, true)]
+    [InlineData(HttpStatusCode.NotFound, true)]
+    [InlineData(HttpStatusCode.InternalServerError, false)]
+    public async Task Settle_posts_to_the_settle_path(HttpStatusCode status, bool succeeds)
+    {
+        StubHandler handler = new(status);
+        using SessionAllocatorClient client = new(new Uri("http://localhost"), Token, handler);
+        Task call = client.SettleAsync(new AllocationSettleRequest(s_ticket, Guid.NewGuid().ToString("D"), [42]), TestContext.Current.CancellationToken);
+        if (succeeds)
+        {
+            await call;
+        }
+        else
+        {
+            await Assert.ThrowsAsync<AllocationUnavailableException>(() => call);
+        }
+
+        Assert.Equal(AllocationApi.SettlePath, handler.Path);
+    }
+
+    [Fact]
+    public async Task Settle_replies_without_a_body_and_404_for_an_unknown_reservation()
+    {
+        using SessionAllocatorClient client = Client(Token);
+        Allocation reserved = (await client.ReserveAsync(new AllocationRequest(s_ticket, "TheDam", [42]), TestContext.Current.CancellationToken))!;
+        using HttpClient http = new(_app!.GetTestServer().CreateHandler());
+        http.BaseAddress = new Uri("http://localhost");
+        http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + Token);
+
+        using HttpResponseMessage settled = await Settle(http, new AllocationSettleRequest(s_ticket, reserved.MatchId, [42]));
+        using HttpResponseMessage unknown = await Settle(http, new AllocationSettleRequest(s_ticket, Guid.NewGuid().ToString("D"), [42]));
+        http.DefaultRequestHeaders.Authorization = null;
+        using HttpResponseMessage anonymous = await Settle(http, new AllocationSettleRequest(s_ticket, reserved.MatchId, [42]));
+
+        Assert.Equal(HttpStatusCode.NoContent, settled.StatusCode);
+        Assert.Empty(await settled.Content.ReadAsByteArrayAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+        await client.SettleAsync(new AllocationSettleRequest(s_ticket, reserved.MatchId, [42]), TestContext.Current.CancellationToken);
+    }
+
+    private static async Task<HttpResponseMessage> Settle(HttpClient http, AllocationSettleRequest request)
+    {
+        using StringContent content = new(JsonSerializer.Serialize(request, AllocationApi.JsonOptions), Encoding.UTF8, "application/json");
+        return await http.PostAsync(AllocationApi.SettlePath, content, TestContext.Current.CancellationToken);
+    }
+
+    private sealed class StubHandler(HttpStatusCode status) : HttpMessageHandler
+    {
+        public string? Path { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Path = request.RequestUri!.AbsolutePath;
+            return Task.FromResult(new HttpResponseMessage(status));
+        }
+    }
+
     private SessionAllocatorClient Client(string token)
     {
         return new SessionAllocatorClient(new Uri("http://localhost"), token, _app!.GetTestServer().CreateHandler());
@@ -178,6 +327,13 @@ public sealed class AllocationApiTests : IAsyncLifetime
 
             return _allocation is not null && (request.MatchId is null ? _allocation.TicketId == request.TicketId : _allocation.MatchId == request.MatchId)
                 ? AllocationResult.Success(_allocation)
+                : AllocationResult.Failure(404, "unknown_session_allocation");
+        }
+
+        public AllocationResult Settle(AllocationSettleRequest request)
+        {
+            return _allocation is not null && _allocation.TicketId == request.TicketId && _allocation.MatchId == request.MatchId
+                ? AllocationResult.NoContent()
                 : AllocationResult.Failure(404, "unknown_session_allocation");
         }
     }

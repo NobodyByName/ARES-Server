@@ -14,6 +14,9 @@ public interface IAllocationService
 
     /// <summary>Reads a reservation by match id or persisted ticket id.</summary>
     AllocationResult Status(AllocationStatusRequest request);
+
+    /// <summary>Confirms that Host saved the results of these players; repeating it changes nothing.</summary>
+    AllocationResult Settle(AllocationSettleRequest request);
 }
 
 /// <summary>Outcome of an allocation call: an allocation, or an HTTP error status with a reason.</summary>
@@ -41,6 +44,12 @@ public sealed record AllocationResult
         return new AllocationResult(StatusCodes.Status200OK, allocation, null);
     }
 
+    /// <summary>A successful reply without a body (204).</summary>
+    public static AllocationResult NoContent()
+    {
+        return new AllocationResult(StatusCodes.Status204NoContent, null, null);
+    }
+
     /// <summary>A rejected call, e.g. 409 <c>session_capacity_reached</c>.</summary>
     public static AllocationResult Failure(int statusCode, string error)
     {
@@ -52,7 +61,7 @@ public sealed record AllocationResult
 public static class AllocationEndpoints
 {
     /// <summary>
-    /// Adds <c>POST /allocations/reserve</c> and <c>POST /allocations/status</c>. Every call must carry
+    /// Adds <c>POST /allocations/reserve</c>, <c>POST /allocations/status</c> and <c>POST /allocations/settle</c>. Every call must carry
     /// <c>Authorization: Bearer {operatorToken}</c>; bodies are limited to 256 KiB of JSON.
     /// </summary>
     public static IEndpointRouteBuilder MapAllocationApi(this IEndpointRouteBuilder endpoints, IAllocationService service, string operatorToken)
@@ -62,6 +71,8 @@ public static class AllocationEndpoints
             HandleAsync<AllocationRequest>(context, token, service.Reserve));
         endpoints.MapPost(AllocationApi.StatusPath, Task<IResult> (HttpContext context) =>
             HandleAsync<AllocationStatusRequest>(context, token, service.Status));
+        endpoints.MapPost(AllocationApi.SettlePath, Task<IResult> (HttpContext context) =>
+            HandleAsync<AllocationSettleRequest>(context, token, service.Settle));
         return endpoints;
     }
 
@@ -96,8 +107,13 @@ public static class AllocationEndpoints
         }
 
         AllocationResult result = action(request);
-        return result.Allocation is not null
-            ? Results.Json(result.Allocation, AllocationApi.JsonOptions, statusCode: result.StatusCode)
+        if (result.Allocation is not null)
+        {
+            return Results.Json(result.Allocation, AllocationApi.JsonOptions, statusCode: result.StatusCode);
+        }
+
+        return result.Error is null && result.StatusCode == StatusCodes.Status204NoContent
+            ? Results.NoContent()
             : Reply(result.StatusCode, result.Error ?? "allocation_failed");
     }
 
