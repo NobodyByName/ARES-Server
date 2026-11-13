@@ -224,11 +224,7 @@ public sealed partial class InventoryStore
             }
 
             PlayerLoadout loadout = InventorySnapshots.Loadout(_projection.Snapshot);
-            if (loadout.Items.Count > 0)
-            {
-                Save(_state with { RaidTicketId = ticketId }, new InventoryReservation(ticketId, loadout));
-            }
-
+            Save(_state with { RaidTicketId = ticketId }, new InventoryReservation(ticketId, loadout));
             return loadout;
         }
     }

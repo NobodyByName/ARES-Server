@@ -212,6 +212,144 @@ public sealed class InventoryStoreTests : IDisposable
         Assert.Throws<InvalidDataException>(() => store.Snapshot);
     }
 
+    [Fact]
+    public void Settle_extracted_loot_lands_in_the_backpack_and_releases_the_reservation_once()
+    {
+        InventoryStore store = Equipped();
+        store.AddItem(ItemTechnicalNames.RubberDuck, DateTimeOffset.UnixEpoch.AddDays(1));
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        PlayerInventory before = store.Inventory;
+        OwnedItem augment = before.Loadout.Augment!;
+        CarriedItem duck = NewDuck(CarriedPlaces.Backpack, 3);
+        DateTimeOffset now = DateTimeOffset.UnixEpoch.AddDays(3);
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision, RaidOutcomes.Extracted,
+            [Carried(CarriedPlaces.Augment, 0, augment), Carried(CarriedPlaces.SafePockets, 0, before.Loadout.SafePockets.Items[0]), duck]);
+
+        Assert.Equal(RaidSettlement.Saved, store.Settle(result, now));
+
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
+        PlayerInventory after = restarted.Inventory;
+        Assert.Equal(before.Revision + 1, after.Revision);
+        Assert.Null(after.RaidTicketId);
+        Assert.Equal(before.Stash.SlotCount, after.Stash.SlotCount);
+        Assert.Equal(before.Stash.Items, after.Stash.Items);
+        Assert.Equal(augment, after.Loadout.Augment);
+        Assert.Equal(before.Loadout.SafePockets.Items, after.Loadout.SafePockets.Items);
+        OwnedItem looted = Assert.Single(after.Loadout.Backpack.Items);
+        Assert.Equal(duck.Item.InstanceId, looted.InstanceId);
+        Assert.Equal(ItemTechnicalNames.RubberDuck, looted.Type);
+        Assert.Equal(3, looted.Slot);
+        Assert.Equal(now.ToUnixTimeMilliseconds(), looted.UpdatedAt);
+        Assert.NotEqual(augment.ETag, looted.ETag);
+        Assert.Equal(0, ReservationCount());
+
+        string saved = _database.InventoryJson;
+        Assert.Equal(RaidSettlement.NotReserved, restarted.Settle(result, now.AddSeconds(1)));
+        Assert.Equal(saved, _database.InventoryJson);
+    }
+
+    [Fact]
+    public void Settle_rejects_a_stale_revision_and_keeps_the_reservation()
+    {
+        InventoryStore store = Equipped();
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        string saved = _database.InventoryJson;
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision - 1, RaidOutcomes.Extracted, [NewDuck(CarriedPlaces.Backpack, 0)]);
+        Assert.Throws<InvalidDataException>(() => store.Settle(result, DateTimeOffset.UnixEpoch));
+        Assert.Equal(saved, _database.InventoryJson);
+        Assert.Equal(ticket, store.ReservedTicketId);
+        Assert.Equal(1, ReservationCount());
+    }
+
+    [Theory]
+    [InlineData("unsupported asset")]
+    [InlineData("unsupported place")]
+    [InlineData("over capacity")]
+    [InlineData("over max stack")]
+    [InlineData("stash id")]
+    public void Settle_rejects_items_that_do_not_fit_and_saves_nothing(string problem)
+    {
+        InventoryStore store = Create();
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        OwnedItem stashDuck = Assert.Single(store.Inventory.Stash.Items);
+        CarriedItem duck = NewDuck(CarriedPlaces.Backpack, 0);
+        CarriedItem invalid = problem switch
+        {
+            "unsupported asset" => duck with { Item = duck.Item with { GameAssetId = StorageItems.StashContainerAssetId } },
+            "unsupported place" => duck with { Place = CarriedPlaces.Augment },
+            "over capacity" => duck with { Slot = store.Inventory.Loadout.BackpackCapacity },
+            "over max stack" => duck with { Item = duck.Item with { Amount = InventoryCatalog.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount + 1 } },
+            _ => Carried(CarriedPlaces.Backpack, 0, stashDuck),
+        };
+        string saved = _database.InventoryJson;
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision, RaidOutcomes.Extracted, [invalid]);
+        Assert.Throws<InvalidDataException>(() => store.Settle(result, DateTimeOffset.UnixEpoch));
+        Assert.Equal(saved, _database.InventoryJson);
+        Assert.Equal(ticket, new InventoryStore(_database.Store, TestDatabase.UserId).ReservedTicketId);
+        Assert.Equal(1, ReservationCount());
+    }
+
+    [Fact]
+    public void Settle_a_lost_raid_keeps_only_the_safe_pocket_items()
+    {
+        InventoryStore store = Equipped();
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        OwnedItem pocketDuck = Assert.Single(store.Inventory.Loadout.SafePockets.Items);
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision, RaidOutcomes.Lost, [Carried(CarriedPlaces.SafePockets, 0, pocketDuck)]);
+        Assert.Equal(RaidSettlement.Saved, store.Settle(result, DateTimeOffset.UnixEpoch.AddDays(3)));
+        PlayerLoadoutState loadout = new InventoryStore(_database.Store, TestDatabase.UserId).Inventory.Loadout;
+        Assert.Null(loadout.Augment);
+        Assert.Empty(loadout.Backpack.Items);
+        Assert.Equal(pocketDuck, Assert.Single(loadout.SafePockets.Items));
+    }
+
+    [Fact]
+    public void An_empty_loadout_is_reserved_and_settles()
+    {
+        InventoryStore store = Create();
+        Assert.Equal(store.Inventory.Stash.Items.Count, store.Inventory.ItemCount);
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        Assert.Equal(ticket, store.ReservedTicketId);
+        Assert.Equal(1, ReservationCount());
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision, RaidOutcomes.Extracted, [NewDuck(CarriedPlaces.QuickUse, 1)]);
+        Assert.Equal(RaidSettlement.Saved, store.Settle(result, DateTimeOffset.UnixEpoch.AddDays(3)));
+        PlayerInventory after = new InventoryStore(_database.Store, TestDatabase.UserId).Inventory;
+        Assert.Null(after.RaidTicketId);
+        Assert.Equal(reserved.Revision + 1, after.Revision);
+        Assert.Equal(1, Assert.Single(after.Loadout.QuickUse.Items).Slot);
+        Assert.Equal(0, ReservationCount());
+    }
+
+    private InventoryStore Equipped()
+    {
+        InventoryStore store = Create();
+        store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch);
+        PlayerInventory inventory = store.Inventory;
+        OwnedItem augment = Assert.Single(inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+        OwnedItem duck = Assert.Single(inventory.Stash.Items, item => item.Type == ItemTechnicalNames.RubberDuck);
+        store.Import(inventory with
+        {
+            Stash = inventory.Stash with { Items = [] },
+            Loadout = inventory.Loadout with { Augment = augment, SafePockets = new PlayerItemContainer([duck with { Slot = 0 }]) },
+        }, inventory.Revision);
+        return store;
+    }
+
+    private static CarriedItem Carried(string place, int slot, OwnedItem item) => new(place, slot,
+        new InventoryItem(item.InstanceId, ItemTechnicalNames.AssetIds[item.Type], item.Quantity, [], item.Durability, item.MaxDurability, "", item.ETag, item.UpdatedAt));
+
+    private static CarriedItem NewDuck(string place, int slot) => new(place, slot,
+        new InventoryItem(Guid.NewGuid().ToString("D"), StorageItems.RubberDuckAssetId, 1, [], StorageItems.InitialDurability,
+            StorageItems.InitialMaxDurability, "", "", 0));
+
+    private long ReservationCount() => _database.Native.GetCollection<BsonDocument>("raidReservations")
+        .CountDocuments(FilterDefinition<BsonDocument>.Empty, cancellationToken: TestContext.Current.CancellationToken);
+
     private InventoryStore Create()
     {
         InventoryStore store = new(_database.Store, TestDatabase.UserId);

@@ -22,7 +22,7 @@ namespace Ares.Host.Services.Matchmaking;
 /// stay <c>MATCHING</c>.
 /// </summary>
 public sealed class MatchmakingService(BackendGate gate, PartyService party, ProfileFactory profiles, RaidFleet? raids, JsonEventLog log,
-    InventoryStore inventory)
+    InventoryStore inventory, long userId, TimeProvider time)
 {
     /// <summary>Seconds between client polls.</summary>
     private const double PollingInterval = 2.0;
@@ -32,6 +32,7 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
     private long _revision;
     private Allocation? _assignment;
     private bool _assignmentExpired;
+    private string? _rejectedTicketId;
 
     /// <summary>Reconciles a persisted inventory lock independently of menu or matchmaking traffic.</summary>
     public async Task ReconcileInventoryAsync(CancellationToken cancellationToken)
@@ -240,20 +241,59 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
 
         try
         {
-            if (_assignment is not null)
-            {
-                await raids.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                await raids.StatusByTicketAsync(ticket, inventory.Reserve(ticket), cancellationToken).ConfigureAwait(false);
-            }
+            Allocation allocation = _assignment is not null
+                ? await raids.StatusAsync(_assignment, cancellationToken).ConfigureAwait(false)
+                : await raids.StatusByTicketAsync(ticket, inventory.Reserve(ticket), cancellationToken).ConfigureAwait(false);
+            await SettleResultsAsync(raids, allocation, cancellationToken).ConfigureAwait(false);
         }
         catch (AllocationExpiredException)
         {
             inventory.Release(ticket);
             _assignmentExpired = _assignment is not null;
             log.Write("inventory_reservation", "released_lost_raid");
+        }
+    }
+
+    /// <summary>
+    /// Saves this player's finished raid result and then confirms it to Raid, which drops the result once
+    /// confirmed. A repeated result is confirmed again. A rejected result stays on Raid and keeps the lock.
+    /// Once confirmed the assignment is over, so the player can queue for the next raid.
+    /// </summary>
+    private async Task SettleResultsAsync(RaidFleet fleet, Allocation allocation, CancellationToken cancellationToken)
+    {
+        foreach (RaidResult result in allocation.Results ?? [])
+        {
+            if (result.UserId != userId)
+            {
+                continue;
+            }
+
+            RaidSettlement settlement;
+            try
+            {
+                settlement = inventory.Settle(result, time.GetUtcNow());
+            }
+            catch (InvalidDataException)
+            {
+                if (_rejectedTicketId != result.TicketId)
+                {
+                    _rejectedTicketId = result.TicketId;
+                    log.Write(new JsonObject { ["inventory_reservation"] = "rejected_raid_result", ["outcome"] = result.Outcome });
+                }
+
+                continue;
+            }
+
+            await fleet.SettleAsync(allocation, [userId], cancellationToken).ConfigureAwait(false);
+            if (settlement == RaidSettlement.Saved)
+            {
+                log.Write(new JsonObject { ["inventory_reservation"] = "settled_raid_result", ["outcome"] = result.Outcome });
+            }
+
+            if (_assignment?.TicketId == allocation.TicketId)
+            {
+                _assignmentExpired = true;
+            }
         }
     }
 

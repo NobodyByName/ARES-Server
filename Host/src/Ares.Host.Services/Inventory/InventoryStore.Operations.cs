@@ -51,7 +51,7 @@ public sealed partial class InventoryStore
                 // decide the final layout, which also places every newly split stack.
                 HashSet<string> created = new(StringComparer.Ordinal);
                 HashSet<string> consumed = new(StringComparer.Ordinal);
-                string etag = "ares-host-inventory-" + revision.ToString(CultureInfo.InvariantCulture);
+                string etag = ItemETag(revision);
                 foreach (MoveItemAmount transfer in operations.OfType<MoveItemAmount>())
                 {
                     candidate = MoveAmount(candidate, transfer, before, created, consumed, etag, now.ToUnixTimeMilliseconds());
@@ -227,6 +227,9 @@ public sealed partial class InventoryStore
     private static PlayerInventory Replace(PlayerInventory inventory, InventoryArea area, string instanceId, OwnedItem? replacement) =>
         InventoryCatalog.WithItems(inventory, area,
             [.. InventoryCatalog.Items(inventory, area).Select(item => item.InstanceId == instanceId ? replacement : item).OfType<OwnedItem>()]);
+
+    /// <summary>Version stamped on items an inventory change creates or modifies.</summary>
+    private static string ItemETag(long revision) => "ares-host-inventory-" + revision.ToString(CultureInfo.InvariantCulture);
 
     private static bool ValidRequestId(string? id) => id is { Length: > 0 and <= 128 }
         && !id.Any(character => char.IsControl(character) || char.IsWhiteSpace(character));

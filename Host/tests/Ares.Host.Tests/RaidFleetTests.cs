@@ -248,5 +248,12 @@ public sealed class RaidFleetTests : IAsyncLifetime
                 ? AllocationResult.Success(allocation)
                 : AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation");
         }
+
+        public AllocationResult Settle(AllocationSettleRequest request)
+        {
+            return _byTicket.TryGetValue(request.TicketId, out Allocation? allocation) && allocation.MatchId == request.MatchId
+                ? AllocationResult.NoContent()
+                : AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation");
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Ares.Common.Control;
 using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
@@ -88,7 +89,25 @@ public sealed class BackendRoutes
         // Progression: empty state for a fresh account.
         Player("GET /v1/pioneer/game-data", (_, player) => player.Inventory.GameData());
         Add("GET /v1/pioneer/quests", new QuestsResponse([]));
-        Player("GET /v1/pioneer/inventory", (_, player) => new InventoryResponse(player.Inventory.Snapshot.Items));
+        Player("GET /v1/pioneer/inventory", async (_, player, token) =>
+        {
+            if (player.Inventory.ReservedTicketId is null)
+            {
+                return ServiceReply.Ok(new InventoryResponse(player.Inventory.Snapshot.Items));
+            }
+
+            try
+            {
+                // Show a raid result Raid is still holding; if Raid is unreachable or its reply is unusable,
+                // serve what is saved and let the background check retry.
+                await player.Matchmaking.ReconcileInventoryAsync(token).ConfigureAwait(false);
+            }
+            catch (Exception error) when (error is AllocationUnavailableException or InvalidDataException)
+            {
+            }
+
+            return ServiceReply.Ok(new InventoryResponse(player.Inventory.Snapshot.Items));
+        });
         Player("POST /v1/pioneer/v1/batch-operation", (request, player, token) =>
             player.Matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token));
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));

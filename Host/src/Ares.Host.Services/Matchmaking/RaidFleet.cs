@@ -79,6 +79,27 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
             client => client.StatusByTicketAsync(ticketId, loadout, cancellationToken), cancellationToken);
     }
 
+    /// <summary>Confirms to the ticket's raid that the players' results are saved, so it drops them. Nothing to confirm once the raid is gone.</summary>
+    /// <exception cref="AllocationUnavailableException">Its server is unreachable or rejected the request.</exception>
+    public async Task SettleAsync(Allocation allocation, IReadOnlyList<long> userIds, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(allocation);
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            RemoveExited();
+            (_, Slot? slot) = Find(item => item.Tickets.Contains(allocation.TicketId) && item.MatchId == allocation.MatchId);
+            if (slot is not null)
+            {
+                await slot.Server.Allocator.SettleAsync(new AllocationSettleRequest(allocation.TicketId, allocation.MatchId, userIds), cancellationToken).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     /// <summary>Stops the server started for a cancelled ticket that has no raid yet.</summary>
     public async Task CancelAsync(string ticketId, CancellationToken cancellationToken)
     {

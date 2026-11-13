@@ -20,7 +20,7 @@ public sealed class PlayerServices : IDisposable
         Profiles = new ProfileFactory(() => Account, time);
         Gate = new BackendGate();
         Party = new PartyService(Gate, Profiles, log, time);
-        Matchmaking = new MatchmakingService(Gate, Party, Profiles, raids, log, Inventory);
+        Matchmaking = new MatchmakingService(Gate, Party, Profiles, raids, log, Inventory, account.UserId, time);
     }
 
     /// <summary>The account, as last loaded or changed on this Host.</summary>
