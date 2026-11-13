@@ -39,6 +39,12 @@ public interface IWorldLifecycle
     /// <param name="player">User id.</param>
     /// <returns>Whether the player has left.</returns>
     bool HasLeft(string matchId, long player);
+
+    /// <summary>How a player's raid ended and what they carry home, once they have left the world.</summary>
+    /// <param name="matchId">Match id.</param>
+    /// <param name="player">User id.</param>
+    /// <returns>The frozen result; null while the player is in the world, and for a player who left without ever connecting.</returns>
+    PlayerRaidEnd? Result(string matchId, long player);
 }
 
 /// <summary>The world could not be prepared for a reservation.</summary>

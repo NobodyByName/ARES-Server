@@ -431,6 +431,15 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     }
 
     /// <inheritdoc />
+    public PlayerRaidEnd? Result(string matchId, long player)
+    {
+        lock (_lock)
+        {
+            return _current?.MatchId == matchId && _current.Player(player) is { Left: true } member ? member.End : null;
+        }
+    }
+
+    /// <inheritdoc />
     public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Raid(principal) is null ? null : RaidWorld.Welcome;
 
     /// <inheritdoc />
@@ -441,6 +450,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         SpawnPlacement spawn = member.Spawn;
         PlayerChannels channels = new(raid, member, raid.State.PlayerFor(principal, login.UniqueId, spawn.Location, new Rotator(0, spawn.Yaw, 0), member.Inventory), login);
         channels.Start(io);
+        member.Connect();
         return channels;
     }
 

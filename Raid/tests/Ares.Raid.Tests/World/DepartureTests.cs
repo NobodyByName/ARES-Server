@@ -1,3 +1,4 @@
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.World;
 using Ares.Structs.Core.Geometry;
@@ -166,9 +167,9 @@ public sealed class DepartureTests
 
     // A settled player standing inside elevator 0's zone, and when that elevator leaves on its own after a call
     // (its extraction time over, then its doors closed); serviced up to just before.
-    private static (ScriptedPlayer Session, double Leaves) Departing()
+    internal static (ScriptedPlayer Session, double Leaves) Departing(PlayerLoadout? loadout = null)
     {
-        ScriptedPlayer session = new();
+        ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         (_, double at) = session.Settle(30, 101, Inside(session.Raid));
         Assert.Equal(ExtractionState.Closed, session.Raid.ExtractionStates.Get(0).State);

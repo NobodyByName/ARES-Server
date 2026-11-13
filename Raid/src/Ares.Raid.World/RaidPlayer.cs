@@ -11,7 +11,9 @@ public sealed class RaidPlayer
 {
     private bool _left;
     private bool _departed;
+    private bool _connected;
     private PlayerMotion? _motion;
+    private PlayerRaidEnd? _end;
 
     internal RaidPlayer(long id, PlayerLoadout loadout, IReadOnlyList<CompactPlayerProfile> profiles, SpawnPlacement spawn)
     {
@@ -50,12 +52,56 @@ public sealed class RaidPlayer
     /// </summary>
     public bool Departed => Volatile.Read(ref _departed);
 
+    /// <summary>The player's channels have started at least once: they connected to the raid.</summary>
+    public bool Connected => Volatile.Read(ref _connected);
+
+    /// <summary>
+    /// How the player's raid ended and what they carry home, frozen when they departed with an elevator or left the raid;
+    /// null before that, for a player who left without ever connecting, and when an item sits where Host cannot keep it.
+    /// </summary>
+    public PlayerRaidEnd? End => Volatile.Read(ref _end);
+
     /// <summary>The character's latest simulated movement, which other players see; null before its simulation starts.</summary>
     public PlayerMotion? Motion => Volatile.Read(ref _motion);
 
-    internal void Leave() => Volatile.Write(ref _left, true);
+    // A player who connected and leaves without having departed has lost the raid: only the Safe Pocket items come home.
+    // The result is frozen before the player is marked as left, so whoever sees Left also sees the result.
+    internal void Leave()
+    {
+        if (Connected)
+        {
+            Freeze(RaidOutcomes.Lost);
+        }
 
-    internal void Depart() => Volatile.Write(ref _departed, true);
+        Volatile.Write(ref _left, true);
+    }
+
+    // Called by the channel that owns the inventory at the departure tick; the player cannot change it afterwards.
+    internal void Depart()
+    {
+        Freeze(RaidOutcomes.Extracted);
+        Volatile.Write(ref _departed, true);
+    }
+
+    internal void Connect() => Volatile.Write(ref _connected, true);
+
+    // The first outcome stays: a departed player who later leaves keeps their extraction. An inventory Host cannot
+    // keep leaves no result, so Host returns the original loadout unchanged.
+    private void Freeze(string outcome)
+    {
+        if (End is not null)
+        {
+            return;
+        }
+
+        try
+        {
+            Interlocked.CompareExchange(ref _end, new PlayerRaidEnd(outcome, Inventory.CarriedHome(outcome)), null);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
 
     internal void Publish(PlayerMotion motion) => Volatile.Write(ref _motion, motion);
 }
@@ -67,3 +113,8 @@ public sealed class RaidPlayer
 /// <param name="Pitch">Aim pitch in radians, positive up.</param>
 /// <param name="TimeOffset">Time units from the tick's simulation time to the raid's server time.</param>
 public sealed record PlayerMotion(uint Tick, PawnMotion Motion, IReadOnlyList<PendulumVariable> Weapons, double Pitch, long TimeOffset);
+
+/// <summary>How a player's raid ended and what they carry home.</summary>
+/// <param name="Outcome">See <see cref="RaidOutcomes"/>.</param>
+/// <param name="Items">The carried items: the whole loadout after an extraction, only the Safe Pocket items after a lost raid.</param>
+public sealed record PlayerRaidEnd(string Outcome, IReadOnlyList<CarriedItem> Items);

@@ -181,7 +181,7 @@ public static class InventorySnapshots
         return new LoadoutReceipt(copy.UserId, copy.Revision, Convert.ToHexStringLower(SHA256.HashData(data)));
     }
 
-    private static bool ValidId(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= MaximumTextLength
+    internal static bool ValidId(string? value) => !string.IsNullOrWhiteSpace(value) && value.Length <= MaximumTextLength
         && value.All(character => !char.IsControl(character));
 
     private static bool ValidText(string? value) => value is { Length: <= MaximumTextLength };
