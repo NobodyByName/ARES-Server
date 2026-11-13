@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Maps;
 using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;
@@ -57,6 +59,7 @@ public sealed class RaidWorld
         (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
         ulong lootEnd = Loot.Containers.Count == 0 ? 0 : Loot.Containers.Max(container => container.Components.Append(container.Guid).Max());
         Pickups = new WorldPickups(replication, State, lootEnd + 2);
+        Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
         StaticActors =
         [
             new StaticWorldActor(LevelScriptChannel, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
@@ -136,6 +139,9 @@ public sealed class RaidWorld
 
     /// <summary>The loot containers.</summary>
     public LootCatalog Loot { get; }
+
+    /// <summary>The raid's static collision (base map and active data layers), or null when the map has none.</summary>
+    public CollisionWorld? Collision { get; }
 
     /// <summary>The extraction elevators.</summary>
     public ExtractionCatalog Extraction { get; }

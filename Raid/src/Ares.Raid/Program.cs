@@ -7,11 +7,14 @@ using Ares.Common.CommandLine;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Logging;
+using Ares.Common.Maps;
 using Ares.Raid;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Raid.World.Collision;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Network;
+using Ares.Structs.Game.World;
 
 RaidConfiguration configuration;
 try
@@ -43,7 +46,11 @@ using Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, Protocol
 socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
 int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
 
-DamWorlds worlds = new(Clock, configuration.Lighting);
+MapCollision? collision = MapCollisionLoader.Load(configuration.MapDataDirectory, DamMap.WorldName, out string? collisionProblem);
+log.Write(collision is null
+    ? new JsonObject { ["map_collision"] = "unavailable", ["warning"] = collisionProblem }
+    : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });
+DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision);
 RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
     configuration.MaxPlayers, fillWindow: configuration.FillSeconds);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
