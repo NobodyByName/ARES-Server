@@ -101,8 +101,8 @@ public enum DeliveryPhase
 /// <summary>
 /// One player's actor channels after Join: exports, controller/player state and HUD before world play,
 /// then the squad, character, components and restart; after possession, input acknowledgements, the first blackboard frame,
-/// level streaming requests, ability grants, the doors and ladders of visible cells, the loot containers, the
-/// extraction elevators, and the other players of the raid with their movement; once an elevator leaves with the
+/// level streaming requests, ability grants, the doors and ladders of visible cells, the loot containers, the items
+/// lying in the world, the extraction elevators, and the other players of the raid with their movement; once an elevator leaves with the
 /// player, the end of their round.
 /// </summary>
 public sealed partial class PlayerChannels : IPlayerChannels
@@ -118,6 +118,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // interaction event long enough to play the ending.
     private const double BreachEndingSeconds = 2.0;
     private const int MaxLaddersInFlight = 8;
+
+    // Dormant actors (loot containers, pickups) are delivered when they become relevant: how often relevance is
+    // checked, and how many new deliveries start per check.
+    private const double LootRelevanceInterval = 0.25;
+    private const int MaxLootStartsPerCheck = 8;
     private const int MaxLootInFlight = 4;
     private const int LootRequestLog = 40;
     private const int InteractionRequestLog = 40;
@@ -244,6 +249,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // press and its server world time.
     private (ExtractionPoint Point, int Button, uint Frame, double PressedAt)? _descent;
     private List<string> _unknownRequests = [];
+    private List<string> _rejectedInventory = [];
     private InteractionRequest? _lastLoggedRequest;
 
     // This player's departure with an elevator (its index and the server world time it left), the export naming the
@@ -379,6 +385,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Inventory requests rejected and corrected.</summary>
     public int RejectedInventoryRequests { get; private set; }
 
+    /// <summary>
+    /// The latest rejected inventory requests, oldest first, as type from->to (container r revision/slot) xamount
+    /// reason@input frame.
+    /// </summary>
+    public IReadOnlyList<string> RejectedInventoryLog => _rejectedInventory;
+
+    /// <summary>Match id of the raid.</summary>
+    public string MatchId => _raid.MatchId;
+
     /// <summary>Ladders whose climbable actor and interactions this client has.</summary>
     public int LaddersReady => _ladders.Values.Count(ladder => ladder.State == LadderChannel.Open);
 
@@ -509,6 +524,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._elevatorRequests = [.. _elevatorRequests];
         copy._elevatorChanges = [.. _elevatorChanges];
         copy._unknownRequests = [.. _unknownRequests];
+        copy._rejectedInventory = [.. _rejectedInventory];
+        CopyPickups(copy);
         return copy;
     }
 
@@ -537,9 +554,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ArgumentNullException.ThrowIfNull(io);
         ArgumentNullException.ThrowIfNull(bunch);
         if (bunch.Channel == SquadChannel || DoorIndex(bunch.Channel) is not null || LadderIndex(bunch.Channel) is not null
-            || LootIndex(bunch.Channel) is not null || ElevatorIndex(bunch.Channel) is not null || ObservedIndex(bunch.Channel) is not null)
+            || LootIndex(bunch.Channel) is not null || ElevatorIndex(bunch.Channel) is not null || ObservedIndex(bunch.Channel) is not null
+            || PickupIndex(bunch.Channel) is not null)
         {
-            // The client owns no squad, door, ladder, container, elevator or other player; it only sends channel bookkeeping there.
+            // The client owns no squad, door, ladder, container, elevator, other player or pickup; it only sends channel bookkeeping there.
             return;
         }
 
@@ -644,6 +662,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ServiceDoors(io.Sender, now);
         ServiceLadders(io.Sender, now);
         ServiceLoot(io.Sender, now);
+        ServicePickups(io.Sender, now);
         ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
@@ -675,6 +694,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         {
             _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
         }
+        else if (PickupIndex(channel) is not null)
+        {
+            PickupChannelFailed(channel);
+        }
     }
 
     /// <inheritdoc />
@@ -692,6 +715,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
             _possessionToCommit = false;
         }
 
+        double now = _raid.Clock();
+        _raid.Pickups.Expire(now);
         if (_departure is not null)
         {
             // The player left with an elevator: their input no longer acts or moves in the raid.
@@ -701,7 +726,6 @@ public sealed partial class PlayerChannels : IPlayerChannels
             return;
         }
 
-        double now = _raid.Clock();
         foreach (InteractionRequest request in _requests)
         {
             LootContainer? loot = SearchableLoot(request.Target);
@@ -748,6 +772,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     }
                 }
 
+                continue;
+            }
+
+            if (PickableUp(request.Target) is { } pickup)
+            {
+                RequestPickup(pickup, request, repeatedLog, now);
                 continue;
             }
 
@@ -813,18 +843,20 @@ public sealed partial class PlayerChannels : IPlayerChannels
         CancelDescentOnMovement();
         if (Phase == DeliveryPhase.Possessed)
         {
-            foreach (InventoryRequest request in _inventoryRequests)
+            foreach ((uint frame, InventoryCommand command) in _inventoryRequests)
             {
-                if (_member.Inventory.Apply(request.Command))
+                if (_member.Inventory.Apply(command, out string? rejection))
                 {
                     InventoryMoves++;
+                    PlaceDrops(now);
                 }
                 else
                 {
                     RejectedInventoryRequests++;
+                    LogRequest(_rejectedInventory, $"{command.Type} {Slot(command.From)}->{Slot(command.To)} x{command.Amount} {rejection}@{frame}");
                 }
 
-                _inventoryFrame = Math.Max(_inventoryFrame, request.Frame);
+                _inventoryFrame = Math.Max(_inventoryFrame, frame);
             }
         }
 
@@ -1393,7 +1425,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
 
             focus = UsableDoor(_input.Focus) is null && BreachableDoor(_input.Focus) is null && SearchableLoot(_input.Focus) is null
-                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null ? 0 : _input.Focus;
+                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null && PickableUp(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
@@ -1901,6 +1933,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ServiceSearch(sender, now);
     }
 
+    // Where the player is for loot and pickup relevance: the latest reported position, else the spawn.
+    private Vector3D LootPosition => InputFrame is { } latest && _input.Position(latest) is { } position ? position : _member.Spawn.Location;
+
     // Runs this player's search: names the character's interactor once, starts a requested search (the client
     // lines up, then holds), cancels it on movement, opens the container when the hold ends, and closes it when
     // the player closes the looting menu or walks away. What the player leaves inside stays in the raid's loot state.
@@ -2018,6 +2053,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _lootRequests.Add(entry);
     }
 
+    private static string Slot(ItemContainerSlot slot) => $"{slot.Parent.Id}r{slot.Parent.Revision}/{slot.Index}";
+
     private static void LogRequest(List<string> log, string entry)
     {
         if (log.Count == InteractionRequestLog)
@@ -2042,10 +2079,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
         && _elevators.GetValueOrDefault(point.Index).State == ElevatorChannel.Open
         && _raid.ExtractionStates.Get(point.Index) is { State: ExtractionState.Ready, Descent: null } ? (point, point.ButtonIndex(button)) : null;
 
-    // Whether an id names an interaction the server gave the client: a door, ladder, loot or elevator button.
+    // Whether an id names an interaction the server gave the client: a door, ladder, loot, elevator button or pickup.
     private bool KnownInteraction(ulong target) =>
         _raid.Doors.ByButton(target) is not null || _raid.Doors.ByBreach(target) is not null || _raid.Loot.ByInteraction(target) is not null
-        || _raid.Extraction.ByButton(target) is not null || _raid.Ladders.Ladders.Any(ladder => ladder.Interactions.Contains(target));
+        || _raid.Extraction.ByButton(target) is not null || _raid.Ladders.Ladders.Any(ladder => ladder.Interactions.Contains(target))
+        || _raid.Pickups.ByTarget(target) is not null;
 
     // The loot container of a search interaction the client may use: its search was enabled on this connection.
     private LootContainer? SearchableLoot(ulong interaction) =>

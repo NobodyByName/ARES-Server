@@ -241,6 +241,7 @@ internal sealed class ScriptedPlayer
                             new PendulumIntegerValue(InventoryInput.CommandField, (ulong)command.Type),
                             new PendulumIntegerValue(InventoryInput.FromContainerField, (uint)command.From.Parent.Id ^ 0x80000000U),
                             new PendulumIntegerValue(InventoryInput.ToContainerField, (uint)command.To.Parent.Id ^ 0x80000000U),
+                            new PendulumIntegerValue(InventoryInput.AmountField, (uint)command.Amount ^ 0x80000000U),
                             new PendulumIntegerValue(InventoryInput.FromRevisionField, command.From.Parent.Revision),
                             new PendulumIntegerValue(InventoryInput.ToRevisionField, command.To.Parent.Revision),
                             new PendulumIntegerValue(InventoryInput.FromSlotField, command.From.Index),

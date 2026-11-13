@@ -36,6 +36,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
 
     private readonly Dictionary<ConnectionEvent, int> _counts = [];
     private readonly Dictionary<IPEndPoint, DeliveryPhase> _phases = [];
+    private (string? Raid, int Logged) _pickupEvents;
     private double _summaryAt;
 
     /// <summary>Serves until <paramref name="stop"/> is cancelled.</summary>
@@ -93,7 +94,24 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
     {
         foreach ((IPEndPoint peer, IPlayerChannels? player) in connections.Players)
         {
-            if (player is not PlayerChannels channels || _phases.GetValueOrDefault(peer) == channels.Phase)
+            if (player is not PlayerChannels channels)
+            {
+                continue;
+            }
+
+            // Pickup events belong to the raid; each is logged once, whichever player reports it.
+            if (_pickupEvents.Raid != channels.MatchId)
+            {
+                _pickupEvents = (channels.MatchId, 0);
+            }
+
+            foreach (string entry in channels.PickupEvents.Skip(_pickupEvents.Logged))
+            {
+                log.Write("raid_pickup", entry);
+            }
+
+            _pickupEvents = (channels.MatchId, channels.PickupEvents.Count);
+            if (_phases.GetValueOrDefault(peer) == channels.Phase)
             {
                 continue;
             }
@@ -164,10 +182,16 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["shots_fired"] = channels.ShotsFired,
                 ["reloads_completed"] = channels.ReloadsCompleted,
                 ["rejected_inventory_requests"] = channels.RejectedInventoryRequests,
+                ["rejected_inventory_log"] = string.Join(", ", channels.RejectedInventoryLog),
                 ["ladders_ready"] = channels.LaddersReady,
                 ["ladders_in_progress"] = channels.LaddersInProgress,
                 ["loot_ready"] = channels.LootReady,
                 ["loot_requests"] = string.Join(' ', channels.LootRequests),
+                ["items_dropped"] = channels.ItemsDropped,
+                ["pickups_taken"] = channels.PickupsTaken,
+                ["pickups_ready"] = channels.PickupsReady,
+                ["pickup_channels"] = channels.PickupChannelsInUse,
+                ["pickup_requests"] = string.Join(' ', channels.PickupRequests),
                 ["elevators_ready"] = channels.ElevatorsReady,
                 ["elevator_states"] = channels.ElevatorStates,
                 ["elevator_calls"] = channels.ElevatorCalls,

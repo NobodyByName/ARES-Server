@@ -10,6 +10,9 @@ public static class Bunches
     /// <summary>Channel close reason when the actor no longer exists.</summary>
     public const int Destroyed = 0;
 
+    /// <summary>Channel close reason when the actor goes dormant: the client keeps it until its channel opens again.</summary>
+    public const int Dormancy = 1;
+
     /// <summary>Channel close reason when the actor's level is no longer visible.</summary>
     public const int LevelUnloaded = 2;
 

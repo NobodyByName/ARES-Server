@@ -55,6 +55,8 @@ public sealed class RaidWorld
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
         ReplicationContext replication = worlds.Replication;
         (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
+        ulong lootEnd = Loot.Containers.Count == 0 ? 0 : Loot.Containers.Max(container => container.Components.Append(container.Guid).Max());
+        Pickups = new WorldPickups(replication, State, lootEnd + 2);
         StaticActors =
         [
             new StaticWorldActor(LevelScriptChannel, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
@@ -159,6 +161,12 @@ public sealed class RaidWorld
     /// <summary>Loot container contents of this raid.</summary>
     public LootStates LootStates { get; } = new(DamLoot.All.Count);
 
+    /// <summary>The item stacks lying in this raid.</summary>
+    public WorldPickups Pickups { get; }
+
+    /// <summary>Most players the raid can hold: one per spawn point of its player start.</summary>
+    public int MaxPlayers => _starts[Seed % _starts.Count].SpawnPoints.Count;
+
     /// <summary>Server actors of this raid.</summary>
     public WorldState State { get; }
 
@@ -184,7 +192,7 @@ public sealed class RaidWorld
             // players meet right away while parties cannot be joined yet.
             PlayerStart start = _starts[Seed % _starts.Count];
             int firstSlot = _players.Count;
-            if (firstSlot + players.Count > start.SpawnPoints.Count)
+            if (firstSlot + players.Count > MaxPlayers)
             {
                 throw new WorldPreparationException("The shared player start has no free spawn point");
             }
