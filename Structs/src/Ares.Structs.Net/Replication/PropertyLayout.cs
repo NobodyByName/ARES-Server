@@ -125,7 +125,7 @@ public sealed class PropertyLayout
 
 /// <summary>
 /// Property deltas: changed layout members by handle, terminated by handle 0. Dynamic arrays are sent
-/// whole (up to 128 elements of names, 16-bit integers or objects).
+/// whole (up to 128 elements of names, 16- or 64-bit integers or objects).
 /// </summary>
 /// <param name="values">Value codec.</param>
 public sealed class PropertyCodec(ValueCodec values)
@@ -278,12 +278,12 @@ public sealed class PropertyCodec(ValueCodec values)
     {
         if (command.Children is not [{ CustomDelta: false } child])
         {
-            throw new InvalidPacketException("Only whole arrays of names, 16-bit integers or objects are supported");
+            throw new InvalidPacketException("Only whole arrays of names, 16- or 64-bit integers or objects are supported");
         }
 
         PropertyDefinition element = _values.Catalog.Property(child.Property);
-        return element.Kind is PropertyKind.NameProperty or PropertyKind.UInt16Property or PropertyKind.ObjectProperty
+        return element.Kind is PropertyKind.NameProperty or PropertyKind.UInt16Property or PropertyKind.UInt64Property or PropertyKind.ObjectProperty
             ? element
-            : throw new InvalidPacketException("Only whole arrays of names, 16-bit integers or objects are supported");
+            : throw new InvalidPacketException("Only whole arrays of names, 16- or 64-bit integers or objects are supported");
     }
 }
