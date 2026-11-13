@@ -3943,7 +3943,7 @@ globalThis.AresContent = {
               "name": "Heavy Ammo",
               "technical": "DA_Item_HeavyAmmo",
               "status": "partial",
-              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and menu stacks can be split and merged; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified. Splitting and merging in Raid remain."
+              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and stacks can be split and merged in the menu and in Raid; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified."
             },
             {
               "name": "Launcher Ammo",

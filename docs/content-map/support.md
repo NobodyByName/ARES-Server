@@ -43,7 +43,7 @@ has automated coverage; menu equipment, Raid shield bars and inventory display a
 Ferro I and Heavy Ammo have menu item definitions and persistent storage. Ferro I fits both
 weapon slots and the backpack; Heavy Ammo stacks hold 1–60 rounds and move as whole stacks through
 the stash, backpack and safe pocket. Raid accepts both, includes them in the carried weight and
-validates whole-stack moves. In the menu, stacks can also be split and merged up to their stack limit.
+validates whole-stack moves. In the menu and in Raid, stacks can also be split and merged up to their stack limit.
 Every raider also holds the Raider Tool and empty hands.
 The Ferro I shows its three empty mod slots (muzzle, underbarrel, stock) in the menu and in Raid.
 

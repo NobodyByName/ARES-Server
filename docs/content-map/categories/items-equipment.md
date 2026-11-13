@@ -676,7 +676,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | Content | Status | Details |
 | --- | --- | --- |
 | <a id="content-root-2-5-0"></a>Energy Ammo | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-5-1"></a>Heavy Ammo | Partial | Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and menu stacks can be split and merged; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified. Splitting and merging in Raid remain. |
+| <a id="content-root-2-5-1"></a>Heavy Ammo | Partial | Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and stacks can be split and merged in the menu and in Raid; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified. |
 | <a id="content-root-2-5-2"></a>Launcher Ammo | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-5-3"></a>Light Ammo | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-5-4"></a>Medium Ammo | Not assessed | Availability and server behavior have not been assessed. |
