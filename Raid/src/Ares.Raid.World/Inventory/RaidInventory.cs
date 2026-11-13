@@ -377,12 +377,12 @@ public sealed class RaidInventory
     /// <summary>Container update counter, including corrections for rejected requests.</summary>
     public uint Version { get; private set; }
 
-    /// <summary>Applies a swap or drop, or corrects the client's prediction when it is invalid.</summary>
+    /// <summary>Applies a swap, split or drop, or corrects the client's prediction when it is invalid.</summary>
     /// <param name="command">The requested operation.</param>
     /// <returns>Whether the operation was accepted.</returns>
     public bool Apply(InventoryCommand command) => Apply(command, out _);
 
-    /// <summary>Applies a swap or drop, or corrects the client's prediction when it is invalid.</summary>
+    /// <summary>Applies a swap, split or drop, or corrects the client's prediction when it is invalid.</summary>
     /// <param name="command">The requested operation.</param>
     /// <param name="rejection">Why the operation was rejected, or null when it was accepted.</param>
     /// <returns>Whether the operation was accepted.</returns>
@@ -392,6 +392,7 @@ public sealed class RaidInventory
         rejection = command.Type switch
         {
             InventoryCommandType.SwapItems => Swap(command),
+            InventoryCommandType.SplitItems => Split(command),
             InventoryCommandType.DropItem or InventoryCommandType.DropPartialItem => Drop(command),
             _ => "unsupported command",
         };
@@ -573,6 +574,57 @@ public sealed class RaidInventory
         containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(contents) };
         Containers = Array.AsReadOnly(containers);
         _dropped.Enqueue(whole ? source : source with { Id = Guid.NewGuid(), Amount = command.Amount });
+        return null;
+    }
+
+    // Moves an amount of a stack into an empty slot, as a new stack, or onto a stack of the same item up to its
+    // maximum stack size. A zero amount splits half the stack, and the whole stack moves with its identity.
+    private string? Split(InventoryCommand command)
+    {
+        ItemContainerSlot from = command.From;
+        ItemContainerSlot to = command.To;
+        if (!Valid(from) || !Valid(to) || from == to)
+        {
+            return "invalid slot";
+        }
+
+        if (Containers[from.Parent.Id].Items[from.Index] is not { } source)
+        {
+            return "empty source";
+        }
+
+        int amount = Math.Min(command.Amount > 0 ? command.Amount : source.Amount / 2, source.Amount);
+        if (amount <= 0)
+        {
+            return "invalid amount";
+        }
+
+        if (!Allows(to, source))
+        {
+            return "slot not allowed";
+        }
+
+        ContainerItem? destination = Containers[to.Parent.Id].Items[to.Index];
+        if (destination is null)
+        {
+            Place(from, amount == source.Amount ? null : source with { Amount = source.Amount - amount },
+                to, amount == source.Amount ? source : source with { Id = Guid.NewGuid(), Amount = amount });
+            return null;
+        }
+
+        if (destination.AssetIndex != source.AssetIndex)
+        {
+            return "different item";
+        }
+
+        int moved = Math.Min(amount, s_maxAmounts.GetValueOrDefault(source.AssetIndex) - destination.Amount);
+        if (moved <= 0)
+        {
+            return "stack full";
+        }
+
+        Place(from, moved == source.Amount ? null : source with { Amount = source.Amount - moved },
+            to, destination with { Amount = destination.Amount + moved });
         return null;
     }
 

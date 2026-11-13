@@ -271,11 +271,42 @@ public sealed class InventoryTests
         new ItemContainerSlot(new ItemContainerHandle(fromContainer, 0), fromSlot),
         new ItemContainerSlot(new ItemContainerHandle(toContainer, 0), toSlot), 0, new ItemContainerHandle(-1, ushort.MaxValue));
 
+    private static InventoryCommand Split(int fromContainer, ushort fromSlot, int toContainer, ushort toSlot, int amount) =>
+        Swap(fromContainer, fromSlot, toContainer, toSlot) with { Type = InventoryCommandType.SplitItems, Amount = amount };
+
     private static InventoryCommand Drop(int container, ushort slot, int amount = 0) =>
         Swap(container, slot, container, slot) with { Type = amount == 0 ? InventoryCommandType.DropItem : InventoryCommandType.DropPartialItem, Amount = amount };
 
     private static ContainerItem LootDuck(int amount) =>
         new(checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId)), Guid.NewGuid(), amount, 1);
+
+    [Fact]
+    public void Ducks_taken_from_several_containers_stack_on_the_carried_duck_up_to_the_maximum_stack()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        int maximum = checked((int)LoadoutDefinitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        ContainerItem first = LootDuck(1);
+        int loot = inventory.OpenWorldContainer([first, null], LootStates.UnitWeights);
+        Assert.True(inventory.Apply(Swap(loot, 0, inventory.Backpack, 0)));
+        Assert.Null(inventory.CloseWorldContainer()[0]);
+
+        loot = inventory.OpenWorldContainer([LootDuck(1)], LootStates.UnitWeights);
+        Assert.True(inventory.Apply(Split(loot, 0, inventory.Backpack, 0, 1), out string? rejection));
+        Assert.Null(rejection);
+        Assert.Equal(first with { Amount = 2 }, inventory.Containers[inventory.Backpack].Items[0]);
+        Assert.Null(inventory.CloseWorldContainer()[0]);
+
+        loot = inventory.OpenWorldContainer([LootDuck(maximum)], LootStates.UnitWeights);
+        Assert.True(inventory.Apply(Split(loot, 0, inventory.Backpack, 0, maximum)));
+        Assert.Equal(maximum, inventory.Containers[inventory.Backpack].Items[0]!.Amount);
+        Assert.Equal(2, inventory.LootItems[0]!.Amount);
+        Assert.False(inventory.Apply(Split(loot, 0, inventory.Backpack, 0, 2), out rejection));
+        Assert.Equal("stack full", rejection);
+        Assert.False(inventory.Apply(Split(loot, 0, inventory.Loadout, InventoryBlackboard.ArmorSlot, 2), out rejection));
+        Assert.Equal("slot not allowed", rejection);
+        Assert.Equal(2, inventory.LootItems[0]!.Amount);
+        Assert.Equal(maximum * StorageItems.RubberDuckWeight, inventory.Weight, 6);
+    }
 
     [Fact]
     public void Dropping_a_whole_stack_empties_the_slot_and_hands_over_the_same_item()
@@ -381,6 +412,40 @@ public sealed class InventoryTests
         Assert.Equal(3, inventory.PickUp(LootDuck(4)));
         Assert.Equal(maximum, inventory.Containers[inventory.Backpack].Items[0]!.Amount);
         Assert.All(inventory.Containers[inventory.Backpack].Items, Assert.NotNull);
+    }
+
+    [Fact]
+    public void A_split_moves_part_of_a_stack_into_an_empty_slot_as_a_new_stack()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ContainerItem pair = LootDuck(2);
+        int loot = inventory.OpenWorldContainer([pair, null], LootStates.UnitWeights);
+        Assert.True(inventory.Apply(Swap(loot, 0, inventory.Backpack, 0)));
+        Assert.True(inventory.Apply(Split(inventory.Backpack, 0, inventory.Backpack, 1, 1)));
+        Assert.Equal(pair with { Amount = 1 }, inventory.Containers[inventory.Backpack].Items[0]);
+        ContainerItem split = inventory.Containers[inventory.Backpack].Items[1]!;
+        Assert.Equal(pair with { Id = split.Id, Amount = 1 }, split);
+        Assert.NotEqual(pair.Id, split.Id);
+
+        ContainerItem?[] before = [.. inventory.Containers.SelectMany(container => container.Items)];
+        (InventoryCommand Command, string Reason)[] invalid =
+        [
+            (Split(inventory.Backpack, 0, inventory.Backpack, 0, 1), "invalid slot"),
+            (Split(inventory.Backpack, 0, 99, 0, 1), "invalid slot"),
+            (Split(inventory.Backpack, 2, inventory.Backpack, 3, 1), "empty source"),
+            (Split(inventory.Backpack, 0, inventory.Backpack, 3, 0), "invalid amount"),
+            (Split(inventory.Backpack, 0, inventory.Belt, 0, 1) with { Type = InventoryCommandType.MoveFillItem }, "unsupported command"),
+        ];
+        foreach ((InventoryCommand command, string reason) in invalid)
+        {
+            Assert.False(inventory.Apply(command, out string? rejection));
+            Assert.Equal(reason, rejection);
+            Assert.Equal(before, inventory.Containers.SelectMany(container => container.Items));
+        }
+
+        Assert.True(inventory.Apply(Split(inventory.Backpack, 1, loot, 1, 5)));
+        Assert.Equal(split, inventory.LootItems[1]);
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[1]);
     }
 
     [Theory]
