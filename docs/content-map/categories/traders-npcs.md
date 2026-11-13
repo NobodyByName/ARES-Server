@@ -4,7 +4,7 @@
 
 ![Traders & NPCs content map](traders-npcs.svg)
 
-Each small cell represents one content piece. Blue: **Partial**; orange: **Not implemented**; gray: **Not assessed**. Group sizes are balanced for readability. Internal names and availability still need review.
+Each small cell represents one content piece. Green: **Done**; blue: **Partial**; orange: **Not implemented**; gray: **Not assessed**. Group sizes are balanced for readability. Internal names and availability still need review.
 
 | Content | Status | Details |
 | --- | --- | --- |

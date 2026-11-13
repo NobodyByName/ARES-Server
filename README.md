@@ -24,7 +24,7 @@ the game-session server that runs its raids. Players connect with
 
 [Explore content](docs/content-map/README.md) · [Current server support](docs/content-map/support.md)
 
-Each cell is one content piece: **blue** = partial, **orange** = not implemented,
+Each cell is one content piece: **green** = done, **blue** = partial, **orange** = not implemented,
 **gray** = not assessed. Group sizes are balanced for readability; internal names and
 availability still need review.
 

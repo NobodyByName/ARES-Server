@@ -2,7 +2,7 @@
 (() => {
     "use strict";
 
-    const labels = { partial: "Partial", pending: "Not implemented", unassessed: "Not assessed" };
+    const labels = { done: "Done", partial: "Partial", pending: "Not implemented", unassessed: "Not assessed" };
     const escape = value => String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 
     function index(data) {
@@ -98,14 +98,14 @@
     }
 
     const svgStyle = `
-        svg{--background:#ffffff;--foreground:#24292f;--heading:#eaeef2;--border:#d0d7de;--partial:#b6d9ff;--pending:#ffead8;--unassessed:#eaedef;font-family:system-ui,sans-serif}
-        @media(prefers-color-scheme:dark){svg{--background:#0d1117;--foreground:#e6edf3;--heading:#21262d;--border:#30363d;--partial:#173d66;--pending:#49301d;--unassessed:#242a32}}
-        text{fill:var(--foreground);font-size:12px}a{cursor:pointer}.frame{fill:none;stroke:var(--border);stroke-width:1}.heading{fill:var(--heading)}.cell{fill:var(--unassessed)}.partial .cell{fill:var(--partial)}.pending .cell{fill:var(--pending)}a:hover .cell,a[aria-current=true] .cell{stroke:var(--foreground);stroke-width:1.5}.group-label{font-weight:600}
+        svg{--background:#ffffff;--foreground:#24292f;--heading:#eaeef2;--border:#d0d7de;--done:#b4e6c2;--partial:#b6d9ff;--pending:#ffead8;--unassessed:#eaedef;font-family:system-ui,sans-serif}
+        @media(prefers-color-scheme:dark){svg{--background:#0d1117;--foreground:#e6edf3;--heading:#21262d;--border:#30363d;--done:#1d4b2c;--partial:#173d66;--pending:#49301d;--unassessed:#242a32}}
+        text{fill:var(--foreground);font-size:12px}a{cursor:pointer}.frame{fill:none;stroke:var(--border);stroke-width:1}.heading{fill:var(--heading)}.cell{fill:var(--unassessed)}.done .cell{fill:var(--done)}.partial .cell{fill:var(--partial)}.pending .cell{fill:var(--pending)}a:hover .cell,a[aria-current=true] .cell{stroke:var(--foreground);stroke-width:1.5}.group-label{font-weight:600}
     `;
 
     function svg(root, width, height, options = {}) {
         const positions = layout(root, width, height);
-        const parts = [`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="map-title map-description">`, `<title id="map-title">${escape(root.name)} content map</title>`, `<desc id="map-description">Each small cell is an individual content piece. Blue: partial; orange: not implemented; gray: not assessed. Groups are balanced for readability.</desc>`, `<style>${svgStyle}</style>`, `<rect width="100%" height="100%" fill="var(--background)"/>`];
+        const parts = [`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="map-title map-description">`, `<title id="map-title">${escape(root.name)} content map</title>`, `<desc id="map-description">Each small cell is an individual content piece. Green: done; blue: partial; orange: not implemented; gray: not assessed. Groups are balanced for readability.</desc>`, `<style>${svgStyle}</style>`, `<rect width="100%" height="100%" fill="var(--background)"/>`];
         const f = number => number.toFixed(2);
         for (const box of positions.filter(box => !box.node.children)) {
             if (box.w < 1 || box.h < 1) continue;

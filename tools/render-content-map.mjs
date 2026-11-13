@@ -15,7 +15,7 @@ const slug = node => node.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace
 const anchor = node => "content-" + node.key.replaceAll("/", "-");
 const cell = value => String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
 const overview = (node, link) => map.svg(node, 1000, 650, { link });
-const overviewNote = "Each small cell represents one content piece. Blue: **Partial**; orange: **Not implemented**; gray: **Not assessed**. Group sizes are balanced for readability. Internal names and availability still need review.\n";
+const overviewNote = "Each small cell represents one content piece. Green: **Done**; blue: **Partial**; orange: **Not implemented**; gray: **Not assessed**. Group sizes are balanced for readability. Internal names and availability still need review.\n";
 
 outputs.set("overview.svg", overview(root, node => {
     let category = node;
