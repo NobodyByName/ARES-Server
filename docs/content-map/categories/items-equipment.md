@@ -207,16 +207,16 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 
 | Content | Status | Details |
 | --- | --- | --- |
-| <a id="content-root-2-3-0"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-1"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-2"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-3"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-4"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-5"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-6"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-7"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-8"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
-| <a id="content-root-2-3-9"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains. |
+| <a id="content-root-2-3-0"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-1"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-2"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-3"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-4"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-5"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-6"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-7"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-8"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
+| <a id="content-root-2-3-9"></a>Rubber Duck | Partial | Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. |
 | <a id="content-root-2-3-10"></a>Salvage ARCMemory Card | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-11"></a>Salvage Accordion 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-12"></a>Salvage Advanced ARCPowercell | Not assessed | Availability and server behavior have not been assessed. |
@@ -970,6 +970,6 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 | <a id="content-root-2-9-10"></a>Augment Utility T3 Defensive | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-9-11"></a>Augment Utility T3 Healing | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-9-12"></a>Augment Utility T3 Smoke | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-9-13"></a>Combat Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain. |
-| <a id="content-root-2-9-14"></a>Looting Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain. |
-| <a id="content-root-2-9-15"></a>Tactical / Utility Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain. |
+| <a id="content-root-2-9-13"></a>Combat Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. |
+| <a id="content-root-2-9-14"></a>Looting Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. |
+| <a id="content-root-2-9-15"></a>Tactical / Utility Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. |

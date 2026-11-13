@@ -1647,61 +1647,61 @@ globalThis.AresContent = {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Alien",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Cow",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Flamingo",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Glitter",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Lance",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Scrappy",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Standard",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_RubberDuck_Winner01",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_RubberDuck_Winner02",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_RubberDuck_Winner03",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; full raid settlement remains."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
             },
             {
               "name": "Salvage ARCMemory Card",
@@ -5294,19 +5294,19 @@ globalThis.AresContent = {
               "name": "Combat Mk.1",
               "technical": "DA_Item_Augment_Combat_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
             },
             {
               "name": "Looting Mk.1",
               "technical": "DA_Item_Augment_Looting_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
             },
             {
               "name": "Tactical / Utility Mk.1",
               "technical": "DA_Item_Augment_Utility_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; settlement and full raid lifecycle remain."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
             }
           ]
         }
@@ -6419,7 +6419,7 @@ globalThis.AresContent = {
               "name": "North Complex",
               "technical": "DA_ExtractionPoint_NorthComplex",
               "status": "partial",
-              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; the loadout and carried items come home."
             },
             {
               "name": "Old Baron",
@@ -6455,7 +6455,7 @@ globalThis.AresContent = {
               "name": "Red Lake Balcony",
               "technical": "DA_ExtractionPoint_RedLakeBalcony",
               "status": "partial",
-              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; the loadout and carried items come home."
             },
             {
               "name": "Spillway",
@@ -6473,13 +6473,13 @@ globalThis.AresContent = {
               "name": "Swamp Lift",
               "technical": "DA_ExtractionPoint_SwampLift",
               "status": "partial",
-              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; the loadout and carried items come home."
             },
             {
               "name": "Swampside",
               "technical": "DA_ExtractionPoint_Swampside",
               "status": "partial",
-              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; post-raid settlement is not implemented."
+              "note": "Dam elevator: calling it, the descend hold and leaving to the main menu work; the loadout and carried items come home."
             },
             {
               "name": "TBG Airshaft Central",

@@ -20,8 +20,15 @@ their gun and aim. Each player leaves on their own, and the raid ends when the l
 The standard player containers and rubber duck appear in the raid inventory, and whole-stack drag
 moves between compatible slots are
 validated by Raid. Inventory and map screens show their shared menu frame.
-Placement changes remain inside the active raid; post-raid inventory settlement
-is not implemented.
+When a raid ends, Host saves what the player carries. Extracting by the elevator brings the whole
+loadout home as it was at departure (augment, shield, both weapons, backpack, quick-use items and
+Safe Pockets) with picked-up loot, split stacks, current amounts and durability. Rounds loaded in
+guns are unloaded back into ammo stacks, or new stacks in free backpack slots; rounds with no room
+are lost. Items left in the world, even in the elevator, are gone. Surrendering, or disconnecting
+and not returning (final after the reservation times out, about two minutes), brings home only the
+Safe Pocket items; everything else, the augment included, is lost. A player who never got into the
+raid keeps their original inventory. The menu shows the result at once. This is stock-client
+verified with one player.
 
 Combat, Looting and Tactical/Utility Mk.1 augments support persistent menu selection, atomic
 swaps, capacity validation and matching Raid frames. Raid initializes the carrying limit and
@@ -69,7 +76,7 @@ Limitations:
   and aim only. Shots, effects, health and interactions between players are not shared yet, and
   every player is sent to everyone whatever the distance. Parties hold one player; Dam only.
 - Accounts are made by the operator on the Host console; players sign in through ARES-Launcher.
-  There is no progression yet.
+  Experience and quests are not recorded yet.
 - Movement is trusted from the client; the server does not check it yet.
 - Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
   its progress.
