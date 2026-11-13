@@ -12,6 +12,12 @@ public sealed class RaidInventory
     private readonly Dictionary<string, int> _handles = new(StringComparer.Ordinal);
     private readonly Dictionary<(int Container, int Slot), HashSet<int>> _allowedSlots = [];
     private readonly Dictionary<ushort, double> _unitWeights = [];
+    private readonly Queue<ContainerItem> _dropped = new();
+
+    // Maximum stack size of each supported item; items without one, such as hand items, never stack.
+    private static readonly Dictionary<ushort, int> s_maxAmounts = LoadoutDefinitions.All
+        .Where(item => LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId))
+        .ToDictionary(item => checked((ushort)LoadoutDefinitions.UsableIndex(item.GameAssetId)), item => checked((int)item.MaxAmount));
 
     /// <summary>Prepares the selected frame, preserving carried item identities and amounts.</summary>
     /// <param name="loadout">The frozen loadout accepted by this raid.</param>
@@ -371,16 +377,27 @@ public sealed class RaidInventory
     /// <summary>Container update counter, including corrections for rejected requests.</summary>
     public uint Version { get; private set; }
 
-    /// <summary>Applies a whole-stack swap, or corrects the client's prediction when it is invalid.</summary>
+    /// <summary>Applies a swap or drop, or corrects the client's prediction when it is invalid.</summary>
     /// <param name="command">The requested operation.</param>
-    /// <returns>Whether the swap was accepted.</returns>
-    public bool Apply(InventoryCommand command)
+    /// <returns>Whether the operation was accepted.</returns>
+    public bool Apply(InventoryCommand command) => Apply(command, out _);
+
+    /// <summary>Applies a swap or drop, or corrects the client's prediction when it is invalid.</summary>
+    /// <param name="command">The requested operation.</param>
+    /// <param name="rejection">Why the operation was rejected, or null when it was accepted.</param>
+    /// <returns>Whether the operation was accepted.</returns>
+    public bool Apply(InventoryCommand command, out string? rejection)
     {
         ArgumentNullException.ThrowIfNull(command);
-        bool applied = Swap(command);
+        rejection = command.Type switch
+        {
+            InventoryCommandType.SwapItems => Swap(command),
+            InventoryCommandType.DropItem or InventoryCommandType.DropPartialItem => Drop(command),
+            _ => "unsupported command",
+        };
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
-        return applied;
+        return rejection is null;
     }
 
     /// <summary>The searched world container the player has open, as an extra container after the player's own.</summary>
@@ -427,33 +444,148 @@ public sealed class RaidInventory
         return items;
     }
 
+    /// <summary>Takes the next item removed by an accepted drop that the raid has not yet collected.</summary>
+    /// <param name="item">The dropped item: the whole stack with its identity, or the dropped part with a new identity.</param>
+    /// <returns>Whether an item was available.</returns>
+    public bool TryTakeDropped(out ContainerItem item) => _dropped.TryDequeue(out item!);
+
+    /// <summary>Adds an item picked up from the world: tops up carried stacks of the same item, then uses the first empty backpack slot.</summary>
+    /// <param name="item">The picked-up item.</param>
+    /// <returns>The amount taken; less than the item's amount when the rest did not fit and stays in the world.</returns>
+    public int PickUp(ContainerItem item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (item.Amount <= 0)
+        {
+            return 0;
+        }
+
+        int remaining = item.Amount;
+        int maximum = s_maxAmounts.GetValueOrDefault(item.AssetIndex);
+        ItemContainerState[] updated = [.. Containers];
+        foreach (int handle in (int[])[Backpack, Belt, SafePouch])
+        {
+            ContainerItem?[] contents = [.. updated[handle].Items];
+            bool changed = false;
+            for (int slot = 0; slot < contents.Length && remaining > 0; slot++)
+            {
+                if (contents[slot] is not { } stack || stack.AssetIndex != item.AssetIndex || stack.Amount >= maximum)
+                {
+                    continue;
+                }
+
+                int added = Math.Min(remaining, maximum - stack.Amount);
+                contents[slot] = stack with { Amount = stack.Amount + added };
+                remaining -= added;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                updated[handle] = updated[handle] with { Items = Array.AsReadOnly(contents) };
+            }
+        }
+
+        if (remaining > 0)
+        {
+            ContainerItem?[] contents = [.. updated[Backpack].Items];
+            int empty = Array.FindIndex(contents, slot => slot is null);
+            if (empty >= 0 && Allows(new ItemContainerSlot(new ItemContainerHandle(Backpack, 0), (ushort)empty), item))
+            {
+                contents[empty] = item with { Amount = remaining };
+                updated[Backpack] = updated[Backpack] with { Items = Array.AsReadOnly(contents) };
+                remaining = 0;
+            }
+        }
+
+        int taken = item.Amount - remaining;
+        if (taken <= 0)
+        {
+            return taken;
+        }
+
+        Containers = Array.AsReadOnly(updated);
+        Version++;
+        Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
+        return taken;
+    }
+
+    /// <summary>The maximum stack size of an item; 0 for items that never stack or leave the inventory, such as hand items.</summary>
+    /// <param name="assetIndex">Index of the item in the usable item table.</param>
+    /// <returns>The maximum amount of one stack.</returns>
+    public static int MaxAmount(ushort assetIndex) => s_maxAmounts.GetValueOrDefault(assetIndex);
+
     private IEnumerable<ItemContainerState> Carried => Containers.Where(container => container.Id != OpenLoot);
 
-    private bool Swap(InventoryCommand command)
+    private string? Swap(InventoryCommand command)
     {
         ItemContainerSlot from = command.From;
         ItemContainerSlot to = command.To;
-        if (command.Type != InventoryCommandType.SwapItems || !Valid(from) || !Valid(to)
-            || Containers[from.Parent.Id].Items[from.Index] is not { } source)
+        if (!Valid(from) || !Valid(to))
         {
-            return false;
+            return "invalid slot";
+        }
+
+        if (Containers[from.Parent.Id].Items[from.Index] is not { } source)
+        {
+            return "empty source";
         }
 
         ContainerItem? destination = Containers[to.Parent.Id].Items[to.Index];
         if (!Allows(to, source) || (destination is not null && !Allows(from, destination)))
         {
-            return false;
+            return "slot not allowed";
         }
 
+        Place(from, destination, to, source);
+        return null;
+    }
+
+    // Removes a whole stack, or an amount of it as a new item, and queues it for the raid to place in the world.
+    // Hand items stay in the inventory.
+    private string? Drop(InventoryCommand command)
+    {
+        ItemContainerSlot from = command.From;
+        if (!Valid(from))
+        {
+            return "invalid slot";
+        }
+
+        if (Containers[from.Parent.Id].Items[from.Index] is not { } source)
+        {
+            return "empty source";
+        }
+
+        if (!s_maxAmounts.ContainsKey(source.AssetIndex))
+        {
+            return "not droppable";
+        }
+
+        bool whole = command.Type == InventoryCommandType.DropItem || command.Amount == source.Amount;
+        if (!whole && (command.Amount <= 0 || command.Amount > source.Amount))
+        {
+            return "invalid amount";
+        }
+
+        ContainerItem?[] contents = [.. Containers[from.Parent.Id].Items];
+        contents[from.Index] = whole ? null : source with { Amount = source.Amount - command.Amount };
+        ItemContainerState[] containers = [.. Containers];
+        containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(contents) };
+        Containers = Array.AsReadOnly(containers);
+        _dropped.Enqueue(whole ? source : source with { Id = Guid.NewGuid(), Amount = command.Amount });
+        return null;
+    }
+
+    private void Place(ItemContainerSlot from, ContainerItem? fromItem, ItemContainerSlot to, ContainerItem? toItem)
+    {
         ContainerItem?[] sourceItems = [.. Containers[from.Parent.Id].Items];
         ContainerItem?[] destinationItems = from.Parent == to.Parent ? sourceItems : [.. Containers[to.Parent.Id].Items];
-        sourceItems[from.Index] = destination;
-        destinationItems[to.Index] = source;
+        sourceItems[from.Index] = fromItem;
+        destinationItems[to.Index] = toItem;
         ItemContainerState[] containers = [.. Containers];
         containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(sourceItems) };
         containers[to.Parent.Id] = containers[to.Parent.Id] with { Items = Array.AsReadOnly(destinationItems) };
         Containers = Array.AsReadOnly(containers);
-        return true;
     }
 
     private static int? ModSlotCount(ushort assetIndex) => assetIndex switch

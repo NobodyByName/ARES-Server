@@ -179,7 +179,6 @@ public sealed class InventoryTests
             Swap(inventory.Backpack, 0, inventory.Backpack, 7),
             valid with { From = valid.From with { Parent = valid.From.Parent with { Revision = 1 } } },
             valid with { To = valid.To with { Parent = valid.To.Parent with { Revision = 1 } } },
-            valid with { Type = InventoryCommandType.DropItem },
         ];
         foreach (InventoryCommand command in invalid)
         {
@@ -271,6 +270,118 @@ public sealed class InventoryTests
     private static InventoryCommand Swap(int fromContainer, ushort fromSlot, int toContainer, ushort toSlot) => new(InventoryCommandType.SwapItems,
         new ItemContainerSlot(new ItemContainerHandle(fromContainer, 0), fromSlot),
         new ItemContainerSlot(new ItemContainerHandle(toContainer, 0), toSlot), 0, new ItemContainerHandle(-1, ushort.MaxValue));
+
+    private static InventoryCommand Drop(int container, ushort slot, int amount = 0) =>
+        Swap(container, slot, container, slot) with { Type = amount == 0 ? InventoryCommandType.DropItem : InventoryCommandType.DropPartialItem, Amount = amount };
+
+    private static ContainerItem LootDuck(int amount) =>
+        new(checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId)), Guid.NewGuid(), amount, 1);
+
+    [Fact]
+    public void Dropping_a_whole_stack_empties_the_slot_and_hands_over_the_same_item()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ContainerItem ducks = LootDuck(3);
+        Assert.Equal(3, inventory.PickUp(ducks));
+        uint version = inventory.Version;
+        Assert.True(inventory.Apply(Drop(inventory.Backpack, 0), out string? rejection));
+        Assert.Null(rejection);
+        Assert.Equal(version + 1, inventory.Version);
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[0]);
+        Assert.True(inventory.TryTakeDropped(out ContainerItem dropped));
+        Assert.Equal(ducks, dropped);
+        Assert.False(inventory.TryTakeDropped(out _));
+
+        ContainerItem partial = LootDuck(2);
+        Assert.Equal(2, inventory.PickUp(partial));
+        Assert.True(inventory.Apply(Drop(inventory.Backpack, 0, 2)));
+        Assert.Null(inventory.Containers[inventory.Backpack].Items[0]);
+        Assert.True(inventory.TryTakeDropped(out dropped));
+        Assert.Equal(partial, dropped);
+    }
+
+    [Fact]
+    public void Dropping_part_of_a_stack_leaves_the_rest_and_hands_over_a_new_item()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ContainerItem ducks = LootDuck(5);
+        inventory.PickUp(ducks);
+        Assert.True(inventory.Apply(Drop(inventory.Backpack, 0, 2)));
+        Assert.Equal(ducks with { Amount = 3 }, inventory.Containers[inventory.Backpack].Items[0]);
+        Assert.True(inventory.TryTakeDropped(out ContainerItem dropped));
+        Assert.Equal(ducks with { Id = dropped.Id, Amount = 2 }, dropped);
+        Assert.NotEqual(ducks.Id, dropped.Id);
+    }
+
+    [Fact]
+    public void Malformed_drops_are_rejected_without_changing_the_containers_or_queueing_an_item()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        inventory.PickUp(LootDuck(5));
+        ContainerItem?[] before = [.. inventory.Containers.SelectMany(container => container.Items)];
+        (InventoryCommand Command, string Reason)[] invalid =
+        [
+            (Drop(inventory.Backpack, 1), "empty source"),
+            (Drop(inventory.Backpack, 1, 1), "empty source"),
+            (Drop(99, 0), "invalid slot"),
+            (Drop(inventory.Backpack, 99), "invalid slot"),
+            (Drop(inventory.Backpack, 0) with { From = Drop(inventory.Backpack, 0).From with { Parent = new ItemContainerHandle(inventory.Backpack, 1) } }, "invalid slot"),
+            (Drop(inventory.Backpack, 0, -1), "invalid amount"),
+            (Drop(inventory.Backpack, 0, 6), "invalid amount"),
+        ];
+        foreach ((InventoryCommand command, string reason) in invalid)
+        {
+            Assert.False(inventory.Apply(command, out string? rejection));
+            Assert.Equal(reason, rejection);
+            Assert.Equal(before, inventory.Containers.SelectMany(container => container.Items));
+            Assert.False(inventory.TryTakeDropped(out _));
+        }
+    }
+
+    [Fact]
+    public void Picking_up_tops_up_existing_stacks_then_uses_the_first_empty_backpack_slot()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        int maximum = checked((int)LoadoutDefinitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        ContainerItem carried = LootDuck(maximum - 2);
+        Assert.Equal(carried.Amount, inventory.PickUp(carried));
+        uint version = inventory.Version;
+        ContainerItem found = LootDuck(5);
+        Assert.Equal(5, inventory.PickUp(found));
+        Assert.Equal(version + 1, inventory.Version);
+        Assert.Equal(carried with { Amount = maximum }, inventory.Containers[inventory.Backpack].Items[0]);
+        Assert.Equal(found with { Amount = 3 }, inventory.Containers[inventory.Backpack].Items[1]);
+    }
+
+    [Fact]
+    public void Picking_up_into_an_empty_slot_keeps_the_items_identity()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ContainerItem found = LootDuck(2);
+        Assert.Equal(2, inventory.PickUp(found));
+        Assert.Equal(found, inventory.Containers[inventory.Backpack].Items[0]);
+    }
+
+    [Fact]
+    public void Picking_up_with_a_full_backpack_takes_only_what_tops_up_stacks()
+    {
+        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        int maximum = checked((int)LoadoutDefinitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        int slots = inventory.Containers[inventory.Backpack].Items.Count;
+        for (int slot = 0; slot < slots; slot++)
+        {
+            Assert.Equal(maximum, inventory.PickUp(LootDuck(maximum)));
+        }
+
+        uint version = inventory.Version;
+        Assert.Equal(0, inventory.PickUp(LootDuck(4)));
+        Assert.Equal(version, inventory.Version);
+
+        Assert.True(inventory.Apply(Drop(inventory.Backpack, 0, 3)));
+        Assert.Equal(3, inventory.PickUp(LootDuck(4)));
+        Assert.Equal(maximum, inventory.Containers[inventory.Backpack].Items[0]!.Amount);
+        Assert.All(inventory.Containers[inventory.Backpack].Items, Assert.NotNull);
+    }
 
     [Theory]
     [InlineData(AugmentItems.CombatMk1AssetId, 16, 4)]
