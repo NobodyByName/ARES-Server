@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Shared build settings. Each component folder (Structs, Common, Host, Raid) has its own
+    Shared build settings. Each component folder (Structs, Common, Host, Raid, MapData) has its own
     Directory.Build.props that names the component, lists the components it may depend on and
     imports this file.
   -->

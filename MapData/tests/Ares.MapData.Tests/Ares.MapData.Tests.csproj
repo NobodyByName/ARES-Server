@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ares.MapData/Ares.MapData.csproj" />
+  </ItemGroup>
+
+</Project>

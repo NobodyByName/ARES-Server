@@ -27,4 +27,8 @@
     <Project Path="Raid/src/Ares.Raid/Ares.Raid.csproj" />
     <Project Path="Raid/tests/Ares.Raid.Tests/Ares.Raid.Tests.csproj" />
   </Folder>
+  <Folder Name="/MapData/">
+    <Project Path="MapData/src/Ares.MapData/Ares.MapData.csproj" />
+    <Project Path="MapData/tests/Ares.MapData.Tests/Ares.MapData.Tests.csproj" />
+  </Folder>
 </Solution>

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.MapData</RootNamespace>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>ARES-MapData</AssemblyName>
+    <Description>ARES-MapData reads an installed ARC Raiders game and writes the map files ARES-Raid loads.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ares.MapData.Tests" />
+  </ItemGroup>
+
+  <!-- References to other components; Directory.Build.targets checks that they are allowed. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common/Ares.Common.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.Maps/Ares.Common.Maps.csproj" />
+  </ItemGroup>
+
+</Project>

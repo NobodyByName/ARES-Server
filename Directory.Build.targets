@@ -31,7 +31,7 @@
           Condition="'$(AresAllowPackages)' != 'true' and '%(PackageReference.IsImplicitlyDefined)' != 'true'" />
     </ItemGroup>
     <Error Condition="'$(AresComponent)' == ''"
-           Text="$(MSBuildProjectName) is not inside a component folder (Structs, Common, Host or Raid)." />
+           Text="$(MSBuildProjectName) is not inside a component folder (Structs, Common, Host, Raid or MapData)." />
     <Error Condition="'@(_AresDisallowedReference)' != ''"
            Text="$(MSBuildProjectName) ($(AresComponent)) may not reference: @(_AresDisallowedReference->'%(RelativePath)', ', '). Allowed components: '$(AresAllowedComponents)'." />
     <Error Condition="'@(_AresThirdPartyPackage)' != ''"
