@@ -7,6 +7,7 @@
     <ProjectReference Include="../../src/Ares.Common.Control/Ares.Common.Control.csproj" />
     <ProjectReference Include="../../src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
     <ProjectReference Include="../../src/Ares.Common.Game/Ares.Common.Game.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Maps/Ares.Common.Maps.csproj" />
   </ItemGroup>
 
 </Project>

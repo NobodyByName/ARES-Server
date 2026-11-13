@@ -9,7 +9,7 @@ namespace Ares.Common.Tests;
 /// </summary>
 public sealed class ArchitectureTests
 {
-    private static readonly string[] s_expected = ["Ares.Common", "Ares.Common.Security", "Ares.Common.Control", "Ares.Common.Control.Server", "Ares.Common.Game"];
+    private static readonly string[] s_expected = ["Ares.Common", "Ares.Common.Security", "Ares.Common.Control", "Ares.Common.Control.Server", "Ares.Common.Game", "Ares.Common.Maps"];
     private static readonly string[] s_allowedPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.Extensions.", "Microsoft.AspNetCore.", "Ares.Structs.", "Ares.Common"];
 
     public static TheoryData<string> Assemblies => new(s_expected);

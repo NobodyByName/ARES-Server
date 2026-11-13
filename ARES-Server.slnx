@@ -12,6 +12,7 @@
     <Project Path="Common/src/Ares.Common.Control/Ares.Common.Control.csproj" />
     <Project Path="Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
     <Project Path="Common/src/Ares.Common.Game/Ares.Common.Game.csproj" />
+    <Project Path="Common/src/Ares.Common.Maps/Ares.Common.Maps.csproj" />
     <Project Path="Common/tests/Ares.Common.Tests/Ares.Common.Tests.csproj" />
   </Folder>
   <Folder Name="/Host/">
