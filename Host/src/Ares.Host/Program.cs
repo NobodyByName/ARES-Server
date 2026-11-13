@@ -4,6 +4,7 @@ using Ares.Common.CommandLine;
 using Ares.Common.Logging;
 using Ares.Host;
 using Ares.Host.Services.Accounts;
+using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
 using Ares.Structs.Core;
@@ -46,6 +47,7 @@ catch (Exception error) when (error is PersistenceException or InvalidDataExcept
 await using WebApplication app = application;
 console.Accounts = app.Services.GetRequiredService<AccountDirectory>();
 console.Players = app.Services.GetRequiredService<PlayerRegistry>();
+console.Raids = app.Services.GetService<RaidFleet>();
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {

@@ -67,6 +67,8 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 await using WebApplication app = builder.Build();
 app.MapAllocationApi(allocations, configuration.OperatorToken);
+RaidAdmin admin = new(() => connections.Players.Select(entry => entry.Player).OfType<PlayerChannels>(), log);
+app.MapAdminApi(admin, configuration.OperatorToken);
 await app.StartAsync().ConfigureAwait(false);
 
 log.Write(new JsonObject
@@ -82,7 +84,7 @@ log.Write(new JsonObject
     ["fill_seconds"] = configuration.FillSeconds,
 });
 
-RaidServer server = new(socket, connections, log, Clock);
+RaidServer server = new(socket, connections, log, Clock, admin);
 CancellationToken stopping = app.Lifetime.ApplicationStopping;
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(stopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);

@@ -713,7 +713,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         ServiceInputAcknowledgement(io.Sender);
-        ServiceBlackboard(io.Sender, now);
+        if (!ServiceTeleport(io.Sender, now))
+        {
+            ServiceBlackboard(io.Sender, now);
+        }
+
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
         ServiceDoors(io.Sender, now);

@@ -66,6 +66,11 @@ public static class HostApplication
         builder.Services.AddSingleton<HostDatabase>(_ => database);
         builder.Services.AddSingleton(accounts);
         builder.Services.AddSingleton(players);
+        if (raids is not null)
+        {
+            builder.Services.AddSingleton(raids);
+        }
+
         builder.Services.AddHostedService(_ => new InventoryReservationRecovery(players, time));
         IdentityService identity = new(settings, accounts, time);
         BackendRoutes routes = new(identity, log, time);

@@ -97,6 +97,38 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
         }
     }
 
+    /// <summary>Runs an admin command on every running raid, in slot order.</summary>
+    /// <param name="command">The command.</param>
+    /// <param name="cancellationToken">Cancels the calls.</param>
+    /// <returns>Each raid's slot, HTTP status and reply; a raid that cannot be reached gives status 503 and <c>raid_unreachable</c>.</returns>
+    public async Task<IReadOnlyList<(int Slot, int StatusCode, AdminReply Reply)>> AdminAsync(AdminCommand command, CancellationToken cancellationToken)
+    {
+        await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            RemoveExited();
+            List<(int, int, AdminReply)> replies = [];
+            foreach ((int index, Slot slot) in _slots.OrderBy(pair => pair.Key))
+            {
+                try
+                {
+                    (int status, AdminReply reply) = await slot.Server.Allocator.AdminAsync(command, cancellationToken).ConfigureAwait(false);
+                    replies.Add((index, status, reply));
+                }
+                catch (AllocationUnavailableException error)
+                {
+                    replies.Add((index, 503, new AdminReply([error.Message], "raid_unreachable")));
+                }
+            }
+
+            return replies;
+        }
+        finally
+        {
+            _lock.Release();
+        }
+    }
+
     /// <summary>Stops every server.</summary>
     public void Dispose()
     {

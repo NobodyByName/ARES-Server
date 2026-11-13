@@ -101,6 +101,42 @@ public sealed class SessionAllocatorClient : IDisposable
         return reply;
     }
 
+    /// <summary>Runs an admin command on this Raid server (its admin API shares the allocation API's port and token).</summary>
+    /// <param name="command">The command.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The HTTP status and the reply, also for a refused command.</returns>
+    /// <exception cref="AllocationUnavailableException">Raid unreachable or replied without an admin reply.</exception>
+    public async Task<(int StatusCode, AdminReply Reply)> AdminAsync(AdminCommand command, CancellationToken cancellationToken = default)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            using HttpRequestMessage message = new(HttpMethod.Post, AdminApi.CommandPath);
+            message.Content = JsonContent(command);
+            message.Headers.TryAddWithoutValidation("Authorization", "Bearer " + _token);
+            response = await _http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception error) when (error is HttpRequestException or TaskCanceledException or IOException)
+        {
+            throw new AllocationUnavailableException("Raid admin API unavailable");
+        }
+
+        using (response)
+        {
+            try
+            {
+                byte[] raw = await ReadLimitedAsync(response.Content, cancellationToken).ConfigureAwait(false);
+                AdminReply reply = JsonSerializer.Deserialize<AdminReply>(raw, AllocationApi.JsonOptions)
+                    ?? throw new JsonException("Empty admin reply");
+                return ((int)response.StatusCode, reply);
+            }
+            catch (Exception error) when (error is JsonException or InvalidDataException or IOException or TaskCanceledException)
+            {
+                throw new AllocationUnavailableException("Raid admin API replied without a readable result");
+            }
+        }
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {

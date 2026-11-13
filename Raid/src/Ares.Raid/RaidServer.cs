@@ -17,7 +17,8 @@ namespace Ares.Raid;
 /// <param name="connections">The connection layer (used by this loop only).</param>
 /// <param name="log">Event log.</param>
 /// <param name="clock">Monotonic clock in seconds.</param>
-public sealed class RaidServer(Socket socket, RaidConnections connections, JsonEventLog log, Func<double> clock)
+/// <param name="admin">Admin commands, run between packets; null for none.</param>
+public sealed class RaidServer(Socket socket, RaidConnections connections, JsonEventLog log, Func<double> clock, RaidAdmin? admin = null)
 {
     private const int MaxDatagramBytes = 65536;
     private const int WaitMicroseconds = 50_000;
@@ -65,6 +66,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                     Send(result, peer);
                 }
 
+                admin?.RunPending();
                 Report();
             }
             catch (SocketException error)

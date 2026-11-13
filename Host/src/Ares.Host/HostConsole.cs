@@ -3,9 +3,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common;
+using Ares.Common.Control;
 using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
+using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
 using Ares.Structs.Backend.Progression;
@@ -72,6 +74,8 @@ internal sealed class HostConsole : ILoggerProvider
     internal AccountDirectory? Accounts { get; set; }
 
     internal PlayerRegistry? Players { get; set; }
+
+    internal RaidFleet? Raids { get; set; }
 
     public async Task RunAsync(Action stop, CancellationToken cancellationToken)
     {
@@ -201,6 +205,11 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("inventory <account>  Show stored items and the loadout reservation");
                     AddLine("inventory <account> import <path>  Replace an idle inventory from a JSON file");
                     AddLine("inventory <account> add <technical-name> [quantity]  Add one supported stack to the stash");
+                    foreach (string usage in AdminApi.Usage)
+                    {
+                        AddLine($"raid {usage}");
+                    }
+
                     AddLine("Tab completes commands, subcommands and item names; Shift+Tab cycles backward");
                     break;
                 case "status" when words.Length == 1:
@@ -223,6 +232,9 @@ internal sealed class HostConsole : ILoggerProvider
                 case "account":
                     RunGuarded("Account command", () => AccountCommand(words));
                     break;
+                case "raid" when words.Length >= 2:
+                    RaidCommand(words);
+                    break;
                 case "inventory" when words.Length >= 2:
                     RunGuarded("Inventory command", () => InventoryCommand(words, name));
                     break;
@@ -231,6 +243,50 @@ internal sealed class HostConsole : ILoggerProvider
                     break;
             }
         }
+    }
+
+    // Sends an admin command to the running raids; their replies arrive as events (and in the log file) when they answer.
+    private void RaidCommand(string[] words)
+    {
+        if (Raids is not { } raids)
+        {
+            AddLine("No raids: matchmaking is not configured.");
+            return;
+        }
+
+        AdminCommand command = new(words[1].ToLowerInvariant(), words[2..]);
+        string text = string.Join(' ', words[1..]);
+        _ = Task.Run(async () =>
+        {
+            IReadOnlyList<(int Slot, int StatusCode, AdminReply Reply)> replies;
+            try
+            {
+                replies = await raids.AdminAsync(command, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException)
+            {
+                return;
+            }
+
+            // A command for one player concerns the raid that has the player; the others only say they do not.
+            (int Slot, int StatusCode, AdminReply Reply)[] relevant = [.. replies.Where(reply => reply.Reply.Error != AdminApi.PlayerNotFound)];
+            if (relevant.Length == 0)
+            {
+                Log.Write(new JsonObject { ["admin_command"] = text, ["result"] = replies.Count == 0 ? "No raid is running." : "No raid has that player." });
+            }
+
+            foreach ((int slot, int status, AdminReply reply) in relevant)
+            {
+                Log.Write(new JsonObject
+                {
+                    ["admin_command"] = text,
+                    ["raid_slot"] = slot,
+                    ["status"] = status,
+                    ["error"] = reply.Error,
+                    ["result"] = string.Join(" | ", reply.Lines),
+                });
+            }
+        });
     }
 
     private void RunGuarded(string what, Action command)
@@ -520,7 +576,8 @@ internal sealed class HostConsole : ILoggerProvider
             string[] preceding = input[.._completionStart].Split(' ', StringSplitOptions.RemoveEmptyEntries);
             IEnumerable<string> candidates = preceding switch
             {
-                [] => ["help", "status", "clear", "stop", "account", "inventory"],
+                [] => ["help", "status", "clear", "stop", "account", "inventory", "raid"],
+                [var command] when command.Equals("raid", StringComparison.OrdinalIgnoreCase) => AdminApi.Commands,
                 [var command] when command.Equals("account", StringComparison.OrdinalIgnoreCase) => ["list", "create", "password", "rename", "ban", "unban", "delete"],
                 [var command, _] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
                 [var command, _, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
