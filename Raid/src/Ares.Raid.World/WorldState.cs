@@ -117,13 +117,22 @@ public sealed class WorldState
 
     /// <summary>The game state's channel opening.</summary>
     /// <param name="channel">Channel index.</param>
+    /// <param name="worldItemClassBits">World item classes the client should load (<see cref="LootCatalog.WorldItemClassBits"/>).</param>
     /// <returns>The world actor.</returns>
-    public SpawnedWorldActor GameStateActor(int channel) => new(
-        channel,
-        GameState.Guid,
-        _imports.Archetypes[GameState.ClassPath],
-        [.. _imports.Classes.Where(item => !WorldImports.HeldItemClasses.Values.Contains(item.Key)).Select(item => item.Value)],
-        [Replication.Encode(GameState.ClassPath, GameState.Properties, Objects([GameState.Guid]))]);
+    public SpawnedWorldActor GameStateActor(int channel, IReadOnlyList<ulong> worldItemClassBits)
+    {
+        ArgumentNullException.ThrowIfNull(worldItemClassBits);
+        Dictionary<string, object?> properties = new(GameState.Properties)
+        {
+            [PropertyNames.PossibleWorldItemClassIndexBitFields] = worldItemClassBits.Select(word => (object?)word).ToArray(),
+        };
+        return new SpawnedWorldActor(
+            channel,
+            GameState.Guid,
+            _imports.Archetypes[GameState.ClassPath],
+            [.. _imports.Classes.Where(item => !WorldImports.HeldItemClasses.Values.Contains(item.Key)).Select(item => item.Value)],
+            [Replication.Encode(GameState.ClassPath, properties, Objects([GameState.Guid]))]);
+    }
 
     /// <summary>The game state's world time: clients derive the server's clock from it.</summary>
     /// <param name="seconds">The raid's world time in seconds.</param>

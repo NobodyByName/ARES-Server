@@ -4,12 +4,14 @@ using System.Text.Json.Nodes;
 using Ares.Common.Logging;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Structs.Game.World;
 
 namespace Ares.Raid;
 
 /// <summary>
 /// The game socket loop: hands each datagram to the connection layer, sends replies, retries and
-/// keepalives. Logs notable events at once, player phase changes, and a traffic summary every few seconds.
+/// keepalives. Logs notable events at once, the raid's loot spawn counts once, player phase changes, and a traffic
+/// summary every few seconds.
 /// </summary>
 /// <param name="socket">Bound UDP socket.</param>
 /// <param name="connections">The connection layer (used by this loop only).</param>
@@ -36,6 +38,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
 
     private readonly Dictionary<ConnectionEvent, int> _counts = [];
     private readonly Dictionary<IPEndPoint, DeliveryPhase> _phases = [];
+    private string? _lootLoggedFor;
     private (string? Raid, int Logged) _pickupEvents;
     private double _summaryAt;
 
@@ -111,6 +114,48 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
             }
 
             _pickupEvents = (channels.MatchId, channels.PickupEvents.Count);
+            if (_lootLoggedFor != channels.MatchId)
+            {
+                _lootLoggedFor = channels.MatchId;
+                LootSpawnCounts loot = channels.LootSpawn;
+                log.Write(new JsonObject
+                {
+                    ["raid_loot"] = new JsonObject
+                    {
+                        ["sockets"] = loot.Sockets,
+                        ["spawned"] = loot.Spawned,
+                        ["classes"] = loot.Classes,
+                        ["skipped_inactive_layer"] = loot.InactiveLayer,
+                        ["skipped_no_container_type"] = loot.NoContainerType,
+                        ["skipped_unsupported_class"] = loot.Unsupported,
+                        ["skipped_by_roll"] = loot.SkippedByRoll,
+                        ["skipped_by_group_cap"] = loot.SkippedByGroupCap,
+                        ["skipped_by_limiter"] = loot.SkippedByLimiter,
+                        ["spawned_by_loot_value"] = new JsonObject
+                        {
+                            ["untiered"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Unknown],
+                            ["low"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Low],
+                            ["medium"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Medium],
+                            ["high"] = loot.SpawnedByLootValue[PointOfInterestLootValue.High],
+                        },
+                        ["spawners"] = new JsonObject
+                        {
+                            ["spawners"] = loot.Spawners.Spawners,
+                            ["run"] = loot.Spawners.Run,
+                            ["spawned"] = loot.Spawners.Spawned,
+                            ["skipped_group_not_picked"] = loot.Spawners.NotPicked,
+                            ["skipped_inactive_layer"] = loot.Spawners.InactiveLayer,
+                            ["skipped_class_disabled"] = loot.Spawners.ClassDisabled,
+                            ["skipped_class_unsupported"] = loot.Spawners.ClassUnsupported,
+                        },
+                        ["placed"] = Placed(loot.Placed),
+                        ["observed"] = Placed(loot.Observed),
+                        ["seed"] = channels.LootSeed,
+                        ["free_standing"] = FreeStanding(channels.LootFreeStanding),
+                    },
+                });
+            }
+
             if (_phases.GetValueOrDefault(peer) == channels.Phase)
             {
                 continue;
@@ -186,6 +231,11 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["ladders_ready"] = channels.LaddersReady,
                 ["ladders_in_progress"] = channels.LaddersInProgress,
                 ["loot_ready"] = channels.LootReady,
+                ["loot_waiting"] = channels.LootWaiting,
+                ["loot_failed"] = channels.LootFailed,
+                ["loot_failures"] = string.Join(' ', channels.LootFailures),
+                ["loot_channels"] = channels.LootChannelsInUse,
+                ["loot_channel_opens"] = channels.LootChannelOpens,
                 ["loot_requests"] = string.Join(' ', channels.LootRequests),
                 ["items_dropped"] = channels.ItemsDropped,
                 ["pickups_taken"] = channels.PickupsTaken,
@@ -210,4 +260,31 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
         log.Write(new JsonObject { ["raid_traffic"] = events, ["connections"] = connections.Count, ["players"] = players });
         _counts.Clear();
     }
+
+    private static JsonArray FreeStanding(IReadOnlyList<FreeStandingContainer> containers)
+    {
+        JsonArray entries = [];
+        foreach (FreeStandingContainer container in containers)
+        {
+            entries.Add(new JsonObject
+            {
+                ["class"] = container.Class,
+                ["area"] = container.Area,
+                ["parent_area"] = container.ParentArea,
+                ["location"] = new JsonArray(Math.Round(container.Location.X), Math.Round(container.Location.Y), Math.Round(container.Location.Z)),
+            });
+        }
+
+        return entries;
+    }
+
+    private static JsonObject Placed(LootPlacedCounts counts) => new()
+    {
+        ["containers"] = counts.Containers,
+        ["spawned"] = counts.Spawned,
+        ["skipped_inactive_layer"] = counts.InactiveLayer,
+        ["skipped_unsupported_class"] = counts.Unsupported,
+        ["skipped_no_container_type"] = counts.NoContainerType,
+        ["skipped_by_roll"] = counts.SkippedByRoll,
+    };
 }

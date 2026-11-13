@@ -49,7 +49,6 @@ public sealed class RaidWorld
         Imports = worlds.Imports;
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
-        Loot = worlds.Loot;
         Extraction = worlds.Extraction;
         ExtractionStates = new ExtractionStates(Extraction.Points.Count);
         Clock = worlds.Clock;
@@ -57,6 +56,8 @@ public sealed class RaidWorld
         State = new WorldState(worlds.Replication, Imports, matchId, seed);
         ReplicationContext replication = worlds.Replication;
         (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
+        Loot = new LootCatalog(replication, round.Name, ActiveDataLayers, seed, worlds.LootRules);
+        LootStates = new LootStates(Loot);
         ulong lootEnd = Loot.Containers.Count == 0 ? 0 : Loot.Containers.Max(container => container.Components.Append(container.Guid).Max());
         Pickups = new WorldPickups(replication, State, lootEnd + 2);
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
@@ -78,7 +79,7 @@ public sealed class RaidWorld
                 actor.Actor.Class,
                 [replication.Encode(actor.Actor.Class, new Dictionary<string, object?> { [PropertyNames.Role] = (ulong)NetRole.Authority, [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy })])),
         ];
-        SpawnedActors = [State.GameStateActor(GameStateChannel)];
+        SpawnedActors = [State.GameStateActor(GameStateChannel, Loot.WorldItemClassBits)];
     }
 
     /// <summary>Match id of the reservation.</summary>
@@ -137,7 +138,7 @@ public sealed class RaidWorld
     /// <summary>The map ladders.</summary>
     public LadderCatalog Ladders { get; }
 
-    /// <summary>The loot containers.</summary>
+    /// <summary>The loot containers of this raid.</summary>
     public LootCatalog Loot { get; }
 
     /// <summary>The raid's static collision (base map and active data layers), or null when the map has none.</summary>
@@ -165,7 +166,7 @@ public sealed class RaidWorld
     public DoorStates DoorStates { get; } = new(DamDoors.All);
 
     /// <summary>Loot container contents of this raid.</summary>
-    public LootStates LootStates { get; } = new(DamLoot.All.Count);
+    public LootStates LootStates { get; }
 
     /// <summary>The item stacks lying in this raid.</summary>
     public WorldPickups Pickups { get; }
@@ -284,7 +285,9 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     /// <param name="clock">Monotonic clock in seconds.</param>
     /// <param name="lighting">Lighting tag for every raid; null picks one by the authored weights.</param>
     /// <param name="random">Random numbers from 0 to 2^31 - 2 (seeds, lighting); a secure generator by default.</param>
-    public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null)
+    /// <param name="lootRules">How each raid picks the sockets that get a container; <see cref="LootSpawnRules.Dam"/> by default.</param>
+    /// <param name="collision">The map's static collision, or null when the operator has none; each raid indexes it.</param>
+    public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null, MapCollision? collision = null)
     {
         Clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _random = random ?? (() => RandomNumberGenerator.GetInt32(int.MaxValue));
@@ -294,6 +297,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         }
 
         _lighting = lighting;
+        MapCollision = collision;
+        LootRules = lootRules ?? LootSpawnRules.Dam;
         Imports = new WorldImports(GameReplication.Catalog);
         Replication = new ReplicationContext(
             GameReplication.Catalog,
@@ -303,7 +308,6 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         Doors = new DoorCatalog(Replication, paths);
         Ladders = new LadderCatalog(Replication, paths);
         Extraction = new ExtractionCatalog(Replication, paths);
-        Loot = new LootCatalog(Replication);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>
@@ -332,9 +336,11 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 
     internal LadderCatalog Ladders { get; }
 
-    internal LootCatalog Loot { get; }
-
     internal ExtractionCatalog Extraction { get; }
+
+    internal MapCollision? MapCollision { get; }
+
+    internal LootSpawnRules LootRules { get; }
 
     /// <inheritdoc />
     public void Prepare(string matchId, IReadOnlyList<long> players, IReadOnlyList<PlayerLoadout>? loadouts = null, IReadOnlyList<CompactPlayerProfile>? profiles = null)

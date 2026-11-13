@@ -37,9 +37,10 @@ internal sealed class ScriptedPlayer
     private readonly Dictionary<uint, InventoryCommand> _inventoryInputs = [];
     private readonly Dictionary<uint, ulong> _weaponInputs = [];
 
-    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null)
+    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null, LootSpawnRules? lootRules = null)
     {
-        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed);
+        // Every socket gets a container by default, so the scripted raids always have the containers they search.
+        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed, lootRules ?? LootSpawnRules.EverySocket);
         Principal = new SessionPrincipal(42, MatchId);
         Worlds.Prepare(MatchId, [42], loadouts: loadout is null ? null : [loadout], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));

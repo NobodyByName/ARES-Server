@@ -141,6 +141,12 @@ public sealed class MultiplayerTests
         Assert.Contains(first.Sent, bunch => bunch.Channel == state.Channel && bunch is { Opened: false, PayloadBits: > 0 });
         Dictionary<int, PendulumSlot> opened = new(openState);
 
+        // The loot containers around the start reach the first client first, so its packets then carry only characters.
+        while (first.Channels.LootWaiting > 0 || first.Channels.LootChannelsInUse > 0)
+        {
+            first.Service(at += 0.1);
+        }
+
         // The next movement arrives as a frame on the character's channel.
         Vector3D further = moved with { Y = moved.Y + 30 };
         second.Input(frame + 3, frame + 6, position: further);

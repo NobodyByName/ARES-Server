@@ -74,7 +74,7 @@ public sealed class LadderTests
         session.Sent.Clear();
         session.ReportVisible((session.Door.Cell, false, false));
         session.Service(125.0);
-        Assert.DoesNotContain(session.Sent, bunch => bunch.Channel >= firstChannel);
+        Assert.DoesNotContain(session.Sent, bunch => bunch.Channel >= firstChannel && bunch.Channel < firstChannel + session.Raid.Ladders.Ladders.Count);
         Assert.Equal(visible.Length, session.Channels.LaddersReady);
 
         // The client sends only channel bookkeeping on a ladder channel; a failed ladder is not offered again.
