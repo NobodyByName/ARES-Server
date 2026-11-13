@@ -12,7 +12,7 @@ globalThis.AresContent = {
               "name": "Dam Battlegrounds",
               "technical": "DA_Level_TheDam_02_P",
               "status": "partial",
-              "note": "Stock-client entry, lighting, movement, regular doors, ladders and elevator extraction work; combat, loot and settlement remain."
+              "note": "Stock-client entry, lighting, movement, regular doors, ladders, loot containers, elevator extraction and bringing the loadout home work; combat and container contents remain."
             },
             {
               "name": "Weather & conditions",
@@ -5405,8 +5405,8 @@ globalThis.AresContent = {
             {
               "name": "Antenna Set 01 Lid 01 A",
               "technical": "DA_LootContainer_AntennaSet_01_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Bird Nest A",
@@ -5429,26 +5429,26 @@ globalThis.AresContent = {
             {
               "name": "Bus 01 Lid 01",
               "technical": "DA_LootContainer_Bus_01_Lid_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Bus 01 Lid 02",
               "technical": "DA_LootContainer_Bus_01_Lid_02",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Car 01",
               "technical": "DA_LootContainer_Car_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Car 02",
               "technical": "DA_LootContainer_Car_02",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Car 03 A",
@@ -5459,8 +5459,8 @@ globalThis.AresContent = {
             {
               "name": "Crate M 01 A",
               "technical": "DA_LootContainer_Crate_M_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Crate Cart 01 A",
@@ -5501,8 +5501,8 @@ globalThis.AresContent = {
             {
               "name": "Fuse Box 01 A",
               "technical": "DA_LootContainer_FuseBox_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Highway Addon Antenna 01",
@@ -5573,8 +5573,8 @@ globalThis.AresContent = {
             {
               "name": "Truck Utility 01",
               "technical": "DA_LootContainer_TruckUtility_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Vent 03 A",
@@ -5585,26 +5585,26 @@ globalThis.AresContent = {
             {
               "name": "Vent Machine Large 01 A",
               "technical": "DA_LootContainer_VentMachineLarge_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Vent Machine Large 02 A",
               "technical": "DA_LootContainer_VentMachineLarge_02_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Cmr Cash Register 01 Lid 01 A",
               "technical": "DA_LootContainer_Cmr_CashRegister_01_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Cmr Coffee Machine 01 A",
               "technical": "DA_LootContainer_Cmr_CoffeeMachine_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Cmr Cupboard Cafe 01 Drawer 01 A",
@@ -5687,8 +5687,8 @@ globalThis.AresContent = {
             {
               "name": "Trash Bin A 01",
               "technical": "DA_LootContainer_TrashBin_A_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Vending Machine Door",
@@ -5699,20 +5699,20 @@ globalThis.AresContent = {
             {
               "name": "Cmr Wall Add 01 A Lid 01",
               "technical": "DA_LootContainer_Cmr_WallAdd_01_A_Lid_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Cmr Wall Add 01 A Lid 02",
               "technical": "DA_LootContainer_Cmr_WallAdd_01_A_Lid_02",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Cmr Wall Add 03 A Lid 01",
               "technical": "DA_LootContainer_Cmr_WallAdd_03_A_Lid_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Coms Console 02 A",
@@ -5777,92 +5777,92 @@ globalThis.AresContent = {
             {
               "name": "Gvt Bin Trash 01 A",
               "technical": "DA_LootContainer_Gvt_BinTrash_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Center Bench M 01 A",
               "technical": "DA_LootContainer_Gvt_CenterBench_M_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Computer 01 A",
               "technical": "DA_LootContainer_Gvt_Computer_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Computer 03",
               "technical": "DA_LootContainer_Gvt_Computer_03",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Desk 01",
               "technical": "DA_LootContainer_Gvt_Desk_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Floodlight Tower 01 Lid 01 A",
               "technical": "DA_LootContainer_FloodlightTower_01_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Floodlight Tower 01 Lid 02 A",
               "technical": "DA_LootContainer_FloodlightTower_01_Lid_02_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Generator M 02 Lid 01",
               "technical": "DA_LootContainer_Generator_M_02_Lid_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Generator M 02 A",
               "technical": "DA_LootContainer_Gvt_Generator_M_02_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Machine M 01 A",
               "technical": "DA_LootContainer_Gvt_Machine_M_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Machine M 02 A Large Panel",
               "technical": "DA_LootContainer_Gvt_Machine_M_02_A_LargePanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Machine M 02 A Small Panel",
               "technical": "DA_LootContainer_Gvt_Machine_M_02_A_SmallPanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Machine M 04 A Panel Large",
               "technical": "DA_LootContainer_Gvt_Machine_M_04_A_PanelLarge",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Machine M 04 A Panel Small",
               "technical": "DA_LootContainer_Gvt_Machine_M_04_A_PanelSmall",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Gvt Server 01 x400z250 Door",
               "technical": "DA_LootContainer_Gvt_Server_01_x400z250_Door",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Time Stamp 01 A",
@@ -5903,8 +5903,8 @@ globalThis.AresContent = {
             {
               "name": "Wasabi Panel",
               "technical": "DA_LootContainer_WasabiPanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Raider Weapon Case 01 Lid A",
@@ -5915,32 +5915,32 @@ globalThis.AresContent = {
             {
               "name": "Rsr Cabinet M 01",
               "technical": "DA_LootContainer_Rsr_Cabinet_M_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Cabinet S 01",
               "technical": "DA_LootContainer_Rsr_Cabinet_S_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Cabinet S 02",
               "technical": "DA_LootContainer_Rsr_Cabinet_S_02",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 01",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 02",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_02",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 05",
@@ -5963,8 +5963,8 @@ globalThis.AresContent = {
             {
               "name": "Rsr Electrical Cabinet 01 A",
               "technical": "DA_LootContainer_Rsr_ElectricalCabinet_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Fax Machine 01 A",
@@ -5975,8 +5975,8 @@ globalThis.AresContent = {
             {
               "name": "Rsr Lockers 01",
               "technical": "DA_LootContainer_Rsr_Lockers_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Lockers 02 A",
@@ -5999,8 +5999,8 @@ globalThis.AresContent = {
             {
               "name": "Rsr Machine M 01 A",
               "technical": "DA_LootContainer_Rsr_Machine_M_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Desk Monitor 01 A",
@@ -6035,20 +6035,20 @@ globalThis.AresContent = {
             {
               "name": "Wrh Wall Add L 01 A Large Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_LargePanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Wall Add L 01 A Main Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_MainPanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Wall Add L 01 A Small Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_SmallPanel",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Rsr Weapons Rack 01 Door Left A",
@@ -6083,8 +6083,8 @@ globalThis.AresContent = {
             {
               "name": "Res Closet 01 A Lid 01 A",
               "technical": "DA_LootContainer_Res_Closet_01_A_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Closet 02 Lid 01 A",
@@ -6107,14 +6107,14 @@ globalThis.AresContent = {
             {
               "name": "Res Drawer 01 Shelf A",
               "technical": "DA_LootContainer_Res_Drawer_01_Shelf_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Drawer Medical 01 A",
               "technical": "DA_LootContainer_Res_DrawerMedical_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Dumpster Lid 01",
@@ -6125,38 +6125,38 @@ globalThis.AresContent = {
             {
               "name": "Res Bench Kitchen 01 175x125 D",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_175x125_D",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Bench Kitchen 01 175x125 Lid 01 C",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_175x125_Lid_01_C",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Bench Kitchen 01 Lid 01 175x125 C",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_Lid_01_175x125_C",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Bench Kitchen 175x125 Lid 01 A",
               "technical": "DA_LootContainer_Res_BenchKitchen_175x125_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Bench Kitchen 175x125 Lid 01 B",
               "technical": "DA_LootContainer_Res_BenchKitchen_175x125_Lid_01_B",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Refrigerator 01 Lid 01 A",
               "technical": "DA_LootContainer_Res_Refrigerator_01_Lid_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 175x100 A",
@@ -6167,8 +6167,8 @@ globalThis.AresContent = {
             {
               "name": "SM Res Cupboard Kitchen Lid 01 175x100 B",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_175x100_B",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 300x100 A",
@@ -6179,26 +6179,26 @@ globalThis.AresContent = {
             {
               "name": "SM Res Cupboard Kitchen Lid 01 300x100 B",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_300x100_B",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Suitcase 01 Lid A",
               "technical": "DA_LootContainer_Res_Suitcase_01_Lid_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Trash Bin 01 Lid",
               "technical": "DA_LootContainer_Res_TrashBin_01_Lid",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Res Tv Unit 01 A Lid 01",
               "technical": "DA_LootContainer_Res_TvUnit_01_A_Lid_01",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Venetian Drawer 01 A",
@@ -6257,74 +6257,74 @@ globalThis.AresContent = {
             {
               "name": "Wrh Computer 01 A",
               "technical": "DA_LootContainer_Wrh_Computer_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Container L 02 B",
               "technical": "DA_LootContainer_Wrh_Container_L_02_B",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Desk Drawer Large",
               "technical": "DA_LootContainer_Wrh_Desk_DrawerLarge",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Desk Drawer Small",
               "technical": "DA_LootContainer_Wrh_Desk_DrawerSmall",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Drawers 01 A",
               "technical": "DA_LootContainer_Wrh_Drawers_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Machine M 02 Door Left",
               "technical": "DA_LootContainer_Wrh_Machine_M_02_DoorLeft",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Machine M 02 Door Right",
               "technical": "DA_LootContainer_Wrh_Machine_M_02_DoorRight",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Trailer Compressor M 01 A",
               "technical": "DA_LootContainer_Wrh_TrailerCompressor_M_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Trolley Tools 01 A",
               "technical": "DA_LootContainer_Wrh_TrolleyTools_01_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Wall Add M 02 A",
               "technical": "DA_LootContainer_Wrh_WallAdd_M_02_A",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Wall Add S 01 A Panel Large",
               "technical": "DA_LootContainer_Wrh_WallAdd_S_01_A_PanelLarge",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Wrh Wall Add S 01 A Panel Small",
               "technical": "DA_LootContainer_Wrh_WallAdd_S_01_A_PanelSmall",
-              "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "status": "partial",
+              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
             },
             {
               "name": "Moss Rock",

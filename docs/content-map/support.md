@@ -5,7 +5,8 @@
 A stock client goes from a fresh launch through sign-in, the main menu and normal Dam matchmaking
 into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets the default Raider,
 moves (walk, sprint, crouch, slide, jump), climbs ladders, uses door buttons and breaches barricaded
-doors, calls an extraction elevator and descends with it, then leaves back to the main menu.
+doors, searches loot containers, calls an extraction elevator and descends with it, then leaves back
+to the main menu.
 
 Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
 and each process exits when its raid is over. Host persists each account's stash and selected
@@ -53,6 +54,22 @@ picking up Heavy Ammo and the Ferro I is stock-client verified with one player. 
 they appear, because there is no physics yet; merging piles, partial pickups and a second player seeing
 the items have not been tried with the stock client.
 
+Dam raids have loot containers: drawers, lockers, cabinets, car trunks, crates and the other containers
+on the map's props, plus free-standing weapon cases and the placed machine doors. Each raid rolls which
+of them appear, with chances per container category raised in the map's medium- and high-value areas and
+limited per area and per prop, so a raid has a few hundred of them. Players search a container (holding
+interact, with the Raider Tool where the game breaches it), see its contents and take items into their
+own inventory; an opened container stays open for every player. Every container currently holds one
+rubber duck: loot tables are not decoded yet. In the Raid inventory, stacks can also be split and merged
+up to their stack limit. Searching, taking items and splitting are stock-client verified with one player.
+
+Operators can steer running raids from the Host console with `raid players`, `raid teleport`,
+`raid teleport-to-loot` and `raid spawn-loot` (see `help`); each raid's answer appears in the Host log.
+These are development tools.
+
+With [map data](../../README.md#map-data) configured, each raid loads the map's collision when it
+starts. Raid does not use it for movement yet.
+
 In Raid the slot-1 Ferro I starts drawn, and equipped guns start loaded from carried Heavy Ammo.
 Switching between the Ferro I, the Raider Tool and empty hands plays the put-away and draw
 animations; the Ferro I fires at its semi-automatic cadence and reloads one round at a time from
@@ -80,9 +97,12 @@ Limitations:
 - Movement is trusted from the client; the server does not check it yet.
 - Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
   its progress.
-- No damage, loot, death or match results yet.
-- Extraction leaves the raid without settling the player's inventory; broken-elevator repair and other extraction types are not implemented.
-- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups and menu splitting and merging are not implemented yet.
+- No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
+- Loot containers hold a placeholder rubber duck. Plants and other nature containers, weapon racks
+  (they need the Security Breach skill) and keycard rooms are not supported, and containers are only
+  in Dam.
+- Broken-elevator repair and other extraction types are not implemented.
+- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups, splitting and merging are not implemented yet.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not

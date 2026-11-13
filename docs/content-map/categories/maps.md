@@ -12,7 +12,7 @@ Each small cell represents one content piece. Blue: **Partial**; orange: **Not i
 
 | Content | Status | Details |
 | --- | --- | --- |
-| <a id="content-root-0-0-0"></a>Dam Battlegrounds | Partial | Stock-client entry, lighting, movement, regular doors, ladders and elevator extraction work; combat, loot and settlement remain. |
+| <a id="content-root-0-0-0"></a>Dam Battlegrounds | Partial | Stock-client entry, lighting, movement, regular doors, ladders, loot containers, elevator extraction and bringing the loadout home work; combat and container contents remain. |
 
 <a id="content-root-0-0-1"></a>
 
