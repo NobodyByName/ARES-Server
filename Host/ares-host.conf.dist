@@ -57,6 +57,9 @@ raid-port = 7777
 raid-control-port = 17778
 # Lighting of every raid, e.g. Lighting.GreyMorning. Empty: picked by the map's weights.
 raid-lighting =
+# Folder with the map files written by ARES-MapData (see "Map data" in the README).
+# Empty: raids run without map collision.
+map-data-dir =
 
 # CONSOLE AND LOGGING
 # auto, interactive, plain or json. auto selects interactive output in a terminal.

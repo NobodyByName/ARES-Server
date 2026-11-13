@@ -50,6 +50,7 @@ public sealed record HostConfiguration
           --raid-port <n>                   UDP game port of the first raid; each further raid uses the next port (default {DefaultRaidPort})
           --raid-control-port <n>           Loopback allocation API port of the first raid, counted the same way (default {DefaultRaidControlPort})
           --raid-lighting <tag>             Lighting of every raid (default: picked by the map's weights)
+          --map-data-dir <dir>              Folder with the map files written by ARES-MapData, passed to every raid (default: none)
           --auth-key-file <f>               Identity signing key, 32-4096 bytes (default: none; tokens are not checked)
           --archive-keys-file <f>           Game archive keys for ARES-Launcher, required (default {DefaultArchiveKeysFile})
           --server-name <text>              Shown in launcher server lists (default {HostSettings.DefaultServerName})
@@ -123,6 +124,7 @@ public sealed record HostConfiguration
         int raidPort = file.GetInt32("raid-port", DefaultRaidPort);
         int raidControlPort = file.GetInt32("raid-control-port", DefaultRaidControlPort);
         string? raidLighting = EmptyToNull(file.GetString("raid-lighting"));
+        string? mapDataDirectory = file.GetPath("map-data-dir");
         string? authKeyFile = file.GetPath("auth-key-file");
         string archiveKeysFile = file.GetPath("archive-keys-file", DefaultArchiveKeysFile)
             ?? throw new CommandLineException("archive-keys-file must not be empty");
@@ -202,7 +204,7 @@ public sealed record HostConfiguration
         }
 
         RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
-            bind, originUri.Host, port);
+            mapDataDirectory, bind, originUri.Host, port);
         byte[]? identityKey = authKeyFile is null ? null : ReadIdentityKey(authKeyFile);
         ArchiveKeys archiveKeys = ReadArchiveKeys(archiveKeysFile, archiveKeysSha256);
 
@@ -233,7 +235,7 @@ public sealed record HostConfiguration
     private static string? EmptyToNull(string? value) => value == "" ? null : value;
 
     private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
-        int controlPort, string? lighting, IPAddress bind, string advertiseHost, int hostPort)
+        int controlPort, string? lighting, string? mapDataDirectory, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {
@@ -276,7 +278,8 @@ public sealed record HostConfiguration
         {
             string fullTokenFile = Path.GetFullPath(tokenFile);
             return new RaidLaunch(fullExecutable, fullTokenFile, SecretFiles.ReadOperatorToken(fullTokenFile), bind,
-                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting);
+                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting,
+                mapDataDirectory is null ? null : Path.GetFullPath(mapDataDirectory));
         }
         catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException)
         {
