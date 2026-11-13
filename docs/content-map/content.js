@@ -3537,7 +3537,7 @@ globalThis.AresContent = {
               "name": "Ferro I",
               "technical": "DA_Item_BattleRifle_BreachAction_01",
               "status": "partial",
-              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Damage, ballistics, fitting mods and upgrades remain."
+              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain."
             },
             {
               "name": "Battle Rifle Energy Burst 01",
@@ -3943,7 +3943,7 @@ globalThis.AresContent = {
               "name": "Heavy Ammo",
               "technical": "DA_Item_HeavyAmmo",
               "status": "partial",
-              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and menu stacks can be split and merged; Ferro I reloads take rounds from carried stacks. Splitting and merging in Raid remain."
+              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and menu stacks can be split and merged; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified. Splitting and merging in Raid remain."
             },
             {
               "name": "Launcher Ammo",

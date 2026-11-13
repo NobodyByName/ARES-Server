@@ -39,6 +39,13 @@ validates whole-stack moves. In the menu, stacks can also be split and merged up
 Every raider also holds the Raider Tool and empty hands.
 The Ferro I shows its three empty mod slots (muzzle, underbarrel, stock) in the menu and in Raid.
 
+Carried items can be dropped from the Raid inventory and picked up again. A dropped stack appears about a
+metre ahead of the player at chest height, a dropped amount merges into a nearby pile of the same item, and
+pressing interact takes the stack back; if the backpack is full, the rest stays on the ground. Dropping and
+picking up Heavy Ammo and the Ferro I is stock-client verified with one player. Dropped items float where
+they appear, because there is no physics yet; merging piles, partial pickups and a second player seeing
+the items have not been tried with the stock client.
+
 In Raid the slot-1 Ferro I starts drawn, and equipped guns start loaded from carried Heavy Ammo.
 Switching between the Ferro I, the Raider Tool and empty hands plays the put-away and draw
 animations; the Ferro I fires at its semi-automatic cadence and reloads one round at a time from
@@ -68,7 +75,8 @@ Limitations:
   its progress.
 - No damage, loot, death or match results yet.
 - Extraction leaves the raid without settling the player's inventory; broken-elevator repair and other extraction types are not implemented.
-- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves and menu splitting and merging are not implemented yet.
+- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups and menu splitting and merging are not implemented yet.
+- Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
   been tested yet.
