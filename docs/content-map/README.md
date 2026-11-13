@@ -15,6 +15,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 - [World objectives](categories/world-objectives.md)
 - [Character skills](categories/character-skills.md)
 - [Traders & NPCs](categories/traders-npcs.md)
+- [Quests](categories/quests.md)
 - [Outpost furniture](categories/outpost-furniture.md)
 - [Appearance](categories/appearance.md)
 

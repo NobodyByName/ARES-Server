@@ -8607,6 +8607,779 @@ globalThis.AresContent = {
       ]
     },
     {
+      "name": "Quests",
+      "children": [
+        {
+          "name": "Apollo",
+          "children": [
+            {
+              "name": "A First Foothold",
+              "technical": "Quest_BlueGateIntroInfrastructure",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Warm Place To Rest",
+              "technical": "Quest_FindingSurvivorsBuriedCity",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Bait, Fetch, Blast",
+              "technical": "Quest_DestroyATarragon",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Battening Down",
+              "technical": "Quest_RivenTidesIntroOceanWall",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Building a Library",
+              "technical": "Quest_RareBooks",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Espresso",
+              "technical": "Quest_Espresso",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Groundbreaking",
+              "technical": "Quest_ReinforceToledoWhiteboard",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Movie Night",
+              "technical": "Quest_MovieNight",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Nothing Gained",
+              "technical": "Quest_QueensMatriarchsFight",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Nothing Ventured",
+              "technical": "Quest_QueensMatriarchsPrepare",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Paving the Way",
+              "technical": "Quest_ReinforceToledoResearch",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Safe Passage",
+              "technical": "Quest_SafePassage",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Shoring Up Defenses",
+              "technical": "Quest_RivenTidesIntroDefenses",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Sparks Fly",
+              "technical": "Quest_SnapBlastHornet",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Test Case",
+              "technical": "Quest_ArcOptimization",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Clean Dream",
+              "technical": "Quest_ApolloWaterFilters",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The League",
+              "technical": "Quest_TheLeague",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "To The Skies",
+              "technical": "Quest_SkybucketPrototype",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "What Goes Around",
+              "technical": "Quest_FireballBurner",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        },
+        {
+          "name": "Celeste",
+          "children": [
+            {
+              "name": "A Bad Feeling",
+              "technical": "Quest_InvestigateArcPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Balanced Harvest",
+              "technical": "Quest_WheatPartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Rising Tide",
+              "technical": "Quest_DamExodusPower",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Symbol of Unification",
+              "technical": "Quest_SymbolOfUnification",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Wrench in the Works",
+              "technical": "Quest_MutinySpreadingSpaceport",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "After Rain Comes",
+              "technical": "Quest_SolarPanelFlashFlood",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Bees!",
+              "technical": "Quest_Bees",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Celeste's Teenage Rebellion",
+              "technical": "Quest_TeenageRebellion",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Celeste’s Journals",
+              "technical": "Quest_CelestesJournals",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Digging Up Dirt",
+              "technical": "Quest_DiggingUpDirt",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Disrupting the Frigate",
+              "technical": "Quest_DisruptingFrigate",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Echoes of Victory Ridge",
+              "technical": "Quest_SearchVictoryRidge",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Exploring Pendola Pass",
+              "technical": "Quest_ExploreFrozenTrail",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Flickering Threat",
+              "technical": "Quest_PowerOutPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Greasing Her Palms",
+              "technical": "Quest_GreasingHerPalms",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Keeping an Eye Out",
+              "technical": "Quest_BilguunsEye",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Keeping the Memory",
+              "technical": "Quest_KeepingTheMemory",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Line in the Sand",
+              "technical": "Quest_MutinySpreadingBuriedCity",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Power Out",
+              "technical": "Quest_PowerOutPartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Ruins and Reverberations",
+              "technical": "Quest_TestObservatoryTrap",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Sizing Things Up",
+              "technical": "Quest_ScoutFallenCollector",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Someone Else's Shoes",
+              "technical": "Quest_AndroidEmpathy",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Source of the Contamination",
+              "technical": "Quest_SecureWaterPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Straight Record",
+              "technical": "Quest_StraightRecord",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Switching the Supply",
+              "technical": "Quest_SecureWaterPartThree",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Root of the Matter",
+              "technical": "Quest_WheatPartThree",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Tribute to Toledo",
+              "technical": "Quest_ToledoTribute",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Turnabout",
+              "technical": "Quest_Turnabout",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Untended Garden",
+              "technical": "Quest_WheatPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Water Troubles",
+              "technical": "Quest_SecureWaterPartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Wires Crossed",
+              "technical": "Quest_InvestigateFallenCollector",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Worth Your Salt",
+              "technical": "Quest_SaltBattery",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        },
+        {
+          "name": "Lance",
+          "children": [
+            {
+              "name": "A New Type of Plant",
+              "technical": "Quest_NewPlant",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Reveal in Ruins",
+              "technical": "Quest_Analyzer",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Celeste’s Childhood Drawings",
+              "technical": "Quest_ChildhoodDrawings",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Doctor's Orders",
+              "technical": "Quest_LanceBandages",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Empathetic Prototypes",
+              "technical": "Quest_PreciousCargo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "In My Image",
+              "technical": "Quest_StellaMontisIntroOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Life of a Pharmacist",
+              "technical": "Quest_DescribeThePharmacist",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Medical Merchandise",
+              "technical": "Quest_LootMedicalAreas",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "On Deaf Ears",
+              "technical": "Quest_EchostrideStella",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "On The Map",
+              "technical": "Quest_EchostrideSpaceport",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Prescriptions of the Past",
+              "technical": "Quest_Medicine",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        },
+        {
+          "name": "Shani",
+          "children": [
+            {
+              "name": "A Dead End",
+              "technical": "Quest_MantikorSpeech",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Lay of the Land",
+              "technical": "Quest_FindLidarScanners",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Prime Specimen",
+              "technical": "Quest_DeforesterHusk",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "A Toxic Trail",
+              "technical": "Quest_WaterSaboteur",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Belly of the Beast",
+              "technical": "Quest_InsideFallenCollector",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Boarding the Frigate",
+              "technical": "Quest_BoardingFrigate",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Bombing Run",
+              "technical": "Quest_FightABombardier",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Clamoring for Attention",
+              "technical": "Quest_NoiseTraps",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Clearer Skies",
+              "technical": "Quest_OnboardingARCAlloy",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Cold Storage",
+              "technical": "Quest_StellaMontisIntroTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Combat Recon",
+              "technical": "Quest_PrepForBombardier",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Communication Hideout",
+              "technical": "Quest_CommunicationHideout",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Deciphering The Data",
+              "technical": "Quest_ReinforceToledoDecrypt",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Dormant Barons",
+              "technical": "Quest_MoreArcPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Down to Earth",
+              "technical": "Quest_DeliverFieldCrates",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Dust on the Wires",
+              "technical": "Quest_ShaniScouts",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Eyes in the Sky",
+              "technical": "Quest_PlaceLidarScanners",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Fragmented Logs",
+              "technical": "Quest_DormantState",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Furtive Meetings",
+              "technical": "Quest_OffRecord",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Hatch Repairs",
+              "technical": "Quest_HatchRepairs",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Home to Roost",
+              "technical": "Quest_MantikorJoinsMutiny",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Into the Fray",
+              "technical": "Quest_FinalArcPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Last Entry",
+              "technical": "Quest_LastEntry",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Lost in Transmission",
+              "technical": "Quest_ControlTowerConnection",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Mixed Signals",
+              "technical": "Quest_StunARollbot",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Off The Radar",
+              "technical": "Quest_OnboardingFieldDepotAntennas",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Our Presence up There",
+              "technical": "Quest_MarkPatternHouseTheDamPartTwo",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Out of the Shadows",
+              "technical": "Quest_FinalArcPartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Picking Up The Pieces",
+              "technical": "Quest_OnboardingLootAreas",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Reduced to Rubble",
+              "technical": "Quest_BlueGateIntroDestruction",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The First Nomads",
+              "technical": "Quest_NomadsOutskirtsBunker",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Stench of Corruption",
+              "technical": "Quest_FlushingTerminal",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Trifecta",
+              "technical": "Quest_MoreArcPartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Tracks of the Beast",
+              "technical": "Quest_ReconMeerkat",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Trash Into Treasure",
+              "technical": "Quest_OnboardingRecycling",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Waking the Grid",
+              "technical": "Quest_SensorGrid",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "When Everything Falls",
+              "technical": "Quest_StormingSpaceport",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "With A Trace",
+              "technical": "Quest_BlueGateIntroNomads",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "With a View",
+              "technical": "Quest_CalibrationDevice",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        },
+        {
+          "name": "Tian Wen",
+          "children": [
+            {
+              "name": "A Better Use",
+              "technical": "Quest_LootSupplyDrop",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Armored Transports",
+              "technical": "Quest_BlueGateArmoredTransports",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Back on Top",
+              "technical": "Quest_MarkPatternHouseTheDam",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Broken Monument",
+              "technical": "Quest_BrokenMonument",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Collision Course",
+              "technical": "Quest_DestroyAComet",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Eyes on the Prize",
+              "technical": "Quest_EyesOnThePrize",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Industrial Espionage",
+              "technical": "Quest_IndustrialEspionage",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Marked for Death",
+              "technical": "Quest_MarkedForDeath",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Market Correction",
+              "technical": "Quest_MarketCorrection",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Outstanding Balance",
+              "technical": "Quest_DodgerStash",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Safe Harbor",
+              "technical": "Quest_MutinySpreadingRivenTides",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Settled in Full",
+              "technical": "Quest_BastionCell",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Snap and Salvage",
+              "technical": "Quest_StellaMontisIntroThree",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Stable Housing",
+              "technical": "Quest_VaultAndroid",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Major’s Footlocker",
+              "technical": "Quest_MajorsFootlocker",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "The Right Tool",
+              "technical": "Quest_MoreArcPartThree",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Unexpected Initiative",
+              "technical": "Quest_GreenhousePartOne",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "What We Left Behind",
+              "technical": "Quest_LootRaiderCamps",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        },
+        {
+          "name": "Nomadic Envoys",
+          "children": [
+            {
+              "name": "A Path Not Yours",
+              "technical": "Quest_NomadBilguunPath",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Clean Hands",
+              "technical": "Quest_NomadCleanHands",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Divided",
+              "technical": "Quest_NomadRadioVoices",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            },
+            {
+              "name": "Taking Stock",
+              "technical": "Quest_NomadTakingStock",
+              "status": "pending",
+              "note": "Quest definition identified; accepting, objective tracking, rewards and trader dialogue are not implemented."
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Outpost furniture",
       "children": [
         {
