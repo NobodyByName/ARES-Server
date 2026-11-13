@@ -66,7 +66,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             case PublicStatus.Path when method == HttpMethods.Get:
                 (status, reply) = (200, PublicStatusDocument());
                 break;
-            case ArchiveKeys.Path when method == HttpMethods.Get:
+            case ArchiveKeysEndpoint.Path when method == HttpMethods.Get:
                 (status, reply) = (200, settings.ArchiveKeys.ToDocument(settings.GameBuild));
                 break;
             case SignInService.StartPath when method == HttpMethods.Post:

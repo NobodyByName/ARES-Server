@@ -1,5 +1,5 @@
 using System.Globalization;
-using Ares.Host.Services.Status;
+using Ares.Common.Archives;
 using SupportedGame = Ares.Structs.Core.GameBuild;
 
 namespace Ares.Host.Services;

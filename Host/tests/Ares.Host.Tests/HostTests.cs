@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Ares.Common.Archives;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Common.Game.Inventory;
@@ -96,7 +97,7 @@ public sealed class HostTests : IAsyncLifetime
     [Fact]
     public async Task Archive_keys_are_served_without_sign_in()
     {
-        JsonElement keys = await GetJson(ArchiveKeys.Path);
+        JsonElement keys = await GetJson(ArchiveKeysEndpoint.Path);
 
         Assert.Equal(GameBuild.SteamBuildId.ToString(CultureInfo.InvariantCulture), keys.GetProperty("game_build").GetString());
         Assert.Equal("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F", keys.GetProperty("pak_key").GetString());

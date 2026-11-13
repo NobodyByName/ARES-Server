@@ -1,21 +1,14 @@
 using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
-using System.Text.Json.Serialization;
 
-namespace Ares.Host.Services.Status;
+namespace Ares.Common.Archives;
 
-/// <summary>
-/// The game's archive keys, supplied by the operator. ARES-Launcher needs them to read the player's
-/// own game files and fetches them from <see cref="Path"/>.
-/// </summary>
+/// <summary>The game's archive keys, supplied by the operator in a keys file.</summary>
 /// <param name="PakKey">The 32-byte pak key.</param>
 /// <param name="ContainerKey">The eight container key words.</param>
 public sealed record ArchiveKeys(byte[] PakKey, IReadOnlyList<uint> ContainerKey)
 {
-    /// <summary>Path ARES-Launcher fetches the keys from.</summary>
-    public const string Path = "/ares/v1/archive-keys";
-
     private const int PakKeyBytes = 32;
     private const int ContainerKeyWords = 8;
     private const string PakKeyName = "pak-key";
@@ -79,13 +72,6 @@ public sealed record ArchiveKeys(byte[] PakKey, IReadOnlyList<uint> ContainerKey
         return Convert.ToHexStringLower(SHA256.HashData(data));
     }
 
-    /// <summary>The document served at <see cref="Path"/>.</summary>
-    public ArchiveKeysDocument ToDocument(string gameBuild)
-    {
-        return new ArchiveKeysDocument(gameBuild, Convert.ToHexString(PakKey),
-            [.. ContainerKey.Select(word => word.ToString("X8", CultureInfo.InvariantCulture))]);
-    }
-
     private static byte[] ParsePakKey(string value)
     {
         string hex = WithoutHexPrefix(value.Replace(" ", "", StringComparison.Ordinal));
@@ -118,9 +104,3 @@ public sealed record ArchiveKeys(byte[] PakKey, IReadOnlyList<uint> ContainerKey
         return value.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? value[2..] : value;
     }
 }
-
-/// <summary>Reply of <see cref="ArchiveKeys.Path"/>. ARES-Launcher keeps its own copy of this contract.</summary>
-public sealed record ArchiveKeysDocument(
-    [property: JsonPropertyName("game_build")] string GameBuild,
-    [property: JsonPropertyName("pak_key")] string PakKey,
-    [property: JsonPropertyName("container_key")] IReadOnlyList<string> ContainerKey);
