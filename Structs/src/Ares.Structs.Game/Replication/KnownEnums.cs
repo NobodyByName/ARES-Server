@@ -71,4 +71,10 @@ public static class KnownEnums
     /// <summary>View target blend functions; the engine's maximum is <c>VTBlend_MAX</c> (5).</summary>
     public static EnumDefinition ViewTargetBlendFunction { get; } =
         new(EnumPaths.EViewTargetBlendFunction, 5, ["VTBlend_Linear", "VTBlend_Cubic", "VTBlend_EaseIn", "VTBlend_EaseOut", "VTBlend_PreBlended"]);
+
+    /// <summary>
+    /// Item sources (<c>EItemSources</c>): five bits on the wire. The value names and the enum's own maximum are not
+    /// known; the maximum here is the largest value five bits hold.
+    /// </summary>
+    public static EnumDefinition ItemSources { get; } = new(EnumPaths.EItemSources, 31, []);
 }

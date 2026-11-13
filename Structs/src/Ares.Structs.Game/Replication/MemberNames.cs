@@ -43,6 +43,7 @@ public static class PropertyNames
     public const string AlignTransform = "AlignTransform";
     public const string AlignmentTime = "AlignmentTime";
     public const string AllSquads = "AllSquads";
+    public const string AmmoInClip = "AmmoInClip";
     public const string Amount = "Amount";
     public const string AngularVelocity = "AngularVelocity";
     public const string AnimEvent = "AnimEvent";
@@ -180,6 +181,9 @@ public static class PropertyNames
     public const string ConstructId = "ConstructId";
     public const string ConstructSpawnId = "ConstructSpawnID";
     public const string ConstructionScrap = "ConstructionScrap";
+    public const string ContainedItemBb = "ContainedItem_BB";
+    public const string ContainedModVisualIndices = "ContainedModVisualIndices";
+    public const string ContainedModVisualIndicesInner = "ContainedModVisualIndices_Inner";
     public const string Content = "Content";
     public const string ContentFilterTags = "ContentFilterTags";
     public const string ContextHandle = "ContextHandle";
@@ -221,9 +225,11 @@ public static class PropertyNames
     public const string DamagingItemAssetId = "DamagingItemAssetID";
     public const string Data = "Data";
     public const string DataArr = "DataArr";
+    public const string DataAssetIndex = "DataAssetIndex";
     public const string DataWrapper = "DataWrapper";
     public const string DeadTimestampClient = "DeadTimestamp_Client";
     public const string Def = "Def";
+    public const string DefaultPickupDataAsset = "DefaultPickupDataAsset";
     public const string Delta = "Delta";
     public const string DeltaFlags = "DeltaFlags";
     public const string DeltaSeconds = "DeltaSeconds";
@@ -242,6 +248,8 @@ public static class PropertyNames
     public const string Distance = "Distance";
     public const string DodgeRollStack = "DodgeRollStack";
     public const string DoorState = "DoorState";
+    public const string DropServerWorldTime = "DropServerWorldTime";
+    public const string DroppingPlayerId = "DroppingPlayerId";
     public const string DurabilityVal = "DurabilityVal";
     public const string Duration = "Duration";
     public const string DynamicAbilityTags = "DynamicAbilityTags";
@@ -359,6 +367,7 @@ public static class PropertyNames
     public const string GraphKind = "GraphKind";
     public const string GravityMod = "GravityMod";
     public const string GravityScaleModifier = "GravityScaleModifier";
+    public const string Guid = "Guid";
     public const string HackedFactor = "HackedFactor";
     public const string Handle = "Handle";
     public const string Header = "Header";
@@ -441,6 +450,7 @@ public static class PropertyNames
     public const string ItemLootedArray = "ItemLootedArray";
     public const string ItemLootedArrayInner = "ItemLootedArray_Inner";
     public const string ItemLootedCount = "ItemLootedCount";
+    public const string ItemSource = "ItemSource";
     public const string ItemUsedIfAny = "ItemUsedIfAny";
     public const string Items = "Items";
     public const string JumpMaxCount = "JumpMaxCount";
@@ -513,6 +523,7 @@ public static class PropertyNames
     public const string MaxSquads = "MaxSquads";
     public const string MaxStamina = "MaxStamina";
     public const string MaxTetherVelocity = "MaxTetherVelocity";
+    public const string MaxVal = "MaxVal";
     public const string MaxWeight = "MaxWeight";
     public const string MediumObjectiveKeys = "MediumObjectiveKeys";
     public const string MediumObjectiveKeysInner = "MediumObjectiveKeys_Inner";
@@ -530,6 +541,7 @@ public static class PropertyNames
     public const string Message = "Message";
     public const string MilestoneReached = "MilestoneReached";
     public const string MinRange = "MinRange";
+    public const string MinVal = "MinVal";
     public const string MinimalReplicationGameplayCues = "MinimalReplicationGameplayCues";
     public const string MinimalReplicationTags = "MinimalReplicationTags";
     public const string MitigationPerPlate = "MitigationPerPlate";
@@ -640,6 +652,7 @@ public static class PropertyNames
     public const string PhysicalDamageModifier = "PhysicalDamageModifier";
     public const string PhysicalMaterial = "PhysicalMaterial";
     public const string PhysicalResistance = "PhysicalResistance";
+    public const string PickedUpBy = "PickedUpBy";
     public const string PickupCount = "PickupCount";
     public const string PickupDropKey = "PickupDropKey";
     public const string PickupLocation = "PickupLocation";
@@ -715,7 +728,11 @@ public static class PropertyNames
     public const string ProxyPromptComponentOrStyle = "ProxyPromptComponentOrStyle";
     public const string PullPointInstigator = "PullPointInstigator";
     public const string PullPointTarget = "PullPointTarget";
+    public const string Quality = "Quality";
     public const string QualityLevel = "QualityLevel";
+    public const string Quantization = "Quantization";
+    public const string QuantizedDurability = "QuantizedDurability";
+    public const string QuantizedRecharge = "QuantizedRecharge";
     public const string QuestId = "QuestId";
     public const string QuestKey = "QuestKey";
     public const string QuestObjectiveId = "QuestObjectiveId";
@@ -835,11 +852,13 @@ public static class PropertyNames
     public const string Shake = "Shake";
     public const string Shots = "Shots";
     public const string SimulatedTasks = "SimulatedTasks";
+    public const string SkinReplicationIndex = "SkinReplicationIndex";
     public const string SkinSelection = "SkinSelection";
     public const string SkipPositionCorrection = "SkipPositionCorrection";
     public const string Slot = "Slot";
     public const string SlotIndex = "SlotIndex";
     public const string SlotName = "SlotName";
+    public const string SmallChangeBitCount = "SmallChangeBitCount";
     public const string SmallObjectiveKeys = "SmallObjectiveKeys";
     public const string SmallObjectiveKeysInner = "SmallObjectiveKeys_Inner";
     public const string SmallObjectiveSecuredProgresses = "SmallObjectiveSecuredProgresses";
@@ -895,6 +914,7 @@ public static class PropertyNames
     public const string StaticMesh = "StaticMesh";
     public const string Strings = "Strings";
     public const string SubItemContainer = "SubItemContainer";
+    public const string SubItemContainerIndex = "SubItemContainerIndex";
     public const string SubPathString = "SubPathString";
     public const string Summary = "Summary";
     public const string SurfaceTrackMoverId = "SurfaceTrackMoverId";

@@ -9,6 +9,7 @@ public static class ClassPaths
     public const string BpArcRaidersGameModeSalvageC = "/Game/Pioneer/Core/GameModes/BP_ArcRaidersGameModeSalvage.BP_ArcRaidersGameModeSalvage_C";
     public const string BpPioneerGameModeC = "/Game/Pioneer/Core/GameModes/BP_PioneerGameMode.BP_PioneerGameMode_C";
     public const string BpPioneerHudC = "/Game/Pioneer/Core/UI/BP_PioneerHUD.BP_PioneerHUD_C";
+    public const string BpPickupBaseC = "/Game/Pioneer/Items/BP_PickupBase.BP_PickupBase_C";
     public const string BpItemBattleRifleBreachAction01C = "/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/BP_Item_BattleRifle_BreachAction_01.BP_Item_BattleRifle_BreachAction_01_C";
     public const string BpUnarmedItemC = "/Game/Pioneer/Items/Misc/Unarmed/BP_UnarmedItem.BP_UnarmedItem_C";
     public const string BpItemBasicMeleeWeaponC = "/Game/Pioneer/Items/_GENERATED_/P2Prototype/BasicMeleeWeapon/BP_Item_BasicMeleeWeapon.BP_Item_BasicMeleeWeapon_C";
@@ -46,12 +47,15 @@ public static class ClassPaths
     public const string ItemBase = "/Script/Angelscript.ItemBase";
     public const string ItemContainerComponent = "/Script/Angelscript.ItemContainerComponent";
     public const string ItemContainerComponentBase = "/Script/Angelscript.ItemContainerComponentBase";
+    public const string ItemDataAsset = "/Script/Angelscript.ItemDataAsset";
+    public const string ItemDataAssetBase = "/Script/Angelscript.ItemDataAssetBase";
     public const string LootComponentBase = "/Script/Angelscript.LootComponentBase";
     public const string LootContainer = "/Script/Angelscript.LootContainer";
     public const string LootContainerSingle = "/Script/Angelscript.LootContainerSingle";
     public const string LootInteractionComponent = "/Script/Angelscript.LootInteractionComponent";
     public const string MeleeWeaponItem = "/Script/Angelscript.MeleeWeaponItem";
     public const string ModifiableItemBase = "/Script/Angelscript.ModifiableItemBase";
+    public const string Pickup = "/Script/Angelscript.Pickup";
     public const string PingManager = "/Script/Angelscript.PingManager";
     public const string PioPendulumQueryGlobalActor = "/Script/Angelscript.PioPendulumQueryGlobalActor";
     public const string PioneerActorAttributeSet = "/Script/Angelscript.PioneerActorAttributeSet";
@@ -119,6 +123,7 @@ public static class ClassPaths
     public const string EmbarkCharacterBase = "/Script/EmbarkCharacter.EmbarkCharacterBase";
     public const string ConstructableServiceComponentBase = "/Script/EmbarkConstructable.ConstructableServiceComponentBase";
     public const string ConstructableStyleDriverComponent = "/Script/EmbarkConstructable.ConstructableStyleDriverComponent";
+    public const string OptionalPrimaryDataAsset = "/Script/EmbarkEngine.OptionalPrimaryDataAsset";
     public const string EmbarkFastReplicator = "/Script/EmbarkFastReplicator.EmbarkFastReplicator";
     public const string EmbarkFastReplicatorCallback = "/Script/EmbarkFastReplicator.EmbarkFastReplicatorCallback";
     public const string EmbarkFastReplicatorInterface = "/Script/EmbarkFastReplicator.EmbarkFastReplicatorInterface";
@@ -144,11 +149,13 @@ public static class ClassPaths
     public const string LinearBufferStateInterpolator = "/Script/EmbarkStateInterpolator.LinearBufferStateInterpolator";
     public const string ObjectInterpolator = "/Script/EmbarkStateInterpolator.ObjectInterpolator";
     public const string StateInterpolator = "/Script/EmbarkStateInterpolator.StateInterpolator";
+    public const string EmbarkStreamingDataAsset = "/Script/EmbarkStreaming.EmbarkStreamingDataAsset";
     public const string TweakableObject = "/Script/EmbarkTweakables.TweakableObject";
     public const string Actor = "/Script/Engine.Actor";
     public const string ActorComponent = "/Script/Engine.ActorComponent";
     public const string Character = "/Script/Engine.Character";
     public const string Controller = "/Script/Engine.Controller";
+    public const string DataAsset = "/Script/Engine.DataAsset";
     public const string GameMode = "/Script/Engine.GameMode";
     public const string GameModeBase = "/Script/Engine.GameModeBase";
     public const string GameState = "/Script/Engine.GameState";
@@ -164,6 +171,7 @@ public static class ClassPaths
     public const string PawnMovementComponent = "/Script/Engine.PawnMovementComponent";
     public const string PlayerController = "/Script/Engine.PlayerController";
     public const string PlayerState = "/Script/Engine.PlayerState";
+    public const string PrimaryDataAsset = "/Script/Engine.PrimaryDataAsset";
     public const string PrimitiveComponent = "/Script/Engine.PrimitiveComponent";
     public const string SceneComponent = "/Script/Engine.SceneComponent";
     public const string SkeletalMeshComponent = "/Script/Engine.SkeletalMeshComponent";
@@ -176,6 +184,7 @@ public static class ClassPaths
     public const string AttributeSet = "/Script/GameplayAbilities.AttributeSet";
     public const string GameplayTasksComponent = "/Script/GameplayTasks.GameplayTasksComponent";
     public const string EmbarkBlackBoardCorrectionComponent = "/Script/PendulumRuntime.EmbarkBlackBoardCorrectionComponent";
+    public const string ItemDataAssetBaseNative = "/Script/PioneerGameplay.ItemDataAssetBaseNative";
     public const string ItemBaseType = "/Script/PioneerGameplay.Item_BaseType";
     public const string PioneerCharacterBase = "/Script/PioneerGameplay.PioneerCharacterBase";
     public const string PioneerCharacterMovementGlobalActorBase = "/Script/PioneerGameplay.PioneerCharacterMovementGlobalActorBase";
@@ -187,6 +196,8 @@ public static class ClassPaths
 public static class StructPaths
 {
     public const string AbbWeakPtr = "/Script/ActorBlackBoard.ABBWeakPtr";
+    public const string AbInt = "/Script/ActorBlackBoard.ABInt";
+    public const string AbIntQuantization = "/Script/ActorBlackBoard.ABIntQuantization";
     public const string BlackBoardVariableDeltaCompressionPtr = "/Script/ActorBlackBoard.BlackBoardVariableDeltaCompressionPtr";
     public const string AreaAnnouncementInfoData = "/Script/Angelscript.AreaAnnouncementInfoData";
     public const string ArmorDataEord = "/Script/Angelscript.ArmorDataEORD";
@@ -333,6 +344,7 @@ public static class StructPaths
     public const string GameplayTag = "/Script/GameplayTags.GameplayTag";
     public const string GameplayTagContainer = "/Script/GameplayTags.GameplayTagContainer";
     public const string VoiceChannelInfo = "/Script/OnlineSubsystemAngelscript.VoiceChannelInfo";
+    public const string BbItemContainerItem = "/Script/PioneerGameplay.BBItemContainerItem";
     public const string ItemContainerHandle = "/Script/PioneerGameplay.ItemContainerHandle";
     public const string ItemContainerSlot = "/Script/PioneerGameplay.ItemContainerSlot";
     public const string PioneerClientDamageTakenData = "/Script/PioneerGameplay.PioneerClientDamageTakenData";
@@ -397,4 +409,5 @@ public static class EnumPaths
     public const string EGameplayEffectGrantedAbilityRemovePolicy = "/Script/GameplayAbilities.EGameplayEffectGrantedAbilityRemovePolicy";
     public const string EFastArraySerializerDeltaFlags = "/Script/NetCore.EFastArraySerializerDeltaFlags";
     public const string EVoiceChannel = "/Script/OnlineSubsystemAngelscript.EVoiceChannel";
+    public const string EItemSources = "/Script/PioneerGameplay.EItemSources";
 }

@@ -14,7 +14,7 @@ namespace Ares.Structs.Net.Replication;
 /// mapped); <see cref="string"/>; <see cref="NetworkName"/>; <see cref="Vector3D"/>;
 /// <see cref="GameplayTag"/>; <see cref="UniqueNetId"/>; <see cref="LevelVisibility"/>;
 /// <see cref="VisibilityTransaction"/>; <see cref="PackedMovementBits"/>; <see cref="TenancyUserId"/>;
-/// <see cref="CompactPlayerProfile"/>; and lists of level visibilities, tenancy ids or profiles.
+/// <see cref="CompactPlayerProfile"/>; <see cref="RepMovement"/>; <see cref="ComponentOrStyle"/>; and lists of level visibilities, tenancy ids or profiles.
 /// </summary>
 public sealed partial class ValueCodec
 {
@@ -42,11 +42,18 @@ public sealed partial class ValueCodec
     /// <summary>Vector quantized to hundredths.</summary>
     public const string QuantizedVector100Struct = "/Script/Engine.Vector_NetQuantize100";
 
+    /// <summary>A component of an actor, or a style.</summary>
+    public const string ComponentOrStyleStruct = "/Script/EmbarkConstructable.ComponentOrStyle";
+
+    /// <summary>An actor's replicated movement.</summary>
+    public const string RepMovementStruct = "/Script/Engine.RepMovement";
+
     /// <summary>Character movement RPC bit containers.</summary>
     public static IReadOnlySet<string> MovementStructs { get; } =
         new HashSet<string>(StringComparer.Ordinal) { "/Script/Engine.CharacterServerMovePackedBits", "/Script/Engine.CharacterMoveResponsePackedBits" };
 
     private const string ObjectClass = "/Script/CoreUObject.Object";
+    private const string SceneComponentClass = "/Script/Engine.SceneComponent";
     private const int MaxArrayElements = 128;
     private const int MaxTagLength = 1024;
 
@@ -57,7 +64,10 @@ public sealed partial class ValueCodec
     /// <summary>Creates a codec.</summary>
     /// <param name="catalog">Replication schemas.</param>
     /// <param name="enums">Enums whose wire width is known.</param>
-    /// <param name="mappedObjects">Object ids the client knows, with their classes.</param>
+    /// <param name="mappedObjects">
+    /// Object ids the client knows, with their classes: classes with a replication schema, or classes known by
+    /// ancestry (such as data assets).
+    /// </param>
     /// <param name="mappedClasses">Class ids (static) the client knows, with the class they name.</param>
     public ValueCodec(
         ReplicationCatalog catalog,
@@ -89,7 +99,7 @@ public sealed partial class ValueCodec
 
         foreach ((ulong guid, string path) in _mappedObjects)
         {
-            if (guid < 2 || !catalog.Classes.ContainsKey(path))
+            if (guid < 2 || (!catalog.Classes.ContainsKey(path) && !catalog.ReferenceClasses.ContainsKey(path)))
             {
                 throw new InvalidPacketException("Invalid mapped object");
             }
@@ -109,6 +119,11 @@ public sealed partial class ValueCodec
         ArgumentNullException.ThrowIfNull(property);
         switch (property.Kind)
         {
+            case PropertyKind.StructProperty when property.TypePath == ComponentOrStyleStruct:
+                ComponentOrStyle reference = value as ComponentOrStyle ?? throw Invalid();
+                CheckObject(reference.Component, SceneComponentClass);
+                reference.Write(writer);
+                return;
             case PropertyKind.StructProperty:
                 WriteStruct(writer, property, value);
                 return;
@@ -166,6 +181,8 @@ public sealed partial class ValueCodec
         ArgumentNullException.ThrowIfNull(property);
         switch (property.Kind)
         {
+            case PropertyKind.StructProperty when property.TypePath == ComponentOrStyleStruct:
+                return ComponentOrStyle.Read(reader);
             case PropertyKind.StructProperty:
                 return ReadStruct(reader, property);
             case PropertyKind.ArrayProperty when IsSupportedArray(property):
@@ -242,6 +259,9 @@ public sealed partial class ValueCodec
             case UniqueNetIdStruct:
                 (value as UniqueNetId ?? throw Invalid()).Write(writer);
                 return;
+            case RepMovementStruct:
+                (value as RepMovement ?? throw Invalid()).Write(writer);
+                return;
             case { } path when MovementStructs.Contains(path):
                 (value as PackedMovementBits ?? throw Invalid()).Write(writer);
                 return;
@@ -283,6 +303,8 @@ public sealed partial class ValueCodec
                 return CompactPlayerProfile.Read(reader);
             case UniqueNetIdStruct:
                 return UniqueNetId.Read(reader);
+            case RepMovementStruct:
+                return RepMovement.Read(reader);
             case { } path when MovementStructs.Contains(path):
                 return PackedMovementBits.Read(reader);
             default:
