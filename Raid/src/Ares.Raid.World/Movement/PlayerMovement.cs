@@ -6,7 +6,8 @@ namespace Ares.Raid.World.Movement;
 /// <summary>
 /// A player's character simulation, run from the input frames the client sent, once each and in order.
 /// It starts at the frame of the pawn's reset frame. A frame the client never delivered repeats the
-/// previous input with its buttons held, so it starts no new press.
+/// previous input with its buttons held, so it starts no new press. Jumps and falls are not simulated: the
+/// reported positions tell whether the character is off the ground (<see cref="AirMotion"/>).
 /// </summary>
 public sealed class PlayerMovement
 {
@@ -29,6 +30,7 @@ public sealed class PlayerMovement
     private Dictionary<uint, CharacterState> _states = [];
     private MovementInput _movement;
     private CharacterInput _claims;
+    private AirMotion _air;
     private double _yaw;
 
     /// <summary>Starts the simulation at rest.</summary>
@@ -80,10 +82,11 @@ public sealed class PlayerMovement
             MissingFrames++;
         }
 
+        _air = _air.Next(_movement.JumpPressed, input.Weapon(frame + 1)?.FireBlocked ?? false, input.Position(frame - 1), input.Position(frame), input.Position(frame + 1));
         CharacterState state = _simulation.StepOnGround(_claims, _movement, _yaw, PawnBlackboard.TickSeconds,
             armed ? GroundMovementParameters.Armed : GroundMovementParameters.Unarmed, SteerAboveMaximum, FixBrakingOvershoot,
             input.Position(frame), sprint: armed ? SprintMovementParameters.Armed : SprintMovementParameters.Unarmed,
-            slide: SlideMovementParameters.Default);
+            slide: SlideMovementParameters.Default, unsettled: _air.Unsettled);
         Frame = frame;
         _states[frame] = state;
         _states.Remove(frame - KeptStates);

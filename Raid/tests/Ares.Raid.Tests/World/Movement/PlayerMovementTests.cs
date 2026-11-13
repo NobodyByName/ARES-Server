@@ -68,6 +68,24 @@ public sealed class PlayerMovementTests
     }
 
     [Fact]
+    public void A_jump_press_takes_the_character_off_the_ground()
+    {
+        InputHistory history = new();
+        Send(history, 0, Start + 3, frame => (0, frame switch
+        {
+            Start + 2 => MovementButtons.Jump,
+            Start + 3 => MovementButtons.Jump | MovementButtons.PreviousJump,
+            _ => MovementButtons.None,
+        }, 0));
+        PlayerMovement movement = new(Start, default, 0);
+
+        Assert.False(movement.Advance(history, armed: true).Unsettled);
+        Assert.True(movement.Advance(history, armed: true).Unsettled);
+        Assert.True(movement.Advance(history, armed: true).Unsettled);
+        Assert.True(movement.Copy().Advance(history, armed: true).Unsettled);
+    }
+
+    [Fact]
     public void A_copy_simulates_independently()
     {
         InputHistory history = new();

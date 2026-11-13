@@ -1501,9 +1501,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
             if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
-                || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0)
+                || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0
+                || character.Unsettled)
             {
-                // The slide's own state is not written yet, so a frame would end it; wait until it is over.
+                // A frame carries ground movement only: it would end a slide or a landing recovery and drop a jumping
+                // or falling character to the ground. Wait until the character is back in ordinary ground movement.
                 return;
             }
 

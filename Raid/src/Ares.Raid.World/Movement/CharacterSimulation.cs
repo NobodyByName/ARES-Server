@@ -20,6 +20,12 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
     public double? SlideStartedAt { get; init; }
     public SlideState? Slide { get; init; }
     public int SlideExitTicks { get; init; }
+
+    /// <summary>
+    /// Whether the character is jumping, falling or recovering from a heavy landing. Its motion is still stepped
+    /// as ground movement.
+    /// </summary>
+    public bool Unsettled { get; init; }
 }
 
 /// <summary>Per-character input simulation for reported position, flashlight and level-ground motion.</summary>
@@ -65,11 +71,12 @@ public sealed class CharacterSimulation
     /// <param name="sprint">Sprint parameters when sprinting is allowed by the character's abilities.</param>
     /// <param name="slide">Slide parameters for the ground surface when sliding is allowed; requires sprint.</param>
     /// <param name="crouched">Crouch movement parameters; defaults to <see cref="GroundMovementParameters.Crouched"/>.</param>
+    /// <param name="unsettled">Whether the character is jumping, falling or recovering from a heavy landing.</param>
     /// <returns>The next character state.</returns>
     public CharacterState StepOnGround(CharacterInput input, MovementInput movement, double yaw, double seconds,
         GroundMovementParameters parameters, bool steerAboveMaximum, bool fixBrakingOvershoot,
         Vector3D? position = null, bool electrified = false, SprintMovementParameters? sprint = null,
-        SlideMovementParameters? slide = null, GroundMovementParameters? crouched = null)
+        SlideMovementParameters? slide = null, GroundMovementParameters? crouched = null, bool unsettled = false)
     {
         if (input.Frame != movement.Frame)
         {
@@ -163,6 +170,7 @@ public sealed class CharacterSimulation
             SlideStartedAt = slideStarted,
             Slide = slideState,
             SlideExitTicks = exitTicks,
+            Unsettled = unsettled,
         };
         return State;
     }
