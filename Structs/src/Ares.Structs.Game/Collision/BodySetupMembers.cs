@@ -28,8 +28,8 @@ public static class BodySetupMembers
     /// <summary>Unknown member, one byte.</summary>
     public const int Unknown7 = 7;
 
-    /// <summary>Unknown member, an object reference (4 bytes).</summary>
-    public const int Unknown10 = 10;
+    /// <summary><c>PhysMaterial</c>: object reference (4 bytes), the physical material of the simple shapes.</summary>
+    public const int PhysMaterial = 10;
 
     /// <summary><c>WalkableSlopeOverride</c>: an <c>FWalkableSlopeOverride</c> struct (see <see cref="WalkableSlopeOverrideMembers"/>).</summary>
     public const int WalkableSlopeOverride = 11;
@@ -50,7 +50,7 @@ public static class BodySetupMembers
     public static int? FixedValueSize(int member) => member switch
     {
         Unknown4 or Unknown7 or Unknown15 or CollisionTraceFlag => 1,
-        Unknown10 => 4,
+        PhysMaterial => 4,
         BuildScale3D => 24,
         _ => null,
     };

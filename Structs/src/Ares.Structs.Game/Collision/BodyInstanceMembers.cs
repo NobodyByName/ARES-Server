@@ -21,8 +21,8 @@ public static class BodyInstanceMembers
     /// <summary><c>WalkableSlopeOverride</c>: an <c>FWalkableSlopeOverride</c> struct (see <see cref="WalkableSlopeOverrideMembers"/>).</summary>
     public const int WalkableSlopeOverride = 41;
 
-    /// <summary>Unknown member, 4 bytes.</summary>
-    public const int Unknown42 = 42;
+    /// <summary><c>PhysMaterialOverride</c>: object reference (4 bytes), a physical material that replaces the body's own.</summary>
+    public const int PhysMaterialOverride = 42;
 
     /// <summary>Unknown member, 4 bytes.</summary>
     public const int Unknown43 = 43;
@@ -53,7 +53,7 @@ public static class BodyInstanceMembers
     {
         ObjectType or CollisionEnabled or Unknown20 or Unknown48 or Unknown49 or Unknown52 => 1,
         CollisionProfileName => 8,
-        Unknown33 or Unknown42 or Unknown43 => 4,
+        Unknown33 or PhysMaterialOverride or Unknown43 => 4,
         _ => null,
     };
 }

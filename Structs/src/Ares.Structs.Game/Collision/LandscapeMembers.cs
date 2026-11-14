@@ -41,8 +41,11 @@ public static class LandscapeHeightfieldCollisionComponentMembers
     /// <summary>Unknown member: object reference (4 bytes).</summary>
     public const int Unknown9 = 9;
 
-    /// <summary>Unknown member: array of object references.</summary>
-    public const int Unknown10 = 10;
+    /// <summary>
+    /// <c>CookedPhysicalMaterials</c>: array of object references, the physical materials the cooked height field's
+    /// material indices refer to.
+    /// </summary>
+    public const int CookedPhysicalMaterials = 10;
 
     /// <summary>Index of the scene part.</summary>
     public const int ScenePart = 128;
@@ -60,5 +63,5 @@ public static class LandscapeHeightfieldCollisionComponentMembers
     };
 
     /// <summary>Whether an own member is an array of object references (an int32 count, then the references).</summary>
-    public static bool IsReferenceArray(int member) => member is ComponentLayerInfos or Unknown10;
+    public static bool IsReferenceArray(int member) => member is ComponentLayerInfos or CookedPhysicalMaterials;
 }

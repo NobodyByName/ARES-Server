@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Ares.Structs.Game.Collision;
@@ -272,6 +273,9 @@ public static class PhysXCookedData
         reader.Skip(reader.CheckCount(adjacentCount, 1));
     }
 
+    // Compiled fully optimized at once: in Release builds the .NET 10.0.3 runtime's on-stack replacement of this method
+    // returns an invalid material index array.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static TriangleMesh ReadTriangleMesh(ref PhysXReader reader)
     {
         reader.ReadHeader(Nxs, "MESH"u8, TriangleMeshVersion);

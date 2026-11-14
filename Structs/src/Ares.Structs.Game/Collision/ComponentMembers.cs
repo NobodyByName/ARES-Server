@@ -131,6 +131,24 @@ public static class StaticMeshComponentMembers
     /// <summary><c>bUseDefaultCollision</c>: one byte; when set the mesh's own body setup decides the collision.</summary>
     public const int UseDefaultCollision = 24;
 
+    /// <summary>
+    /// <c>StreamingTextureData</c>: array of <c>FStreamingTextureBuildInfo</c> structs, each framed by its own unversioned
+    /// header (see <see cref="StreamingTextureBuildInfoMembers"/>).
+    /// </summary>
+    public const int StreamingTextureData = 45;
+
+    /// <summary>Unknown member, one byte.</summary>
+    public const int Unknown48 = 48;
+
+    /// <summary>Unknown member, 4 bytes.</summary>
+    public const int Unknown49 = 49;
+
+    /// <summary>
+    /// <c>OverrideMaterials</c>: array of object references, the materials that replace the mesh's materials slot by slot
+    /// (a null entry keeps the mesh's).
+    /// </summary>
+    public const int OverrideMaterials = 51;
+
     /// <summary>Unknown member, one byte.</summary>
     public const int Unknown63 = 63;
 
@@ -150,9 +168,20 @@ public static class StaticMeshComponentMembers
     public static int? FixedValueSize(int member) => member switch
     {
         Unknown0 or StaticMesh => 4,
-        Unknown11 or UseDefaultCollision or Unknown63 or Unknown66 or Unknown101 => 1,
+        Unknown11 or UseDefaultCollision or Unknown48 or Unknown63 or Unknown66 or Unknown101 => 1,
+        Unknown49 => 4,
         _ => null,
     };
+}
+
+/// <summary>Members of the unversioned <c>FStreamingTextureBuildInfo</c> struct.</summary>
+public static class StreamingTextureBuildInfoMembers
+{
+    /// <summary>Members of the struct's chain.</summary>
+    public const int MemberCount = 3;
+
+    /// <summary>Bytes of each member's value (a packed box, a texture index and a texel factor).</summary>
+    public const int ValueSize = 4;
 }
 
 /// <summary>Chain facts of a <c>USplineMeshComponent</c> (a static mesh component bent along a spline).</summary>
