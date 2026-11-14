@@ -30,11 +30,15 @@ namespace Ares.Common.Maps;
 /// (count; centre, radius), capsules (count; centre, rotation, radius, half length), convex hulls (count; per hull the
 /// vertex count and vertices, the polygon count and per polygon its plane normal, plane distance, first index and index
 /// count as int32, the index count and byte indices, the bounds) and triangle meshes (count; per mesh the vertex count
-/// and vertices, the index count and int32 indices, the bounds).</item>
+/// and vertices, the index count and int32 indices, the material index count, 0 or one per triangle, and uint16 material
+/// indices, the bounds).</item>
 /// <item><c>PLAC</c>: placement count; per placement the body index, cell index, flags (uint32), translation (double
-/// vector), rotation and scale. Placement bounds are not stored; they are computed from the body when reading.</item>
+/// vector), rotation, scale, surface type (byte), material slot count and the slots' surface types (bytes). Placement
+/// bounds are not stored; they are computed from the body when reading.</item>
 /// <item><c>HFLD</c>: tile count; per tile the cell index, origin (double vector), X spacing, Y spacing and height scale
-/// (float32), sample counts along X and Y, the int16 heights and the byte cell flags, both X-fastest.</item>
+/// (float32), sample counts along X and Y, the int16 heights (X-fastest), the tile's surface type count (at most
+/// <see cref="HeightFieldTile.MaximumSurfaceTypes"/>) and surface types (bytes), then one byte per grid cell (X-fastest):
+/// the cell flags in bits 0–2 and, when the tile has surface types, the index of the cell's surface type in bits 3–7.</item>
 /// </list>
 /// <para>
 /// Reading checks the magic, then the format version, then the game build, and every count, index and length; a
@@ -44,7 +48,10 @@ namespace Ares.Common.Maps;
 public static class MapCollisionFile
 {
     /// <summary>The format version this code reads and writes.</summary>
-    public const int FormatVersion = 1;
+    public const int FormatVersion = 2;
+
+    private const int SurfaceIndexShift = 3;
+    private const byte CellFlagMask = (1 << SurfaceIndexShift) - 1;
 
     private static readonly UTF8Encoding s_utf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -210,6 +217,7 @@ public static class MapCollisionFile
             {
                 WriteArray(writer, mesh.Vertices.AsSpan());
                 WriteArray(writer, mesh.Indices.AsSpan());
+                WriteArray(writer, mesh.MaterialIndices.AsSpan());
                 WriteBounds(writer, mesh.Bounds);
             }
         }
@@ -226,6 +234,8 @@ public static class MapCollisionFile
             WriteVector(writer, placement.Translation);
             WriteQuaternion(writer, placement.Rotation);
             WriteVector(writer, placement.Scale);
+            writer.Write((byte)placement.Surface);
+            WriteArray(writer, MemoryMarshal.AsBytes(placement.MaterialSurfaces.AsSpan()));
         }
     }
 
@@ -242,8 +252,39 @@ public static class MapCollisionFile
             writer.Write(tile.CountX);
             writer.Write(tile.CountY);
             writer.Write(MemoryMarshal.AsBytes(tile.Heights.AsSpan()));
-            writer.Write(MemoryMarshal.AsBytes(tile.CellFlags.AsSpan()));
+            WriteCells(writer, tile);
         }
+    }
+
+    /// <summary>Writes a tile's surface types and its cells, each cell's flags packed with its surface type's index.</summary>
+    private static void WriteCells(BinaryWriter writer, HeightFieldTile tile)
+    {
+        ReadOnlySpan<HeightFieldCellFlags> flags = tile.CellFlags.AsSpan();
+        if (tile.CellSurfaces.IsDefaultOrEmpty)
+        {
+            writer.Write(0);
+            writer.Write(MemoryMarshal.AsBytes(flags));
+            return;
+        }
+
+        List<PhysicalSurfaceType> palette = [];
+        Span<int> indices = stackalloc int[byte.MaxValue + 1];
+        indices.Fill(-1);
+        byte[] cells = new byte[flags.Length];
+        for (int cell = 0; cell < cells.Length; cell++)
+        {
+            PhysicalSurfaceType surface = tile.CellSurfaces[cell];
+            if (indices[(byte)surface] < 0)
+            {
+                indices[(byte)surface] = palette.Count;
+                palette.Add(surface);
+            }
+
+            cells[cell] = (byte)((byte)flags[cell] | (indices[(byte)surface] << SurfaceIndexShift));
+        }
+
+        WriteArray(writer, MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(palette)));
+        writer.Write(cells);
     }
 
     private static void WriteString(BinaryWriter writer, string value)
@@ -387,10 +428,11 @@ public static class MapCollisionFile
             {
                 Vector3[] vertices = reader.ReadArray<Vector3>();
                 int[] indices = reader.ReadArray<int>();
+                ushort[] materials = reader.ReadArray<ushort>();
                 meshes[mesh] = new TriangleMesh(
                     ImmutableCollectionsMarshal.AsImmutableArray(vertices),
                     ImmutableCollectionsMarshal.AsImmutableArray(indices),
-                    [],
+                    ImmutableCollectionsMarshal.AsImmutableArray(materials),
                     reader.ReadBounds());
             }
 
@@ -417,7 +459,7 @@ public static class MapCollisionFile
     private static ImmutableArray<BodyPlacement> ReadPlacements(byte[] payload, ImmutableArray<CollisionBody> bodies, int cellCount)
     {
         PayloadReader reader = new(payload, "placement");
-        BodyPlacement[] placements = new BodyPlacement[reader.ReadCount(64)];
+        BodyPlacement[] placements = new BodyPlacement[reader.ReadCount(69)];
         for (int i = 0; i < placements.Length; i++)
         {
             int bodyIndex = reader.ReadInt32();
@@ -426,7 +468,13 @@ public static class MapCollisionFile
             Vector3D translation = reader.ReadVector3D();
             Quaternion rotation = reader.ReadQuaternion();
             Vector3 scale = reader.ReadVector();
-            BodyPlacement placement = new(bodyIndex, cellIndex, translation, rotation, scale, flags, default);
+            PhysicalSurfaceType surface = (PhysicalSurfaceType)reader.ReadByte();
+            PhysicalSurfaceType[] materialSurfaces = reader.ReadArray<PhysicalSurfaceType>();
+            BodyPlacement placement = new(bodyIndex, cellIndex, translation, rotation, scale, flags, default)
+            {
+                Surface = surface,
+                MaterialSurfaces = ImmutableCollectionsMarshal.AsImmutableArray(materialSurfaces),
+            };
             string? error = MapCollisionRules.FindPlacementError(placement, bodies.Length, cellCount);
             if (error is not null)
             {
@@ -443,7 +491,7 @@ public static class MapCollisionFile
     private static ImmutableArray<HeightFieldTile> ReadHeightFields(byte[] payload, int cellCount)
     {
         PayloadReader reader = new(payload, "height-field");
-        HeightFieldTile[] tiles = new HeightFieldTile[reader.ReadCount(52)];
+        HeightFieldTile[] tiles = new HeightFieldTile[reader.ReadCount(56)];
         for (int i = 0; i < tiles.Length; i++)
         {
             int cellIndex = reader.ReadInt32();
@@ -459,7 +507,26 @@ public static class MapCollisionFile
             }
 
             short[] heights = reader.ReadArray<short>(countX * countY);
+            PhysicalSurfaceType[] palette = reader.ReadArray<PhysicalSurfaceType>();
+            if (palette.Length > HeightFieldTile.MaximumSurfaceTypes)
+            {
+                throw Malformed("height-field section", $"tile {i} has {palette.Length} surface types");
+            }
+
             HeightFieldCellFlags[] flags = reader.ReadArray<HeightFieldCellFlags>((countX - 1) * (countY - 1));
+            PhysicalSurfaceType[] surfaces = palette.Length == 0 ? [] : new PhysicalSurfaceType[flags.Length];
+            for (int cell = 0; cell < surfaces.Length; cell++)
+            {
+                int index = (byte)flags[cell] >> SurfaceIndexShift;
+                if (index >= palette.Length)
+                {
+                    throw Malformed("height-field section", $"tile {i} cell {cell} names surface type {index} of {palette.Length}");
+                }
+
+                surfaces[cell] = palette[index];
+                flags[cell] = (HeightFieldCellFlags)((byte)flags[cell] & CellFlagMask);
+            }
+
             HeightFieldTile tile = new(
                 cellIndex,
                 origin,
@@ -469,7 +536,8 @@ public static class MapCollisionFile
                 countX,
                 countY,
                 ImmutableCollectionsMarshal.AsImmutableArray(heights),
-                ImmutableCollectionsMarshal.AsImmutableArray(flags));
+                ImmutableCollectionsMarshal.AsImmutableArray(flags),
+                ImmutableCollectionsMarshal.AsImmutableArray(surfaces));
             string? error = MapCollisionRules.FindTileError(tile, cellCount);
             if (error is not null)
             {
@@ -509,6 +577,8 @@ public static class MapCollisionFile
         public int ReadInt32() => BinaryPrimitives.ReadInt32LittleEndian(Take(sizeof(int)));
 
         public uint ReadUInt32() => BinaryPrimitives.ReadUInt32LittleEndian(Take(sizeof(uint)));
+
+        public byte ReadByte() => Take(1)[0];
 
         public float ReadSingle() => BinaryPrimitives.ReadSingleLittleEndian(Take(sizeof(float)));
 

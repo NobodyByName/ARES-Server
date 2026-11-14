@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Numerics;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
@@ -43,6 +44,28 @@ public readonly record struct BodyPlacement(
     PlacementFlags Flags,
     BoundingBox Bounds)
 {
+    /// <summary>
+    /// Surface type of the placement's boxes, spheres, capsules and convex hulls, and of triangles whose material slot
+    /// <see cref="MaterialSurfaces"/> does not cover.
+    /// </summary>
+    public PhysicalSurfaceType Surface { get; init; }
+
+    /// <summary>
+    /// Surface type of each material slot, which the body's triangle meshes name per triangle; empty for placements
+    /// without triangle meshes.
+    /// </summary>
+    public ImmutableArray<PhysicalSurfaceType> MaterialSurfaces { get; init; } = [];
+
+    /// <summary>The surface type of a triangle of the body's triangle mesh <paramref name="mesh"/>.</summary>
+    /// <param name="mesh">The triangle mesh, one of the placed body's.</param>
+    /// <param name="triangle">Index of the triangle in the mesh.</param>
+    public PhysicalSurfaceType TriangleSurface(TriangleMesh mesh, int triangle)
+    {
+        ArgumentNullException.ThrowIfNull(mesh);
+        int slot = mesh.MaterialIndices.IsEmpty ? 0 : mesh.MaterialIndices[triangle];
+        return !MaterialSurfaces.IsDefault && slot < MaterialSurfaces.Length ? MaterialSurfaces[slot] : Surface;
+    }
+
     /// <summary>Smallest world corner of the placement's bounds.</summary>
     public Vector3D WorldMinimum => new(Translation.X + Bounds.Minimum.X, Translation.Y + Bounds.Minimum.Y, Translation.Z + Bounds.Minimum.Z);
 

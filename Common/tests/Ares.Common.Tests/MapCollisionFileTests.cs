@@ -54,11 +54,20 @@ public sealed class MapCollisionFileTests
             {
                 Assert.Equal(expected.TriangleMeshes[mesh].Vertices, actual.TriangleMeshes[mesh].Vertices);
                 Assert.Equal(expected.TriangleMeshes[mesh].Indices, actual.TriangleMeshes[mesh].Indices);
+                Assert.Equal(expected.TriangleMeshes[mesh].MaterialIndices, actual.TriangleMeshes[mesh].MaterialIndices);
                 Assert.Equal(expected.TriangleMeshes[mesh].Bounds, actual.TriangleMeshes[mesh].Bounds);
             }
         }
 
-        Assert.Equal(map.Placements, read.Placements);
+        Assert.Equal(map.Placements.Length, read.Placements.Length);
+        for (int i = 0; i < map.Placements.Length; i++)
+        {
+            Assert.Equal(map.Placements[i] with { MaterialSurfaces = [] }, read.Placements[i] with { MaterialSurfaces = [] });
+            Assert.Equal(map.Placements[i].MaterialSurfaces, read.Placements[i].MaterialSurfaces);
+        }
+
+        Assert.Equal(PhysicalSurfaceType.Concrete, read.Placements[0].Surface);
+        Assert.Equal([PhysicalSurfaceType.Metal, PhysicalSurfaceType.Wood], read.Placements[2].MaterialSurfaces);
 
         HeightFieldTile tile = Assert.Single(read.HeightFields);
         HeightFieldTile written = map.HeightFields[0];
@@ -68,6 +77,38 @@ public sealed class MapCollisionFileTests
         Assert.Equal((written.CountX, written.CountY), (tile.CountX, tile.CountY));
         Assert.Equal(written.Heights, tile.Heights);
         Assert.Equal(written.CellFlags, tile.CellFlags);
+        Assert.Equal(written.CellSurfaces, tile.CellSurfaces);
+        Assert.Equal(PhysicalSurfaceType.SaltFlat, tile.Surface(1, 0));
+    }
+
+    [Fact]
+    public void A_tile_without_surface_types_reads_back_as_default_everywhere()
+    {
+        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
+        builder.AddHeightField(new HeightFieldTile(cell, default, 100, 100, 1, 2, 2, [0, 0, 0, 0], [HeightFieldCellFlags.DiagonalFromLowCorner]));
+
+        HeightFieldTile tile = Assert.Single(RoundTrip(builder.Build()).HeightFields);
+
+        Assert.True(tile.CellSurfaces.IsEmpty);
+        Assert.Equal(HeightFieldCellFlags.DiagonalFromLowCorner, tile.Cell(0, 0));
+        Assert.Equal(PhysicalSurfaceType.Default, tile.Surface(0, 0));
+        Assert.Equal(PhysicalSurfaceType.Default, tile.SurfaceAt(50, 50));
+    }
+
+    [Fact]
+    public void A_triangle_takes_the_surface_type_of_its_material_slot()
+    {
+        TriangleMesh mesh = MeshBody("/Game/Props/Ramp").TriangleMeshes[0];
+        BodyPlacement placement = new(0, 0, default, Quaternion.Identity, Vector3.One, PlacementFlags.BlocksPawn, default)
+        {
+            Surface = PhysicalSurfaceType.Concrete,
+            MaterialSurfaces = [PhysicalSurfaceType.Metal, PhysicalSurfaceType.Wood],
+        };
+
+        Assert.Equal(PhysicalSurfaceType.Wood, placement.TriangleSurface(mesh, 0));
+        Assert.Equal(PhysicalSurfaceType.Metal, placement.TriangleSurface(mesh, 1));
+        Assert.Equal(PhysicalSurfaceType.Concrete, (placement with { MaterialSurfaces = [PhysicalSurfaceType.Metal] }).TriangleSurface(mesh, 0));
     }
 
     [Fact]
@@ -79,7 +120,8 @@ public sealed class MapCollisionFileTests
 
         long length = BinaryPrimitives.ReadInt64LittleEndian(bytes.AsSpan(tag + 4));
 
-        Assert.Equal(sizeof(int) + (64 * map.Placements.Length), length);
+        // Body, cell, flags, translation, rotation, scale, surface type, slot count, then one byte per slot.
+        Assert.Equal(sizeof(int) + (69 * map.Placements.Length) + map.Placements.Sum(placement => placement.MaterialSurfaces.Length), length);
     }
 
     [Fact]
@@ -147,12 +189,30 @@ public sealed class MapCollisionFileTests
         samples[3] = samples[3] with { MaterialIndex0 = 0x80 | HeightFieldSample.HoleMaterial };
         HeightField field = new(3, 3, 0, 0, 0, default, 0, 22, [.. samples]);
 
-        HeightFieldTile tile = HeightFieldTile.FromLandscape(0, field, new Vector3D(100, 200, 300), 100, 100, 2);
+        samples[4] = samples[4] with { MaterialIndex0 = 1, MaterialIndex1 = 1 };
+        HeightFieldTile tile = HeightFieldTile.FromLandscape(0, field with { Samples = [.. samples] }, new Vector3D(100, 200, 300), 100, 100, 2,
+            [PhysicalSurfaceType.Stone, PhysicalSurfaceType.SaltFlat]);
 
         Assert.Equal(21, tile.Height(2, 1));
         Assert.Equal(new Vector3D(300, 300, 342), tile.SamplePosition(2, 1));
         Assert.Equal(HeightFieldCellFlags.LowYTriangleHole, tile.Cell(0, 0));
         Assert.Equal(HeightFieldCellFlags.DiagonalFromLowCorner, tile.Cell(1, 0));
+
+        // Field row 1, column 1 is grid cell (0, 1); a cell whose one triangle is a hole takes the other's material.
+        Assert.Equal(PhysicalSurfaceType.SaltFlat, tile.Surface(0, 1));
+        Assert.Equal(PhysicalSurfaceType.Stone, tile.Surface(0, 0));
+        Assert.Equal(PhysicalSurfaceType.SaltFlat, tile.SurfaceAt(150, 350));
+    }
+
+    [Fact]
+    public void A_landscape_cell_whose_triangles_have_different_materials_is_refused()
+    {
+        HeightFieldSample[] samples = [.. Enumerable.Repeat(new HeightFieldSample(0, 0x80, 0), 4)];
+        samples[0] = samples[0] with { MaterialIndex1 = 1 };
+        HeightField field = new(2, 2, 0, 0, 0, default, 0, 22, [.. samples]);
+
+        Assert.Throws<ArgumentException>(() =>
+            HeightFieldTile.FromLandscape(0, field, default, 100, 100, 1, [PhysicalSurfaceType.Stone, PhysicalSurfaceType.Sand]));
     }
 
     [Fact]
@@ -248,9 +308,11 @@ public sealed class MapCollisionFileTests
         int mesh = builder.AddBody(MeshBody("/Game/Props/Ramp"));
         int sphere = builder.AddBody(SphereBody("/Game/Props/Ball"));
         Ares.Structs.Core.Geometry.Quaternion yaw = new(0, 0, Math.Sin(0.3), Math.Cos(0.3));
-        builder.AddPlacement(box, baseCell, new Transform(yaw, new Vector3D(-123456.789, 98765.4321, -50.25), Vector3D.One), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable);
+        builder.AddPlacement(box, baseCell, new Transform(yaw, new Vector3D(-123456.789, 98765.4321, -50.25), Vector3D.One), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable,
+            PhysicalSurfaceType.Concrete);
         builder.AddPlacement(hull, baseCell, new Transform(yaw, new Vector3D(10, 20, 30), new Vector3D(-1, 2, 3)), PlacementFlags.BlocksPawn);
-        builder.AddPlacement(mesh, layerCell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One), PlacementFlags.BlocksClimbable);
+        builder.AddPlacement(mesh, layerCell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One), PlacementFlags.BlocksClimbable,
+            PhysicalSurfaceType.Metal, [PhysicalSurfaceType.Metal, PhysicalSurfaceType.Wood]);
         builder.AddPlacement(sphere, layerCell, new Transform(yaw, new Vector3D(1, 1, 1), new Vector3D(0.5, 0.5, 0.5)), PlacementFlags.None);
         builder.AddHeightField(new HeightFieldTile(
             baseCell,
@@ -261,7 +323,8 @@ public sealed class MapCollisionFileTests
             3,
             2,
             [-32768, 0, 32767, 5, 6, 7],
-            [HeightFieldCellFlags.DiagonalFromLowCorner, HeightFieldCellFlags.HighYTriangleHole]));
+            [HeightFieldCellFlags.DiagonalFromLowCorner, HeightFieldCellFlags.HighYTriangleHole],
+            [PhysicalSurfaceType.GravelFine, PhysicalSurfaceType.SaltFlat]));
         return builder.Build();
     }
 
@@ -303,7 +366,7 @@ public sealed class MapCollisionFileTests
         TriangleMesh mesh = new(
             [new Vector3(0, 0, 0), new Vector3(100, 0, 0), new Vector3(0, 100, 50), new Vector3(100, 100, 50)],
             [0, 1, 2, 2, 1, 3],
-            [],
+            [1, 0],
             new BoundingBox(Vector3.Zero, new Vector3(100, 100, 50)));
         return new CollisionBody(name, [], [], [], [], [mesh]);
     }

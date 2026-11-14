@@ -14,6 +14,9 @@ internal static class MapCollisionRules
     private const float BoundsTolerance = 1e-3f;
     private const float RelativeBoundsTolerance = 1e-6f;
 
+    /// <summary>Most material slots a placement may name.</summary>
+    public const int MaximumMaterialSlots = ushort.MaxValue + 1;
+
     /// <summary>Describes what is wrong with a body, or returns <see langword="null"/> when it is valid.</summary>
     public static string? FindBodyError(CollisionBody body)
     {
@@ -84,7 +87,40 @@ internal static class MapCollisionRules
         const HeightFieldCellFlags All = HeightFieldCellFlags.DiagonalFromLowCorner | HeightFieldCellFlags.LowYTriangleHole |
             HeightFieldCellFlags.HighYTriangleHole;
         HeightFieldCellFlags unknown = tile.CellFlags.FirstOrDefault(flags => (flags & ~All) != 0);
-        return unknown == 0 ? null : $"has unknown cell flags {(byte)unknown}";
+        if (unknown != 0)
+        {
+            return $"has unknown cell flags {(byte)unknown}";
+        }
+
+        if (tile.CellSurfaces.IsDefaultOrEmpty)
+        {
+            return null;
+        }
+
+        if (tile.CellSurfaces.Length != tile.CellFlags.Length)
+        {
+            return "has the wrong number of cell surfaces";
+        }
+
+        Span<bool> seen = stackalloc bool[byte.MaxValue + 1];
+        int distinct = 0;
+        foreach (PhysicalSurfaceType surface in tile.CellSurfaces)
+        {
+            if (!IsKnown(surface))
+            {
+                return "has an unknown surface type";
+            }
+
+            if (seen[(byte)surface])
+            {
+                continue;
+            }
+
+            seen[(byte)surface] = true;
+            distinct++;
+        }
+
+        return distinct > HeightFieldTile.MaximumSurfaceTypes ? $"has more than {HeightFieldTile.MaximumSurfaceTypes} surface types" : null;
     }
 
     /// <summary>Describes what is wrong with a placement, or returns <see langword="null"/> when it is valid.</summary>
@@ -108,6 +144,16 @@ internal static class MapCollisionRules
         if ((placement.Flags & ~(PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable)) != 0)
         {
             return $"has unknown flags {(uint)placement.Flags}";
+        }
+
+        if (!IsKnown(placement.Surface) || (!placement.MaterialSurfaces.IsDefault && placement.MaterialSurfaces.Any(surface => !IsKnown(surface))))
+        {
+            return "has an unknown surface type";
+        }
+
+        if (placement.MaterialSurfaces is { IsDefault: false, Length: > MaximumMaterialSlots })
+        {
+            return $"has {placement.MaterialSurfaces.Length} material slots";
         }
 
         Vector3 minimum = placement.Bounds.Minimum;
@@ -252,13 +298,19 @@ internal static class MapCollisionRules
             return $"has {mesh.Indices.Length} indices";
         }
 
+        int materialCount = mesh.MaterialIndices.Length;
+        if (materialCount != 0 && materialCount != mesh.TriangleCount)
+        {
+            return $"has {materialCount} material indices for {mesh.TriangleCount} triangles";
+        }
+
         if (!mesh.Vertices.All(IsFinite))
         {
             return "has a non-finite vertex";
         }
 
         int vertexCount = mesh.Vertices.Length;
-        foreach (int index in mesh.Indices.Where(index => (uint)index >= (uint)vertexCount))
+        foreach (int index in mesh.Indices.Where(i => (uint)i >= (uint)vertexCount))
         {
             return $"refers to vertex {index} of {vertexCount}";
         }
@@ -351,4 +403,6 @@ internal static class MapCollisionRules
             return result < value ? MathF.BitIncrement(result) : result;
         }
     }
+
+    private static bool IsKnown(PhysicalSurfaceType surface) => surface <= PhysicalSurfaceType.Ice;
 }

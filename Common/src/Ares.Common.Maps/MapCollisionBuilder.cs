@@ -90,8 +90,16 @@ public sealed class MapCollisionBuilder
     /// <param name="cellIndex">Index returned by <see cref="AddCell"/>.</param>
     /// <param name="worldTransform">The placement's world transform; the rotation is normalized.</param>
     /// <param name="flags">What the placement blocks.</param>
-    /// <exception cref="ArgumentException">An index is out of range or the transform is invalid.</exception>
-    public void AddPlacement(int bodyIndex, int cellIndex, Transform worldTransform, PlacementFlags flags)
+    /// <param name="surface">Surface type of the placement (see <see cref="BodyPlacement.Surface"/>).</param>
+    /// <param name="materialSurfaces">Surface type of each material slot (see <see cref="BodyPlacement.MaterialSurfaces"/>), or none.</param>
+    /// <exception cref="ArgumentException">An index is out of range or the transform or a surface type is invalid.</exception>
+    public void AddPlacement(
+        int bodyIndex,
+        int cellIndex,
+        Transform worldTransform,
+        PlacementFlags flags,
+        PhysicalSurfaceType surface = PhysicalSurfaceType.Default,
+        IEnumerable<PhysicalSurfaceType>? materialSurfaces = null)
     {
         Ares.Structs.Core.Geometry.Quaternion source = worldTransform.Rotation;
         double length = Math.Sqrt((source.X * source.X) + (source.Y * source.Y) + (source.Z * source.Z) + (source.W * source.W));
@@ -105,7 +113,11 @@ public sealed class MapCollisionBuilder
         BoundingBox bounds = (uint)bodyIndex < (uint)_bodies.Count
             ? MapCollisionRules.PlacedBounds(_bodies[bodyIndex], rotation, scale)
             : default;
-        BodyPlacement placement = new(bodyIndex, cellIndex, worldTransform.Translation, rotation, scale, flags, bounds);
+        BodyPlacement placement = new(bodyIndex, cellIndex, worldTransform.Translation, rotation, scale, flags, bounds)
+        {
+            Surface = surface,
+            MaterialSurfaces = [.. materialSurfaces ?? []],
+        };
         string? error = MapCollisionRules.FindPlacementError(placement, _bodies.Count, _cells.Count);
         if (error is not null)
         {
