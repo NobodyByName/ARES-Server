@@ -11,6 +11,7 @@ public readonly record struct WeaponInput(uint Frame, ulong Flags, ulong EquipTa
     public bool FireBlocked => (Flags & (1UL << WeaponProtocol.FireBlockedBit)) != 0;
     public bool AllowPrimary => (Flags & (1UL << WeaponProtocol.AllowPrimaryBit)) != 0;
     public bool ReloadDown => (Flags & (1UL << WeaponProtocol.ReloadDownBit)) != 0;
+    public bool ReloadDownBefore => (Flags & (1UL << WeaponProtocol.ReloadOldBit)) != 0;
 
     /// <summary>Reads the supported weapon input descriptor without trusting its claimed ammo state.</summary>
     public static WeaponInput Read(uint frame, PendulumSlot slot)

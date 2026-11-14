@@ -25,6 +25,12 @@ public readonly record struct GroundMovementParameters(
     /// <summary>Slow walking.</summary>
     public static GroundMovementParameters Walking { get; } = new(200);
 
+    /// <summary>
+    /// Movement while the held item forces a walk (<see cref="HeldItemMovementParameters"/>), standing or crouched;
+    /// the <c>ADSSpeedModifier</c> attribute scales it.
+    /// </summary>
+    public static GroundMovementParameters Aiming { get; } = new(150);
+
     /// <summary>Initial crouch movement speed multiplier.</summary>
     public const double CrouchShuffleSpeedFactor = 0.5;
 
