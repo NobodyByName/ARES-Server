@@ -29,6 +29,7 @@ internal readonly record struct WalkableSlope(byte Behavior, float Angle);
 /// <param name="DefaultInstance">Collision settings of components that use the body's defaults, or <see langword="null"/>
 /// when the body stores none (the class defaults apply).</param>
 /// <param name="Cooked">Cooked convex hulls and triangle meshes, or <see langword="null"/> when the body stores none.</param>
+/// <param name="PhysMaterial">Physical material of the simple shapes as stored, or <see langword="null"/> when the body stores none.</param>
 internal sealed record BodySetupContents(
     ImmutableArray<CollisionSphere> Spheres,
     ImmutableArray<CollisionBox> Boxes,
@@ -37,7 +38,8 @@ internal sealed record BodySetupContents(
     WalkableSlope? WalkableSlope,
     CollisionTraceFlag TraceFlag,
     BodyInstanceValues? DefaultInstance,
-    CookedBodyGeometry? Cooked);
+    CookedBodyGeometry? Cooked,
+    StoredReference? PhysMaterial = null);
 
 /// <summary>
 /// Reads body setup exports: the unversioned properties (simple shapes, default collision, trace flag) front to back,
@@ -60,6 +62,7 @@ internal static class BodySetupReader
         CollisionTraceFlag traceFlag = CollisionTraceFlag.UseDefault;
         BodyInstanceValues? defaultInstance = null;
         WalkableSlope? walkableSlope = null;
+        StoredReference? physMaterial = null;
         foreach (UnversionedMember member in header.Members.Where(member => member.IsNonZero))
         {
             switch (member.Index)
@@ -73,6 +76,10 @@ internal static class BodySetupReader
                 case BodySetupMembers.DefaultInstance:
                     defaultInstance = BodyInstanceReader.TryRead(package, at, out at)
                         ?? throw new InvalidDataException($"{package.Name}: the default body instance of {export.Name} cannot be read");
+                    break;
+                case BodySetupMembers.PhysMaterial:
+                    physMaterial = new StoredReference(package, package.ReadInt32(at));
+                    at += BodySetupMembers.FixedValueSize(member.Index) ?? 0;
                     break;
                 case BodySetupMembers.CollisionTraceFlag:
                     byte flag = package.ReadByte(at);
@@ -95,7 +102,8 @@ internal static class BodySetupReader
 
         BodySetupCookedFormat? format = BodySetupNativeData.Read(package.Data.AsMemory(at, end - at));
         CookedBodyGeometry? cooked = format is { } found ? ReadCookedGeometry(package, export, found) : null;
-        return new BodySetupContents(geometry.Spheres, geometry.Boxes, geometry.Capsules, geometry.ConvexElements, walkableSlope, traceFlag, defaultInstance, cooked);
+        return new BodySetupContents(geometry.Spheres, geometry.Boxes, geometry.Capsules, geometry.ConvexElements, walkableSlope, traceFlag, defaultInstance, cooked,
+            physMaterial);
     }
 
     private static CookedBodyGeometry ReadCookedGeometry(CookedPackage package, ZenExport export, BodySetupCookedFormat format)

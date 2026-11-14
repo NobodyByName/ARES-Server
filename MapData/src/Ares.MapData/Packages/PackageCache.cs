@@ -7,6 +7,9 @@ internal readonly record struct ExportRef(CookedPackage Package, ZenExport Expor
     public string Path => Package.Header.ExportPath(Export.Index);
 }
 
+/// <summary>An object reference as a property stores it, with the package it is stored in (see <see cref="PackageCache.Reference(CookedPackage, int)"/>).</summary>
+internal readonly record struct StoredReference(CookedPackage Package, int Value);
+
 /// <summary>
 /// Loads cooked packages by path once each (headers on first use, chunks when their bytes are first read) and resolves
 /// object references between them.
@@ -101,4 +104,8 @@ internal sealed class PackageCache
                 : throw new InvalidDataException($"{package.Name}: import reference {value} is out of range"),
         };
     }
+
+    /// <summary>The export a stored object reference refers to (see <see cref="Reference(CookedPackage, int)"/>).</summary>
+    /// <exception cref="InvalidDataException">The reference is out of range or cannot be resolved.</exception>
+    public ExportRef? Reference(StoredReference reference) => Reference(reference.Package, reference.Value);
 }

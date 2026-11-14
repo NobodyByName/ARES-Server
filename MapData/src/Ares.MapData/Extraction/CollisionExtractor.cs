@@ -1,9 +1,11 @@
+using System.Collections.Immutable;
 using System.Numerics;
 using Ares.Common.Maps;
 using Ares.MapData.Bodies;
 using Ares.MapData.Cells;
 using Ares.MapData.Components;
 using Ares.MapData.Landscape;
+using Ares.MapData.Materials;
 using Ares.MapData.Packages;
 using Ares.MapData.Profiles;
 using Ares.Structs.Core;
@@ -29,6 +31,7 @@ internal sealed class CollisionExtractor
     private readonly CollisionProfiles _profiles;
     private readonly ComponentReader _components;
     private readonly BodyLibrary _bodies;
+    private readonly SurfaceLibrary _surfaces;
     private readonly MapCollisionBuilder _builder = new(GameBuild.SteamBuildId, DamMap.WorldName);
     private readonly ExtractionSummary _summary = new();
 
@@ -38,6 +41,7 @@ internal sealed class CollisionExtractor
         _profiles = profiles;
         _components = new ComponentReader(packages);
         _bodies = new BodyLibrary(packages, profiles.DefaultShapeComplexity);
+        _surfaces = new SurfaceLibrary(packages);
     }
 
     /// <summary>Extracts the Dam map's collision from <paramref name="archive"/>.</summary>
@@ -63,7 +67,7 @@ internal sealed class CollisionExtractor
         CookedPackage level = _packages.Load(DamMap.MapPackage)
             ?? throw new InvalidDataException($"The map package {DamMap.MapPackage} is not in the game archives");
         IReadOnlyList<MapCell> cells = MapCellReader.ReadCells(level, cellPackages, DamDataLayers.All);
-        LandscapeReader landscape = new(_components);
+        LandscapeReader landscape = new(_components, _surfaces);
         foreach (MapCell cell in cells)
         {
             int cellIndex;
@@ -158,9 +162,10 @@ internal sealed class CollisionExtractor
             return;
         }
 
+        (PhysicalSurfaceType surface, ImmutableArray<PhysicalSurfaceType> materialSurfaces) = PlacedSurfaces(cell, export, component, body, shapes);
         try
         {
-            _builder.AddPlacement(_builder.AddBody(shapes), cellIndex, component.World, flags);
+            _builder.AddPlacement(_builder.AddBody(shapes), cellIndex, component.World, flags, surface, materialSurfaces);
             counts.Placements++;
         }
         catch (ArgumentException error)
@@ -197,6 +202,13 @@ internal sealed class CollisionExtractor
             return;
         }
 
+        (PhysicalSurfaceType surface, ImmutableArray<PhysicalSurfaceType> materialSurfaces) = Surfaces(
+            () => _surfaces.OfCollision(component.Body?.PhysMaterialOverride, body.PhysMaterial, _surfaces.MeshMaterials(component.Mesh), !shapes.TriangleMeshes.IsEmpty));
+        if (_components.StoresInstancedOverrideMaterials(component))
+        {
+            _summary.InstancedOverrideMaterialsNotRead++;
+        }
+
         int bodyIndex;
         try
         {
@@ -212,13 +224,54 @@ internal sealed class CollisionExtractor
         {
             try
             {
-                _builder.AddPlacement(bodyIndex, cellIndex, TransformMath.FromMatrix(instance), flags);
+                _builder.AddPlacement(bodyIndex, cellIndex, TransformMath.FromMatrix(instance), flags, surface, materialSurfaces);
                 counts.Placements++;
             }
             catch (Exception error) when (error is InvalidDataException or ArgumentException)
             {
                 _summary.AddFailure($"Instance: {error.Message}", true);
             }
+        }
+    }
+
+    /// <summary>
+    /// The surface types of a placed component's collision: static mesh and spline mesh components take their materials
+    /// from the mesh's slots, replaced slot by slot by the component's override materials; other components show no
+    /// materials.
+    /// </summary>
+    private (PhysicalSurfaceType Surface, ImmutableArray<PhysicalSurfaceType> MaterialSurfaces) PlacedSurfaces(
+        CookedPackage cell, ZenExport export, PlacedComponent component, AssetBody body, CollisionBody shapes)
+    {
+        return Surfaces(() =>
+        {
+            ImmutableArray<ExportRef?> materials = [];
+            if (component.Kind is not (CollisionComponentKind.StaticMesh or CollisionComponentKind.SplineMesh))
+            {
+                return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, !shapes.TriangleMeshes.IsEmpty);
+            }
+
+            ImmutableArray<ExportRef?> slots = _components.StaticMesh(cell, export) is { } mesh ? _surfaces.MeshMaterials(mesh.Path) : [];
+            ImmutableArray<ExportRef?> overrides = _components.OverrideMaterials(cell, export) is { } stored ? _surfaces.Resolve(stored) : [];
+            materials = [.. Enumerable.Range(0, Math.Max(slots.Length, overrides.Length))
+                .Select(slot => (slot < overrides.Length ? overrides[slot] : null) ?? (slot < slots.Length ? slots[slot] : null))];
+            return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, !shapes.TriangleMeshes.IsEmpty);
+        });
+    }
+
+    /// <summary>Surface types from <paramref name="read"/>; a failure is counted in the summary and gives the default surface type.</summary>
+    private (PhysicalSurfaceType Surface, ImmutableArray<PhysicalSurfaceType> MaterialSurfaces) Surfaces(
+        Func<(PhysicalSurfaceType Surface, ImmutableArray<PhysicalSurfaceType> MaterialSurfaces)> read)
+    {
+        try
+        {
+            (PhysicalSurfaceType surface, ImmutableArray<PhysicalSurfaceType> materialSurfaces) = read();
+            _summary.AddSurface(surface);
+            return (surface, materialSurfaces);
+        }
+        catch (InvalidDataException error)
+        {
+            _summary.AddSurfaceFailure(error.Message);
+            return (PhysicalSurfaceType.Default, []);
         }
     }
 

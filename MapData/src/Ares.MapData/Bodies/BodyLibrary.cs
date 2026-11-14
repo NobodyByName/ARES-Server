@@ -12,7 +12,8 @@ namespace Ares.MapData.Bodies;
 /// <param name="TraceFlag">Which collision the body offers to simple and complex queries.</param>
 /// <param name="DefaultInstance">Collision settings of components that use the body's defaults, or <see langword="null"/>
 /// when the body setup stores none (the class defaults apply) or the asset has no body setup.</param>
-internal sealed record AssetBody(string Path, CollisionBody? Body, CollisionTraceFlag TraceFlag, BodyInstanceValues? DefaultInstance)
+/// <param name="PhysMaterial">The body setup's physical material as stored, or <see langword="null"/> when it stores none.</param>
+internal sealed record AssetBody(string Path, CollisionBody? Body, CollisionTraceFlag TraceFlag, BodyInstanceValues? DefaultInstance, StoredReference? PhysMaterial = null)
 {
     /// <summary>Whether the asset has no collision geometry; placements of it collide with nothing.</summary>
     public bool IsEmpty => Body is null;
@@ -85,7 +86,7 @@ internal sealed class BodyLibrary
     public static AssetBody FromContents(string path, BodySetupContents contents, CollisionTraceFlag defaultShapeComplexity)
     {
         CollisionTraceFlag traceFlag = contents.TraceFlag == CollisionTraceFlag.UseDefault ? defaultShapeComplexity : contents.TraceFlag;
-        return new AssetBody(path, Shapes(path, contents, traceFlag), traceFlag, contents.DefaultInstance);
+        return new AssetBody(path, Shapes(path, contents, traceFlag), traceFlag, contents.DefaultInstance, contents.PhysMaterial);
     }
 
     /// <summary>The shapes of a body the character collides with, or <see langword="null"/> when there are none.</summary>

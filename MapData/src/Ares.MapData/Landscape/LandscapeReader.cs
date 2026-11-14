@@ -1,5 +1,6 @@
 using Ares.Common.Maps;
 using Ares.MapData.Components;
+using Ares.MapData.Materials;
 using Ares.MapData.Packages;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
@@ -19,11 +20,16 @@ internal sealed class LandscapeReader
     private static readonly PackageObjectIndex s_collision = PackageObjectIndex.FromScriptPath(LandscapeHeightfieldCollisionComponentMembers.ClassPath);
 
     private readonly ComponentReader _components;
+    private readonly SurfaceLibrary _surfaces;
 
-    /// <summary>A reader that places components with <paramref name="components"/> (which reads the proxies' root components).</summary>
-    public LandscapeReader(ComponentReader components)
+    /// <summary>
+    /// A reader that places components with <paramref name="components"/> (which reads the proxies' root components) and
+    /// gives their cells the surface types of their cooked physical materials from <paramref name="surfaces"/>.
+    /// </summary>
+    public LandscapeReader(ComponentReader components, SurfaceLibrary surfaces)
     {
         _components = components;
+        _surfaces = surfaces;
     }
 
     /// <summary>
@@ -100,13 +106,22 @@ internal sealed class LandscapeReader
             throw new InvalidDataException($"Landscape collision with a non-positive scale {scale} is not supported");
         }
 
-        return HeightFieldTile.FromLandscape(
-            cellIndex,
-            field,
-            translation,
-            (float)(scale.X * values.CollisionScale),
-            (float)(scale.Y * values.CollisionScale),
-            (float)(scale.Z * LandscapeCollision.HeightScale));
+        PhysicalSurfaceType[] surfaces = [.. values.CookedPhysicalMaterials.Select(material => _surfaces.OfPhysicalMaterial(material) ?? PhysicalSurfaceType.Default)];
+        try
+        {
+            return HeightFieldTile.FromLandscape(
+                cellIndex,
+                field,
+                translation,
+                (float)(scale.X * values.CollisionScale),
+                (float)(scale.Y * values.CollisionScale),
+                (float)(scale.Z * LandscapeCollision.HeightScale),
+                surfaces);
+        }
+        catch (ArgumentException error)
+        {
+            throw new InvalidDataException(error.Message, error);
+        }
     }
 
     /// <summary>The component's world transform: its own relative transform on the world transform of its attach parent, the proxy's root.</summary>

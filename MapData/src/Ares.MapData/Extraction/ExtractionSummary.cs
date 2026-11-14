@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Ares.Structs.Game.Collision;
 
 namespace Ares.MapData.Extraction;
 
@@ -36,6 +37,8 @@ internal sealed class FailureCounts
 internal sealed partial class ExtractionSummary
 {
     private readonly SortedDictionary<string, FailureCounts> _failures = new(StringComparer.Ordinal);
+    private readonly SortedDictionary<string, int> _surfaceFailures = new(StringComparer.Ordinal);
+    private readonly SortedDictionary<PhysicalSurfaceType, int> _surfaces = [];
 
     /// <summary>Counts per component class, by class name.</summary>
     private readonly SortedDictionary<string, ComponentCounts> _classes = new(StringComparer.Ordinal);
@@ -54,6 +57,9 @@ internal sealed partial class ExtractionSummary
 
     /// <summary>Static mesh components that show no mesh.</summary>
     public int WithoutMesh { get; set; }
+
+    /// <summary>Instanced components whose override materials are stored but not read (their mesh's materials apply).</summary>
+    public int InstancedOverrideMaterialsNotRead { get; set; }
 
     /// <summary>Total placements written.</summary>
     private int Placements => _classes.Values.Sum(counts => counts.Placements);
@@ -94,6 +100,16 @@ internal sealed partial class ExtractionSummary
         }
     }
 
+    /// <summary>Counts a component (instanced: a component of instances) whose surface type was decoded.</summary>
+    public void AddSurface(PhysicalSurfaceType surface) => _surfaces[surface] = _surfaces.GetValueOrDefault(surface) + 1;
+
+    /// <summary>Records a component whose surface type could not be decoded; it gets the default surface type.</summary>
+    public void AddSurfaceFailure(string reason)
+    {
+        string category = AssetPath().Replace(reason, "<asset>");
+        _surfaceFailures[category] = _surfaceFailures.GetValueOrDefault(category) + 1;
+    }
+
     /// <summary>Writes the summary for operators.</summary>
     public void Write(TextWriter output)
     {
@@ -111,6 +127,21 @@ internal sealed partial class ExtractionSummary
         if (WithoutMesh > 0)
         {
             output.WriteLine(string.Create(culture, $"Static mesh components without a mesh: {WithoutMesh:N0}"));
+        }
+
+        output.WriteLine(string.Create(culture, $"Surface types (components): {string.Join(", ", _surfaces.Select(entry => $"{entry.Key} {entry.Value:N0}"))}"));
+        if (InstancedOverrideMaterialsNotRead > 0)
+        {
+            output.WriteLine(string.Create(culture, $"Instanced components with override materials not read: {InstancedOverrideMaterialsNotRead:N0}"));
+        }
+
+        if (_surfaceFailures.Count > 0)
+        {
+            output.WriteLine(string.Create(culture, $"Surface types not decoded (default used): {_surfaceFailures.Values.Sum():N0} components"));
+            foreach ((string category, int count) in _surfaceFailures.OrderByDescending(entry => entry.Value))
+            {
+                output.WriteLine(string.Create(culture, $"  {count,6:N0}  {category}"));
+            }
         }
 
         if (_failures.Count == 0)

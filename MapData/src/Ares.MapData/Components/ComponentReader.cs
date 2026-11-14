@@ -100,6 +100,7 @@ internal sealed partial class ComponentReader(PackageCache packages)
         CollisionEnabled? enabled = null;
         CollisionChannel? objectType = null;
         IReadOnlyList<CollisionResponseOverride>? responses = null;
+        StoredReference? physMaterial = null;
         CookedPackage current = package;
         ZenExport level = export;
         for (int depth = 0; ; depth++)
@@ -110,6 +111,7 @@ internal sealed partial class ComponentReader(PackageCache packages)
             enabled ??= body?.CollisionEnabled;
             objectType ??= body?.ObjectType;
             responses ??= body?.Responses;
+            physMaterial ??= body?.PhysMaterialOverride;
 
             PackageObjectIndex template = level.Template;
             if (template.IsNull)
@@ -121,7 +123,7 @@ internal sealed partial class ComponentReader(PackageCache packages)
             {
                 string defaultObject = packages.ScriptPath(template) ?? template.ToString();
                 return new CollisionSettings(useDefault, profile, enabled, objectType, responses, defaultObject,
-                    ComponentCollisionDefaults.Find(defaultObject, classPath));
+                    ComponentCollisionDefaults.Find(defaultObject, classPath), physMaterial);
             }
 
             ExportRef next = packages.Resolve(current, template) ?? throw new InvalidDataException("The component's template cannot be resolved");
@@ -139,10 +141,15 @@ internal sealed partial class ComponentReader(PackageCache packages)
         }
     }
 
-    /// <summary>The static mesh a static mesh component shows (its own member or its nearest template's), or <see langword="null"/>.</summary>
+    /// <summary>
+    /// The static mesh a static mesh or spline mesh component shows (its own member or its nearest template's), or
+    /// <see langword="null"/>.
+    /// </summary>
     /// <exception cref="InvalidDataException">The component or a template cannot be decoded.</exception>
     public ExportRef? StaticMesh(CookedPackage package, ZenExport export)
     {
+        int chainStart = MeshChainStart(export);
+        int meshIndex = chainStart + StaticMeshComponentMembers.StaticMesh;
         for (int depth = 0; ; depth++)
         {
             if (depth > MaxTemplateDepth)
@@ -150,18 +157,13 @@ internal sealed partial class ComponentReader(PackageCache packages)
                 throw new InvalidDataException("The component's template chain is too long");
             }
 
-            if (export.Class != s_staticMeshComponent)
-            {
-                throw new InvalidDataException("The component is not a static mesh component");
-            }
-
             UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(export));
-            if (header.Members.Any(member => member.Index < StaticMeshComponentMembers.StaticMesh && member.Index != StaticMeshComponentMembers.Unknown0))
+            if (chainStart == 0 && header.Members.Any(member => member.Index < meshIndex && member.Index != StaticMeshComponentMembers.Unknown0))
             {
                 throw new InvalidDataException("A member before StaticMesh has an unknown size");
             }
 
-            if (!header.Contains(StaticMeshComponentMembers.StaticMesh))
+            if (!header.Contains(meshIndex))
             {
                 if (Template(package, export) is not { } template)
                 {
@@ -172,11 +174,166 @@ internal sealed partial class ComponentReader(PackageCache packages)
                 continue;
             }
 
-            int value = header.IsNonZero(StaticMeshComponentMembers.StaticMesh)
-                ? package.ReadInt32(ValueOffset(header, StaticMeshComponentMembers.StaticMesh, StaticMeshComponentMembers.FixedValueSize))
-                : 0;
+            int value = header.IsNonZero(meshIndex) ? package.ReadInt32(MeshValueOffset(package, export, header, chainStart)) : 0;
             return packages.Reference(package, value);
         }
+    }
+
+    /// <summary>
+    /// Offset of the stored <c>StaticMesh</c> value of a component. In a static mesh component every member before it has
+    /// a known size; a spline mesh component's own members do not, so there it is the one place in the values that
+    /// refers to a static mesh.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The value cannot be located.</exception>
+    private int MeshValueOffset(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
+    {
+        int meshIndex = chainStart + StaticMeshComponentMembers.StaticMesh;
+        if (chainStart == 0)
+        {
+            return ValueOffset(header, meshIndex, StaticMeshComponentMembers.FixedValueSize);
+        }
+
+        int end = CookedPackage.EndOf(export);
+        int? found = null;
+        for (int at = header.ValuesOffset; at + sizeof(int) <= end; at++)
+        {
+            int value = package.ReadInt32(at);
+            if (!package.IsImportReference(value) || package.Header.Imports[-value - 1].Kind != PackageObjectKind.PackageImport)
+            {
+                continue;
+            }
+
+            ExportRef? target;
+            try
+            {
+                target = packages.Reference(package, value);
+            }
+            catch (InvalidDataException)
+            {
+                continue;
+            }
+
+            if (target?.Export.Class != s_staticMesh)
+            {
+                continue;
+            }
+
+            found = found is null ? at : throw new InvalidDataException("The component refers to more than one static mesh");
+        }
+
+        return found ?? throw new InvalidDataException("The component's static mesh reference cannot be located");
+    }
+
+    /// <summary>
+    /// The override materials of a static mesh or spline mesh component (its own <c>OverrideMaterials</c> or its nearest
+    /// template's), or <see langword="null"/> when none in the chain stores them.
+    /// </summary>
+    /// <exception cref="InvalidDataException">A member before the override materials has an unknown size, or a template cannot be resolved.</exception>
+    public IReadOnlyList<StoredReference>? OverrideMaterials(CookedPackage package, ZenExport export)
+    {
+        int chainStart = MeshChainStart(export);
+        for (int depth = 0; ; depth++)
+        {
+            if (depth > MaxTemplateDepth)
+            {
+                throw new InvalidDataException("The component's template chain is too long");
+            }
+
+            UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(export));
+            int index = chainStart + StaticMeshComponentMembers.OverrideMaterials;
+            if (header.Contains(index))
+            {
+                return header.IsNonZero(index) ? ReadOverrideMaterials(package, export, header, chainStart, MaterialsSearchStart(package, export, header, chainStart)) : [];
+            }
+
+            if (Template(package, export) is not { } template)
+            {
+                return null;
+            }
+
+            (package, export) = (template.Package, template.Export);
+        }
+    }
+
+    /// <summary>Index where the static mesh component chain starts in a static mesh or spline mesh component's chain.</summary>
+    private static int MeshChainStart(ZenExport export)
+    {
+        return CollisionKindOf(export) switch
+        {
+            CollisionComponentKind.StaticMesh => 0,
+            CollisionComponentKind.SplineMesh => SplineMeshComponentMembers.ScenePart - StaticMeshComponentMembers.ScenePart,
+            CollisionComponentKind.Brush or CollisionComponentKind.Box or CollisionComponentKind.Sphere or CollisionComponentKind.Capsule or null =>
+                throw new InvalidDataException("The component is not a static mesh or spline mesh component"),
+            _ => throw new InvalidDataException("The component is not a static mesh or spline mesh component"),
+        };
+    }
+
+    /// <summary>
+    /// Where stepping forwards to the override materials starts: the first value of a static mesh component; in a spline
+    /// mesh component, which must then store its static mesh, the value after it. Returns the offset and the first member
+    /// index still to step over.
+    /// </summary>
+    private (int At, int FirstMember) MaterialsSearchStart(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
+    {
+        int meshIndex = chainStart + StaticMeshComponentMembers.StaticMesh;
+        if (chainStart == 0)
+        {
+            return (header.ValuesOffset, 0);
+        }
+
+        return header.IsNonZero(meshIndex)
+            ? (MeshValueOffset(package, export, header, chainStart) + SceneComponentMembers.ReferenceSize, meshIndex + 1)
+            : throw new InvalidDataException("The override materials of a spline mesh component that stores no mesh cannot be located");
+    }
+
+    private static List<StoredReference> ReadOverrideMaterials(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart,
+        (int At, int FirstMember) start)
+    {
+        const int MaxMaterials = 256;
+        int end = CookedPackage.EndOf(export);
+        int index = chainStart + StaticMeshComponentMembers.OverrideMaterials;
+        int at = start.At;
+        foreach (UnversionedMember member in header.Members.Where(member => member.IsNonZero && member.Index >= start.FirstMember && member.Index < index))
+        {
+            int own = member.Index - chainStart;
+            at = own == StaticMeshComponentMembers.StreamingTextureData
+                ? SkipStreamingTextureData(package, at, end)
+                : at + ((own >= 0 ? StaticMeshComponentMembers.FixedValueSize(own) : null)
+                    ?? throw new InvalidDataException($"Member {member.Index} before the override materials has an unknown size"));
+        }
+
+        int count = package.ReadInt32(at);
+        if (count is < 0 or > MaxMaterials || at + sizeof(int) + ((long)count * sizeof(int)) > end)
+        {
+            throw new InvalidDataException($"Invalid override material count {count}");
+        }
+
+        List<StoredReference> materials = new(count);
+        for (int slot = 0; slot < count; slot++)
+        {
+            materials.Add(new StoredReference(package, package.ReadInt32(at + sizeof(int) + (slot * sizeof(int)))));
+        }
+
+        return materials;
+    }
+
+    /// <summary>Steps over a <c>StreamingTextureData</c> array: a count, then structs framed by their own headers.</summary>
+    private static int SkipStreamingTextureData(CookedPackage package, int at, int end)
+    {
+        int count = package.ReadInt32(at);
+        if (count < 0 || count > (end - at) / sizeof(short))
+        {
+            throw new InvalidDataException($"Invalid streaming texture data count {count}");
+        }
+
+        at += sizeof(int);
+        for (int i = 0; i < count; i++)
+        {
+            UnversionedHeader element = UnversionedHeader.Read(package.Data, at, StreamingTextureBuildInfoMembers.MemberCount);
+            at = element.ValuesOffset + (element.NonZeroCount * StreamingTextureBuildInfoMembers.ValueSize);
+        }
+
+        return at <= end ? at : throw new InvalidDataException("The streaming texture data runs past the export");
     }
 
     private PlacedComponent ReadPlaced(CookedPackage cell, ZenExport export, CollisionComponentKind kind)

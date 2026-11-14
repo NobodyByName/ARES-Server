@@ -19,6 +19,7 @@ namespace Ares.MapData.Landscape;
 /// <param name="Scale">Relative scale.</param>
 /// <param name="Absolute">Which transform members ignore the parent's.</param>
 /// <param name="CookedHeightField">The PhysX height-field stream; empty when the component stores no cooked collision.</param>
+/// <param name="CookedPhysicalMaterials">The physical materials the height field's material indices refer to, in index order.</param>
 internal sealed record LandscapeComponentValues(
     int CollisionSizeQuads,
     double CollisionScale,
@@ -28,7 +29,8 @@ internal sealed record LandscapeComponentValues(
     Rotator Rotation,
     Vector3D Scale,
     AbsoluteMembers Absolute,
-    ReadOnlyMemory<byte> CookedHeightField)
+    ReadOnlyMemory<byte> CookedHeightField,
+    IReadOnlyList<StoredReference> CookedPhysicalMaterials)
 {
     /// <summary>Reads <paramref name="export"/>'s members and cooked height field.</summary>
     /// <exception cref="InvalidDataException">The export stores a member this reader cannot step over, lacks the collision size or scale, or does not decode.</exception>
@@ -45,6 +47,7 @@ internal sealed record LandscapeComponentValues(
         Rotator rotation = default;
         Vector3D scale = Vector3D.One;
         bool[] absolute = new bool[3];
+        List<StoredReference> physicalMaterials = [];
         foreach ((int index, bool isNonZero) in header.Members)
         {
             if (!isNonZero)
@@ -74,6 +77,9 @@ internal sealed record LandscapeComponentValues(
                         break;
                     case LandscapeHeightfieldCollisionComponentMembers.CollisionScale:
                         collisionScale = package.ReadSingle(at);
+                        break;
+                    case LandscapeHeightfieldCollisionComponentMembers.CookedPhysicalMaterials:
+                        physicalMaterials.AddRange(ReadReferences(package, at, end));
                         break;
                 }
 
@@ -141,7 +147,21 @@ internal sealed record LandscapeComponentValues(
             rotation,
             scale,
             new AbsoluteMembers(absolute[0], absolute[1], absolute[2]),
-            cooked);
+            cooked,
+            physicalMaterials);
+    }
+
+    private static List<StoredReference> ReadReferences(CookedPackage package, int at, int end)
+    {
+        SkipArray(package, at, end, LandscapeHeightfieldCollisionComponentMembers.ReferenceSize);
+        int count = package.ReadInt32(at);
+        List<StoredReference> references = new(count);
+        for (int i = 0; i < count; i++)
+        {
+            references.Add(new StoredReference(package, package.ReadInt32(at + sizeof(int) + (i * LandscapeHeightfieldCollisionComponentMembers.ReferenceSize))));
+        }
+
+        return references;
     }
 
     private static int SkipArray(CookedPackage package, int at, int end, int elementSize)

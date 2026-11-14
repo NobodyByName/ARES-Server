@@ -1,6 +1,7 @@
 using Ares.Common.Maps;
 using Ares.MapData.Components;
 using Ares.MapData.Landscape;
+using Ares.MapData.Materials;
 using Ares.MapData.Packages;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
@@ -16,6 +17,7 @@ public sealed class LandscapeReaderTests
     private static readonly PackageObjectIndex s_proxy = PackageObjectIndex.FromScriptPath(LandscapeStreamingProxyMembers.ClassPath);
     private static readonly PackageObjectIndex s_scene = PackageObjectIndex.FromScriptPath(SceneComponentMembers.ClassPath);
     private static readonly PackageObjectIndex s_collision = PackageObjectIndex.FromScriptPath(LandscapeHeightfieldCollisionComponentMembers.ClassPath);
+    private static readonly PackageObjectIndex s_physicalMaterial = PackageObjectIndex.FromScriptPath(PhysicalMaterialMembers.ClassPath);
 
     [Fact]
     public void A_proxy_component_becomes_a_world_space_tile()
@@ -52,6 +54,23 @@ public sealed class LandscapeReaderTests
     }
 
     [Fact]
+    public void Cells_take_the_surface_type_of_their_cooked_physical_material()
+    {
+        HeightFieldTile tile = Assert.Single(Read(Cell(Collision(yaw: 0, physicalMaterial: true), withPhysicalMaterial: true)));
+
+        Assert.Equal(PhysicalSurfaceType.SaltFlat, tile.Surface(0, 0));
+        Assert.Equal(PhysicalSurfaceType.SaltFlat, tile.Surface(1, 1));
+    }
+
+    [Fact]
+    public void Cells_without_cooked_physical_materials_have_the_default_surface_type()
+    {
+        HeightFieldTile tile = Assert.Single(Read(Cell(Collision(yaw: 0))));
+
+        Assert.Equal(PhysicalSurfaceType.Default, tile.Surface(1, 0));
+    }
+
+    [Fact]
     public void Rotated_components_are_rejected()
     {
         InvalidDataException error = Assert.Throws<InvalidDataException>(() => Read(Cell(Collision(yaw: 90))));
@@ -65,12 +84,22 @@ public sealed class LandscapeReaderTests
         Assert.Empty(Read(Cell(Collision(yaw: 0, cooked: false))));
     }
 
-    private static CookedPackage Cell(byte[] collision) => CookedPackage.Parse(SyntheticArchives.Package(CellPath, ProxyExports(collision)));
+    private static CookedPackage Cell(byte[] collision, bool withPhysicalMaterial = false)
+    {
+        List<(string Name, PackageObjectIndex Outer, PackageObjectIndex Class, ulong PublicHash, byte[] Payload)> exports = ProxyExports(collision);
+        if (withPhysicalMaterial)
+        {
+            exports.Add(("PM_SaltFlat", PackageObjectIndex.Null, s_physicalMaterial, 0,
+                [.. PropertyBlocks.Header(PhysicalMaterialMembers.SurfaceType), (byte)PhysicalSurfaceType.SaltFlat]));
+        }
+
+        return CookedPackage.Parse(SyntheticArchives.Package(CellPath, exports));
+    }
 
     private static IReadOnlyList<HeightFieldTile> Read(CookedPackage cell)
     {
         PackageCache packages = new(path => path == CellPath ? cell : null, _ => null);
-        return new LandscapeReader(new ComponentReader(packages)).ReadCell(cell, 4);
+        return new LandscapeReader(new ComponentReader(packages), new SurfaceLibrary(packages)).ReadCell(cell, 4);
     }
 
     /// <summary>
@@ -98,7 +127,11 @@ public sealed class LandscapeReaderTests
     /// <summary>Landscape sample (x, y) has height 10·x + y.</summary>
     internal static short HeightAt(int x, int y) => (short)((10 * x) + y);
 
-    internal static byte[] Collision(double yaw, bool cooked = true)
+    /// <summary>
+    /// A landscape collision component; with <paramref name="physicalMaterial"/> its cooked physical materials name the
+    /// export after the proxy's three (see <see cref="Cell"/>).
+    /// </summary>
+    internal static byte[] Collision(double yaw, bool cooked = true, bool physicalMaterial = false)
     {
         const int ScenePart = LandscapeHeightfieldCollisionComponentMembers.ScenePart;
         List<int> members =
@@ -107,9 +140,17 @@ public sealed class LandscapeReaderTests
             LandscapeHeightfieldCollisionComponentMembers.CollisionSizeQuads,
             LandscapeHeightfieldCollisionComponentMembers.CollisionScale,
             LandscapeHeightfieldCollisionComponentMembers.CachedLocalBox,
+        ];
+        if (physicalMaterial)
+        {
+            members.Add(LandscapeHeightfieldCollisionComponentMembers.CookedPhysicalMaterials);
+        }
+
+        members.AddRange(
+        [
             ScenePart + SceneComponentMembers.AttachParent,
             ScenePart + SceneComponentMembers.RelativeLocation,
-        ];
+        ]);
         if (yaw != 0)
         {
             members.Add(ScenePart + SceneComponentMembers.RelativeRotation);
@@ -124,6 +165,7 @@ public sealed class LandscapeReaderTests
             .. BitConverter.GetBytes(Quads),
             .. BitConverter.GetBytes(1f),
             .. new byte[49],
+            .. (physicalMaterial ? [.. BitConverter.GetBytes(1), .. BitConverter.GetBytes(4)] : Array.Empty<byte>()),
             .. BitConverter.GetBytes(2),
             .. PropertyBlocks.Vector(2, 3, 0),
         ];

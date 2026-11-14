@@ -127,7 +127,7 @@ public sealed class ComponentReaderTests
         byte[] component =
         [
             .. Header(HismChain + StaticMeshComponentMembers.BodyInstance, HismChain + MeshScene + SceneComponentMembers.AttachParent),
-            .. Header(BodyInstanceMembers.CollisionProfileName, BodyInstanceMembers.Unknown42),
+            .. Header(BodyInstanceMembers.CollisionProfileName, BodyInstanceMembers.PhysMaterialOverride),
             .. Name(BlockAllName),
             .. BitConverter.GetBytes(3),
             .. BitConverter.GetBytes(2),

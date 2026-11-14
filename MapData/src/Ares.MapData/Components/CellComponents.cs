@@ -1,3 +1,4 @@
+using Ares.MapData.Packages;
 using Ares.MapData.Profiles;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
@@ -50,6 +51,7 @@ internal enum InstancedComponentKind
 /// <param name="Responses">Response overrides stored with the profile.</param>
 /// <param name="ClassDefaultObject">Path of the native or script class default object the template chain ends at.</param>
 /// <param name="ClassDefault">That default object's collision, when known; it applies to every member not stored.</param>
+/// <param name="PhysMaterialOverride">The body instance's physical material override as stored (a zero reference for none).</param>
 internal sealed record CollisionSettings(
     bool? UseDefaultCollision,
     string? ProfileName,
@@ -57,7 +59,8 @@ internal sealed record CollisionSettings(
     CollisionChannel? ObjectType,
     IReadOnlyList<CollisionResponseOverride>? Responses,
     string ClassDefaultObject,
-    ComponentCollisionDefault? ClassDefault);
+    ComponentCollisionDefault? ClassDefault,
+    StoredReference? PhysMaterialOverride = null);
 
 /// <summary>A placed component with its own collision.</summary>
 /// <param name="Cell">Package path of the cell (or map) that places it.</param>

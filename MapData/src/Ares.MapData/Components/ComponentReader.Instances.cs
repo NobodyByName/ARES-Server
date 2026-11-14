@@ -294,7 +294,8 @@ internal sealed partial class ComponentReader
             own.ObjectType ?? inherited?.ObjectType,
             own.CollisionEnabled ?? inherited?.CollisionEnabled,
             own.ProfileName ?? inherited?.ProfileName,
-            own.Responses ?? inherited?.Responses);
+            own.Responses ?? inherited?.Responses,
+            own.PhysMaterialOverride ?? inherited?.PhysMaterialOverride);
     }
 
     /// <summary>
@@ -415,5 +416,23 @@ internal sealed partial class ComponentReader
             AbsoluteLocation ?? inherited.AbsoluteLocation,
             AbsoluteRotation ?? inherited.AbsoluteRotation,
             AbsoluteScale ?? inherited.AbsoluteScale);
+    }
+
+    /// <summary>Whether an instanced component or the template that holds its instances stores override materials.</summary>
+    public bool StoresInstancedOverrideMaterials(InstancedComponent component)
+    {
+        if (packages.Load(component.Cell) is not { } cell)
+        {
+            return false;
+        }
+
+        ZenExport export = cell.Exports[component.ExportIndex];
+        int index = StaticMeshChainStart(component.Kind) + StaticMeshComponentMembers.OverrideMaterials;
+        if (UnversionedHeader.Read(cell.Data, CookedPackage.StartOf(export)).IsNonZero(index))
+        {
+            return true;
+        }
+
+        return Template(cell, export) is { } template && UnversionedHeader.Read(template.Package.Data, CookedPackage.StartOf(template.Export)).IsNonZero(index);
     }
 }

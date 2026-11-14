@@ -12,11 +12,13 @@ namespace Ares.MapData.Components;
 /// <param name="CollisionEnabled">Collision enabled state.</param>
 /// <param name="ProfileName">Collision profile name.</param>
 /// <param name="Responses">Per-channel response overrides, in stored order.</param>
+/// <param name="PhysMaterialOverride">Physical material override as stored (a zero reference for none).</param>
 internal sealed record BodyInstanceValues(
     CollisionChannel? ObjectType,
     CollisionEnabled? CollisionEnabled,
     string? ProfileName,
-    IReadOnlyList<CollisionResponseOverride>? Responses);
+    IReadOnlyList<CollisionResponseOverride>? Responses,
+    StoredReference? PhysMaterialOverride = null);
 
 /// <summary>
 /// Reads unversioned <c>FBodyInstance</c> blocks (see <see cref="BodyInstanceMembers"/>). Members stored as zero need no
@@ -84,6 +86,7 @@ internal static class BodyInstanceReader
         CollisionEnabled? collisionEnabled = null;
         string? profile = null;
         IReadOnlyList<CollisionResponseOverride>? responses = null;
+        StoredReference? physMaterial = null;
         int offset = header.ValuesOffset;
         foreach (UnversionedMember member in header.Members)
         {
@@ -97,6 +100,9 @@ internal static class BodyInstanceReader
                     break;
                 case BodyInstanceMembers.CollisionProfileName:
                     profile = member.IsNonZero ? package.ReadName(offset) : CookedPackage.NoneName;
+                    break;
+                case BodyInstanceMembers.PhysMaterialOverride:
+                    physMaterial = new StoredReference(package, member.IsNonZero ? package.ReadInt32(offset) : 0);
                     break;
                 case BodyInstanceMembers.CollisionResponses:
                     if (!member.IsNonZero)
@@ -135,7 +141,7 @@ internal static class BodyInstanceReader
         }
 
         end = offset;
-        return new BodyInstanceValues(objectType, collisionEnabled, profile, responses);
+        return new BodyInstanceValues(objectType, collisionEnabled, profile, responses, physMaterial);
     }
 
     /// <summary>An <c>FCollisionResponse</c>: its response array, each entry a channel name and a response (block when not stored).</summary>
