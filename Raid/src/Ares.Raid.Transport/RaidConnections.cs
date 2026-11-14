@@ -226,13 +226,15 @@ public sealed class RaidConnections
                 ResolveWorld(state);
                 state.Player?.Service(state.Io, now);
                 IReadOnlyList<ReliableKey> selected = state.Io.Sender.Select(now, Budget(state));
+
+                // The serviced state is kept even when nothing is due, so the work is not repeated on the next poll.
+                _states[peer] = state;
                 if (selected.Count == 0 && state.LastSentAt is { } sentAt && now - sentAt < _keepaliveInterval)
                 {
                     continue;
                 }
 
                 byte[] reply = Encode(state, _handshake.Connections[peer], selected, now);
-                _states[peer] = state;
                 results.Add((peer, new ConnectionResult(reply, ConnectionEvent.KeepaliveSent)));
             }
             catch (Exception error) when (error is InvalidPacketException or AuthenticationRejectedException)
