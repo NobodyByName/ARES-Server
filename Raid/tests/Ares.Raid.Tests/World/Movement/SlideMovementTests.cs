@@ -1,5 +1,6 @@
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Raid.Tests.World.Movement;
@@ -60,6 +61,21 @@ public sealed class SlideMovementTests
         Assert.Equal(-0.15f, SlideMovement.SlowdownRate(0.851, 650, SlideMovementParameters.Default));
         Assert.Equal(0.3, SlideMovement.SlowdownRate(0, 650, SlideMovementParameters.Default with { FrictionMultiplier = 2 }), 10);
         Assert.Equal(0, SlideMovement.SlowdownRate(0, 650, SlideMovementParameters.Default with { FrictionMultiplier = 0 }));
+    }
+
+    [Theory]
+    [InlineData(1, SlideMovementParameters.HighFriction)]
+    [InlineData(2, SlideMovementParameters.LowFriction)]
+    [InlineData(23, SlideMovementParameters.MediumFriction)]
+    [InlineData(25, SlideMovementParameters.MediumFriction)]
+    [InlineData(38, SlideMovementParameters.VeryLowFriction)]
+    [InlineData(0, 1)]
+    [InlineData(39, 1)]
+    public void Surface_friction_follows_the_surface_types_slide_category(int surfaceType, double friction)
+    {
+        SlideMovementParameters parameters = SlideMovementParameters.ForSurface((PhysicalSurfaceType)surfaceType);
+        Assert.Equal(friction, parameters.FrictionMultiplier);
+        Assert.Equal(SlideMovementParameters.Default.MaximumSpeed, parameters.MaximumSpeed);
     }
 
     [Fact]

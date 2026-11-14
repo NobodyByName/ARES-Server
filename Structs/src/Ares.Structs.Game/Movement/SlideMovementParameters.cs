@@ -1,3 +1,5 @@
+using Ares.Structs.Game.Collision;
+
 namespace Ares.Structs.Game.Movement;
 
 /// <summary>Slide speed and surface friction modifiers.</summary>
@@ -7,6 +9,38 @@ public readonly record struct SlideMovementParameters(double MaximumSpeed, doubl
 {
     /// <summary>Slide parameters on a surface with no friction modifier.</summary>
     public static SlideMovementParameters Default { get; } = new(1300);
+
+    /// <summary>Slide friction of low-friction surfaces.</summary>
+    public const double LowFriction = 1;
+
+    /// <summary>Slide friction of medium-friction surfaces.</summary>
+    public const double MediumFriction = 2;
+
+    /// <summary>Slide friction of high-friction surfaces.</summary>
+    public const double HighFriction = 50;
+
+    /// <summary>Slide friction of very-low-friction surfaces.</summary>
+    public const double VeryLowFriction = 0.3;
+
+    // Slide friction of the physical surface types Stone (SurfaceType1) to Ice (SurfaceType38), by surface type minus one.
+    private static readonly double[] s_surfaceFriction =
+    [
+        HighFriction, LowFriction, LowFriction, LowFriction, HighFriction, MediumFriction, LowFriction, LowFriction, LowFriction, LowFriction,
+        MediumFriction, HighFriction, MediumFriction, MediumFriction, MediumFriction, MediumFriction, LowFriction, MediumFriction, HighFriction, MediumFriction,
+        MediumFriction, MediumFriction, MediumFriction, MediumFriction, MediumFriction, HighFriction, MediumFriction, MediumFriction, MediumFriction, MediumFriction,
+        LowFriction, MediumFriction, MediumFriction, MediumFriction, LowFriction, LowFriction, LowFriction, VeryLowFriction,
+    ];
+
+    /// <summary>
+    /// Slide parameters on a physical surface type (the movement state's surface type). Surface friction scales only the
+    /// accumulated slowdown; types without a slide friction category keep <see cref="Default"/>.
+    /// </summary>
+    /// <param name="surfaceType">Physical surface type.</param>
+    /// <returns>The parameters.</returns>
+    public static SlideMovementParameters ForSurface(PhysicalSurfaceType surfaceType) =>
+        surfaceType >= PhysicalSurfaceType.Stone && (int)surfaceType <= s_surfaceFriction.Length
+            ? Default with { FrictionMultiplier = s_surfaceFriction[(int)surfaceType - 1] }
+            : Default;
 
     /// <summary>Minimum horizontal speed to enter a slide before movement speed modifiers.</summary>
     public const double EntrySpeed = 200;
@@ -56,21 +90,35 @@ public readonly record struct SlideMovementParameters(double MaximumSpeed, doubl
     /// <summary>Scale applied to the downhill input contribution.</summary>
     public const double SlopeNudgeFactor = 0.7;
 
+    /// <summary>Angle between the velocity and the downhill direction above which a slide on a slope goes uphill and brakes.</summary>
+    public const double SlopeUphillAlignmentDegrees = 110;
+
+    /// <summary>Speed whose share of the maximum slide speed sets the smallest slope input scale.</summary>
+    public const double SlopeMinimumInputSpeed = 100;
+
+    /// <summary>Factor on the smallest slope input scale.</summary>
+    public const double SlopeMinimumInputMargin = 1.05;
+
     /// <summary>Squared horizontal length below which a direction is treated as zero.</summary>
     public const double DirectionTolerance = 1e-8f;
 
     /// <summary>Ground acceleration, braking and friction while sliding.</summary>
-    /// <remarks>Steering friction is 0.15; braking friction is 0.9 (friction times the braking factor).</remarks>
-    public static GroundMovementParameters Ground { get; } = new(Default.MaximumSpeed, 1000, 100, 0.15f, 6);
+    public static GroundMovementParameters Ground { get; } = new(Default.MaximumSpeed, 1000, 100, 0.3f);
 
     /// <summary>Ground braking and friction while slowing to leave a slide.</summary>
     public static GroundMovementParameters CancellingGround { get; } = Ground with { BrakingDeceleration = 200, Friction = 1, BrakingFrictionFactor = 3 };
 
-    /// <summary>Fraction of speed kept when the stance changes to crouched on the second slide tick.</summary>
-    public const double CrouchStanceSpeedFactor = 14.0 / 15;
+    /// <summary>
+    /// Ticks over which the velocity of the movement a character leaves blends into the velocity of the one it enters,
+    /// when a slide starts and when it ends: on the n-th tick of the new movement its share is n / BlendTicks.
+    /// </summary>
+    public const int BlendTicks = 3;
 
-    /// <summary>Ticks after a slide ends over which its braking blends into the following movement.</summary>
-    public const int ExitBlendTicks = 3;
+    /// <summary>Action-layer stance while a slide runs.</summary>
+    public const CharacterStance ActionStance = CharacterStance.Slide;
+
+    /// <summary>Action-layer locomotion while a slide runs.</summary>
+    public const LocoMode ActionLocomotion = LocoMode.Running;
 
     /// <summary>Minimum elapsed slide time before ordinary input cancellation.</summary>
     public const double MinimumCancelSeconds = 1.2;

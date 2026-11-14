@@ -102,14 +102,66 @@ public sealed class FlatSlideMovementTests
     }
 
     [Fact]
-    public void The_second_slide_step_loses_speed_to_the_crouch_stance()
+    public void A_slide_step_counts_itself_and_keeps_the_slides_start_and_maximum_speed()
     {
-        SlideState state = new(new Vector3D(650, 0, 0), 0);
+        SlideState state = new(new Vector3D(650, 0, 0), 0) { StartFrame = 70 };
         SlideStep second = Step(state with { Ticks = 1 }, new Vector3D(650, 0, 0), s_forward, 1 / 30.0);
         SlideStep third = Step(state with { Ticks = 2 }, new Vector3D(650, 0, 0), s_forward, 1 / 30.0);
         Assert.Equal(2, second.State.Ticks);
-        Assert.Equal(third.Velocity.X * 14 / 15, second.Velocity.X, 9);
+        Assert.Equal(third.Velocity, second.Velocity);
+        Assert.Equal(70U, second.State.StartFrame);
+        Assert.Equal(SlideMovementParameters.Default.MaximumSpeed, second.State.MaximumSpeed);
         Assert.Equal(1, Step(default, new Vector3D(650, 0, 0), s_forward, 0).State.Ticks);
+    }
+
+    [Fact]
+    public void A_tilt_below_the_direction_tolerance_slides_like_level_ground()
+    {
+        Vector3D velocity = new(650, 0, 0);
+        SlideStep level = SlopeStep(velocity, default, 1.0);
+        Assert.Equal(level, SlopeStep(velocity, new Vector3D(0, 0, 1), 1.0));
+        Assert.Equal(level.Input, SlopeStep(velocity, new Vector3D(0.00005, 0, Math.Sqrt(1 - 0.0000000025)), 1.0).Input);
+    }
+
+    [Fact]
+    public void Downhill_on_a_slope_the_slope_input_speeds_the_slide_up()
+    {
+        // 20 degrees down along the velocity: steepness 0.34341, full alignment, no boost while the slope input exceeds the speed's share.
+        Vector3D velocity = new(650, 0, 0);
+        SlideStep step = SlopeStep(velocity, Tilt(20), 0.5);
+        const double Minimum = 100 / 1300.0 * 1.05;
+        const double Steepness = Minimum + ((1 - Minimum) * 10 / 35);
+        const float Slowdown = (float)(0.075 * (1 - Steepness) * 2 / 30);
+        Assert.Equal(Slowdown, step.State.Slowdown, 6);
+        Assert.Equal((Steepness + 1) / 2 * (1 - Slowdown), step.Input.X, 6);
+        Assert.Equal(0, step.Input.Y, 12);
+        Assert.True(step.Velocity.X > velocity.X + 15);
+    }
+
+    [Fact]
+    public void Going_up_a_slope_brakes_the_slide()
+    {
+        Vector3D velocity = new(-650, 0, 0);
+        SlideStep step = SlopeStep(velocity, Tilt(20), 0.5);
+        const double Minimum = 100 / 1300.0 * 1.05;
+        const double Steepness = Minimum + ((1 - Minimum) * 10 / 35);
+        const float Slowdown = (float)(0.075 * (1 - Steepness) * 2 / 30);
+        Assert.Equal((-(Steepness / 2) + (0.8f * 20 / 45)) * (1 - Slowdown), step.Input.X, 6);
+        Assert.True(step.Velocity.X > velocity.X + 15);
+    }
+
+    [Fact]
+    public void On_a_gentle_slope_following_it_adds_a_small_input_that_keeps_the_speed()
+    {
+        // At 5 degrees the alignment's smallest scale 0.08077 is eased out to 0.39375; half of it joins boost and momentum.
+        Vector3D velocity = new(650, 0, 0);
+        SlideStep level = SlopeStep(velocity, default, 1.0);
+        (_, Vector3D kept, Vector3D gentleInput, _) = SlopeStep(velocity, Tilt(5), 1.0);
+        Assert.Equal(0.5 * ((1 - (1 / 1.5)) + 0.5), level.Input.X, 9);
+        Assert.Equal(0.5, gentleInput.X, 9);
+        Assert.True(level.Velocity.X < velocity.X - 15);
+        // The speed is kept along the ground.
+        Assert.Equal(velocity.X, Math.Sqrt((kept.X * kept.X) + (kept.Y * kept.Y) + (kept.Z * kept.Z)), 6);
     }
 
     [Fact]
@@ -134,4 +186,11 @@ public sealed class FlatSlideMovementTests
     private static SlideStep Step(SlideState state, Vector3D velocity, MovementInput input, double elapsed)
         => FlatSlideMovement.Step(state, velocity, input, 0, elapsed, 1.0f / 30, SlideMovementParameters.Default,
             steerAboveMaximum: false, fixBrakingOvershoot: false);
+
+    private static SlideStep SlopeStep(Vector3D velocity, Vector3D normal, double elapsed)
+        => FlatSlideMovement.Step(new SlideState(velocity, 0, 10), velocity, s_forward, 0, elapsed, 1.0f / 30, SlideMovementParameters.Default,
+            steerAboveMaximum: true, fixBrakingOvershoot: false, groundNormal: normal);
+
+    // The normal of ground falling away along +X by an angle in degrees.
+    private static Vector3D Tilt(double degrees) => new(Math.Sin(degrees * Math.PI / 180), 0, Math.Cos(degrees * Math.PI / 180));
 }
