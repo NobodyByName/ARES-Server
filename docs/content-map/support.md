@@ -68,7 +68,9 @@ Operators can steer running raids from the Host console with `raid players`, `ra
 These are development tools.
 
 With [map data](../../README.md#map-data) configured, each raid loads the map's collision when it
-starts. Raid does not use it for movement yet.
+starts, and Raid simulates each player's movement on it: walking, crouching, sprinting, sliding, dodge
+rolls, jumps and landings, vaults and ladder climbs. Walking and running on flat ground are stock-client
+verified; the other moves are not yet.
 
 In Raid the slot-1 Ferro I starts drawn, and equipped guns start loaded from carried Heavy Ammo.
 Switching between the Ferro I, the Raider Tool and empty hands plays the put-away and draw
@@ -94,7 +96,8 @@ Limitations:
   every player is sent to everyone whatever the distance. Parties hold one player; Dam only.
 - Accounts are made by the operator on the Host console; players sign in through ARES-Launcher.
   Experience and quests are not recorded yet.
-- Movement is trusted from the client; the server does not check it yet.
+- Movement is still trusted from the client: where Raid's simulation and the client disagree, Raid
+  follows the client's position, and it does not reject any movement yet.
 - Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
   its progress.
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
