@@ -220,6 +220,12 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["simulated_locomotion"] = channels.SimulatedCharacter?.Locomotion.ToString(),
                 ["simulated_flashlight"] = channels.SimulatedCharacter?.Flashlight,
                 ["simulated_missing_frames"] = channels.MissingInputFrames,
+                ["simulated_airborne"] = channels.SimulatedCharacter?.Body?.Airborne,
+                ["position_reseeds"] = channels.PositionReseeds,
+                ["position_reseed_worst"] = Math.Round(channels.WorstPositionReseed, 1),
+                ["position_reseed_last"] = channels.LastPositionReseed is { } reseed
+                    ? new JsonArray(reseed.Frame, Math.Round(reseed.Distance, 1), reseed.Airborne ? "air" : "ground")
+                    : null,
                 ["door_presses"] = channels.DoorPresses,
                 ["ignored_door_requests"] = channels.IgnoredDoorRequests,
                 ["door_breaches"] = channels.DoorBreaches,

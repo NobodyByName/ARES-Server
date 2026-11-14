@@ -216,6 +216,20 @@ public sealed partial class PlayerChannels
             return true;
         }
 
+        // The client reports from the destination: the character's simulation starts there again, as the frame put it.
+        // The first tick that read a report from there runs again as the restart's first.
+        if (InputFrame is { } arrived && arrived > teleport.Frame + 1 && Arrived(arrived) && Arrived(arrived - 1) && _input.Position(arrived - 1) is { } there)
+        {
+            if (_movement is { } movement)
+            {
+                movement.Restart(Math.Max(teleport.Frame, arrived - 3), there, teleport.Yaw);
+                while (movement.Frame + 1 < arrived)
+                {
+                    movement.Advance(_input, _member.Weapons.Armed);
+                }
+            }
+        }
+
         _teleport = null;
         return false;
 

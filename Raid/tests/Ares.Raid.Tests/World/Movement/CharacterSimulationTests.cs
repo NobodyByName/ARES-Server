@@ -2,6 +2,7 @@ using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -111,7 +112,7 @@ public sealed class CharacterSimulationTests
     }
 
     [Fact]
-    public void A_crouch_press_while_sprinting_slides_after_one_more_sprint_tick()
+    public void A_crouch_press_while_sprinting_slides_and_blends_its_velocity_in_over_three_ticks()
     {
         CharacterSimulation sliding = Sprinting(out uint frame);
         CharacterSimulation sprinting = sliding.Copy();
@@ -121,15 +122,23 @@ public sealed class CharacterSimulationTests
         CharacterState pressed = SlideStep(sliding, frame, 126, Press);
         Assert.Equal(CharacterStance.Stand, pressed.Stance);
         Assert.Equal(SlideStep(sprinting, frame, 126, MovementButtons.Sprint).Velocity, pressed.Velocity);
+        Assert.Equal(new SlideState(default, 0) { StartFrame = frame }, pressed.Slide);
 
+        // First slide tick: a third of the slide's velocity, two thirds of the sprint it leaves.
+        Vector3D sprint = SlideStep(sprinting, frame + 1, 126, MovementButtons.Sprint).Velocity;
+        Vector3D slide = FlatSlideMovement.Step(pressed.Slide!.Value, pressed.Velocity, new MovementInput(frame + 1, 126, 0, Hold), 0, 1.0 / 30, 1.0f / 30,
+            SlideMovementParameters.Default, steerAboveMaximum: true, fixBrakingOvershoot: false).Velocity;
         CharacterState first = SlideStep(sliding, frame + 1, 126, Hold);
-        Assert.Equal(CharacterStance.Slide, first.Stance);
-        Assert.Equal(SlideStep(sprinting, frame + 1, 126, MovementButtons.Sprint).Velocity, first.Velocity);
+        Assert.Equal((CharacterStance.Slide, LocoMode.Running), (first.Stance, first.Locomotion));
+        Assert.Equal((CharacterStance.Stand, LocoMode.Sprinting), (first.MovementStance, first.MovementLocomotion));
+        Assert.Equal(sprint.X + ((slide.X - sprint.X) / 3), first.Velocity.X, 9);
         Assert.Equal(1, first.Slide?.Ticks);
 
+        // Second: two thirds of the slide's, one third of the crouched movement's braking; the movement state crouches.
         CharacterState second = SlideStep(sliding, frame + 2, 126, Hold);
-        Assert.Equal(CharacterStance.Slide, second.Stance);
-        Assert.True(second.Velocity.X < first.Velocity.X * (SlideMovementParameters.CrouchStanceSpeedFactor + 0.01));
+        Assert.Equal((CharacterStance.Slide, LocoMode.Running), (second.Stance, second.Locomotion));
+        Assert.Equal((CharacterStance.Crouch, LocoMode.Sprinting), (second.MovementStance, second.MovementLocomotion));
+        Assert.InRange(second.Velocity.X / first.Velocity.X, 0.92, 0.95);
     }
 
     [Fact]
@@ -146,7 +155,7 @@ public sealed class CharacterSimulationTests
             Assert.Equal(CharacterStance.Slide, state.Stance);
             slideTicks++;
         }
-        while (state.Slide is not null);
+        while (state.SlideStartedAt is not null);
 
         Assert.True(slideTicks > SlideMovementParameters.MinimumCancelSeconds * 30);
         Assert.Null(state.SlideStartedAt);
@@ -166,7 +175,7 @@ public sealed class CharacterSimulationTests
             state = SlideStep(simulation, frame++, 126, MovementButtons.Sprint);
             ticks++;
         }
-        while (state.Slide is not null);
+        while (state.SlideStartedAt is not null);
 
         Assert.Equal((int)Math.Round(SlideMovementParameters.MinimumCancelSeconds * 30), ticks);
     }
@@ -177,19 +186,19 @@ public sealed class CharacterSimulationTests
         CharacterSimulation simulation = Sprinting(out uint frame);
         const MovementButtons Hold = MovementButtons.Sprint | MovementButtons.Crouch | MovementButtons.PreviousCrouch;
         SlideStep(simulation, frame++, 126, MovementButtons.Sprint | MovementButtons.Crouch);
-        while (SlideStep(simulation, frame++, 0, Hold).Slide is not null)
+        while (SlideStep(simulation, frame++, 0, Hold).SlideStartedAt is not null)
         {
         }
 
         MovementInput still = new(frame, 0, 0, Hold);
-        for (int tick = 1; tick <= SlideMovementParameters.ExitBlendTicks; tick++)
+        for (int tick = 1; tick <= SlideMovementParameters.BlendTicks; tick++)
         {
             Vector3D previous = simulation.State.Velocity;
             Vector3D crouch = FlatGroundMovement.StepVelocity(previous, still with { Frame = frame }, 0, 1.0 / 30,
                 GroundMovementParameters.Crouched, steerAboveMaximum: true, fixBrakingOvershoot: false);
             CharacterState state = SlideStep(simulation, frame++, 0, Hold);
             Assert.Equal(CharacterStance.Crouch, state.Stance);
-            if (tick < SlideMovementParameters.ExitBlendTicks)
+            if (tick < SlideMovementParameters.BlendTicks)
             {
                 Assert.True(state.Velocity.X > crouch.X);
             }
@@ -209,6 +218,86 @@ public sealed class CharacterSimulationTests
         Assert.Equal(CharacterStance.Crouch, state.Stance);
         Assert.Null(state.SlideStartedAt);
     }
+
+    [Fact]
+    public void A_roll_press_with_input_rolls_from_the_next_tick_and_blends_back_into_ground_movement()
+    {
+        CharacterSimulation simulation = new(default);
+        uint frame = 1;
+        for (; frame <= 20; frame++)
+        {
+            SlideStep(simulation, frame, 126, MovementButtons.None);
+        }
+
+        CharacterState pressed = SlideStep(simulation, frame++, 126, MovementButtons.DodgeRoll);
+        int duration = DodgeRollMovement.Duration(DodgeRollKind.Standard);
+        Assert.Equal(CharacterStance.Stand, pressed.Stance);
+        Assert.False(pressed.Rolling);
+        Assert.NotNull(pressed.Roll);
+
+        List<CharacterState> roll = [];
+        for (int tick = 0; tick < duration + DodgeRollParameters.ExitBlendTicks; tick++)
+        {
+            // Holding roll and moving on starts no second roll while one runs.
+            roll.Add(SlideStep(simulation, frame++, 126, MovementButtons.DodgeRoll | MovementButtons.PreviousDodgeRoll));
+        }
+
+        foreach (CharacterState state in roll.Take(duration))
+        {
+            Assert.True(state.Rolling);
+            Assert.Equal(CharacterStance.Uncontrolled, state.Stance);
+            Assert.Equal(LocoMode.Running, state.Locomotion);
+            Assert.Equal(pressed.MovementLocomotion, state.MovementLocomotion);
+            Assert.Equal(DodgeRollParameters.RollingFlags, state.GraphFlags & DodgeRollParameters.RollingFlags);
+        }
+
+        // The tick after the last step still moves with the animation; then ground movement takes over in equal steps.
+        CharacterState exit = roll[duration];
+        Assert.False(exit.Rolling);
+        Assert.Equal(1, exit.RollExitTicks);
+        Assert.Equal(0UL, exit.GraphFlags & DodgeRollParameters.RollingFlags);
+        Assert.Equal(2, roll[duration + 1].RollExitTicks);
+        Assert.Null(roll[^1].Roll);
+        Assert.Equal(CharacterStance.Stand, roll[^1].Stance);
+    }
+
+    [Theory]
+    [InlineData(-1613.0, true)]
+    [InlineData(-1414.0, false)]
+    [InlineData(-877.0, false)]
+    public void Landings_are_heavy_from_the_fall_height_they_are_worth(double vertical, bool heavy) =>
+        Assert.Equal(heavy, HeavyLandingParameters.FallHeight(0, vertical, AirMovementParameters.FallAcceleration) > HeavyLandingParameters.Height);
+
+    [Fact]
+    public void A_climb_moves_up_the_ladder_line_and_a_crouch_drops_off_keeping_the_crouch_block_for_a_while()
+    {
+        LadderLine line = LadderLine.From(DamLadders.All[0]);
+        Vector3D feet = line.Origin with { Z = line.Origin.Z + LadderParameters.LineStartHeight + 100 };
+        CharacterSimulation simulation = new(feet);
+        LadderState attached = LadderMovement.Begin(line, topEntry: false) with { Ticks = (int)Math.Ceiling(LadderParameters.AlignmentSeconds * 30) + 1 };
+        CharacterState state = Ladder(simulation, 1, 126, 0, attached);
+        for (uint frame = 2; frame <= 30; frame++)
+        {
+            state = Ladder(simulation, frame, 126, 0);
+        }
+
+        Assert.True(state.OnLadder);
+        Assert.Equal(CharacterStance.Ladder, state.Stance);
+        Assert.Equal(LadderParameters.ClimbingFlags | LadderParameters.CrouchInputBlockedFlag,
+            state.GraphFlags & (LadderParameters.ClimbingFlags | LadderParameters.CrouchInputBlockedFlag));
+        Assert.True(state.Position.Z > feet.Z + 100);
+
+        // Holding crouch drops off the ladder; the crouch input stays blocked a few ticks longer.
+        CharacterState dropped = Ladder(simulation, 31, 0, 1UL << LadderParameters.CrouchButtonDownBit);
+        Assert.Null(dropped.Ladder);
+        CharacterState after = GroundStep(simulation, 32, crouch: false, moving: false);
+        Assert.False(after.OnLadder);
+        Assert.Equal(0UL, after.GraphFlags & LadderParameters.ClimbingFlags);
+        Assert.Equal(LadderParameters.CrouchInputBlockedFlag, after.GraphFlags & LadderParameters.CrouchInputBlockedFlag);
+    }
+
+    private static CharacterState Ladder(CharacterSimulation simulation, uint frame, sbyte forward, ulong claims, LadderState? start = null) =>
+        simulation.StepOnLadder(new CharacterInput(frame, claims), new MovementInput(frame, forward, 0, MovementButtons.None), 0, 1.0 / 30, null, null, start);
 
     private static CharacterSimulation Sprinting(out uint frame)
     {

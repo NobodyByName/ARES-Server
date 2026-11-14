@@ -449,6 +449,8 @@ public sealed class WeaponTests
             [slots[InventoryBlackboard.MeleeSlot]!.Id] = 32,
             [slots[InventoryBlackboard.UnarmedSlot]!.Id] = 34,
         };
+        // A raid starts with the equipped weapon drawn, before any weapon input arrives.
+        Assert.True(weapons.Armed);
         weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
         Assert.True(weapons.Armed);
         Equip(40, 32, 1, HandItems.RaiderToolHandle);
@@ -472,7 +474,8 @@ public sealed class WeaponTests
             Assert.Equal((ulong)handle, PendulumCodec.Integer(fields[WeaponProtocol.InventoryCurrentField], value));
             Assert.Equal((ulong)WeaponProtocol.NoItemHandle, PendulumCodec.Integer(fields[WeaponProtocol.InventoryTargetField], value));
             Assert.Equal(change, PendulumCodec.Integer(fields[WeaponProtocol.InventoryEquipChangeField], value));
-            Assert.Equal(handle == WeaponProtocol.FirstWeaponSlot, weapons.Armed);
+            // Only empty hands move at unarmed speeds; the Raider Tool moves like a weapon.
+            Assert.Equal(handle != WeaponProtocol.UnarmedHandle, weapons.Armed);
         }
     }
 

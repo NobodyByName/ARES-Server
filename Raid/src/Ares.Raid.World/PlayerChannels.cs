@@ -378,6 +378,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Input frames the character simulation ran without the client's input.</summary>
     public int MissingInputFrames => _movement?.MissingFrames ?? 0;
 
+    /// <summary>Simulated frames after which the character continued from the position its client reported.</summary>
+    public int PositionReseeds => _movement?.Reseeds ?? 0;
+
+    /// <summary>The latest such frame: its number, how far the simulation was off and whether it had the character in the air.</summary>
+    public (uint Frame, double Distance, bool Airborne)? LastPositionReseed => _movement?.LastReseed;
+
+    /// <summary>Largest distance the simulation was off on such a frame.</summary>
+    public double WorstPositionReseed => _movement?.WorstReseed ?? 0;
+
     /// <summary>Door presses applied.</summary>
     public int DoorPresses { get; private set; }
 
@@ -851,6 +860,14 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 continue;
             }
 
+            // The client climbs a ladder it presses, from the bottom or the top; from that frame the character simulation
+            // climbs it.
+            if ((request.Request & PendulumInput.PressRequest) != 0 && !repeatedLog && ClimbableLadder(request.Target) is { } ladder)
+            {
+                string component = DamLadders.InteractionComponents[Enumerable.Range(0, ladder.Interactions.Count).First(index => ladder.Interactions[index] == request.Target)];
+                _movement?.Climb(request.Frame, ladder.Index, component == LadderParameters.TopEntryInteraction);
+            }
+
             if (_raid.Extraction.ByButton(request.Target) is { } elevator)
             {
                 if (!repeatedLog)
@@ -933,7 +950,9 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _inventoryRequests.Clear();
         if (Phase == DeliveryPhase.Possessed && _blackboardFrame != 0 && InputFrame is { } latest)
         {
-            // Each simulated frame moves with the weapon its own input left in the character's hands.
+            // Late input frames revise the ticks they reach, even when no newer frame arrived. Each newly simulated frame
+            // moves with the weapon its own input left in the character's hands.
+            _movement?.Revise(_input);
             Queue<WeaponInput> weapons = new(_weaponRequests.Where(input => input.Frame < latest).OrderBy(input => input.Frame));
             while (_movement is { } movement && movement.Frame + 1 < latest)
             {
@@ -942,7 +961,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                     _member.Weapons.Apply(weapons.Dequeue(), _weaponReferencesMapped ? _player.HeldItems : null);
                 }
 
-                movement.Advance(_input, _member.Weapons.Armed);
+                movement.Advance(_input, _member.Weapons.Armed, _member.Weapons.HeldItem);
             }
 
             foreach (WeaponInput input in weapons)
@@ -1485,7 +1504,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
                 _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now));
-            _movement = new PlayerMovement(frame, pawn.Location, yaw);
+            _movement = new PlayerMovement(frame, pawn.Location, yaw, _raid.Collision);
         }
         else
         {
@@ -1502,17 +1521,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
             if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
                 || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0
-                || character.Unsettled)
+                || character.Roll is not null || character.Vaulting || character.Unsettled)
             {
-                // A frame carries ground movement only: it would end a slide or a landing recovery and drop a jumping
-                // or falling character to the ground. Wait until the character is back in ordinary ground movement.
+                // A frame lacks the state of the client's own slide, roll, vault and landing nodes: it would end a slide, a
+                // roll, a vault or a landing recovery and drop a jumping or falling character to the ground. Wait until the character
+                // is back in ordinary ground movement.
                 return;
             }
 
-            // Vertical motion is not simulated yet; it stays the reported position change.
-            Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
             // The character's interactor shows the server-run interaction (an open container is still its search).
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(position, velocity, yaw, character), focus, _member.Inventory.Blackboard,
+            state = PawnBlackboardFrames.State(frame, Motion(character, position, before, yaw, _input.ActionRotation(frame)), focus, _member.Inventory.Blackboard,
                 _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now),
                 _interaction is { } interaction ? OnCharacterClock(interaction) : null);
         }
@@ -2332,6 +2350,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
         && _elevators.GetValueOrDefault(point.Index).State == ElevatorChannel.Open
         && _raid.ExtractionStates.Get(point.Index) is { State: ExtractionState.Ready, Descent: null } ? (point, point.ButtonIndex(button)) : null;
 
+    // The ladder of a climb interaction the client has.
+    private Ladder? ClimbableLadder(ulong interaction) =>
+        _raid.Ladders.Ladders.FirstOrDefault(candidate => candidate.Interactions.Contains(interaction)) is { } ladder
+        && _ladders.GetValueOrDefault(ladder.Index).State == LadderChannel.Open ? ladder : null;
+
     // Whether an id names an interaction the server gave the client: a door, ladder, loot, elevator button or pickup.
     private bool KnownInteraction(ulong target) =>
         _raid.Doors.ByButton(target) is not null || _raid.Doors.ByBreach(target) is not null || _raid.Loot.ByInteraction(target) is not null
@@ -2361,9 +2384,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
             return;
         }
 
-        Vector3D velocity = character.Velocity with { Z = (position.Z - before.Z) / PawnBlackboard.TickSeconds };
-        _member.Publish(new PlayerMotion(tick, new PawnMotion(position, velocity, yaw, character), _member.Weapons.Variables(tick), pitch, TimeOffsetAt(tick, now)));
+        _member.Publish(new PlayerMotion(tick, Motion(character, position, before, yaw, _input.ActionRotation(tick)), _member.Weapons.Variables(tick), pitch, TimeOffsetAt(tick, now)));
     }
+
+    // A tick's movement for a frame: the simulated body when the simulation moves it, otherwise the position the
+    // client reported after the tick with the height change it shows.
+    private static PawnMotion Motion(CharacterState character, Vector3D reported, Vector3D before, double yaw, PendulumQuaternion? actionRotation) =>
+        character.Body is null
+            ? new PawnMotion(reported, character.Velocity with { Z = (reported.Z - before.Z) / PawnBlackboard.TickSeconds }, yaw, character, actionRotation)
+            : new PawnMotion(character.Position, character.Velocity, yaw, character, actionRotation);
 
     // The character's time offset: a tick's simulation time plus the offset is the raid's world time, which is
     // also the server time on this raid's packets. The client's ticks drift against the raid's clock; like the

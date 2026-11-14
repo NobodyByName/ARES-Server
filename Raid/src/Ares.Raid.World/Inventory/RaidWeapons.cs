@@ -1,3 +1,4 @@
+using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
@@ -27,12 +28,41 @@ public sealed class RaidWeapons(RaidInventory inventory)
     private bool _fireDown;
     private bool _reloadDown;
     private uint _frame;
+    private uint _firedFrame;
 
     public uint Version { get; private set; }
     public int ShotsFired { get; private set; }
     public int ReloadsCompleted { get; private set; }
-    /// <summary>Whether a weapon is in the character's hands.</summary>
-    public bool Armed => _active is not null;
+    /// <summary>
+    /// Whether the character moves at armed speeds: anything but empty hands is in hand. Until the client picks an item
+    /// the character holds the first equipped weapon, as a raid starts with it drawn.
+    /// </summary>
+    public bool Armed => _selected is { } chosen ? Hand(InventoryBlackboard.UnarmedSlot)?.Id != chosen : Active(Equipped(), null) is not null;
+
+    /// <summary>
+    /// The item in hand after the latest applied input, as the movement rules read it: its movement members and the
+    /// weapon's state. A firearm, the Raider Tool and empty hands keep the item defaults their classes leave; empty hands
+    /// do not block sprinting.
+    /// </summary>
+    public HeldItemInput HeldItem
+    {
+        get
+        {
+            HeldItemInput held = new(Armed ? HeldItemMovementParameters.Default : HeldItemMovementParameters.Unarmed) { Changing = _switching };
+            if (_active is not { } active || !_guns.TryGetValue(active, out Gun? gun))
+            {
+                return held;
+            }
+
+            return held with
+            {
+                Weapon = true,
+                Fired = _firedFrame != 0 && _firedFrame == _frame,
+                Firing = gun.State == WeaponProtocol.FiringState,
+                Reloading = gun.State == WeaponProtocol.ReloadingState,
+            };
+        }
+    }
 
     /// <summary>Applies each accepted input frame once; packet retries cannot duplicate a shot or reload.</summary>
     /// <param name="input">The client's weapon controls.</param>
@@ -121,6 +151,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
                     gun.Shots++;
                     gun.State = WeaponProtocol.FiringState;
                     gun.AutoReload = true;
+                    _firedFrame = input.Frame;
                     ShotsFired++;
                     Version++;
                 }

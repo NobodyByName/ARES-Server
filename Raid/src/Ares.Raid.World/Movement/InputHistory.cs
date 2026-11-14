@@ -22,7 +22,6 @@ public readonly record struct InventoryRequest(uint Frame, InventoryCommand Comm
 /// </summary>
 public sealed class InputHistory
 {
-    private const int FramesPerPayload = 3;
     private const uint KeptFrames = 64;
 
     private static readonly IReadOnlyList<PendulumField> s_claimFields =
@@ -33,6 +32,9 @@ public sealed class InputHistory
 
     private static readonly PendulumQuaternionField s_rotationField = (PendulumQuaternionField)
         PendulumRegistry.Descriptors[PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]].Fields[PendulumInput.ControlRotationField];
+
+    private static readonly PendulumQuaternionField s_actionRotationField = (PendulumQuaternionField)
+        PendulumRegistry.Descriptors[PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]].Fields[PendulumInput.ActionRotationField];
 
     private Dictionary<uint, Dictionary<int, PendulumSlot>> _frames = new() { [0] = [] };
 
@@ -48,6 +50,11 @@ public sealed class InputHistory
     /// <summary>A copy for speculative packet processing (frames are not changed after they are stored).</summary>
     /// <returns>The copy.</returns>
     public InputHistory Copy() => new() { _frames = new Dictionary<uint, Dictionary<int, PendulumSlot>>(_frames), Latest = Latest, Focus = Focus, Weapons = Weapons };
+
+    /// <summary>Whether a frame has arrived and is still kept; frame 0, the defaults a first payload is coded against, always is.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>True when the frame is known.</returns>
+    public bool Received(uint frame) => _frames.ContainsKey(frame);
 
     /// <summary>The character position the client predicted for a frame it sent.</summary>
     /// <param name="frame">Input frame.</param>
@@ -82,6 +89,16 @@ public sealed class InputHistory
         && slots.TryGetValue(PendulumInput.ControlRotationSlot, out PendulumSlot? slot)
         && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]
             ? PendulumRotations.Yaw(PendulumCodec.Quaternion(s_rotationField, slot.Value), s_rotationField)
+            : null;
+
+    /// <summary>The coarse control rotation of a frame the client sent, which the character's action state takes over.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The stored rotation, or null when the frame is unknown.</returns>
+    public PendulumQuaternion? ActionRotation(uint frame) =>
+        _frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+        && slots.TryGetValue(PendulumInput.ControlRotationSlot, out PendulumSlot? slot)
+        && slot.DescriptorId == PendulumInput.SlotDescriptors[PendulumInput.ControlRotationSlot]
+            ? PendulumCodec.Quaternion(s_actionRotationField, slot.Value)
             : null;
 
     /// <summary>The pitch of the client's control rotation in a frame it sent (where it aims up or down).</summary>
@@ -149,7 +166,7 @@ public sealed class InputHistory
         List<InteractionRequest> requests = [];
         List<InventoryRequest> inventory = [];
         List<WeaponInput> weapons = [];
-        uint first = Math.Max(header.Baseline + 1, header.Latest >= FramesPerPayload - 1 ? header.Latest - (FramesPerPayload - 1) : 0);
+        uint first = Math.Max(header.Baseline + 1, header.Latest >= PendulumFrames.FramesPerPacket - 1 ? header.Latest - (PendulumFrames.FramesPerPacket - 1) : 0);
         for (uint number = first; number <= header.Latest; number++)
         {
             Dictionary<int, PendulumSlot> frame = PendulumCodec.Default.ReadFrame(reader, previous);
