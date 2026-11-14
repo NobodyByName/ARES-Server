@@ -21,6 +21,9 @@ public static class PendulumFrames
     /// </summary>
     public const uint History = 34;
 
+    /// <summary>Newest input frames one client input packet carries, from the latest frame number downwards.</summary>
+    public const int FramesPerPacket = 3;
+
     /// <summary>Reads a frame number relative to <paramref name="baseline"/>: equal, a short delta, or absolute.</summary>
     /// <param name="reader">Source.</param>
     /// <param name="baseline">Baseline frame.</param>

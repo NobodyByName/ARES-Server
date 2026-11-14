@@ -75,6 +75,9 @@ public static class PendulumInput
     /// <summary>Field of the control-rotation slot holding the rotation; the character faces its heading.</summary>
     public const int ControlRotationField = 0;
 
+    /// <summary>Field of the control-rotation slot holding the coarse rotation the character's action state takes over unchanged.</summary>
+    public const int ActionRotationField = 2;
+
     /// <summary>Flag set while the player's last interaction ended successfully. It asks for nothing.</summary>
     public const int LastInteractionSuccessfulFlag = 1;
 

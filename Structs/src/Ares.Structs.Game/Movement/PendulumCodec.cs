@@ -184,7 +184,16 @@ public sealed class PendulumCodec
             PendulumSlot old = slots.GetValueOrDefault(slot) ?? new PendulumSlot(slot, RemovedPosition, 0, null, []);
             if (!reader.ReadBit())
             {
-                slots.Remove(old.Position == RemovedPosition ? slot : throw new InvalidPacketException("Live slot without a descriptor"));
+                // A slot that keeps its place in the layout can stay without a variable.
+                if (old.Position == RemovedPosition)
+                {
+                    slots.Remove(slot);
+                }
+                else
+                {
+                    slots[slot] = old with { DescriptorId = null, Value = [] };
+                }
+
                 continue;
             }
 
@@ -257,20 +266,25 @@ public sealed class PendulumCodec
             WriteSparseMask(writer, descriptors);
             foreach (PendulumSlot slot in Ordered(frame, descriptors))
             {
-                writer.WriteBit(true);
-                writer.WriteBounded((uint)(slot.DescriptorId ?? throw new InvalidPacketException("Slot without a descriptor")), (ulong)_registryCount);
+                // A laid-out slot without a variable is sent as a removed descriptor.
+                writer.WriteBit(slot.DescriptorId is not null);
+                if (slot.DescriptorId is { } id)
+                {
+                    writer.WriteBounded((uint)id, (ulong)_registryCount);
+                }
             }
         }
 
         // New descriptors and changed slots are sent; a new descriptor or layout restarts from the default.
         ulong changed = frame.Values
-            .Where(slot => !IsSet(descriptors, slot.Slot) && (IsSet(layout, slot.Slot) || !previous[slot.Slot].Value.AsSpan().SequenceEqual(slot.Value)))
+            .Where(slot => slot.DescriptorId is not null && !IsSet(descriptors, slot.Slot)
+                && (IsSet(layout, slot.Slot) || !previous[slot.Slot].Value.AsSpan().SequenceEqual(slot.Value)))
             .Aggregate(0UL, (mask, slot) => mask | (1UL << slot.Slot));
 
         WriteSparseMask(writer, changed);
-        foreach (PendulumSlot slot in Ordered(frame, descriptors | changed))
+        foreach (PendulumSlot slot in Ordered(frame, descriptors | changed).Where(slot => slot.DescriptorId is not null))
         {
-            int id = slot.DescriptorId ?? throw new InvalidPacketException("Slot without a descriptor");
+            int id = slot.DescriptorId!.Value;
             byte[] baseline = IsSet(descriptors | layout, slot.Slot) ? DefaultOf(id) : previous[slot.Slot].Value;
             WriteValue(writer, id, slot.Value, baseline);
         }

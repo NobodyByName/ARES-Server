@@ -20,3 +20,10 @@ public enum LocoMode : byte
     Running = 2,
     Sprinting = 3,
 }
+
+/// <summary>Broad movement mode of a character.</summary>
+public enum RoughMovementMode : byte
+{
+    Ground = 1,
+    Air = 3,
+}

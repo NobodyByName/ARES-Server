@@ -130,11 +130,66 @@ public static class PawnBlackboard
     /// <summary>Action locomotion intensity.</summary>
     public const int ActionLocoModeField = 45;
 
-    /// <summary>Graph-state flags containing the flashlight state.</summary>
-    public const int FlashlightFlagsField = 7;
+    /// <summary>Eight-way direction of the movement input the action state follows (<see cref="InputDirection"/>).</summary>
+    public const int ActionInputDirectionField = 46;
 
-    /// <summary>Graph-state flag indicating an active flashlight.</summary>
-    public const ulong FlashlightFlag = 1UL << 55;
+    /// <summary>
+    /// Clock of the action state: the simulation time (<see cref="TimeField"/>) of the tick before the action state's
+    /// latest update, plus one.
+    /// </summary>
+    public const int ActionClockField = 22;
+
+    /// <summary>Strength of the movement input the action state keeps, over the field's range from zero to one.</summary>
+    public const int ActionInputStrengthField = 17;
+
+    /// <summary>Timer (simulation time units) after a vault request during which a vault may still start.</summary>
+    public const int VaultCancelTimerField = 37;
+
+    /// <summary>
+    /// Timer (simulation time units) blocking the sprint input: <see cref="ActionBlockTimerValue"/> on the tick a slide
+    /// has consumed the sprint input, then <see cref="TimePerTick"/> less each tick, down to zero.
+    /// </summary>
+    public const int BlockSprintInputTimerField = 38;
+
+    /// <summary>Timer (simulation time units) blocking the crouch input.</summary>
+    public const int BlockCrouchInputTimerField = 39;
+
+    /// <summary>
+    /// Timer (simulation time units) blocking item use after a sprint: <see cref="ActionBlockTimerValue"/> from a ground
+    /// sprint's second tick, then <see cref="TimePerTick"/> less each tick after the sprint, down to zero.
+    /// </summary>
+    public const int BlockItemFromSprintTimerField = 40;
+
+    /// <summary>Value the action state's block timers start from.</summary>
+    public const ulong ActionBlockTimerValue = 120;
+
+    /// <summary>
+    /// Field of the movement state holding the height of the feet above the ground as the last ground trace measured it:
+    /// the field's range maps onto <see cref="GroundContactParameters.GroundDistanceMinimum"/> to
+    /// <see cref="GroundContactParameters.GroundDistanceMaximum"/>.
+    /// </summary>
+    public const int GroundDistanceField = 11;
+
+    /// <summary>Field of the movement state holding the slot of the active movement node's variable (a running transition's first).</summary>
+    public const int ActiveNodeSlotField = 14;
+
+    /// <summary>
+    /// Field of the movement state holding the X component of an unknown velocity (Y and Z follow), quantized like the
+    /// velocity; the simulation keeps it unchanged.
+    /// </summary>
+    public const int UnknownMovementVectorXField = 4;
+
+    /// <summary>Movement flag (<see cref="MovementFlagsField"/>) set while the character crouches or slides.</summary>
+    public const ulong CrouchedMovementFlag = 1UL << 1;
+
+    /// <summary>Movement flag (<see cref="MovementFlagsField"/>) set while the last ground trace found the character's feet under the ground.</summary>
+    public const ulong FeetUnderGroundMovementFlag = 1UL << 6;
+
+    /// <summary>Graph-state tag word holding the tracked tags 0–63 (<see cref="GraphStateTags"/>).</summary>
+    public const int GraphTagsField = 7;
+
+    /// <summary>Graph-state tag word holding the tracked tags from 64 (<see cref="GraphStateUpperTags"/>).</summary>
+    public const int GraphUpperTagsField = 8;
 
     /// <summary>Simulation time units per tick.</summary>
     public const int TimePerTick = 20;
