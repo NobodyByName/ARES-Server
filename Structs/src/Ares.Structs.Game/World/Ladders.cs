@@ -1,3 +1,5 @@
+using Ares.Structs.Core.Geometry;
+
 namespace Ares.Structs.Game.World;
 
 /// <summary>
@@ -7,7 +9,9 @@ namespace Ares.Structs.Game.World;
 /// <param name="Cell">Generated cell package.</param>
 /// <param name="Actor">Ladder actor name in the cell.</param>
 /// <param name="SplineTop">Height of the ladder spline's last point in the spline's own space, in centimetres.</param>
-public readonly record struct LadderPlacement(string Cell, string Actor, double SplineTop);
+/// <param name="Location">World location of the ladder (and of its climbable actor), in centimetres.</param>
+/// <param name="Yaw">World yaw of the ladder (and of its climbable actor), in degrees; ladders stand upright.</param>
+public readonly record struct LadderPlacement(string Cell, string Actor, double SplineTop, Vector3D Location, double Yaw);
 
 /// <summary>
 /// How the game sizes the climbable actor of a placed ladder (<c>ULadderLogicSpawningComponent</c>,
