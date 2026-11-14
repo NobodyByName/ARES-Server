@@ -8,6 +8,9 @@ public static class PendulumRotations
 {
     private const byte AllNonNegative = 0b1111;
 
+    // How close to straight up or down a ground normal may point before its rotation's X axis is world X.
+    private const double NearlyParallel = 1e-4;
+
     /// <summary>The rotation as (X, Y, Z, W) components.</summary>
     /// <param name="quaternion">The quantized rotation.</param>
     /// <param name="field">Its field.</param>
@@ -17,7 +20,7 @@ public static class PendulumRotations
         ArgumentNullException.ThrowIfNull(quaternion);
         ArgumentNullException.ThrowIfNull(field);
         double scale = Math.Sqrt(field.Total);
-        double[] values = [quaternion.Component0 / scale, quaternion.Component1 / scale, quaternion.Component2 / scale, quaternion.Component3 / scale];
+        double[] values = [Middle(quaternion.Component0, scale), Middle(quaternion.Component1, scale), Middle(quaternion.Component2, scale), Middle(quaternion.Component3, scale)];
         int omitted = quaternion.Omitted;
         values[omitted] = Math.Sqrt(Math.Max(0.0, 1.0 - values.Where((_, index) => index != omitted).Sum(value => value * value)));
         for (int index = 0; index < 4; index++)
@@ -72,7 +75,75 @@ public static class PendulumRotations
             : new PendulumQuaternion(0, 0, 0, Stored(w, scale, field), signs, 0, 1, 3);
     }
 
-    // A stored component; near a quarter turn it can round up to the field's exclusive bound on coarse fields.
+    /// <summary>
+    /// The rotation a ground normal is stored as: the rotation whose Z axis is the normal, its X axis perpendicular to
+    /// world up (world X when the normal points straight up or down).
+    /// </summary>
+    /// <param name="x">Normal X.</param>
+    /// <param name="y">Normal Y.</param>
+    /// <param name="z">Normal Z.</param>
+    /// <param name="field">The quaternion field.</param>
+    /// <returns>The stored quaternion.</returns>
+    public static PendulumQuaternion FromGroundNormal(double x, double y, double z, PendulumQuaternionField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        double length = Math.Sqrt((x * x) + (y * y) + (z * z));
+        (double nx, double ny, double nz) = length > 0 ? (x / length, y / length, z / length) : (0.0, 0.0, 1.0);
+        (double ux, double uz) = Math.Abs(nz) < 1 - NearlyParallel ? (0.0, 1.0) : (1.0, 0.0);
+
+        // X = up × normal, then Y = normal × X.
+        (double ax, double ay, double az) = (-(uz * ny), (uz * nx) - (ux * nz), ux * ny);
+        double axis = Math.Sqrt((ax * ax) + (ay * ay) + (az * az));
+        (ax, ay, az) = (ax / axis, ay / axis, az / axis);
+        (double bx, double by, double bz) = ((ny * az) - (nz * ay), (nz * ax) - (nx * az), (nx * ay) - (ny * ax));
+        double[,] m = { { ax, ay, az }, { bx, by, bz }, { nx, ny, nz } };
+        double[] q = new double[4];
+        double trace = m[0, 0] + m[1, 1] + m[2, 2];
+        if (trace > 0)
+        {
+            double inverse = 1 / Math.Sqrt(trace + 1);
+            q[3] = 0.5 / inverse;
+            double s = 0.5 * inverse;
+            (q[0], q[1], q[2]) = ((m[1, 2] - m[2, 1]) * s, (m[2, 0] - m[0, 2]) * s, (m[0, 1] - m[1, 0]) * s);
+        }
+        else
+        {
+            int i = m[1, 1] > m[0, 0] ? 1 : 0;
+            i = m[2, 2] > m[i, i] ? 2 : i;
+            int j = (i + 1) % 3;
+            int k = (j + 1) % 3;
+            double inverse = 1 / Math.Sqrt(m[i, i] - m[j, j] - m[k, k] + 1);
+            q[i] = 0.5 / inverse;
+            double s = 0.5 * inverse;
+            q[3] = (m[j, k] - m[k, j]) * s;
+            q[j] = (m[i, j] + m[j, i]) * s;
+            q[k] = (m[i, k] + m[k, i]) * s;
+        }
+
+        return Pack(q, field);
+    }
+
+    // The three smallest components in increasing size; the largest one (the later one of equals) is left out.
+    private static PendulumQuaternion Pack(double[] q, PendulumQuaternionField field)
+    {
+        double scale = Math.Sqrt(field.Total);
+        int omitted = 0;
+        for (int index = 1; index < 4; index++)
+        {
+            omitted = Math.Abs(q[index]) >= Math.Abs(q[omitted]) ? index : omitted;
+        }
+
+        int[] kept = [.. Enumerable.Range(0, 4).Where(index => index != omitted).OrderBy(index => Math.Abs(q[index]))];
+        uint[] stored = [.. q.Select(component => Stored(Math.Abs(component), scale, field))];
+        stored[omitted] = 0;
+        byte signs = (byte)Enumerable.Range(0, 4).Where(index => q[index] >= 0).Sum(index => 1 << index);
+        return new PendulumQuaternion(stored[0], stored[1], stored[2], stored[3], signs, (byte)kept[0], (byte)kept[1], (byte)kept[2]);
+    }
+
+    // A stored component: the whole steps below it, kept under the field's exclusive bound.
     private static uint Stored(double component, double scale, PendulumQuaternionField field) =>
-        Math.Min((uint)Math.Round(component * scale), field.Maximum - 1);
+        Math.Min((uint)Math.Floor(component * scale), field.Maximum - 1);
+
+    // A stored component stands for the middle of its step; zero stays zero.
+    private static double Middle(uint stored, double scale) => stored == 0 ? 0 : (stored + 0.5) / scale;
 }
