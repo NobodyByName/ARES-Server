@@ -167,12 +167,14 @@ internal static class ShapeRaycasts
 
     /// <summary>
     /// Ray test against a triangle mesh: through its triangle hierarchy when it has one (see <see cref="MeshTree"/>),
-    /// otherwise triangle by triangle.
+    /// otherwise triangle by triangle. <paramref name="triangle"/> is the index of the triangle hit.
     /// </summary>
-    public static bool Mesh(TriangleMesh mesh, BoundingVolumeHierarchy? tree, Double3 origin, Double3 direction, double maxT, out double t, out Double3 normal)
+    public static bool Mesh(TriangleMesh mesh, BoundingVolumeHierarchy? tree, Double3 origin, Double3 direction, double maxT, out double t, out Double3 normal,
+        out int triangle)
     {
         t = maxT;
         normal = default;
+        triangle = -1;
         if (!AxisBox(Double3.From(mesh.Bounds.Minimum), Double3.From(mesh.Bounds.Maximum), origin, direction, maxT, out _, out _))
         {
             return false;
@@ -184,19 +186,21 @@ internal static class ShapeRaycasts
             tree.Raycast(origin, direction, maxT, ref visitor);
             t = visitor.Hit ? visitor.Distance : maxT;
             normal = visitor.Normal;
+            triangle = visitor.TriangleIndex;
             return visitor.Hit;
         }
 
         bool hit = false;
-        for (int triangle = 0; triangle < mesh.TriangleCount; triangle++)
+        for (int candidateTriangle = 0; candidateTriangle < mesh.TriangleCount; candidateTriangle++)
         {
-            if (!MeshTriangle(mesh, triangle, origin, direction, t, out double candidate, out Double3 faceNormal))
+            if (!MeshTriangle(mesh, candidateTriangle, origin, direction, t, out double candidate, out Double3 faceNormal))
             {
                 continue;
             }
 
             t = candidate;
             normal = faceNormal;
+            triangle = candidateTriangle;
             hit = true;
         }
 
@@ -290,6 +294,8 @@ internal static class ShapeRaycasts
 
         public Double3 Normal { get; private set; }
 
+        public int TriangleIndex { get; private set; } = -1;
+
         public double Visit(int item, double maxDistance)
         {
             if (!MeshTriangle(mesh, item, origin, direction, maxDistance, out double t, out Double3 normal))
@@ -300,6 +306,7 @@ internal static class ShapeRaycasts
             Hit = true;
             Distance = t;
             Normal = normal;
+            TriangleIndex = item;
             return t;
         }
     }

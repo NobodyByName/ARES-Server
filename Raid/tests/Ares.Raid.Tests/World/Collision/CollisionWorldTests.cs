@@ -320,6 +320,37 @@ public sealed class CollisionWorldTests
     private static System.Numerics.Quaternion ToNumerics(Structs.Core.Geometry.Quaternion rotation) =>
         new((float)rotation.X, (float)rotation.Y, (float)rotation.Z, (float)rotation.W);
 
+    [Fact]
+    public void Hits_report_the_surface_type_of_the_cell_placement_or_triangle_they_reach()
+    {
+        TriangleMesh ramp = Square(100) with { MaterialIndices = [1, 0] };
+        MapCollisionBuilder builder = Builder();
+        int cell = builder.AddCell("/Game/Cell", []);
+        builder.AddPlacement(builder.AddBody(Body("crate", boxes: [Box(new Vector3(50, 50, 50))])), cell, At(0, 0, 0), Pawn, PhysicalSurfaceType.Wood);
+        builder.AddPlacement(builder.AddBody(Body("ramp", meshes: [ramp])), cell, At(1000, 0, 0), Pawn, PhysicalSurfaceType.Concrete,
+            [PhysicalSurfaceType.Metal, PhysicalSurfaceType.Tile]);
+        builder.AddPlacement(builder.AddBody(Body("plain", meshes: [Square(100)])), cell, At(2000, 0, 0), Pawn, PhysicalSurfaceType.Concrete);
+        HeightFieldTile tile = FlatTile(cell, new Vector3D(-5000, -5000, -100), 100, 1, 3, 0) with
+        {
+            CellSurfaces = [PhysicalSurfaceType.Sand, PhysicalSurfaceType.Grass, PhysicalSurfaceType.Snow, PhysicalSurfaceType.Mud],
+        };
+        builder.AddHeightField(tile);
+        CollisionWorld world = new(builder.Build());
+
+        Assert.Equal(PhysicalSurfaceType.Wood, Ground(world, 0, 0));
+        // Triangle 0 (below the diagonal, y < x) names slot 1, triangle 1 slot 0.
+        Assert.Equal(PhysicalSurfaceType.Tile, Ground(world, 1050, -50));
+        Assert.Equal(PhysicalSurfaceType.Metal, Ground(world, 950, 50));
+        Assert.Equal(PhysicalSurfaceType.Concrete, Ground(world, 2000, 0));
+        Assert.Equal(PhysicalSurfaceType.Grass, Ground(world, -4850, -4950));
+        Assert.Equal(PhysicalSurfaceType.Snow, Ground(world, -4950, -4850));
+        Assert.Equal(PhysicalSurfaceType.Wood, world.SweepSphere(new Vector3D(0, 0, 200), new Vector3D(0, 0, 0), 10, Pawn)?.Surface);
+        Assert.Equal(PhysicalSurfaceType.Mud, world.SweepSphere(new Vector3D(-4850, -4850, 200), new Vector3D(-4850, -4850, -200), 10, Pawn)?.Surface);
+    }
+
+    private static PhysicalSurfaceType? Ground(CollisionWorld world, double x, double y) =>
+        world.Raycast(new Vector3D(x, y, 500), -Vector3.UnitZ, 1000, Pawn)?.Surface;
+
     private static CollisionWorld Single(CollisionBody body, Transform transform)
     {
         MapCollisionBuilder builder = Builder();

@@ -123,12 +123,15 @@ public sealed partial class CollisionWorld
         double limit = placementRay.Index >= 0 ? placementRay.Distance : maxDistance;
         TileRay tileRay = new(this, start, unit);
         _tileTree.Raycast(start, unit, limit, ref tileRay);
-        if (tileRay.Index >= 0)
+        if (tileRay.Index < 0)
         {
-            return Hit(start, unit, tileRay.Distance, tileRay.Normal, CollisionHitKind.HeightField, tileRay.Index);
+            return placementRay.Index >= 0
+                ? Hit(start, unit, placementRay.Distance, placementRay.Normal, CollisionHitKind.Placement, placementRay.Index) with { Surface = placementRay.Surface }
+                : null;
         }
 
-        return placementRay.Index >= 0 ? Hit(start, unit, placementRay.Distance, placementRay.Normal, CollisionHitKind.Placement, placementRay.Index) : null;
+        CollisionHit tileHit = Hit(start, unit, tileRay.Distance, tileRay.Normal, CollisionHitKind.HeightField, tileRay.Index);
+        return tileHit with { Surface = Map.HeightFields[tileRay.Index].SurfaceAt(tileHit.Point.X, tileHit.Point.Y) };
     }
 
     /// <summary>
@@ -185,11 +188,14 @@ public sealed partial class CollisionWorld
                 origin.Z + Math.Max(low, high)));
     }
 
-    /// <summary>Casts a world ray against one placement; the normal is a unit world vector.</summary>
-    private bool RaycastPlacement(int placementIndex, Double3 origin, Double3 direction, double maxT, out double t, out Double3 normal)
+    /// <summary>Casts a world ray against one placement; the normal is a unit world vector, the surface type that of the shape hit.</summary>
+    private bool RaycastPlacement(int placementIndex, Double3 origin, Double3 direction, double maxT, out double t, out Double3 normal,
+        out PhysicalSurfaceType surface)
     {
-        (int bodyIndex, _, Vector3D translation, Quaternion rotation, Vector3 scale, _, _) = Map.Placements[placementIndex];
+        ref readonly BodyPlacement placement = ref Map.Placements.ItemRef(placementIndex);
+        (int bodyIndex, _, Vector3D translation, Quaternion rotation, Vector3 scale, _, _) = placement;
         CollisionBody body = Map.Bodies[bodyIndex];
+        surface = placement.Surface;
         Double3 frameOrigin = (origin - Double3.From(translation)).RotateInverse(rotation);
         Double3 frameDirection = direction.RotateInverse(rotation);
         Double3 localOrigin = frameOrigin.DivideBy(scale);
@@ -227,12 +233,18 @@ public sealed partial class CollisionWorld
 
         foreach (TriangleMesh mesh in body.TriangleMeshes)
         {
-            hit |= Closer(
-                ShapeRaycasts.Mesh(mesh, _meshTrees.GetValueOrDefault(mesh), localOrigin, localDirection, t, out double candidate, out Double3 shapeNormal),
+            bool closer = Closer(
+                ShapeRaycasts.Mesh(mesh, _meshTrees.GetValueOrDefault(mesh), localOrigin, localDirection, t, out double candidate, out Double3 shapeNormal, out int triangle),
                 candidate,
                 shapeNormal.DivideBy(scale),
                 ref t,
                 ref frameNormal);
+            if (closer)
+            {
+                surface = placement.TriangleSurface(mesh, triangle);
+            }
+
+            hit |= closer;
         }
 
         normal = !hit ? default : t == 0 ? -direction : frameNormal.Rotate(rotation).Normalized();
@@ -260,11 +272,13 @@ public sealed partial class CollisionWorld
 
         public Double3 Normal { get; private set; }
 
+        public PhysicalSurfaceType Surface { get; private set; }
+
         public double Visit(int item, double maxDistance)
         {
             int placementIndex = world._placements[item];
             if ((world.Map.Placements[placementIndex].Flags & mask) == 0
-                || !world.RaycastPlacement(placementIndex, origin, direction, maxDistance, out double t, out Double3 normal))
+                || !world.RaycastPlacement(placementIndex, origin, direction, maxDistance, out double t, out Double3 normal, out PhysicalSurfaceType surface))
             {
                 return maxDistance;
             }
@@ -272,6 +286,7 @@ public sealed partial class CollisionWorld
             Index = placementIndex;
             Distance = t;
             Normal = normal;
+            Surface = surface;
             return t;
         }
     }

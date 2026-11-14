@@ -126,7 +126,11 @@ public sealed partial class CollisionWorld
         }
 
         ShapeContact best = test.Best;
-        return new CollisionHit(best.Time * motion.Length(), best.Point.ToVector3D(), best.Normal.ToVector3(), test.Kind, test.Index, best.StartPenetrating, best.Depth);
+        Vector3D point = best.Point.ToVector3D();
+        PhysicalSurfaceType surface = test.Kind == CollisionHitKind.HeightField
+            ? Map.HeightFields[test.Index].SurfaceAt(point.X, point.Y)
+            : Map.Placements[test.Index].Surface;
+        return new CollisionHit(best.Time * motion.Length(), point, best.Normal.ToVector3(), test.Kind, test.Index, best.StartPenetrating, best.Depth, surface);
     }
 
     /// <summary>Validates a capsule and returns the half segment of its core in world space.</summary>

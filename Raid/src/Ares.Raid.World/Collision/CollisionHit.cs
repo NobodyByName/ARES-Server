@@ -1,6 +1,7 @@
 using System.Numerics;
 using Ares.Common.Maps;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Collision;
 
 namespace Ares.Raid.World.Collision;
 
@@ -30,6 +31,10 @@ public enum CollisionHitKind
 /// For a sweep that starts penetrating, how far the shape must move along <paramref name="Normal"/> to clear that
 /// surface, in centimetres; 0 otherwise.
 /// </param>
+/// <param name="Surface">
+/// Surface type of what was hit: the height-field cell under the hit point, the triangle of a placed triangle mesh a ray
+/// hits, else the placement's <see cref="BodyPlacement.Surface"/>.
+/// </param>
 public readonly record struct CollisionHit(
     double Distance,
     Vector3D Point,
@@ -37,4 +42,5 @@ public readonly record struct CollisionHit(
     CollisionHitKind Kind,
     int Index,
     bool StartPenetrating = false,
-    double PenetrationDepth = 0);
+    double PenetrationDepth = 0,
+    PhysicalSurfaceType Surface = PhysicalSurfaceType.Default);
