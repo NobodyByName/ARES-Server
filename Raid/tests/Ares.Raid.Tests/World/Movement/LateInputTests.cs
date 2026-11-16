@@ -3,6 +3,7 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Raid.Tests.World.Movement;
 

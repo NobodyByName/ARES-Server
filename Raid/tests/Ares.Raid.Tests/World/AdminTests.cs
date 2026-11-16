@@ -3,6 +3,7 @@ using Ares.Raid.World.Players;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Raid.Tests.World;
 

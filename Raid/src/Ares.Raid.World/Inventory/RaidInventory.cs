@@ -2,7 +2,7 @@ using Ares.Common.Game.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
-using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Raid.World.Inventory;
 

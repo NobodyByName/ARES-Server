@@ -1,4 +1,5 @@
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Structs.Game.Movement;
 

@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using Ares.Structs.Core.Serialization;
 
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>A blackboard frame slot: where its value sits in the frame data, its descriptor and its value.</summary>
 /// <param name="Slot">Slot index (0 to 63).</param>

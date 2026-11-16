@@ -4,7 +4,7 @@ using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
-using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;

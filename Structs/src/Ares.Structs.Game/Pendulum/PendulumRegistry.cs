@@ -1,4 +1,4 @@
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>The Pendulum descriptor registry: layouts of the blackboard variables the game sends and receives.</summary>
 public static class PendulumRegistry

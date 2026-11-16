@@ -10,6 +10,7 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;

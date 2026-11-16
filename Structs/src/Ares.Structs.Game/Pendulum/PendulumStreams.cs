@@ -1,6 +1,6 @@
 using Ares.Structs.Core.Serialization;
 
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>Frame numbers of the Pendulum streams (client input frames).</summary>
 public static class PendulumFrames

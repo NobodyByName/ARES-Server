@@ -1,6 +1,6 @@
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
-using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Structs.Tests.Game;
 

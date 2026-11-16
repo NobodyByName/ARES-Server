@@ -1,4 +1,4 @@
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>The variables a client sends in its Pendulum input frames.</summary>
 public static class PendulumInput

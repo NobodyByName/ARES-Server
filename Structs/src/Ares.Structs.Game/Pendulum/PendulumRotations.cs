@@ -1,4 +1,4 @@
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>
 /// Converts quantized Pendulum rotations. A component is quantized as round(|c| * sqrt(Total)); the largest one

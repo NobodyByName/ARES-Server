@@ -1,3 +1,5 @@
+using Ares.Structs.Game.Pendulum;
+
 namespace Ares.Structs.Game.Movement;
 
 /// <summary>

@@ -11,6 +11,7 @@ using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.GameplayTags;

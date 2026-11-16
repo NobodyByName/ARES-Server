@@ -1,4 +1,4 @@
-namespace Ares.Structs.Game.Movement;
+namespace Ares.Structs.Game.Pendulum;
 
 /// <summary>
 /// A Pendulum descriptor: the layout of one blackboard variable and how its changes are encoded.

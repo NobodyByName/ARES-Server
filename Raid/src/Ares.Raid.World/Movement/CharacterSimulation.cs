@@ -2,6 +2,7 @@ using System.Numerics;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Movement;

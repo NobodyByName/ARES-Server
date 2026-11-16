@@ -2,7 +2,7 @@ using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
-using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World.Players;
