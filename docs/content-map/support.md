@@ -78,11 +78,18 @@ animations; the Ferro I fires at its semi-automatic cadence and reloads one roun
 carried Heavy Ammo. These are stock-client verified, with known issues. Damage, ballistics,
 fitting mods and upgrades remain future work.
 
+The Snap Hook fits the quick-use slots and returns with the loadout. In Raid, drawing it puts the
+held item away; its throw aims at the crosshair against the map's complex collision, pulls the player
+to where the hook lands and costs gadget power, which recharges over time. These are stock-client
+verified with one player; other players see the throw and pull, which has not been tried with the
+stock client. Durability loss, repair and value remain future work.
+
 To grant menu test items from the Host console before a fresh client launch:
 
 ```text
 inventory add DA_Item_BattleRifle_BreachAction_01
 inventory add DA_Item_HeavyAmmo 60
+inventory add DA_Item_SnapHook
 ```
 
 `inventory add <technical-name> [quantity]` adds a new stack; quantity defaults to one and must

@@ -1213,7 +1213,8 @@ globalThis.AresContent = {
             {
               "name": "Snap Hook",
               "technical": "DA_Item_SnapHook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss, repair and value remain."
             },
             {
               "name": "Snowball",

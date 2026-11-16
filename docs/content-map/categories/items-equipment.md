@@ -103,7 +103,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-0-88"></a>Scatter Missile Grenade | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-89"></a>Smelter 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-90"></a>Smoke Grenade | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-0-91"></a>Snap Hook | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-0-91"></a>Snap Hook | Partial | Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss, repair and value remain. |
 | <a id="content-root-2-0-92"></a>Snowball | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-93"></a>Special Beam Rifle 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-94"></a>Special Beam Rifle 01 Anti Weak Point | Not assessed | Availability and server behavior have not been assessed. |
