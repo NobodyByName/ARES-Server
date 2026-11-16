@@ -32,6 +32,7 @@ public sealed class HostTests : IAsyncLifetime
     private const string OperatorToken = "operator-token-operator-token-operator-token";
     private readonly TestDatabase _database = new();
     private readonly FakeRaid _raid = new();
+    private readonly StringWriter _log = new();
     private WebApplication? _raidApp;
     private WebApplication? _host;
     private HttpClient? _client;
@@ -64,7 +65,7 @@ public sealed class HostTests : IAsyncLifetime
             Port = 18080,
         };
         _ = _database.Store;
-        _host = HostApplication.Build(configuration, new JsonEventLog(TextWriter.Null), raidStarter: new TestRaidStarter(_raidApp!),
+        _host = HostApplication.Build(configuration, new JsonEventLog(_log), raidStarter: new TestRaidStarter(_raidApp!),
             configureBuilder: builder => builder.WebHost.UseTestServer());
         await _host.StartAsync(TestContext.Current.CancellationToken);
         _client?.Dispose();
@@ -82,6 +83,7 @@ public sealed class HostTests : IAsyncLifetime
         await _host!.DisposeAsync();
         await _raidApp!.DisposeAsync();
         _database.Dispose();
+        await _log.DisposeAsync();
     }
 
     [Fact]
@@ -100,6 +102,23 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal((bought.RewardPackage.RewardedItems[0].GameAssetId, 1L), (reward.GetProperty("gameAssetId").GetInt64(), reward.GetProperty("amount").GetInt64()));
         Assert.Equal(1, items.GetProperty("deleted").GetArrayLength());
         Assert.DoesNotContain(HostInventory().Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.AssortedSeeds);
+    }
+
+    [Fact]
+    public async Task An_undecodable_batch_operation_is_logged_as_received_and_rejected()
+    {
+        object body = new
+        {
+            requestId = "unknown",
+            operations = new object[]
+            {
+                new { discriminator = "acceptOffer", offerId = TraderOffers.Celeste[0].OfferId, times = 1, payment = Array.Empty<object>(), paymentByAmounts = Array.Empty<object>() },
+                new { discriminator = "notYetDecoded" },
+            },
+        };
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post("/v1/pioneer/v1/batch-operation", body, await SignIn())).StatusCode);
+        string logged = Assert.Single(_log.ToString().Split('\n'), line => line.Contains("undecoded_batch_operation", StringComparison.Ordinal));
+        Assert.Contains("\"notYetDecoded\"", logged, StringComparison.Ordinal);
     }
 
     [Fact]

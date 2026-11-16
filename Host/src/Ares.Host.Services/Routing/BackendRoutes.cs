@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
 using Ares.Common.Logging;
@@ -109,7 +110,10 @@ public sealed class BackendRoutes
             return ServiceReply.Ok(new InventoryResponse(player.Inventory.Snapshot.Items));
         });
         Player("POST /v1/pioneer/v1/batch-operation", (request, player, token) =>
-            player.Matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token));
+        {
+            LogUndecodedOperations(request, log);
+            return player.Matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token);
+        });
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));
         Add("POST /v1/pioneer/projects/list", new ProjectsResponse([]));
         Add("GET /v1/pioneer/levels/list", new LevelsResponse(BackendContent.Levels));
@@ -173,6 +177,36 @@ public sealed class BackendRoutes
         "POST /v1/shared/announcements",
         "POST /v1/pioneer/stats/player-v2",
     ];
+
+    /// <summary>
+    /// Logs, as received, each batch operation Host cannot decode. Batch operations hold only item and
+    /// offer ids.
+    /// </summary>
+    private static void LogUndecodedOperations(BackendRequest request, JsonEventLog log)
+    {
+        if (request.Json is not { } body || !body.TryGetProperty("operations", out JsonElement operations) || operations.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (JsonElement operation in operations.EnumerateArray())
+        {
+            InventoryOperation? decoded;
+            try
+            {
+                decoded = operation.Deserialize<InventoryOperation>(BackendJson.Options);
+            }
+            catch (Exception error) when (error is JsonException or NotSupportedException)
+            {
+                decoded = null;
+            }
+
+            if (decoded is null)
+            {
+                log.Write(new JsonObject { ["undecoded_batch_operation"] = JsonNode.Parse(operation.GetRawText()) });
+            }
+        }
+    }
 
     private void Add(string route, object reply, TimeSpan delay = default)
     {
