@@ -58,9 +58,10 @@ public static class PawnBlackboardFrames
     /// <param name="weapons">Weapon simulation variables replacing or extending the initial state.</param>
     /// <param name="timeOffset">Time units from the tick's simulation time to the server's time (see <see cref="PawnBlackboard.TimeOffsetField"/>).</param>
     /// <param name="interaction">The interaction under way and its last event, if the server runs one (an open container).</param>
+    /// <param name="emptySlots">Slots that keep their place in the layout without a variable (see <c>RaidWeapons.EmptyItemSlots</c>).</param>
     /// <returns>The slots by index.</returns>
     public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
-        IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0, PawnInteraction? interaction = null)
+        IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0, PawnInteraction? interaction = null, IReadOnlyList<PendulumSlot>? emptySlots = null)
     {
         long storedOffset = s_timeOffset.Default + timeOffset;
         if (storedOffset < 0 || storedOffset >= s_timeOffset.Maximum)
@@ -75,7 +76,12 @@ public static class PawnBlackboardFrames
 
         Dictionary<int, PendulumSlot> slots = [];
         NodeSlots nodeSlots = NodeSlots.After(PawnBlackboard.InitialState.Where(initial => initial.Slot != PawnGroundNodeState.InitialSlot)
-            .Select(initial => inventory is not null && initial.Slot == inventory.Slot ? inventory : initial).Concat(weapons ?? []));
+            .Select(initial => inventory is not null && initial.Slot == inventory.Slot ? inventory : initial).Concat(weapons ?? []), emptySlots ?? []);
+        foreach (PendulumSlot empty in emptySlots ?? [])
+        {
+            slots[empty.Slot] = empty;
+        }
+
         foreach (PendulumVariable initial in PawnBlackboard.InitialState.Where(initial => weapons is null || weapons.All(item => item.Slot != initial.Slot))
             .Concat(weapons ?? []))
         {
@@ -156,7 +162,7 @@ public static class PawnBlackboardFrames
                             {
                                 Replace(values, GroundDistance(body.GroundDistance));
                                 ulong traced = values.OfType<PendulumIntegerValue>().Last(value => value.Field == PawnBlackboard.MovementFlagsField).Value;
-                                Replace(values, new PendulumIntegerValue(PawnBlackboard.MovementFlagsField, body.GroundDistance < 0
+                                Replace(values, new PendulumIntegerValue(PawnBlackboard.MovementFlagsField, body.FeetUnderGround
                                     ? traced | PawnBlackboard.FeetUnderGroundMovementFlag
                                     : traced & ~PawnBlackboard.FeetUnderGroundMovementFlag));
                             }
@@ -401,11 +407,12 @@ internal readonly record struct NodeSlots(int FirstSlot, int FirstPosition)
 {
     private static readonly int s_groundPosition = PawnBlackboard.InitialState.First(variable => variable.Slot == PawnGroundNodeState.InitialSlot).Position;
 
-    /// <summary>The node slots after the given variables.</summary>
-    public static NodeSlots After(IEnumerable<PendulumVariable> others)
+    /// <summary>The node slots after the given variables and laid-out slots without one.</summary>
+    public static NodeSlots After(IEnumerable<PendulumVariable> others, IEnumerable<PendulumSlot> empty)
     {
-        List<PendulumVariable> variables = [.. others];
-        return new NodeSlots(variables.Max(variable => variable.Slot) + 1, variables.Max(variable => variable.Position + variable.Size));
+        List<(int Slot, int End)> layout = [.. others.Select(variable => (variable.Slot, variable.Position + variable.Size)),
+            .. empty.Select(slot => (slot.Slot, slot.Position + slot.Size))];
+        return new NodeSlots(layout.Max(entry => entry.Slot) + 1, layout.Max(entry => entry.End));
     }
 
     /// <summary>The slot of a node slot as <see cref="NodeLayout"/> numbers it.</summary>

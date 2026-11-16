@@ -26,6 +26,7 @@ public sealed class WorldImports
         [WeaponItems.FerroIUsableIndex] = FerroDefaults.ItemClass,
         [HandItems.RaiderToolUsableIndex] = HandItems.RaiderToolItemClass,
         [HandItems.UnarmedUsableIndex] = HandItems.UnarmedItemClass,
+        [GadgetItems.SnapHookUsableIndex] = GadgetItems.SnapHookItemClass,
     };
 
     /// <summary>Builds the exports.</summary>

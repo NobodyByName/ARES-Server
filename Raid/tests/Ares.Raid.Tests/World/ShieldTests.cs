@@ -144,7 +144,7 @@ public sealed class ShieldTests
         return contents;
     }
 
-    private static int AssetIndex(Dictionary<int, PendulumSlot> frame, int slot)
+    internal static int AssetIndex(Dictionary<int, PendulumSlot> frame, int slot)
     {
         PendulumArrayField items = (PendulumArrayField)PendulumRegistry.Descriptors[InventoryBlackboard.Descriptor].Fields[InventoryBlackboard.SlotsField];
         byte[] value = frame[InventoryBlackboard.Slot].Value;
@@ -168,7 +168,7 @@ public sealed class ShieldTests
         return loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == slot ? item with { Slots = [shield.InstanceId] } : item), shield] };
     }
 
-    private static InventoryCommand Swap(int from, int fromSlot, int to, int toSlot) => new(InventoryCommandType.SwapItems,
+    internal static InventoryCommand Swap(int from, int fromSlot, int to, int toSlot) => new(InventoryCommandType.SwapItems,
         new ItemContainerSlot(new ItemContainerHandle(from, 0), checked((ushort)fromSlot)),
         new ItemContainerSlot(new ItemContainerHandle(to, 0), checked((ushort)toSlot)), 0, new ItemContainerHandle(-1, ushort.MaxValue));
 }

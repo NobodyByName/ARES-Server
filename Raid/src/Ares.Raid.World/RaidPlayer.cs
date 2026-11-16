@@ -109,7 +109,10 @@ public sealed class RaidPlayer
 /// <summary>A character's movement and held weapons at one of its simulation ticks.</summary>
 /// <param name="Tick">The owning client's input frame the movement belongs to.</param>
 /// <param name="Motion">Position, velocity, facing, stance and locomotion.</param>
-/// <param name="Weapons">Weapon simulation variables (equipped guns by item type, without item links).</param>
+/// <param name="Weapons">
+/// Weapon simulation variables (equipped guns and gadgets by item type, without item links), then the Snap Hook's move target and
+/// pull node.
+/// </param>
 /// <param name="Pitch">Aim pitch in radians, positive up.</param>
 /// <param name="TimeOffset">Time units from the tick's simulation time to the raid's server time.</param>
 public sealed record PlayerMotion(uint Tick, PawnMotion Motion, IReadOnlyList<PendulumVariable> Weapons, double Pitch, long TimeOffset);

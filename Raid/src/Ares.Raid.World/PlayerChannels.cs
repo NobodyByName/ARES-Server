@@ -408,6 +408,18 @@ public sealed partial class PlayerChannels : IPlayerChannels
     public int ShotsFired => _member.Weapons.ShotsFired;
     public int ReloadsCompleted => _member.Weapons.ReloadsCompleted;
 
+    /// <summary>Accepted requests to draw a quick-use item.</summary>
+    public int QuickItemRequests => _member.Weapons.QuickItemRequests;
+
+    /// <summary>Snap Hook throws (each costs gadget power).</summary>
+    public int HookThrows => _member.Weapons.HookThrows;
+
+    /// <summary>Times pawn frames started being withheld because a thrown Snap Hook was out.</summary>
+    public int QuickItemHolds { get; private set; }
+
+    /// <summary>The latest such hold: the first and the last withheld frame tick (none while it lasts).</summary>
+    public (uint From, uint? To)? LastQuickItemHold { get; private set; }
+
     /// <summary>Inventory requests rejected and corrected.</summary>
     public int RejectedInventoryRequests { get; private set; }
 
@@ -1503,12 +1515,18 @@ public sealed partial class PlayerChannels : IPlayerChannels
             WorldActor pawn = Actor(_player.Pawn);
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
             state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
-                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now));
+                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now),
+                emptySlots: _member.Weapons.EmptyItemSlots(frame));
             _movement = new PlayerMovement(frame, pawn.Location, yaw, _raid.Collision);
         }
         else
         {
             if (InteractionFramesHeld(now))
+            {
+                return;
+            }
+
+            if (QuickItemHeld(latest - 1))
             {
                 return;
             }
@@ -1532,7 +1550,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             // The character's interactor shows the server-run interaction (an open container is still its search).
             state = PawnBlackboardFrames.State(frame, Motion(character, position, before, yaw, _input.ActionRotation(frame)), focus, _member.Inventory.Blackboard,
                 _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now),
-                _interaction is { } interaction ? OnCharacterClock(interaction) : null);
+                _interaction is { } interaction ? OnCharacterClock(interaction) : null, _member.Weapons.EmptyItemSlots(frame));
         }
 
         // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
@@ -1550,6 +1568,26 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _weaponVersion = _member.Weapons.Version;
         _populatedInventorySent = !initializingContainers;
         BlackboardFrames++;
+    }
+
+    // While a thrown Snap Hook is out (its flight and pull, until the client may use it again) the client keeps its own
+    // character state: a frame would end them. Raid keeps following its movement reports.
+    // Inventory and focus changes go out with the first frame after the hold.
+    private bool QuickItemHeld(uint frame)
+    {
+        bool held = _member.Weapons.HoldsFrames(frame);
+        switch (held)
+        {
+            case true when LastQuickItemHold is not { To: null }:
+                QuickItemHolds++;
+                LastQuickItemHold = (frame, null);
+                break;
+            case false when LastQuickItemHold is { To: null } hold:
+                LastQuickItemHold = (hold.From, frame - 1);
+                break;
+        }
+
+        return held;
     }
 
     // The door of a button the client may use: possessed, door replicated on this connection, cell visible,

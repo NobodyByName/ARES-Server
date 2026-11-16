@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Maps;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Movement;
@@ -36,11 +37,13 @@ internal sealed class ScriptedPlayer
     private readonly Dictionary<uint, sbyte> _movementInputs = [];
     private readonly Dictionary<uint, InventoryCommand> _inventoryInputs = [];
     private readonly Dictionary<uint, ulong> _weaponInputs = [];
+    private readonly SortedDictionary<uint, (ulong Target, byte Change)> _equipInputs = [];
 
-    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null, LootSpawnRules? lootRules = null)
+    public ScriptedPlayer(IReadOnlyList<CompactPlayerProfile>? profiles = null, PlayerLoadout? loadout = null, LootSpawnRules? lootRules = null,
+        MapCollision? collision = null)
     {
         // Every socket gets a container by default, so the scripted raids always have the containers they search.
-        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed, lootRules ?? LootSpawnRules.EverySocket);
+        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed, lootRules ?? LootSpawnRules.EverySocket, collision);
         Principal = new SessionPrincipal(42, MatchId);
         Worlds.Prepare(MatchId, [42], loadouts: loadout is null ? null : [loadout], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
@@ -200,10 +203,13 @@ internal sealed class ScriptedPlayer
         }
 
         _weaponInputs[latest] = weaponFlags;
-        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs, _weaponInputs, _movementInputs, request));
+        Channels.ObserveDirect(PendulumInput.DirectStreamKind, InputPayload(baseline, latest, press, (_focus, focus), (_position, position), _inventoryInputs, _weaponInputs, _movementInputs, request, _equipInputs));
         (_focus, _position) = (focus, position);
         Channels.Commit();
     }
+
+    /// <summary>From <paramref name="frame"/> on, the input names <paramref name="target"/> as the item wanted in hand, like the client's equip requests.</summary>
+    public void Equip(uint frame, ulong target, byte change) => _equipInputs[frame] = (target, change);
 
     public static byte[] InventoryPayload(uint baseline, uint latest, InventoryCommand command) =>
         InputPayload(baseline, latest, null, (0, 0), (null, null), new Dictionary<uint, InventoryCommand> { [latest] = command });
@@ -211,7 +217,8 @@ internal sealed class ScriptedPlayer
     // The client's input history: a header and the last frames, every slot at its descriptor default
     // (the new frames optionally report a position and focus a button, and the latest frame optionally presses one).
     private static byte[] InputPayload(uint baseline, uint latest, ulong? press, (ulong Baseline, ulong Latest) focus, (Vector3D? Baseline, Vector3D? Latest) reported, Dictionary<uint, InventoryCommand> inventory,
-        Dictionary<uint, ulong>? weapons = null, Dictionary<uint, sbyte>? movement = null, int request = PendulumInput.PressRequest)
+        Dictionary<uint, ulong>? weapons = null, Dictionary<uint, sbyte>? movement = null, int request = PendulumInput.PressRequest,
+        SortedDictionary<uint, (ulong Target, byte Change)>? equips = null)
     {
         BitWriter writer = new();
         writer.WriteBit(true);
@@ -278,6 +285,13 @@ internal sealed class ScriptedPlayer
                 {
                     PendulumCodec.Apply(PendulumRegistry.Descriptors[descriptor].Fields, value,
                         [new PendulumIntegerValue(WeaponProtocol.InputFlagsField, flags)]);
+                }
+
+                if (slot == WeaponProtocol.InputSlot && equips?.LastOrDefault(entry => entry.Key <= frame) is { Key: > 0 } equip)
+                {
+                    PendulumCodec.Apply(PendulumRegistry.Descriptors[descriptor].Fields, value,
+                        [new PendulumIntegerValue(WeaponProtocol.InputEquipTargetField, equip.Value.Target),
+                            new PendulumIntegerValue(WeaponProtocol.InputEquipChangeField, equip.Value.Change)]);
                 }
 
                 int size = (value.Length + 255) / 256;

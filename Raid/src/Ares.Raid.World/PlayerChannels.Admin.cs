@@ -183,14 +183,16 @@ public sealed partial class PlayerChannels
                 return false;
             }
 
-            if (InputFrame is not { } latest || latest <= _blackboardFrame || latest > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending))
+            if (InputFrame is not { } latest || latest <= _blackboardFrame || latest > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending)
+                || _member.Weapons.HoldsFrames(latest))
             {
                 return true;
             }
 
             CharacterState rest = new(latest, teleport.Position, _movement?.Latest.Flashlight ?? false) { Yaw = teleport.Yaw };
             IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(latest, new PawnMotion(teleport.Position, default, teleport.Yaw, rest), 0,
-                _member.Inventory.Blackboard, _member.Weapons.Variables(latest, _weaponReferencesMapped ? _player.HeldItems : null), TimeOffsetAt(latest, now));
+                _member.Inventory.Blackboard, _member.Weapons.Variables(latest, _weaponReferencesMapped ? _player.HeldItems : null), TimeOffsetAt(latest, now),
+                emptySlots: _member.Weapons.EmptyItemSlots(latest));
             uint delivery = checked((uint)BlackboardFrames);
             List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
             if (_shield != _member.Inventory.Shield)
