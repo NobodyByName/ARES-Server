@@ -23,6 +23,8 @@ public sealed class ConsoleTests
     [InlineData("unknown inv", "unknown inv")]
     [InlineData("raid l", "raid list")]
     [InlineData("raid 0a spawn-l", "raid 0a spawn-loot")]
+    [InlineData("raid 0a desp", "raid 0a despawn-arcs")]
+    [InlineData("raid 0a spawn-arc w", "raid 0a spawn-arc wasp")]
     [InlineData("raid list sp", "raid list sp")]
     [InlineData("raid notanid sp", "raid notanid sp")]
     public void Completion_uses_the_command_context(string input, string expected)

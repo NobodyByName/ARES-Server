@@ -2,6 +2,7 @@ using Ares.Common.Control;
 using Ares.Common.Control.Server;
 using Ares.Raid.Tests.World;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 
 namespace Ares.Raid.Tests;
@@ -16,6 +17,9 @@ public sealed class RaidAdminTests
     [InlineData("teleport-to-loot", "42", "17")]
     [InlineData("teleport-to-loot", "42", "free-standing", "3")]
     [InlineData("spawn-loot", "42", "BP_SocketContainer_Rover_01")]
+    [InlineData("spawn-arc", "wasp", "42")]
+    [InlineData("spawn-arc", "WASP", "Alice")]
+    [InlineData("despawn-arcs")]
     public void Valid_commands_are_read(string name, params string[] arguments)
     {
         (AdminRequest? request, IReadOnlyList<string> problem) = RaidAdmin.Parse(new AdminCommand(name, arguments));
@@ -32,6 +36,9 @@ public sealed class RaidAdminTests
     [InlineData("teleport-to-loot", "42", "-1")]
     [InlineData("teleport-to-loot", "42", "free", "1")]
     [InlineData("spawn-loot", "42", "NoSuchContainerClass")]
+    [InlineData("spawn-arc", "42", "wasp")]
+    [InlineData("spawn-arc", "wasp")]
+    [InlineData("despawn-arcs", "42")]
     [InlineData("kill", "42")]
     public void Invalid_commands_explain_themselves(string name, params string[] arguments)
     {
@@ -49,6 +56,8 @@ public sealed class RaidAdminTests
 
         Assert.Equal(("42", new Vector3D(1, -2.5, 300), 90.0), (teleport.Player, teleport.Position!.Value, teleport.YawDegrees!.Value));
         Assert.Equal(("Alice", 3, (int?)null), (free.Player, free.FreeStanding!.Value, free.Container));
+        AdminRequest arc = RaidAdmin.Parse(new AdminCommand("spawn-arc", ["Wasp", "Alice"])).Request!;
+        Assert.Equal(("Alice", Arcs.Wasp), (arc.Player, arc.Arc));
         Assert.Same(rover, Assert.Single(RaidAdmin.Classes(rover.Container.Class)));
         Assert.Same(rover, Assert.Single(RaidAdmin.Classes(rover.Container.Class[(rover.Container.Class.LastIndexOf('.') + 1)..])));
     }
@@ -65,6 +74,8 @@ public sealed class RaidAdminTests
         AdminResult unknown = await Run(admin, "teleport", "43", "0", "0", "0");
         AdminResult usage = await Run(admin, "teleport", "42");
         AdminResult teleport = await Run(admin, "teleport", "42", "1000", "2000", "300");
+        AdminResult wasp = await Run(admin, "spawn-arc", "wasp", "42");
+        AdminResult despawn = await Run(admin, "despawn-arcs");
 
         Assert.Equal(200, players.StatusCode);
         Assert.StartsWith("42 - Possessed at (", Assert.Single(players.Reply.Lines), StringComparison.Ordinal);
@@ -72,6 +83,9 @@ public sealed class RaidAdminTests
         Assert.Equal((400, AdminApi.InvalidCommand), (usage.StatusCode, usage.Reply.Error));
         Assert.Equal(200, teleport.StatusCode);
         Assert.Equal(new Vector3D(1000, 2000, 300), session.Channels.CharacterPosition);
+        Assert.Equal(200, wasp.StatusCode);
+        Assert.StartsWith("Spawned ARC 0 (wasp) id 0x", Assert.Single(wasp.Reply.Lines), StringComparison.Ordinal);
+        Assert.Equal((200, "Despawned 1 ARCs."), (despawn.StatusCode, Assert.Single(despawn.Reply.Lines)));
     }
 
     [Fact]

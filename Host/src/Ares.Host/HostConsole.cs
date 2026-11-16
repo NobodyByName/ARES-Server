@@ -12,6 +12,7 @@ using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
 using Ares.Structs.Core;
+using Ares.Structs.Game.Enemies;
 
 namespace Ares.Host;
 
@@ -313,8 +314,8 @@ internal sealed class HostConsole : ILoggerProvider
     // A player as the operator names them: the account name, else the user id.
     private string PlayerName(long userId) => Accounts?.Find(userId)?.Name ?? userId.ToString(CultureInfo.InvariantCulture);
 
-    // Completions after "raid": list or a raid id, then a command, then the names of the chosen raid's players where the
-    // command takes a player.
+    // Completions after "raid": list or a raid id, then a command, then the command's own arguments (ARC names, then the
+    // names of the chosen raid's players where the command takes a player).
     private IEnumerable<string> RaidCompletions(string[] preceding)
     {
         IReadOnlyList<RunningRaid> running = Raids?.Running() ?? [];
@@ -335,6 +336,11 @@ internal sealed class HostConsole : ILoggerProvider
 
         string command = preceding[2].ToLowerInvariant();
         int argument = preceding.Length - 3;
+        if (command == AdminApi.SpawnArc && argument == 0)
+        {
+            return Arcs.All.Select(arc => arc.Name);
+        }
+
         return AdminApi.PlayerArgument.TryGetValue(command, out int player) && player == argument
             && running.Where(raid => raid.MatchId?.StartsWith(preceding[1], StringComparison.OrdinalIgnoreCase) == true).ToArray() is [{ } chosen]
             ? chosen.Players.Select(PlayerName)

@@ -2,8 +2,10 @@ using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World;
 
@@ -33,10 +35,13 @@ public enum AdminRefusal
 
     /// <summary>The raid has no ids left for another container.</summary>
     NoContainerIds,
+
+    /// <summary>The raid spawned as many ARCs as it can.</summary>
+    NoArcIds,
 }
 
 /// <summary>
-/// Operator commands acting on this player: moving the character and spawning containers next to it. A teleport is a
+/// Operator commands acting on this player: moving the character and spawning containers and ARCs next to it. A teleport is a
 /// pawn frame at the client's latest input frame that puts the character at rest at the destination; the client
 /// takes every pawn frame as its character's state, rolls its prediction back to that frame and continues from
 /// there. Until the client's reports come from the destination, no other frame goes out, so none moves it back.
@@ -50,6 +55,11 @@ public sealed partial class PlayerChannels
 
     // How far in front of the character a spawned container stands.
     private const double SpawnedLootDistance = 200;
+
+    // How far in front of the character a spawned ARC hovers, and its height above the character's feet: about head
+    // height, the top of the character's capsule.
+    private const double SpawnedArcDistance = 350;
+    private static double SpawnedArcHeight => 2 * DamPlayerStarts.Capsule.HalfHeight;
 
     // Seconds a teleport waits for the client's reports to come from its destination; then frames resume anyway.
     private const double TeleportConfirmSeconds = 3;
@@ -164,6 +174,32 @@ public sealed partial class PlayerChannels
         container = _raid.Loot.Spawn(type, location, new Rotator(0, Math.Round(containerYaw, 1), 0));
         return container is null ? AdminRefusal.NoContainerIds : AdminRefusal.None;
     }
+
+    /// <summary>Spawns an ARC in front of the character at about head height, facing it.</summary>
+    /// <param name="type">The ARC.</param>
+    /// <param name="arc">The spawned ARC.</param>
+    /// <returns>Why it could not, or <see cref="AdminRefusal.None"/>.</returns>
+    public AdminRefusal SpawnArc(ArcClass type, out WorldArc? arc)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        arc = null;
+        if (Phase != DeliveryPhase.Possessed)
+        {
+            return AdminRefusal.NotPossessed;
+        }
+
+        Vector3D feet = CharacterPosition ?? _member.Spawn.Location;
+        double yaw = CharacterYaw ?? (_member.Spawn.Yaw * Math.PI / 180);
+        Vector3D location = new(Math.Round(feet.X + (SpawnedArcDistance * Math.Cos(yaw))), Math.Round(feet.Y + (SpawnedArcDistance * Math.Sin(yaw))),
+            Math.Round(feet.Z + SpawnedArcHeight));
+        double facing = (((yaw * 180 / Math.PI) + 180) % 360 + 360) % 360;
+        arc = _raid.Arcs.Spawn(type, location, new Rotator(0, Math.Round(facing, 1), 0));
+        return arc is null ? AdminRefusal.NoArcIds : AdminRefusal.None;
+    }
+
+    /// <summary>Despawns every ARC of the raid.</summary>
+    /// <returns>How many ARCs were despawned.</returns>
+    public int DespawnArcs() => _raid.Arcs.DespawnAll();
 
     // Sends a pending teleport's frame, then holds the other frames until the client reports from the destination
     // (two reports in a row nearer to it than to where the character was) or the wait runs out. Returns whether the

@@ -615,6 +615,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._unknownRequests = [.. _unknownRequests];
         copy._rejectedInventory = [.. _rejectedInventory];
         CopyPickups(copy);
+        CopyArcs(copy);
         return copy;
     }
 
@@ -756,6 +757,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ServiceLadders(io.Sender, now);
         ServiceLoot(io.Sender, now);
         ServicePickups(io.Sender, now);
+        ServiceArcs(io.Sender, now);
         ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
@@ -799,6 +801,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
         else if (PickupIndex(channel) is not null)
         {
             PickupChannelFailed(channel);
+        }
+        else if (ArcIndex(channel) is not null)
+        {
+            ArcChannelFailed(channel);
         }
     }
 

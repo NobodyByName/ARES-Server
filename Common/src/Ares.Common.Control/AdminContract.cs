@@ -1,3 +1,5 @@
+using Ares.Structs.Game.Enemies;
+
 namespace Ares.Common.Control;
 
 /// <summary>Operator → Raid: an admin command for one raid, as typed on a console after the raid id.</summary>
@@ -34,6 +36,12 @@ public static class AdminApi
     /// <summary>Spawns a loot container in front of a player's character.</summary>
     public const string SpawnLoot = "spawn-loot";
 
+    /// <summary>Spawns an ARC in front of a player's character.</summary>
+    public const string SpawnArc = "spawn-arc";
+
+    /// <summary>Despawns every ARC of the raid.</summary>
+    public const string DespawnArcs = "despawn-arcs";
+
     /// <summary>The call carried no valid operator token.</summary>
     public const string AuthenticationRequired = "operator_authentication_required";
 
@@ -56,7 +64,7 @@ public static class AdminApi
     public const string Busy = "raid_busy";
 
     /// <summary>Command names.</summary>
-    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot];
+    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot, SpawnArc, DespawnArcs];
 
     /// <summary>Commands that act on one player, and where the player is among their arguments.</summary>
     public static IReadOnlyDictionary<string, int> PlayerArgument { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
@@ -64,6 +72,7 @@ public static class AdminApi
         [Teleport] = 0,
         [TeleportToLoot] = 0,
         [SpawnLoot] = 0,
+        [SpawnArc] = 1,
     };
 
     /// <summary>One line per command: its arguments and what it does. A player is a user id or an in-game name.</summary>
@@ -73,5 +82,7 @@ public static class AdminApi
         "teleport <player> <x> <y> <z> [yaw]  Move a player (feet position, yaw in degrees)",
         "teleport-to-loot <player> <index> | free-standing <n>  Move a player in front of a loot container",
         "spawn-loot <player> <class>  Spawn a loot container (class name or path) in front of a player",
+        $"spawn-arc <arc> <player>  Spawn an ARC ({string.Join(", ", Arcs.All.Select(arc => arc.Name))}) in front of a player, at head height",
+        "despawn-arcs  Despawn every ARC of the raid",
     ];
 }

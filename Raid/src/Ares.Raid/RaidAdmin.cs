@@ -6,20 +6,22 @@ using Ares.Common.Control.Server;
 using Ares.Common.Logging;
 using Ares.Raid.World;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 
 namespace Ares.Raid;
 
 /// <summary>An admin command with its arguments read.</summary>
 /// <param name="Name">Command name (see <see cref="AdminApi"/>).</param>
-/// <param name="Player">The player it acts on: a user id or an in-game name; null for <see cref="AdminApi.Players"/>.</param>
+/// <param name="Player">The player it acts on: a user id or an in-game name; null for the commands acting on the whole raid.</param>
 /// <param name="Position">Teleport destination.</param>
 /// <param name="YawDegrees">Teleport heading, if given.</param>
 /// <param name="Container">Container index of a teleport to loot.</param>
 /// <param name="FreeStanding">Free-standing container number of a teleport to loot.</param>
 /// <param name="Class">Container class to spawn.</param>
+/// <param name="Arc">ARC to spawn.</param>
 public sealed record AdminRequest(string Name, string? Player = null, Vector3D? Position = null, double? YawDegrees = null,
-    int? Container = null, int? FreeStanding = null, LootContainerClass? Class = null);
+    int? Container = null, int? FreeStanding = null, LootContainerClass? Class = null, ArcClass? Arc = null);
 
 /// <summary>
 /// The raid's admin commands. A command is read on the caller's thread, then runs on the game loop between packets
@@ -129,6 +131,12 @@ public sealed class RaidAdmin : IAdminService
                     : (null, classes.Count == 0
                         ? [$"No supported container class matches {words[1]}."]
                         : [$"{classes.Count} container classes match {words[1]}:", .. classes.Take(ListedClasses).Select(ShortName)]);
+            case (AdminApi.SpawnArc, 2):
+                return Arcs.Find(words[0]) is { } arc
+                    ? (new AdminRequest(AdminApi.SpawnArc, words[1], Arc: arc), [])
+                    : (null, [$"No supported ARC is named {words[0]}; supported: {string.Join(", ", Arcs.All.Select(item => item.Name))}."]);
+            case (AdminApi.DespawnArcs, 0):
+                return (new AdminRequest(AdminApi.DespawnArcs), []);
             default:
                 return (null, Usage());
         }
@@ -167,9 +175,12 @@ public sealed class RaidAdmin : IAdminService
         try
         {
             PlayerChannels[] players = [.. _players()];
-            if (request.Name == AdminApi.Players)
+            switch (request.Name)
             {
-                return AdminResult.Success(players.Length == 0 ? ["No players connected."] : [.. players.Select(Describe)]);
+                case AdminApi.Players:
+                    return AdminResult.Success(players.Length == 0 ? ["No players connected."] : [.. players.Select(Describe)]);
+                case AdminApi.DespawnArcs:
+                    return AdminResult.Success(players.Length == 0 ? ["No players connected."] : [$"Despawned {players[0].DespawnArcs()} ARCs."]);
             }
 
             PlayerChannels[] matches = [.. players.Where(player => long.TryParse(request.Player, NumberStyles.None, CultureInfo.InvariantCulture, out long id)
@@ -186,6 +197,7 @@ public sealed class RaidAdmin : IAdminService
             {
                 AdminApi.Teleport => Teleport(target, request.Position!.Value, request.YawDegrees),
                 AdminApi.TeleportToLoot => TeleportToLoot(target, request),
+                AdminApi.SpawnArc => SpawnArc(target, request.Arc!),
                 _ => SpawnLoot(target, request.Class!),
             };
         }
@@ -231,6 +243,14 @@ public sealed class RaidAdmin : IAdminService
             : Refused(refusal);
     }
 
+    private static AdminResult SpawnArc(PlayerChannels player, ArcClass type)
+    {
+        AdminRefusal refusal = player.SpawnArc(type, out WorldArc? arc);
+        return refusal == AdminRefusal.None && arc is not null
+            ? AdminResult.Success([$"Spawned ARC {arc.Index} ({type.Name}) id 0x{arc.Guid:x} at {Text(arc.Location)} yaw {arc.Rotation.Yaw.ToString("0.#", CultureInfo.InvariantCulture)}."])
+            : Refused(refusal);
+    }
+
     private static AdminResult Refused(AdminRefusal refusal) => refusal switch
     {
         AdminRefusal.NoSuchContainer => AdminResult.Failure(StatusCodes.Status404NotFound, "no_such_container", ["No container has that index."]),
@@ -239,6 +259,7 @@ public sealed class RaidAdmin : IAdminService
         AdminRefusal.TeleportPending => AdminResult.Failure(StatusCodes.Status409Conflict, "teleport_pending", ["An earlier teleport has not reached the client yet."]),
         AdminRefusal.Busy => AdminResult.Failure(StatusCodes.Status409Conflict, "player_busy", ["The player is breaching, searching, looting or holding an elevator switch."]),
         AdminRefusal.OutOfRange => AdminResult.Failure(StatusCodes.Status400BadRequest, "position_out_of_range", ["The position is outside the map's range."]),
+        AdminRefusal.NoArcIds => AdminResult.Failure(StatusCodes.Status409Conflict, "no_arc_ids", ["The raid has spawned as many ARCs as it can."]),
         _ => AdminResult.Failure(StatusCodes.Status409Conflict, "no_container_ids", ["The raid has no ids left for another container."]),
     };
 

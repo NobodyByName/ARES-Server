@@ -60,6 +60,7 @@ public sealed class RaidWorld
         LootStates = new LootStates(Loot);
         ulong lootEnd = Loot.Containers.Count == 0 ? 0 : Loot.Containers.Max(container => container.Components.Append(container.Guid).Max());
         Pickups = new WorldPickups(replication, State, lootEnd + 2);
+        Arcs = new WorldArcs(replication, Imports);
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
         StaticActors =
         [
@@ -170,6 +171,9 @@ public sealed class RaidWorld
 
     /// <summary>The item stacks lying in this raid.</summary>
     public WorldPickups Pickups { get; }
+
+    /// <summary>The ARCs in the raid.</summary>
+    public WorldArcs Arcs { get; }
 
     /// <summary>Most players the raid can hold: one per spawn point of its player start.</summary>
     public int MaxPlayers => _starts[Seed % _starts.Count].SpawnPoints.Count;
