@@ -19,6 +19,19 @@ public static class ItemTechnicalNames
     public const string RubberParts = "DA_Item_Salvage_Rubber";
     public const string SheetMetal = "DA_Item_Salvage_SheetMetal";
     public const string MetalParts = "DA_Item_Salvage_ScrapMetal";
+    public const string Wires = "DA_Item_Salvage_Wires";
+    public const string Battery = "DA_Item_Salvage_Battery";
+    public const string SteelSpring = "DA_Item_Salvage_SteelSpring";
+    public const string DuctTape = "DA_Item_Salvage_DuctTape";
+    public const string Oil = "DA_Item_Salvage_Oil";
+    public const string Canister = "DA_Item_Salvage_Canister";
+    public const string Magnet = "DA_Item_Salvage_Magnet";
+    public const string DurableCloth = "DA_Item_Salvage_WovenCloth";
+    public const string MechanicalComponents = "DA_Item_Salvage_MechanicalComponents";
+    public const string ElectricalComponents = "DA_Item_Salvage_ElectricalComponents";
+    public const string SimpleGunParts = "DA_Item_Salvage_GunParts";
+    public const string CrudeExplosives = "DA_Item_Salvage_ExplosiveMixture";
+    public const string ArcAlloy = "DA_Item_Salvage_Mat_ARC_Metal";
     public const string Coins = "DA_Item_GrindCurrency";
 
     /// <summary>Protocol asset IDs indexed by technical item name.</summary>
@@ -50,5 +63,18 @@ public static class ItemTechnicalNames
         [RubberParts] = "/Game/Pioneer/Items/Salvage/Rubber/DA_Item_Salvage_Rubber.DA_Item_Salvage_Rubber",
         [SheetMetal] = "/Game/Pioneer/Items/Salvage/SheetMetal/DA_Item_Salvage_SheetMetal.DA_Item_Salvage_SheetMetal",
         [MetalParts] = "/Game/Pioneer/Items/Salvage/ScrapMetal/DA_Item_Salvage_ScrapMetal.DA_Item_Salvage_ScrapMetal",
+        [Wires] = "/Game/Pioneer/Items/Salvage/Wires/DA_Item_Salvage_Wires.DA_Item_Salvage_Wires",
+        [Battery] = "/Game/Pioneer/Items/Salvage/Battery/DA_Item_Salvage_Battery.DA_Item_Salvage_Battery",
+        [SteelSpring] = "/Game/Pioneer/Items/Salvage/SteelSpring/DA_Item_Salvage_SteelSpring.DA_Item_Salvage_SteelSpring",
+        [DuctTape] = "/Game/Pioneer/Items/Salvage/DuctTape/DA_Item_Salvage_DuctTape.DA_Item_Salvage_DuctTape",
+        [Oil] = "/Game/Pioneer/Items/Salvage/Oil/DA_Item_Salvage_Oil.DA_Item_Salvage_Oil",
+        [Canister] = "/Game/Pioneer/Items/Salvage/Canister/DA_Item_Salvage_Canister.DA_Item_Salvage_Canister",
+        [Magnet] = "/Game/Pioneer/Items/Salvage/Magnet/DA_Item_Salvage_Magnet.DA_Item_Salvage_Magnet",
+        [DurableCloth] = "/Game/Pioneer/Items/Salvage/WovenCloth/DA_Item_Salvage_WovenCloth.DA_Item_Salvage_WovenCloth",
+        [MechanicalComponents] = "/Game/Pioneer/Items/Salvage/MechanicalComponents/DA_Item_Salvage_MechanicalComponents.DA_Item_Salvage_MechanicalComponents",
+        [ElectricalComponents] = "/Game/Pioneer/Items/Salvage/ElectricalComponents/DA_Item_Salvage_ElectricalComponents.DA_Item_Salvage_ElectricalComponents",
+        [SimpleGunParts] = "/Game/Pioneer/Items/Salvage/GunParts/DA_Item_Salvage_GunParts.DA_Item_Salvage_GunParts",
+        [CrudeExplosives] = "/Game/Pioneer/Items/Salvage/ExplosiveMixture/DA_Item_Salvage_ExplosiveMixture.DA_Item_Salvage_ExplosiveMixture",
+        [ArcAlloy] = "/Game/Pioneer/Items/Salvage/Mat_ARC_Metal/DA_Item_Salvage_Mat_ARC_Metal.DA_Item_Salvage_Mat_ARC_Metal",
     };
 }

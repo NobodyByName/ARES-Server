@@ -17,6 +17,19 @@ public sealed class SalvageTests : IDisposable
     [InlineData(ItemTechnicalNames.RubberParts, 50)]
     [InlineData(ItemTechnicalNames.SheetMetal, 50)]
     [InlineData(ItemTechnicalNames.MetalParts, 50)]
+    [InlineData(ItemTechnicalNames.Wires, 15)]
+    [InlineData(ItemTechnicalNames.Battery, 15)]
+    [InlineData(ItemTechnicalNames.SteelSpring, 15)]
+    [InlineData(ItemTechnicalNames.DuctTape, 15)]
+    [InlineData(ItemTechnicalNames.Oil, 15)]
+    [InlineData(ItemTechnicalNames.Canister, 15)]
+    [InlineData(ItemTechnicalNames.Magnet, 15)]
+    [InlineData(ItemTechnicalNames.DurableCloth, 10)]
+    [InlineData(ItemTechnicalNames.MechanicalComponents, 10)]
+    [InlineData(ItemTechnicalNames.ElectricalComponents, 10)]
+    [InlineData(ItemTechnicalNames.SimpleGunParts, 10)]
+    [InlineData(ItemTechnicalNames.CrudeExplosives, 10)]
+    [InlineData(ItemTechnicalNames.ArcAlloy, 15)]
     public void The_operator_adds_a_full_salvage_stack_to_the_stash_and_game_data_describes_it(string type, long maxStack)
     {
         InventoryStore store = Create();
