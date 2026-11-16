@@ -8,6 +8,14 @@ the game-session server that runs its raids. Players connect with
 > by Embark Studios. ARC Raiders and all related names and trademarks belong to their respective
 > owners. ARES works only with an installed, unmodified copy of the game.
 
+> **Help wanted: multiplayer testers.** Everything so far has been tested by one person on one PC,
+> so parties, two players in the same raid and PvP have never been tried with a real second
+> player. If you have ARC Raiders (build 26439197) and can spare an evening, I'd love to play a
+> few test raids with you. Say hi in the
+> [Matrix room](https://matrix.to/#/#ares-arc-raiders-emulation-server:matrix.org). No setup
+> knowledge needed: I host, you install
+> [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) and join.
+
 ## Components
 
 | Component | Role |
