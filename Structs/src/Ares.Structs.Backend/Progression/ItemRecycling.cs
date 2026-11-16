@@ -7,12 +7,10 @@ public static class ItemRecycling
     public static IReadOnlyDictionary<long, IReadOnlyList<ItemAssetAmount>> Outputs { get; } = new Dictionary<long, IReadOnlyList<ItemAssetAmount>>(
     [
         .. ItemRecyclingPart0.Entries,
-        .. ItemRecyclingPart1.Entries,
-        .. ItemRecyclingPart2.Entries,
     ]);
 }
 
-/// <summary>Entries 0 to 249 of <see cref="ItemRecycling.Outputs"/>.</summary>
+/// <summary>Entries 0 to 584 of <see cref="ItemRecycling.Outputs"/>.</summary>
 internal static class ItemRecyclingPart0
 {
     public static IReadOnlyList<KeyValuePair<long, IReadOnlyList<ItemAssetAmount>>> Entries { get; } =
@@ -267,14 +265,6 @@ internal static class ItemRecyclingPart0
         new(-295158634L, [new ItemAssetAmount(1224404530L, 1L), new ItemAssetAmount(1959573223L, 1L)]),
         new(-287542830L, [new ItemAssetAmount(-770265029L, 1L), new ItemAssetAmount(1107192907L, 2L)]),
         new(-285476202L, [new ItemAssetAmount(1358208668L, 13L)]),
-    ];
-}
-
-/// <summary>Entries 250 to 499 of <see cref="ItemRecycling.Outputs"/>.</summary>
-internal static class ItemRecyclingPart1
-{
-    public static IReadOnlyList<KeyValuePair<long, IReadOnlyList<ItemAssetAmount>>> Entries { get; } =
-    [
         new(-283948665L, [new ItemAssetAmount(828947161L, 6L)]),
         new(-275547481L, [new ItemAssetAmount(1370841463L, 3L)]),
         new(-271134673L, [new ItemAssetAmount(1358208668L, 18L)]),
@@ -525,14 +515,6 @@ internal static class ItemRecyclingPart1
         new(1502122136L, [new ItemAssetAmount(-633851525L, 4L)]),
         new(1503033239L, [new ItemAssetAmount(1358208668L, 4L)]),
         new(1505999062L, [new ItemAssetAmount(828947161L, 4L)]),
-    ];
-}
-
-/// <summary>Entries 500 to 584 of <see cref="ItemRecycling.Outputs"/>.</summary>
-internal static class ItemRecyclingPart2
-{
-    public static IReadOnlyList<KeyValuePair<long, IReadOnlyList<ItemAssetAmount>>> Entries { get; } =
-    [
         new(1506939307L, [new ItemAssetAmount(-1903407680L, 3L), new ItemAssetAmount(-926389249L, 3L)]),
         new(1516184045L, [new ItemAssetAmount(-574262619L, 2L), new ItemAssetAmount(1959573223L, 2L)]),
         new(1533374440L, [new ItemAssetAmount(-1580114534L, 16L)]),

@@ -11,6 +11,16 @@ public static class DamLootLimiters
     /// <summary>All limiters, ordered by cell and actor.</summary>
     public static IReadOnlyList<LootLimiter> All { get; } =
     [
+        .. DamLootLimitersPart0.Entries,
+        .. DamLootLimitersPart1.Entries,
+    ];
+}
+
+/// <summary>Entries 0 to 30 of <see cref="DamLootLimiters.All"/>.</summary>
+internal static class DamLootLimitersPart0
+{
+    public static IReadOnlyList<LootLimiter> Entries { get; } =
+    [
         new(
             "6VLN5OPYR367ZIKOMVAOOKL4Z",
             "LootPlacementLimiter_11",
@@ -1080,6 +1090,14 @@ public static class DamLootLimiters
             [
                 new LootLimit("Socket.Loot", false, 8),
             ]),
+    ];
+}
+
+/// <summary>Entries 31 to 33 of <see cref="DamLootLimiters.All"/>.</summary>
+internal static class DamLootLimitersPart1
+{
+    public static IReadOnlyList<LootLimiter> Entries { get; } =
+    [
         new(
             "CAMP3HBSEA6OHYXJ752UWG3X9",
             "LootPlacementLimiter_17",

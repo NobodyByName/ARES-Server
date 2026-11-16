@@ -12,6 +12,7 @@ public static class DamPlacedLoot
     public static IReadOnlyList<PlacedLootContainer> Containers { get; } =
     [
         .. DamPlacedLootContainersPart0.Entries,
+        .. DamPlacedLootContainersPart1.Entries,
     ];
 
     /// <summary>Containers the game server spawned where the map data holds no placement.</summary>
@@ -21,7 +22,7 @@ public static class DamPlacedLoot
     ];
 }
 
-/// <summary>Entries 0 to 191 of <see cref="DamPlacedLoot.Containers"/>.</summary>
+/// <summary>Entries 0 to 160 of <see cref="DamPlacedLoot.Containers"/>.</summary>
 internal static class DamPlacedLootContainersPart0
 {
     public static IReadOnlyList<PlacedLootContainer> Entries { get; } =
@@ -187,6 +188,14 @@ internal static class DamPlacedLootContainersPart0
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997621721", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(465342.81, 506469.26, -39682.34), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997173226", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(516974.51, 524489.9, -38200.0), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997248304", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(504214.29, 520372.01, -36792.44), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
+    ];
+}
+
+/// <summary>Entries 161 to 191 of <see cref="DamPlacedLoot.Containers"/>.</summary>
+internal static class DamPlacedLootContainersPart1
+{
+    public static IReadOnlyList<PlacedLootContainer> Entries { get; } =
+    [
         new("ADDFA48OLR9K7L49CS4GAGP2H", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997277336", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(512813.53, 518159.58, -36926.81), new Rotator(-1.904, 0.0, 2.524), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997286347", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(512999.81, 525890.58, -38200.0), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "BP_SalvageContainer_Snowpile_C_UAID_A0369F20482019B702_1997351420", "/Game/Pioneer/Environment/Nature/Locations/MountainCompound/Snowpile_01/BP_SalvageContainer_Snowpile.BP_SalvageContainer_Snowpile_C", new Vector3D(515271.63, 524003.36, -38200.0), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),

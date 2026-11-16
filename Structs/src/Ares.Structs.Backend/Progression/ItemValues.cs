@@ -10,13 +10,10 @@ public static class ItemValues
     public static IReadOnlyDictionary<long, int> ScrapValues { get; } = new Dictionary<long, int>(
     [
         .. ItemValuesPart0.Entries,
-        .. ItemValuesPart1.Entries,
-        .. ItemValuesPart2.Entries,
-        .. ItemValuesPart3.Entries,
     ]);
 }
 
-/// <summary>Entries 0 to 249 of <see cref="ItemValues.ScrapValues"/>.</summary>
+/// <summary>Entries 0 to 908 of <see cref="ItemValues.ScrapValues"/>.</summary>
 internal static class ItemValuesPart0
 {
     public static IReadOnlyList<KeyValuePair<long, int>> Entries { get; } =
@@ -271,14 +268,6 @@ internal static class ItemValuesPart0
         new(387322523L, 16000),
         new(1151565517L, 3000),
         new(1015139423L, 5000),
-    ];
-}
-
-/// <summary>Entries 250 to 499 of <see cref="ItemValues.ScrapValues"/>.</summary>
-internal static class ItemValuesPart1
-{
-    public static IReadOnlyList<KeyValuePair<long, int>> Entries { get; } =
-    [
         new(-1617680963L, 5000),
         new(1506939307L, 18000),
         new(346923872L, 640),
@@ -529,14 +518,6 @@ internal static class ItemValuesPart1
         new(-2130292638L, 7000),
         new(-264043335L, 5000),
         new(1989094565L, 1000),
-    ];
-}
-
-/// <summary>Entries 500 to 749 of <see cref="ItemValues.ScrapValues"/>.</summary>
-internal static class ItemValuesPart2
-{
-    public static IReadOnlyList<KeyValuePair<long, int>> Entries { get; } =
-    [
         new(2133595346L, 100),
         new(759834985L, 5000),
         new(1717341406L, 5000),
@@ -787,14 +768,6 @@ internal static class ItemValuesPart2
         new(-319966965L, 5000),
         new(646572303L, 5000),
         new(-853193179L, 1000),
-    ];
-}
-
-/// <summary>Entries 750 to 908 of <see cref="ItemValues.ScrapValues"/>.</summary>
-internal static class ItemValuesPart3
-{
-    public static IReadOnlyList<KeyValuePair<long, int>> Entries { get; } =
-    [
         new(-606557836L, 3000),
         new(1107192907L, 1000),
         new(123861488L, 35200),

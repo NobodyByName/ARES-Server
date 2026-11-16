@@ -11,6 +11,317 @@ public static class DamDynamicLoot
     /// <summary>All spawners, ordered by cell and actor.</summary>
     public static IReadOnlyList<DynamicLootSpawner> Spawners { get; } =
     [
+        .. DamDynamicLootSpawnersPart0.Entries,
+        .. DamDynamicLootSpawnersPart1.Entries,
+        .. DamDynamicLootSpawnersPart2.Entries,
+        .. DamDynamicLootSpawnersPart3.Entries,
+    ];
+
+    /// <summary>All groups, ordered by activity node.</summary>
+    public static IReadOnlyList<DynamicLootGroup> Groups { get; } =
+    [
+        new(
+            "ActivityNode_109/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "FruitBasketsWinterEvent"],
+            ["Coldsnap"],
+            12,
+            18,
+            [Spawners[186], Spawners[187], Spawners[188], Spawners[189], Spawners[190], Spawners[204], Spawners[205], Spawners[206], Spawners[207], Spawners[208], Spawners[209], Spawners[232], Spawners[233], Spawners[234], Spawners[235], Spawners[236], Spawners[237], Spawners[238], Spawners[239], Spawners[240], Spawners[241], Spawners[242], Spawners[243], Spawners[244], Spawners[245], Spawners[246], Spawners[247], Spawners[248], Spawners[249], Spawners[250], Spawners[251], Spawners[252], Spawners[253], Spawners[277], Spawners[278], Spawners[279], Spawners[280], Spawners[281], Spawners[282], Spawners[283], Spawners[284], Spawners[285], Spawners[286], Spawners[287], Spawners[288], Spawners[289], Spawners[290], Spawners[291], Spawners[292], Spawners[293], Spawners[294], Spawners[295], Spawners[296], Spawners[297], Spawners[304], Spawners[314], Spawners[315], Spawners[316], Spawners[317], Spawners[318], Spawners[319], Spawners[320], Spawners[321], Spawners[322], Spawners[330], Spawners[331], Spawners[332], Spawners[333], Spawners[334], Spawners[335], Spawners[336], Spawners[338], Spawners[341], Spawners[342]],
+            []),
+        new(
+            "ActivityNode_121/1",
+            ["TheDam", "BaseGameplay", "MapConditionHarvestSeason", "Containers"],
+            ["HarvestSeason"],
+            22,
+            26,
+            [Spawners[136], Spawners[137], Spawners[138], Spawners[139], Spawners[140], Spawners[141], Spawners[142], Spawners[143], Spawners[144], Spawners[145], Spawners[146], Spawners[147], Spawners[148], Spawners[149], Spawners[150], Spawners[151], Spawners[152], Spawners[153], Spawners[154], Spawners[155], Spawners[156], Spawners[157], Spawners[158], Spawners[159], Spawners[160], Spawners[161], Spawners[162], Spawners[163], Spawners[164], Spawners[165], Spawners[166]],
+            []),
+        new(
+            "ActivityNode_121/0",
+            ["TheDam", "BaseGameplay", "MapConditionHarvestSeason", "Containers"],
+            ["HarvestSeason"],
+            40,
+            45,
+            [Spawners[181], Spawners[182], Spawners[183], Spawners[184], Spawners[185], Spawners[198], Spawners[199], Spawners[200], Spawners[201], Spawners[202], Spawners[203], Spawners[210], Spawners[211], Spawners[212], Spawners[213], Spawners[214], Spawners[215], Spawners[216], Spawners[217], Spawners[218], Spawners[219], Spawners[220], Spawners[221], Spawners[222], Spawners[223], Spawners[224], Spawners[225], Spawners[226], Spawners[227], Spawners[228], Spawners[229], Spawners[230], Spawners[231], Spawners[256], Spawners[257], Spawners[258], Spawners[259], Spawners[260], Spawners[261], Spawners[262], Spawners[263], Spawners[264], Spawners[265], Spawners[266], Spawners[267], Spawners[268], Spawners[269], Spawners[270], Spawners[271], Spawners[272], Spawners[273], Spawners[274], Spawners[275], Spawners[276], Spawners[303], Spawners[305], Spawners[306], Spawners[307], Spawners[308], Spawners[309], Spawners[310], Spawners[311], Spawners[312], Spawners[313], Spawners[323], Spawners[324], Spawners[325], Spawners[326], Spawners[327], Spawners[328], Spawners[329], Spawners[337], Spawners[339], Spawners[340]],
+            []),
+        new(
+            "ActivityNode_123/2",
+            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
+            ["ToxicSwamp"],
+            1,
+            2,
+            [Spawners[31], Spawners[109], Spawners[110], Spawners[134]],
+            []),
+        new(
+            "ActivityNode_123/0",
+            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
+            ["ToxicSwamp"],
+            1,
+            2,
+            [Spawners[48], Spawners[55], Spawners[105], Spawners[106]],
+            []),
+        new(
+            "ActivityNode_123/1",
+            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
+            ["ToxicSwamp"],
+            1,
+            2,
+            [Spawners[168], Spawners[169], Spawners[170], Spawners[171]],
+            []),
+        new(
+            "ActivityNode_123/3",
+            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
+            ["ToxicSwamp"],
+            1,
+            2,
+            [Spawners[8], Spawners[107], Spawners[108], Spawners[111], Spawners[135]],
+            []),
+        new(
+            "ActivityNode_139/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_139"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[191]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_140/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_140"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[192]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_141/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_141"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[193]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_142/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_142"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[194]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_151/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_151"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[195]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_152/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_152"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[196]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_153/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_153"],
+            ["Extractor"],
+            1,
+            1,
+            [Spawners[197]],
+            [
+                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
+            ]),
+        new(
+            "ActivityNode_154/1",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
+            ["Extractor"],
+            5,
+            6,
+            [Spawners[0], Spawners[1], Spawners[3], Spawners[4], Spawners[5], Spawners[6], Spawners[7], Spawners[8], Spawners[9], Spawners[10], Spawners[11], Spawners[12], Spawners[13], Spawners[14], Spawners[18], Spawners[19], Spawners[101], Spawners[104], Spawners[107], Spawners[108], Spawners[111], Spawners[117], Spawners[123], Spawners[124], Spawners[126], Spawners[132]],
+            []),
+        new(
+            "ActivityNode_154/2",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
+            ["Extractor"],
+            2,
+            2,
+            [Spawners[43], Spawners[44], Spawners[46], Spawners[47], Spawners[48], Spawners[49], Spawners[50], Spawners[51], Spawners[52], Spawners[53], Spawners[54], Spawners[55], Spawners[56], Spawners[57], Spawners[58], Spawners[59], Spawners[60], Spawners[61], Spawners[102], Spawners[105], Spawners[106], Spawners[118], Spawners[120], Spawners[121]],
+            []),
+        new(
+            "ActivityNode_154/3",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
+            ["Extractor"],
+            5,
+            6,
+            [Spawners[22], Spawners[23], Spawners[24], Spawners[25], Spawners[27], Spawners[28], Spawners[29], Spawners[31], Spawners[32], Spawners[33], Spawners[34], Spawners[35], Spawners[36], Spawners[37], Spawners[38], Spawners[90], Spawners[99], Spawners[100], Spawners[109], Spawners[110], Spawners[112], Spawners[113], Spawners[114], Spawners[122], Spawners[129], Spawners[131]],
+            []),
+        new(
+            "ActivityNode_154/0",
+            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
+            ["Extractor"],
+            5,
+            10,
+            [Spawners[62], Spawners[63], Spawners[64], Spawners[65], Spawners[66], Spawners[67], Spawners[68], Spawners[69], Spawners[70], Spawners[71], Spawners[72], Spawners[73], Spawners[74], Spawners[77], Spawners[78], Spawners[79], Spawners[80], Spawners[81], Spawners[82], Spawners[83], Spawners[84], Spawners[85], Spawners[86], Spawners[87], Spawners[89], Spawners[97], Spawners[98], Spawners[103], Spawners[115], Spawners[116], Spawners[119], Spawners[130], Spawners[133], Spawners[168], Spawners[169], Spawners[170], Spawners[171]],
+            []),
+        new(
+            "ActivityNode_37/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            2,
+            2,
+            [Spawners[42], Spawners[76], Spawners[167]],
+            []),
+        new(
+            "ActivityNode_38/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            3,
+            3,
+            [Spawners[16], Spawners[40], Spawners[91]],
+            []),
+        new(
+            "ActivityNode_39/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "WeaponCases"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            7,
+            8,
+            [Spawners[43], Spawners[44], Spawners[46], Spawners[47], Spawners[48], Spawners[49], Spawners[50], Spawners[51], Spawners[52], Spawners[53], Spawners[54], Spawners[55], Spawners[56], Spawners[57], Spawners[58], Spawners[59], Spawners[60], Spawners[61], Spawners[102], Spawners[105], Spawners[106], Spawners[118], Spawners[120], Spawners[121]],
+            []),
+        new(
+            "ActivityNode_40/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "MedicalBags"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            7,
+            10,
+            [Spawners[0], Spawners[1], Spawners[3], Spawners[4], Spawners[5], Spawners[6], Spawners[7], Spawners[8], Spawners[9], Spawners[10], Spawners[11], Spawners[12], Spawners[13], Spawners[14], Spawners[18], Spawners[19], Spawners[101], Spawners[104], Spawners[107], Spawners[108], Spawners[111], Spawners[117], Spawners[123], Spawners[124], Spawners[126], Spawners[132]],
+            []),
+        new(
+            "ActivityNode_41/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "GrenadeContainers"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            8,
+            11,
+            [Spawners[22], Spawners[23], Spawners[24], Spawners[25], Spawners[27], Spawners[28], Spawners[29], Spawners[31], Spawners[32], Spawners[33], Spawners[34], Spawners[35], Spawners[36], Spawners[37], Spawners[38], Spawners[90], Spawners[99], Spawners[100], Spawners[109], Spawners[110], Spawners[112], Spawners[113], Spawners[114], Spawners[122], Spawners[129], Spawners[131]],
+            []),
+        new(
+            "ActivityNode_42/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "AmmoBoxes"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            10,
+            12,
+            [Spawners[62], Spawners[63], Spawners[64], Spawners[65], Spawners[66], Spawners[67], Spawners[68], Spawners[69], Spawners[70], Spawners[71], Spawners[72], Spawners[73], Spawners[74], Spawners[77], Spawners[78], Spawners[79], Spawners[80], Spawners[81], Spawners[82], Spawners[83], Spawners[84], Spawners[85], Spawners[86], Spawners[87], Spawners[89], Spawners[97], Spawners[98], Spawners[103], Spawners[115], Spawners[116], Spawners[119], Spawners[130], Spawners[133]],
+            []),
+        new(
+            "ActivityNode_43/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            2,
+            3,
+            [Spawners[93], Spawners[94], Spawners[95], Spawners[96]],
+            []),
+        new(
+            "ActivityNode_44/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Backpacks"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            14,
+            18,
+            [Spawners[136], Spawners[137], Spawners[138], Spawners[139], Spawners[140], Spawners[141], Spawners[142], Spawners[143], Spawners[144], Spawners[145], Spawners[146], Spawners[147], Spawners[148], Spawners[149], Spawners[150], Spawners[151], Spawners[152], Spawners[153], Spawners[154], Spawners[155], Spawners[156], Spawners[157], Spawners[158], Spawners[159], Spawners[160], Spawners[161], Spawners[162], Spawners[163], Spawners[164], Spawners[165], Spawners[166]],
+            []),
+        new(
+            "ActivityNode_45/1",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            3,
+            3,
+            [Spawners[15], Spawners[30], Spawners[88]],
+            []),
+        new(
+            "ActivityNode_45/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            6,
+            6,
+            [Spawners[173], Spawners[176], Spawners[177], Spawners[178], Spawners[179], Spawners[180]],
+            []),
+        new(
+            "ActivityNode_46/1",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            4,
+            4,
+            [Spawners[2], Spawners[39], Spawners[45], Spawners[75]],
+            []),
+        new(
+            "ActivityNode_46/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            2,
+            2,
+            [Spawners[174], Spawners[175]],
+            []),
+        new(
+            "ActivityNode_47/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            3,
+            3,
+            [Spawners[17], Spawners[26], Spawners[92]],
+            []),
+        new(
+            "ActivityNode_48/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            3,
+            3,
+            [Spawners[20], Spawners[21], Spawners[41]],
+            []),
+        new(
+            "ActivityNode_49/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof", "Cluster8_WaterTower"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            2,
+            3,
+            [Spawners[125], Spawners[127], Spawners[128]],
+            []),
+        new(
+            "ActivityNode_62/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof", "Cluster8_WaterTower", "Cluster9_HydrodomeTowers"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            2,
+            2,
+            [Spawners[134], Spawners[135]],
+            []),
+        new(
+            "ActivityNode_63/0",
+            ["TheDam", "BaseGameplay", "RaiderContainers", "WeaponRacks"],
+            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
+            5,
+            6,
+            [Spawners[172], Spawners[254], Spawners[255], Spawners[298], Spawners[299], Spawners[300], Spawners[301], Spawners[302]],
+            []),
+    ];
+}
+
+/// <summary>Entries 0 to 99 of <see cref="DamDynamicLoot.Spawners"/>.</summary>
+internal static class DamDynamicLootSpawnersPart0
+{
+    public static IReadOnlyList<DynamicLootSpawner> Entries { get; } =
+    [
         new(
             "",
             "ActorSpawner_100",
@@ -1314,6 +1625,14 @@ public static class DamDynamicLoot
             ],
             1,
             false),
+    ];
+}
+
+/// <summary>Entries 100 to 195 of <see cref="DamDynamicLoot.Spawners"/>.</summary>
+internal static class DamDynamicLootSpawnersPart1
+{
+    public static IReadOnlyList<DynamicLootSpawner> Entries { get; } =
+    [
         new(
             "",
             "ActorSpawner_200",
@@ -2559,6 +2878,14 @@ public static class DamDynamicLoot
             ],
             5,
             true),
+    ];
+}
+
+/// <summary>Entries 196 to 293 of <see cref="DamDynamicLoot.Spawners"/>.</summary>
+internal static class DamDynamicLootSpawnersPart2
+{
+    public static IReadOnlyList<DynamicLootSpawner> Entries { get; } =
+    [
         new(
             "6DM0DSA13D7FSPDKAZWH0EJB1",
             "ActorSpawner_UAID_BCFCE753915F13CA02_1490847418",
@@ -3770,6 +4097,14 @@ public static class DamDynamicLoot
             ],
             1,
             false),
+    ];
+}
+
+/// <summary>Entries 294 to 342 of <see cref="DamDynamicLoot.Spawners"/>.</summary>
+internal static class DamDynamicLootSpawnersPart3
+{
+    public static IReadOnlyList<DynamicLootSpawner> Entries { get; } =
+    [
         new(
             "799Z1TX1MWV1JVES1KJXD650D",
             "BP_SocketContainer_Raider_FruitBasket_01_Dynamic_C_UAID_BCFCE753915F98A502_1461987925",
@@ -4365,304 +4700,5 @@ public static class DamDynamicLoot
             ],
             1,
             false),
-    ];
-
-    /// <summary>All groups, ordered by activity node.</summary>
-    public static IReadOnlyList<DynamicLootGroup> Groups { get; } =
-    [
-        new(
-            "ActivityNode_109/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "FruitBasketsWinterEvent"],
-            ["Coldsnap"],
-            12,
-            18,
-            [Spawners[186], Spawners[187], Spawners[188], Spawners[189], Spawners[190], Spawners[204], Spawners[205], Spawners[206], Spawners[207], Spawners[208], Spawners[209], Spawners[232], Spawners[233], Spawners[234], Spawners[235], Spawners[236], Spawners[237], Spawners[238], Spawners[239], Spawners[240], Spawners[241], Spawners[242], Spawners[243], Spawners[244], Spawners[245], Spawners[246], Spawners[247], Spawners[248], Spawners[249], Spawners[250], Spawners[251], Spawners[252], Spawners[253], Spawners[277], Spawners[278], Spawners[279], Spawners[280], Spawners[281], Spawners[282], Spawners[283], Spawners[284], Spawners[285], Spawners[286], Spawners[287], Spawners[288], Spawners[289], Spawners[290], Spawners[291], Spawners[292], Spawners[293], Spawners[294], Spawners[295], Spawners[296], Spawners[297], Spawners[304], Spawners[314], Spawners[315], Spawners[316], Spawners[317], Spawners[318], Spawners[319], Spawners[320], Spawners[321], Spawners[322], Spawners[330], Spawners[331], Spawners[332], Spawners[333], Spawners[334], Spawners[335], Spawners[336], Spawners[338], Spawners[341], Spawners[342]],
-            []),
-        new(
-            "ActivityNode_121/1",
-            ["TheDam", "BaseGameplay", "MapConditionHarvestSeason", "Containers"],
-            ["HarvestSeason"],
-            22,
-            26,
-            [Spawners[136], Spawners[137], Spawners[138], Spawners[139], Spawners[140], Spawners[141], Spawners[142], Spawners[143], Spawners[144], Spawners[145], Spawners[146], Spawners[147], Spawners[148], Spawners[149], Spawners[150], Spawners[151], Spawners[152], Spawners[153], Spawners[154], Spawners[155], Spawners[156], Spawners[157], Spawners[158], Spawners[159], Spawners[160], Spawners[161], Spawners[162], Spawners[163], Spawners[164], Spawners[165], Spawners[166]],
-            []),
-        new(
-            "ActivityNode_121/0",
-            ["TheDam", "BaseGameplay", "MapConditionHarvestSeason", "Containers"],
-            ["HarvestSeason"],
-            40,
-            45,
-            [Spawners[181], Spawners[182], Spawners[183], Spawners[184], Spawners[185], Spawners[198], Spawners[199], Spawners[200], Spawners[201], Spawners[202], Spawners[203], Spawners[210], Spawners[211], Spawners[212], Spawners[213], Spawners[214], Spawners[215], Spawners[216], Spawners[217], Spawners[218], Spawners[219], Spawners[220], Spawners[221], Spawners[222], Spawners[223], Spawners[224], Spawners[225], Spawners[226], Spawners[227], Spawners[228], Spawners[229], Spawners[230], Spawners[231], Spawners[256], Spawners[257], Spawners[258], Spawners[259], Spawners[260], Spawners[261], Spawners[262], Spawners[263], Spawners[264], Spawners[265], Spawners[266], Spawners[267], Spawners[268], Spawners[269], Spawners[270], Spawners[271], Spawners[272], Spawners[273], Spawners[274], Spawners[275], Spawners[276], Spawners[303], Spawners[305], Spawners[306], Spawners[307], Spawners[308], Spawners[309], Spawners[310], Spawners[311], Spawners[312], Spawners[313], Spawners[323], Spawners[324], Spawners[325], Spawners[326], Spawners[327], Spawners[328], Spawners[329], Spawners[337], Spawners[339], Spawners[340]],
-            []),
-        new(
-            "ActivityNode_123/2",
-            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
-            ["ToxicSwamp"],
-            1,
-            2,
-            [Spawners[31], Spawners[109], Spawners[110], Spawners[134]],
-            []),
-        new(
-            "ActivityNode_123/0",
-            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
-            ["ToxicSwamp"],
-            1,
-            2,
-            [Spawners[48], Spawners[55], Spawners[105], Spawners[106]],
-            []),
-        new(
-            "ActivityNode_123/1",
-            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
-            ["ToxicSwamp"],
-            1,
-            2,
-            [Spawners[168], Spawners[169], Spawners[170], Spawners[171]],
-            []),
-        new(
-            "ActivityNode_123/3",
-            ["TheDam", "BaseGameplay", "MapConditionToxicSwamp", "HydrodomeActivities"],
-            ["ToxicSwamp"],
-            1,
-            2,
-            [Spawners[8], Spawners[107], Spawners[108], Spawners[111], Spawners[135]],
-            []),
-        new(
-            "ActivityNode_139/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_139"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[191]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_140/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_140"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[192]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_141/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_141"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[193]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_142/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_142"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[194]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_151/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_151"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[195]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_152/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_152"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[196]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_153/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "clusters", "ActivityNode_153"],
-            ["Extractor"],
-            1,
-            1,
-            [Spawners[197]],
-            [
-                new DynamicLootSelection("ActivityNode_137", 7, 8, 13, false),
-            ]),
-        new(
-            "ActivityNode_154/1",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
-            ["Extractor"],
-            5,
-            6,
-            [Spawners[0], Spawners[1], Spawners[3], Spawners[4], Spawners[5], Spawners[6], Spawners[7], Spawners[8], Spawners[9], Spawners[10], Spawners[11], Spawners[12], Spawners[13], Spawners[14], Spawners[18], Spawners[19], Spawners[101], Spawners[104], Spawners[107], Spawners[108], Spawners[111], Spawners[117], Spawners[123], Spawners[124], Spawners[126], Spawners[132]],
-            []),
-        new(
-            "ActivityNode_154/2",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
-            ["Extractor"],
-            2,
-            2,
-            [Spawners[43], Spawners[44], Spawners[46], Spawners[47], Spawners[48], Spawners[49], Spawners[50], Spawners[51], Spawners[52], Spawners[53], Spawners[54], Spawners[55], Spawners[56], Spawners[57], Spawners[58], Spawners[59], Spawners[60], Spawners[61], Spawners[102], Spawners[105], Spawners[106], Spawners[118], Spawners[120], Spawners[121]],
-            []),
-        new(
-            "ActivityNode_154/3",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
-            ["Extractor"],
-            5,
-            6,
-            [Spawners[22], Spawners[23], Spawners[24], Spawners[25], Spawners[27], Spawners[28], Spawners[29], Spawners[31], Spawners[32], Spawners[33], Spawners[34], Spawners[35], Spawners[36], Spawners[37], Spawners[38], Spawners[90], Spawners[99], Spawners[100], Spawners[109], Spawners[110], Spawners[112], Spawners[113], Spawners[114], Spawners[122], Spawners[129], Spawners[131]],
-            []),
-        new(
-            "ActivityNode_154/0",
-            ["TheDam", "BaseGameplay", "MapConditionExtractor", "AI", "Raider containers"],
-            ["Extractor"],
-            5,
-            10,
-            [Spawners[62], Spawners[63], Spawners[64], Spawners[65], Spawners[66], Spawners[67], Spawners[68], Spawners[69], Spawners[70], Spawners[71], Spawners[72], Spawners[73], Spawners[74], Spawners[77], Spawners[78], Spawners[79], Spawners[80], Spawners[81], Spawners[82], Spawners[83], Spawners[84], Spawners[85], Spawners[86], Spawners[87], Spawners[89], Spawners[97], Spawners[98], Spawners[103], Spawners[115], Spawners[116], Spawners[119], Spawners[130], Spawners[133], Spawners[168], Spawners[169], Spawners[170], Spawners[171]],
-            []),
-        new(
-            "ActivityNode_37/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            2,
-            2,
-            [Spawners[42], Spawners[76], Spawners[167]],
-            []),
-        new(
-            "ActivityNode_38/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            3,
-            3,
-            [Spawners[16], Spawners[40], Spawners[91]],
-            []),
-        new(
-            "ActivityNode_39/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "WeaponCases"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            7,
-            8,
-            [Spawners[43], Spawners[44], Spawners[46], Spawners[47], Spawners[48], Spawners[49], Spawners[50], Spawners[51], Spawners[52], Spawners[53], Spawners[54], Spawners[55], Spawners[56], Spawners[57], Spawners[58], Spawners[59], Spawners[60], Spawners[61], Spawners[102], Spawners[105], Spawners[106], Spawners[118], Spawners[120], Spawners[121]],
-            []),
-        new(
-            "ActivityNode_40/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "MedicalBags"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            7,
-            10,
-            [Spawners[0], Spawners[1], Spawners[3], Spawners[4], Spawners[5], Spawners[6], Spawners[7], Spawners[8], Spawners[9], Spawners[10], Spawners[11], Spawners[12], Spawners[13], Spawners[14], Spawners[18], Spawners[19], Spawners[101], Spawners[104], Spawners[107], Spawners[108], Spawners[111], Spawners[117], Spawners[123], Spawners[124], Spawners[126], Spawners[132]],
-            []),
-        new(
-            "ActivityNode_41/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "GrenadeContainers"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            8,
-            11,
-            [Spawners[22], Spawners[23], Spawners[24], Spawners[25], Spawners[27], Spawners[28], Spawners[29], Spawners[31], Spawners[32], Spawners[33], Spawners[34], Spawners[35], Spawners[36], Spawners[37], Spawners[38], Spawners[90], Spawners[99], Spawners[100], Spawners[109], Spawners[110], Spawners[112], Spawners[113], Spawners[114], Spawners[122], Spawners[129], Spawners[131]],
-            []),
-        new(
-            "ActivityNode_42/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "AmmoBoxes"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            10,
-            12,
-            [Spawners[62], Spawners[63], Spawners[64], Spawners[65], Spawners[66], Spawners[67], Spawners[68], Spawners[69], Spawners[70], Spawners[71], Spawners[72], Spawners[73], Spawners[74], Spawners[77], Spawners[78], Spawners[79], Spawners[80], Spawners[81], Spawners[82], Spawners[83], Spawners[84], Spawners[85], Spawners[86], Spawners[87], Spawners[89], Spawners[97], Spawners[98], Spawners[103], Spawners[115], Spawners[116], Spawners[119], Spawners[130], Spawners[133]],
-            []),
-        new(
-            "ActivityNode_43/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            2,
-            3,
-            [Spawners[93], Spawners[94], Spawners[95], Spawners[96]],
-            []),
-        new(
-            "ActivityNode_44/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Backpacks"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            14,
-            18,
-            [Spawners[136], Spawners[137], Spawners[138], Spawners[139], Spawners[140], Spawners[141], Spawners[142], Spawners[143], Spawners[144], Spawners[145], Spawners[146], Spawners[147], Spawners[148], Spawners[149], Spawners[150], Spawners[151], Spawners[152], Spawners[153], Spawners[154], Spawners[155], Spawners[156], Spawners[157], Spawners[158], Spawners[159], Spawners[160], Spawners[161], Spawners[162], Spawners[163], Spawners[164], Spawners[165], Spawners[166]],
-            []),
-        new(
-            "ActivityNode_45/1",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            3,
-            3,
-            [Spawners[15], Spawners[30], Spawners[88]],
-            []),
-        new(
-            "ActivityNode_45/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            6,
-            6,
-            [Spawners[173], Spawners[176], Spawners[177], Spawners[178], Spawners[179], Spawners[180]],
-            []),
-        new(
-            "ActivityNode_46/1",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            4,
-            4,
-            [Spawners[2], Spawners[39], Spawners[45], Spawners[75]],
-            []),
-        new(
-            "ActivityNode_46/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            2,
-            2,
-            [Spawners[174], Spawners[175]],
-            []),
-        new(
-            "ActivityNode_47/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            3,
-            3,
-            [Spawners[17], Spawners[26], Spawners[92]],
-            []),
-        new(
-            "ActivityNode_48/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            3,
-            3,
-            [Spawners[20], Spawners[21], Spawners[41]],
-            []),
-        new(
-            "ActivityNode_49/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof", "Cluster8_WaterTower"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            2,
-            3,
-            [Spawners[125], Spawners[127], Spawners[128]],
-            []),
-        new(
-            "ActivityNode_62/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "Clusters", "Cluster2", "Cluster3", "Cluster4", "Cluster5", "Cluster6", "Cluster7_PowerControlRoof", "Cluster8_WaterTower", "Cluster9_HydrodomeTowers"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            2,
-            2,
-            [Spawners[134], Spawners[135]],
-            []),
-        new(
-            "ActivityNode_63/0",
-            ["TheDam", "BaseGameplay", "RaiderContainers", "WeaponRacks"],
-            ["CacheThemAll", "Coldsnap", "FTUE", "HarvestSeason", "Harvester", "HuskusPocus", "NightRaid", "ProbeHeist", "Spearmint", "Standard", "ToxicSwamp", "Turbulence"],
-            5,
-            6,
-            [Spawners[172], Spawners[254], Spawners[255], Spawners[298], Spawners[299], Spawners[300], Spawners[301], Spawners[302]],
-            []),
     ];
 }

@@ -8,6 +8,22 @@ public static class DamPointsOfInterest
     /// <summary>All points of interest, ordered by actor.</summary>
     public static IReadOnlyList<PointOfInterest> All { get; } =
     [
+        .. DamPointsOfInterestPart0.Entries,
+        .. DamPointsOfInterestPart1.Entries,
+        .. DamPointsOfInterestPart2.Entries,
+        .. DamPointsOfInterestPart3.Entries,
+        .. DamPointsOfInterestPart4.Entries,
+        .. DamPointsOfInterestPart5.Entries,
+        .. DamPointsOfInterestPart6.Entries,
+        .. DamPointsOfInterestPart7.Entries,
+    ];
+}
+
+/// <summary>Entries 0 to 11 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart0
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "16_Water_Treatment_Facility_AlcantaraPlant",
             "ID_LOCATION_ALCANTARA_DAM",
@@ -671,6 +687,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(-0.99048442, 0.137624902, 0.0), -332553.1177),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 12 to 13 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart1
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "FuelDepot3_16",
             "ID_LOCATION_DAM_CENTRAL_SWAMP_LIFT",
@@ -1298,6 +1322,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(0.002036993, 0.02776574, -0.999612382), 54088.1182),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 14 to 14 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart2
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "FuelDepot3_18",
             "ID_LOCATION_DAM_RED_LAKE_BALCONY_LIFT",
@@ -1829,6 +1861,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(-0.004501279, -0.007045206, -0.999965051), 36253.1733),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 15 to 28 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart3
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "FuelDepot3_19",
             "ID_LOCATION_DAM_NORTH_COMPLEX_ELEVATOR",
@@ -2594,6 +2634,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(0.866025404, 0.5, 0.0), 698473.2764),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 29 to 88 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart4
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "PioneerPointOfInterestVolume_1",
             "ID_LOCATION_DAM_RESEARCHLAB",
@@ -3745,6 +3793,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(0.968691627, 0.248267057, 0.0), 580754.467),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 89 to 136 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart5
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "PioneerPointOfInterestVolume_5",
             "ID_LOCATION_DAM_SMALLCREEK",
@@ -4788,6 +4844,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(-0.500001993, 0.866024253, 0.0), 202723.1446),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 137 to 151 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart6
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "ResearchFacility",
             "ID_LOCATION_DAM_GENERATORCOMPLEX",
@@ -5227,6 +5291,14 @@ public static class DamPointsOfInterest
                     new LootVolumePlane(new Vector3D(0.0, 0.0, -1.0), 42454.2427),
                 ]),
             ]),
+    ];
+}
+
+/// <summary>Entries 152 to 152 of <see cref="DamPointsOfInterest.All"/>.</summary>
+internal static class DamPointsOfInterestPart7
+{
+    public static IReadOnlyList<PointOfInterest> Entries { get; } =
+    [
         new(
             "WirelessElectricityTower4_9",
             "ID_LOCATION_DAM_WIRELESS_ELECTRICITY_TOWER",

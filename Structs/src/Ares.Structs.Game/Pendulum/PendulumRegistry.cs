@@ -7,9 +7,21 @@ public static class PendulumRegistry
     public const int Count = 117;
 
     /// <summary>Descriptors by id.</summary>
-    public static IReadOnlyDictionary<int, PendulumDescriptor> Descriptors { get; } = new Dictionary<int, PendulumDescriptor>
-    {
-        [0] = new(0, 888,
+    public static IReadOnlyDictionary<int, PendulumDescriptor> Descriptors { get; } = new Dictionary<int, PendulumDescriptor>(
+    [
+        .. PendulumRegistryPart0.Entries,
+        .. PendulumRegistryPart1.Entries,
+        .. PendulumRegistryPart2.Entries,
+        .. PendulumRegistryPart3.Entries,
+    ]);
+}
+
+/// <summary>Entries 0 to 43 of <see cref="PendulumRegistry.Descriptors"/>.</summary>
+internal static class PendulumRegistryPart0
+{
+    public static IReadOnlyList<KeyValuePair<int, PendulumDescriptor>> Entries { get; } =
+    [
+        new(0, new PendulumDescriptor(0, 888,
             [
                 new PendulumScalarField(0, 4, 21U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 20, 44, 0,
@@ -22,8 +34,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(40, 1, 7U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [1] = new(1, 56,
+            ])),
+        new(1, new PendulumDescriptor(1, 56,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483693U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -39,8 +51,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(4, 4, 120U, 15U, 33U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [2] = new(2, 116,
+            ])),
+        new(2, new PendulumDescriptor(2, 116,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(144U, 288U, 432U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumQuaternionField(24, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -61,8 +73,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(104, 4, 16777216U, 16U, 8388616U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(108, 4, 16777216U, 16U, 8388650U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(112, 3, 0x6UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [3] = new(3, 24,
+            ])),
+        new(3, new PendulumDescriptor(3, 24,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8389111U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388800U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -70,12 +82,12 @@ public static class PendulumRegistry
                 new PendulumScalarField(12, 4, 16777216U, 16U, 8388986U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 4, 16777216U, 16U, 8388616U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(20, 4, 16777216U, 16U, 8388650U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [4] = new(4, 4,
+            ])),
+        new(4, new PendulumDescriptor(4, 4,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483693U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [5] = new(5, 32,
+            ])),
+        new(5, new PendulumDescriptor(5, 32,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483693U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -86,8 +98,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [6] = new(6, 48,
+            ])),
+        new(6, new PendulumDescriptor(6, 48,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483693U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -98,8 +110,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(4, 4, 120U, 15U, 33U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [7] = new(7, 208,
+            ])),
+        new(7, new PendulumDescriptor(7, 208,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483693U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -117,8 +129,8 @@ public static class PendulumRegistry
                             PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [8] = new(8, 2780,
+            ])),
+        new(8, new PendulumDescriptor(8, 2780,
             [
                 new PendulumScalarField(0, 4, 64U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 63, 44, 0,
@@ -131,8 +143,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(40, 1, 7U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [9] = new(9, 4056,
+            ])),
+        new(9, new PendulumDescriptor(9, 4056,
             [
                 new PendulumScalarField(0, 4, 64U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -160,8 +172,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [10] = new(10, 6424,
+            ])),
+        new(10, new PendulumDescriptor(10, 6424,
             [
                 new PendulumScalarField(0, 4, 101U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -189,8 +201,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [11] = new(11, 32,
+            ])),
+        new(11, new PendulumDescriptor(11, 32,
             [
                 new PendulumScalarField(0, 4, 16777216U, 16U, 8388607U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 1, 5U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -199,8 +211,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(7, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(16, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [12] = new(12, 112,
+            ])),
+        new(12, new PendulumDescriptor(12, 112,
             [
                 new PendulumScalarField(0, 4, 14U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 13, 8, 0,
@@ -210,8 +222,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(5, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [13] = new(13, 2008,
+            ])),
+        new(13, new PendulumDescriptor(13, 2008,
             [
                 new PendulumScalarField(0, 4, 32U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -239,8 +251,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [14] = new(14, 72,
+            ])),
+        new(14, new PendulumDescriptor(14, 72,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -255,8 +267,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(60, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(64, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(68, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [15] = new(15, 88,
+            ])),
+        new(15, new PendulumDescriptor(15, 88,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 10, 8, 0,
@@ -265,8 +277,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [16] = new(16, 21,
+            ])),
+        new(16, new PendulumDescriptor(16, 21,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -274,8 +286,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(12, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 4, 16777216U, 32U, 8388616U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(20, 1, 4U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [17] = new(17, 60,
+            ])),
+        new(17, new PendulumDescriptor(17, 60,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -287,8 +299,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(48, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [18] = new(18, 24,
+            ])),
+        new(18, new PendulumDescriptor(18, 24,
             [
                 new PendulumScalarField(0, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -296,8 +308,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(12, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(20, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [19] = new(19, 60,
+            ])),
+        new(19, new PendulumDescriptor(19, 60,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -309,8 +321,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(48, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [20] = new(20, 1088,
+            ])),
+        new(20, new PendulumDescriptor(20, 1088,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -349,8 +361,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(8, 2, 65536U, 15U, 32767U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [21] = new(21, 128,
+            ])),
+        new(21, new PendulumDescriptor(21, 128,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 10, 12, 0,
@@ -360,13 +372,13 @@ public static class PendulumRegistry
                         new PendulumScalarField(8, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [22] = new(22, 5,
+            ])),
+        new(22, new PendulumDescriptor(22, 5,
             [
                 new PendulumBitfieldField(0, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 1, 9U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [23] = new(23, 104,
+            ])),
+        new(23, new PendulumDescriptor(23, 104,
             [
                 new PendulumScalarField(0, 4, 9U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 8, 12, 0,
@@ -376,12 +388,12 @@ public static class PendulumRegistry
                         new PendulumScalarField(8, 4, 512U, 16U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [24] = new(24, 4,
+            ])),
+        new(24, new PendulumDescriptor(24, 4,
             [
                 new PendulumBitfieldField(0, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [25] = new(25, 32,
+            ])),
+        new(25, new PendulumDescriptor(25, 32,
             [
                 new PendulumScalarField(0, 4, 2U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 2U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -398,8 +410,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(6, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [26] = new(26, 320,
+            ])),
+        new(26, new PendulumDescriptor(26, 320,
             [
                 new PendulumScalarField(0, 4, 31U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 31U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -416,8 +428,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(6, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [27] = new(27, 216,
+            ])),
+        new(27, new PendulumDescriptor(27, 216,
             [
                 new PendulumScalarField(0, 4, 21U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 21U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -434,8 +446,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(6, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [28] = new(28, 120,
+            ])),
+        new(28, new PendulumDescriptor(28, 120,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -452,8 +464,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(6, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [29] = new(29, 128,
+            ])),
+        new(29, new PendulumDescriptor(29, 128,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 10, 12, 0,
@@ -465,8 +477,8 @@ public static class PendulumRegistry
                         new PendulumBitfieldField(8, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [30] = new(30, 63,
+            ])),
+        new(30, new PendulumDescriptor(30, 63,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -480,20 +492,20 @@ public static class PendulumRegistry
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 2, 65536U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(62, 1, 5U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [31] = new(31, 1,
+            ])),
+        new(31, new PendulumDescriptor(31, 1,
             [
                 new PendulumScalarField(0, 1, 4U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [32] = new(32, 20,
+            ])),
+        new(32, new PendulumDescriptor(32, 20,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(12, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(16, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [33] = new(33, 62,
+            ])),
+        new(33, new PendulumDescriptor(33, 62,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -506,13 +518,13 @@ public static class PendulumRegistry
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 2, 65536U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [34] = new(34, 24,
+            ])),
+        new(34, new PendulumDescriptor(34, 24,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(8, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [35] = new(35, 4632,
+            ])),
+        new(35, new PendulumDescriptor(35, 4632,
             [
                 new PendulumScalarField(0, 4, 256U, 4U, 26U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 33U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -547,8 +559,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(31, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [36] = new(36, 48,
+            ])),
+        new(36, new PendulumDescriptor(36, 48,
             [
                 new PendulumScalarField(0, 4, 11U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 10, 4, 0,
@@ -556,8 +568,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [37] = new(37, 56,
+            ])),
+        new(37, new PendulumDescriptor(37, 56,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 64U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -572,8 +584,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(36, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(37, 1, 2U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner),
-            ]),
-        [38] = new(38, 40,
+            ])),
+        new(38, new PendulumDescriptor(38, 40,
             [
                 new PendulumScalarField(0, 4, 5U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 1, 5U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -583,8 +595,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(4, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [39] = new(39, 128,
+            ])),
+        new(39, new PendulumDescriptor(39, 128,
             [
                 new PendulumQuaternionField(0, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumQuaternionField(24, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -597,8 +609,8 @@ public static class PendulumRegistry
                 new PendulumBitfieldField(104, 12, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(108, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(112, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [40] = new(40, 72,
+            ])),
+        new(40, new PendulumDescriptor(40, 72,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -613,12 +625,12 @@ public static class PendulumRegistry
                 new PendulumScalarField(33, 1, 2U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner),
                 new PendulumObjectField(56, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [41] = new(41, 4,
+            ])),
+        new(41, new PendulumDescriptor(41, 4,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [42] = new(42, 174,
+            ])),
+        new(42, new PendulumDescriptor(42, 174,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Others),
@@ -672,8 +684,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [43] = new(43, 104,
+            ])),
+        new(43, new PendulumDescriptor(43, 104,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -700,8 +712,16 @@ public static class PendulumRegistry
                 new PendulumScalarField(81, 1, 2U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(82, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(88, PendulumFieldFlags.Owner),
-            ]),
-        [44] = new(44, 158,
+            ])),
+    ];
+}
+
+/// <summary>Entries 44 to 71 of <see cref="PendulumRegistry.Descriptors"/>.</summary>
+internal static class PendulumRegistryPart1
+{
+    public static IReadOnlyList<KeyValuePair<int, PendulumDescriptor>> Entries { get; } =
+    [
+        new(44, new PendulumDescriptor(44, 158,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -751,8 +771,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [45] = new(45, 40,
+            ])),
+        new(45, new PendulumDescriptor(45, 40,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -761,13 +781,13 @@ public static class PendulumRegistry
                 new PendulumScalarField(16, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(17, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(24, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [46] = new(46, 8,
+            ])),
+        new(46, new PendulumDescriptor(46, 8,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [47] = new(47, 56,
+            ])),
+        new(47, new PendulumDescriptor(47, 56,
             [
                 new PendulumScalarField(0, 4, 4096U, 8U, 2048U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4096U, 8U, 205U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -782,34 +802,34 @@ public static class PendulumRegistry
                 new PendulumScalarField(37, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(38, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [48] = new(48, 13,
+            ])),
+        new(48, new PendulumDescriptor(48, 13,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(12, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [49] = new(49, 4,
+            ])),
+        new(49, new PendulumDescriptor(49, 4,
             [
                 new PendulumBitfieldField(0, 3, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [50] = new(50, 36,
+            ])),
+        new(50, new PendulumDescriptor(50, 36,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(32, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [51] = new(51, 17,
+            ])),
+        new(51, new PendulumDescriptor(51, 17,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(12, 2, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [52] = new(52, 884,
+            ])),
+        new(52, new PendulumDescriptor(52, 884,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -882,14 +902,14 @@ public static class PendulumRegistry
                         new PendulumScalarField(8, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [53] = new(53, 32,
+            ])),
+        new(53, new PendulumDescriptor(53, 32,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [54] = new(54, 160,
+            ])),
+        new(54, new PendulumDescriptor(54, 160,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -926,8 +946,8 @@ public static class PendulumRegistry
                 new PendulumObjectField(112, PendulumFieldFlags.Owner),
                 new PendulumObjectField(128, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(144, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [55] = new(55, 25,
+            ])),
+        new(55, new PendulumDescriptor(55, 25,
             [
                 new PendulumScalarField(0, 4, 134217728U, 256U, 67108863U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 134217728U, 256U, 67108863U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -936,21 +956,21 @@ public static class PendulumRegistry
                 new PendulumScalarField(16, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(20, 3, 0x4UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [56] = new(56, 36,
+            ])),
+        new(56, new PendulumDescriptor(56, 36,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(32, 1, 0x1UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [57] = new(57, 12,
+            ])),
+        new(57, new PendulumDescriptor(57, 12,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [58] = new(58, 104,
+            ])),
+        new(58, new PendulumDescriptor(58, 104,
             [
                 new PendulumQuaternionField(0, 1024U, 8U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumQuaternionField(24, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner),
@@ -967,8 +987,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(85, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(86, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(88, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [59] = new(59, 88,
+            ])),
+        new(59, new PendulumDescriptor(59, 88,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -992,8 +1012,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(76, 4, 16777216U, 32U, 8388616U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(80, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(84, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [60] = new(60, 96,
+            ])),
+        new(60, new PendulumDescriptor(60, 96,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1010,8 +1030,8 @@ public static class PendulumRegistry
                 new PendulumObjectField(48, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(64, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(80, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [61] = new(61, 248,
+            ])),
+        new(61, new PendulumDescriptor(61, 248,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1084,8 +1104,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [62] = new(62, 56,
+            ])),
+        new(62, new PendulumDescriptor(62, 56,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1099,8 +1119,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(32, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(33, 1, 2U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner),
-            ]),
-        [63] = new(63, 38,
+            ])),
+        new(63, new PendulumDescriptor(63, 38,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4096U, 16U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1108,19 +1128,19 @@ public static class PendulumRegistry
                 new PendulumScalarField(32, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(36, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(37, 1, 8U, 3U, 6U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [64] = new(64, 13,
+            ])),
+        new(64, new PendulumDescriptor(64, 13,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(12, 1, 8U, 3U, 6U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [65] = new(65, 4,
+            ])),
+        new(65, new PendulumDescriptor(65, 4,
             [
                 new PendulumBitfieldField(0, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [66] = new(66, 13,
+            ])),
+        new(66, new PendulumDescriptor(66, 13,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 5, 1, null,
@@ -1128,8 +1148,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [67] = new(67, 88,
+            ])),
+        new(67, new PendulumDescriptor(67, 88,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1151,8 +1171,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(58, 1, 5U, 3U, 4U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(64, PendulumFieldFlags.Owner),
                 new PendulumNameField(80, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [68] = new(68, 248,
+            ])),
+        new(68, new PendulumDescriptor(68, 248,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4096U, 32U, 2047U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1189,8 +1209,8 @@ public static class PendulumRegistry
                 new PendulumObjectField(224, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitField(244, false, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBoundedField(240, 4, 512U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [69] = new(69, 53,
+            ])),
+        new(69, new PendulumDescriptor(69, 53,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4096U, 8U, 2048U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1209,8 +1229,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(50, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(51, 1, 4U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(52, 1, 7U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [70] = new(70, 31,
+            ])),
+        new(70, new PendulumDescriptor(70, 31,
             [
                 new PendulumScalarField(0, 4, 4096U, 8U, 2048U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4096U, 8U, 205U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1222,8 +1242,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(28, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(29, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(30, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [71] = new(71, 160,
+            ])),
+        new(71, new PendulumDescriptor(71, 160,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 134217728U, 256U, 67108863U, PendulumFieldFlags.Owner),
@@ -1276,8 +1296,16 @@ public static class PendulumRegistry
                 new PendulumScalarField(157, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner),
                 new PendulumScalarField(158, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner),
                 new PendulumScalarField(159, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner),
-            ]),
-        [72] = new(72, 166,
+            ])),
+    ];
+}
+
+/// <summary>Entries 72 to 104 of <see cref="PendulumRegistry.Descriptors"/>.</summary>
+internal static class PendulumRegistryPart2
+{
+    public static IReadOnlyList<KeyValuePair<int, PendulumDescriptor>> Entries { get; } =
+    [
+        new(72, new PendulumDescriptor(72, 166,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1329,16 +1357,16 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [73] = new(73, 17,
+            ])),
+        new(73, new PendulumDescriptor(73, 17,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(12, 3, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [74] = new(74, 48,
+            ])),
+        new(74, new PendulumDescriptor(74, 48,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1349,8 +1377,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(24, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(25, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(32, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [75] = new(75, 57,
+            ])),
+        new(75, new PendulumDescriptor(75, 57,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1362,14 +1390,14 @@ public static class PendulumRegistry
                 new PendulumBitSetField(40, 64, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitSetField(48, 64, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [76] = new(76, 9,
+            ])),
+        new(76, new PendulumDescriptor(76, 9,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [77] = new(77, 80,
+            ])),
+        new(77, new PendulumDescriptor(77, 80,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitSetField(8, 64, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1437,8 +1465,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(77, 1, 8U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(78, 1, 8U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(79, 1, 8U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [78] = new(78, 47,
+            ])),
+        new(78, new PendulumDescriptor(78, 47,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1454,16 +1482,16 @@ public static class PendulumRegistry
                 new PendulumScalarField(44, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(45, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(46, 1, 9U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [79] = new(79, 34,
+            ])),
+        new(79, new PendulumDescriptor(79, 34,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(32, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(33, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [80] = new(80, 88,
+            ])),
+        new(80, new PendulumDescriptor(80, 88,
             [
                 new PendulumScalarField(0, 4, 134217728U, 256U, 67108863U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 134217728U, 256U, 67108863U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1484,8 +1512,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(51, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(56, PendulumFieldFlags.Owner),
                 new PendulumObjectField(72, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [81] = new(81, 56,
+            ])),
+        new(81, new PendulumDescriptor(81, 56,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8392802U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1498,13 +1526,13 @@ public static class PendulumRegistry
                 new PendulumBitfieldField(32, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(36, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [82] = new(82, 5,
+            ])),
+        new(82, new PendulumDescriptor(82, 5,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [83] = new(83, 52,
+            ])),
+        new(83, new PendulumDescriptor(83, 52,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 2048U, 64U, 1023U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1517,18 +1545,18 @@ public static class PendulumRegistry
                 new PendulumScalarField(49, 1, 5U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(50, 1, 5U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(51, 1, 64U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [84] = new(84, 9,
+            ])),
+        new(84, new PendulumDescriptor(84, 9,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [85] = new(85, 4,
+            ])),
+        new(85, new PendulumDescriptor(85, 4,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [86] = new(86, 128,
+            ])),
+        new(86, new PendulumDescriptor(86, 128,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1558,8 +1586,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(90, 1, 4U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(96, PendulumFieldFlags.Owner),
                 new PendulumObjectField(112, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [87] = new(87, 260,
+            ])),
+        new(87, new PendulumDescriptor(87, 260,
             [
                 new PendulumScalarField(0, 4, 8192U, 64U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 8192U, 64U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1592,15 +1620,15 @@ public static class PendulumRegistry
                         new PendulumScalarField(16, 1, 5U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [88] = new(88, 10,
+            ])),
+        new(88, new PendulumDescriptor(88, 10,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(9, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [89] = new(89, 56,
+            ])),
+        new(89, new PendulumDescriptor(89, 56,
             [
                 new PendulumScalarField(0, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1614,8 +1642,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(32, 1, 3U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(33, 1, 2U, 3U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(40, PendulumFieldFlags.Owner),
-            ]),
-        [90] = new(90, 62,
+            ])),
+        new(90, new PendulumDescriptor(90, 62,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1629,8 +1657,8 @@ public static class PendulumRegistry
                 new PendulumBitfieldField(56, 4, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(61, 1, 64U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [91] = new(91, 128,
+            ])),
+        new(91, new PendulumDescriptor(91, 128,
             [
                 new PendulumQuaternionField(0, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1646,8 +1674,8 @@ public static class PendulumRegistry
                 new PendulumObjectField(104, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitField(124, false, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBoundedField(120, 4, 512U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [92] = new(92, 21,
+            ])),
+        new(92, new PendulumDescriptor(92, 21,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1655,8 +1683,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(12, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(16, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(20, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [93] = new(93, 144,
+            ])),
+        new(93, new PendulumDescriptor(93, 144,
             [
                 new PendulumQuaternionField(0, 4096U, 8U, 33281361UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1676,8 +1704,8 @@ public static class PendulumRegistry
                 new PendulumObjectField(120, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitField(140, false, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBoundedField(136, 4, 512U, 1U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [94] = new(94, 30,
+            ])),
+        new(94, new PendulumDescriptor(94, 30,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1688,8 +1716,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(24, 4, 4294967295U, 15U, 2147483646U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(29, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [95] = new(95, 44,
+            ])),
+        new(95, new PendulumDescriptor(95, 44,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1697,8 +1725,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(32, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(36, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(40, 4, 4092U, 7U, 2046U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [96] = new(96, 150,
+            ])),
+        new(96, new PendulumDescriptor(96, 150,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 256U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1747,8 +1775,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(0, 1, 256U, 3U, 255U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [97] = new(97, 31,
+            ])),
+        new(97, new PendulumDescriptor(97, 31,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1761,8 +1789,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(26, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 2, 65536U, 4U, 65535U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(30, 1, 6U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [98] = new(98, 9,
+            ])),
+        new(98, new PendulumDescriptor(98, 9,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1770,15 +1798,15 @@ public static class PendulumRegistry
                 new PendulumScalarField(6, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(7, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 1, 256U, 3U, 254U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [99] = new(99, 40,
+            ])),
+        new(99, new PendulumDescriptor(99, 40,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483647U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(4, 6, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(8, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(24, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [100] = new(100, 764,
+            ])),
+        new(100, new PendulumDescriptor(100, 764,
             [
                 new PendulumScalarField(0, 4, 65536U, 8U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 20U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1825,8 +1853,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(8, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [101] = new(101, 144,
+            ])),
+        new(101, new PendulumDescriptor(101, 144,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 4096U, 8U, 2048U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1854,13 +1882,13 @@ public static class PendulumRegistry
                 new PendulumScalarField(104, 1, 256U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(112, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(128, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [102] = new(102, 8,
+            ])),
+        new(102, new PendulumDescriptor(102, 8,
             [
                 new PendulumScalarField(0, 4, 4096U, 16U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16384U, 32U, 164U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [103] = new(103, 62,
+            ])),
+        new(103, new PendulumDescriptor(103, 62,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1873,8 +1901,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 2, 65536U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [104] = new(104, 62,
+            ])),
+        new(104, new PendulumDescriptor(104, 62,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1887,8 +1915,16 @@ public static class PendulumRegistry
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 2, 65536U, 4U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [105] = new(105, 488,
+            ])),
+    ];
+}
+
+/// <summary>Entries 105 to 116 of <see cref="PendulumRegistry.Descriptors"/>.</summary>
+internal static class PendulumRegistryPart3
+{
+    public static IReadOnlyList<KeyValuePair<int, PendulumDescriptor>> Entries { get; } =
+    [
+        new(105, new PendulumDescriptor(105, 488,
             [
                 new PendulumScalarField(0, 4, 7U, 2U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumArrayField(8, 6, 80, 0,
@@ -1910,8 +1946,8 @@ public static class PendulumRegistry
                         new PendulumScalarField(76, 1, 64U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                     ],
                     PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [106] = new(106, 72,
+            ])),
+        new(106, new PendulumDescriptor(106, 72,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1926,8 +1962,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(60, 4, 256U, 16U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(64, 4, 128U, 8U, 64U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(68, 4, 1024U, 7U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [107] = new(107, 80,
+            ])),
+        new(107, new PendulumDescriptor(107, 80,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1944,23 +1980,23 @@ public static class PendulumRegistry
                 new PendulumScalarField(68, 4, 256U, 16U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(72, 4, 256U, 16U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(76, 4, 1024U, 7U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [108] = new(108, 0,
+            ])),
+        new(108, new PendulumDescriptor(108, 0,
             [
 
-            ]),
-        [109] = new(109, 4,
+            ])),
+        new(109, new PendulumDescriptor(109, 4,
             [
                 new PendulumScalarField(0, 1, 256U, 15U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(1, 1, 256U, 15U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(2, 1, 256U, 15U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(3, 1, 256U, 15U, 128U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [110] = new(110, 0,
+            ])),
+        new(110, new PendulumDescriptor(110, 0,
             [
 
-            ]),
-        [111] = new(111, 64,
+            ])),
+        new(111, new PendulumDescriptor(111, 64,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 512U, 16U, 256U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1973,15 +2009,15 @@ public static class PendulumRegistry
                 new PendulumScalarField(52, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(56, 4, 16777216U, 128U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(60, 4, 1024U, 7U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [112] = new(112, 36,
+            ])),
+        new(112, new PendulumDescriptor(112, 36,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(28, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(32, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [113] = new(113, 52,
+            ])),
+        new(113, new PendulumDescriptor(113, 52,
             [
                 new PendulumQuaternionField(0, 64U, 8U, 8100UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -1991,8 +2027,8 @@ public static class PendulumRegistry
                 new PendulumScalarField(40, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(44, 4, 2097152U, 64U, 1048575U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(48, 1, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [114] = new(114, 96,
+            ])),
+        new(114, new PendulumDescriptor(114, 96,
             [
                 new PendulumQuaternionField(0, 1024U, 16U, 2079364UL, new PendulumQuaternion(0U, 0U, 0U, 0U, 15, 0, 1, 2), PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(24, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
@@ -2010,17 +2046,17 @@ public static class PendulumRegistry
                 new PendulumBitfieldField(72, 5, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(76, 1, 64U, 3U, 0U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumObjectField(80, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [115] = new(115, 12,
+            ])),
+        new(115, new PendulumDescriptor(115, 12,
             [
                 new PendulumScalarField(0, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(4, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumScalarField(8, 4, 16777216U, 32U, 8388608U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-        [116] = new(116, 8,
+            ])),
+        new(116, new PendulumDescriptor(116, 8,
             [
                 new PendulumScalarField(0, 4, 4294967295U, 15U, 2147483648U, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
                 new PendulumBitfieldField(4, 7, 0x0UL, PendulumFieldFlags.Owner | PendulumFieldFlags.Others),
-            ]),
-    };
+            ])),
+    ];
 }

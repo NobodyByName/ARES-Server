@@ -30,7 +30,7 @@ public static class WorldItemList
     }
 }
 
-/// <summary>Entries 0 to 499 of <see cref="WorldItemList.Classes"/>.</summary>
+/// <summary>Entries 0 to 484 of <see cref="WorldItemList.Classes"/>.</summary>
 internal static class WorldItemListPart0
 {
     public static IReadOnlyList<string> Entries { get; } =
@@ -520,6 +520,14 @@ internal static class WorldItemListPart0
         "/Game/Pioneer/Environment/Props/Research/CartShelf_M_01/BP_SocketContainer_Rsr_CartShelf_M_01_Drawer_04.BP_SocketContainer_Rsr_CartShelf_M_01_Drawer_04_C",
         "/Game/Pioneer/Environment/Props/Research/ElectricalCabinet_01/BP_SocketContainer_Rsr_ElectricalCabinet_01_A.BP_SocketContainer_Rsr_ElectricalCabinet_01_A_C",
         "/Game/Pioneer/Environment/Props/Research/ElectricalCabinet_01/BP_SocketContainer_Rsr_ElectricalCabinet_01_A_Clean.BP_SocketContainer_Rsr_ElectricalCabinet_01_A_Clean_C",
+    ];
+}
+
+/// <summary>Entries 485 to 765 of <see cref="WorldItemList.Classes"/>.</summary>
+internal static class WorldItemListPart1
+{
+    public static IReadOnlyList<string> Entries { get; } =
+    [
         "/Game/Pioneer/Environment/Props/Research/ElectricalCabinet_01/BP_SocketContainer_Rsr_ElectricalCabinet_01_A_Red.BP_SocketContainer_Rsr_ElectricalCabinet_01_A_Red_C",
         "/Game/Pioneer/Environment/Props/Research/Lockers_01/BP_SocketContainer_Rsr_Lockers_01_A_BC_ResearchCompany.BP_SocketContainer_Rsr_Lockers_01_A_BC_ResearchCompany_C",
         "/Game/Pioneer/Environment/Props/Research/Lockers_01/BP_SocketContainer_Rsr_Lockers_01_A_BC_School_01.BP_SocketContainer_Rsr_Lockers_01_A_BC_School_01_C",
@@ -535,14 +543,6 @@ internal static class WorldItemListPart0
         "/Game/Pioneer/Environment/Props/Security/Crate_01/BP_SocketContainer_Sct_Crate_01_A.BP_SocketContainer_Sct_Crate_01_A_C",
         "/Game/Pioneer/Environment/Props/Security/Locker_01/BP_SocketContainer_Sct_Locker_01_A.BP_SocketContainer_Sct_Locker_01_A_C",
         "/Game/Pioneer/Environment/Props/Security/LockerMedical_01/BP_SocketContainer_Sct_LockerMedical_01_A.BP_SocketContainer_Sct_LockerMedical_01_A_C",
-    ];
-}
-
-/// <summary>Entries 500 to 765 of <see cref="WorldItemList.Classes"/>.</summary>
-internal static class WorldItemListPart1
-{
-    public static IReadOnlyList<string> Entries { get; } =
-    [
         "/Game/Pioneer/Environment/Props/_Generic/SecurityCamera_01/BP_SocketContainer_Sct_SecurityCamera_01_A.BP_SocketContainer_Sct_SecurityCamera_01_A_C",
         "/Game/Pioneer/Environment/Props/Trains/ExodusTrain_LineAccessories/ExodusTrain_Signals_01/BP_SocketContainer_Signals_Addon_Lid_02_A.BP_SocketContainer_Signals_Addon_Lid_02_A_C",
         "/Game/Pioneer/Environment/Props/Residential/ModulesKitchen/BP_SocketContainer_SM_Res_CupboardKitchen_Lid_01_175x100_A.BP_SocketContainer_SM_Res_CupboardKitchen_Lid_01_175x100_A_C",

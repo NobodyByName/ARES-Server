@@ -35,7 +35,7 @@ public static class StaticValueLootTables
     public static StaticValueLootTable? Find(string name) => s_byName.GetValueOrDefault(name);
 }
 
-/// <summary>Tables StaticValueLootTable_ElectricalTechMixedMaterialsAll_FrozenTrail to StaticValueLootTable_TrinketsResidential of <see cref="StaticValueLootTables.All"/>.</summary>
+/// <summary>Tables 0 to 70 of <see cref="StaticValueLootTables.All"/>.</summary>
 internal static class StaticValueLootTablesPart0
 {
     public static IReadOnlyList<StaticValueLootTable> Tables { get; } =

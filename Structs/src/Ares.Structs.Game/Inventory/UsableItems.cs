@@ -16,6 +16,12 @@ public static class UsableItems
         .. UsableItemsPart1.Entries,
         .. UsableItemsPart2.Entries,
         .. UsableItemsPart3.Entries,
+        .. UsableItemsPart4.Entries,
+        .. UsableItemsPart5.Entries,
+        .. UsableItemsPart6.Entries,
+        .. UsableItemsPart7.Entries,
+        .. UsableItemsPart8.Entries,
+        .. UsableItemsPart9.Entries,
     ];
 
     /// <summary>Items by menu asset id, including every quality level's asset id.</summary>
@@ -28,7 +34,7 @@ public static class UsableItems
         All.ToDictionary(item => item.TechnicalName, StringComparer.Ordinal);
 }
 
-/// <summary>Entries 0 to 249 of <see cref="UsableItems.All"/>.</summary>
+/// <summary>Entries 0 to 116 of <see cref="UsableItems.All"/>.</summary>
 internal static class UsableItemsPart0
 {
     public static IReadOnlyList<UsableItem> Entries { get; } =
@@ -969,6 +975,14 @@ internal static class UsableItemsPart0
             ["Online.Release.Base"],
             [],
             ["Item.Drop.Type.Consumable", "Item.Drop.Type.Equipment"]),
+    ];
+}
+
+/// <summary>Entries 117 to 230 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart1
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(117, "DA_Item_Deployable_SoundTrap", "/Game/Pioneer/Items/Deployables/SoundTrap/DA_Item_Deployable_SoundTrap.DA_Item_Deployable_SoundTrap",
             2028871781L, 2028871781L, 0, [], ItemCategory.Deployable, ItemRarity.Common,
             3, 0.3, false, false, false,
@@ -1881,6 +1895,14 @@ internal static class UsableItemsPart0
             ["Online.Release.2.0"],
             [],
             []),
+    ];
+}
+
+/// <summary>Entries 231 to 346 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart2
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(231, "DA_Item_OutpostFurnitureRecipe_Res_Drawer_01_A", "/Game/Pioneer/Items/Outpost/FurnitureRecipes/Res_Drawer_01_A/DA_Item_OutpostFurnitureRecipe_Res_Drawer_01_A.DA_Item_OutpostFurnitureRecipe_Res_Drawer_01_A",
             -1249556696L, -1249556696L, 0, [], ItemCategory.Recipe, ItemRarity.Rare,
             1, 0.0, false, false, false,
@@ -2033,14 +2055,6 @@ internal static class UsableItemsPart0
             ["Online.Release.2.0"],
             [],
             []),
-    ];
-}
-
-/// <summary>Entries 250 to 499 of <see cref="UsableItems.All"/>.</summary>
-internal static class UsableItemsPart1
-{
-    public static IReadOnlyList<UsableItem> Entries { get; } =
-    [
         new(250, "DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_S_01_B", "/Game/Pioneer/Items/Outpost/FurnitureRecipes/Rsr_Cabinet_S_01_B/DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_S_01_B.DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_S_01_B",
             1939949915L, 1939949915L, 0, [], ItemCategory.Recipe, ItemRarity.Common,
             1, 0.0, false, false, false,
@@ -2817,6 +2831,14 @@ internal static class UsableItemsPart1
             ["Online.Release.Base"],
             [],
             []),
+    ];
+}
+
+/// <summary>Entries 347 to 457 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart3
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(347, "DA_Item_Recipe_Recipe_Bobcat", "/Game/Pioneer/Items/Recipes/Recipe_Bobcat/DA_Item_Recipe_Recipe_Bobcat.DA_Item_Recipe_Recipe_Bobcat",
             -1260920556L, -1260920556L, 0, [], ItemCategory.Recipe, ItemRarity.None,
             1, 0.0, false, false, false,
@@ -3705,6 +3727,14 @@ internal static class UsableItemsPart1
             ["Online.Release.2.0"],
             [],
             []),
+    ];
+}
+
+/// <summary>Entries 458 to 522 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart4
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(458, "DA_Item_Salvage_BronzeMaskFragment_01", "/Game/Pioneer/Items/Salvage/BronzeMaskFragment_01/DA_Item_Salvage_BronzeMaskFragment_01.DA_Item_Salvage_BronzeMaskFragment_01",
             -1794703304L, -1794703304L, 0, [], ItemCategory.Misc, ItemRarity.Epic,
             3, 0.5, false, false, false,
@@ -4041,14 +4071,6 @@ internal static class UsableItemsPart1
             ["Online.Release.2.0"],
             [],
             []),
-    ];
-}
-
-/// <summary>Entries 500 to 749 of <see cref="UsableItems.All"/>.</summary>
-internal static class UsableItemsPart2
-{
-    public static IReadOnlyList<UsableItem> Entries { get; } =
-    [
         new(500, "DA_Item_Salvage_EquatorialSundial", "/Game/Pioneer/Items/Salvage/EquatorialSundial/DA_Item_Salvage_EquatorialSundial.DA_Item_Salvage_EquatorialSundial",
             400537418L, 400537418L, 0, [], ItemCategory.Misc, ItemRarity.Rare,
             3, 0.5, false, false, false,
@@ -4233,6 +4255,14 @@ internal static class UsableItemsPart2
             ["Online.Release.2.0"],
             [new LootPlacement("Socket.Loot", []), new LootPlacement("Socket.LootContainer.Residential", ["Socket.LootContainer.Residential.Refrigerator_01"]), new LootPlacement("Socket.LootContainer.Commercial", ["Socket.LootContainer.Commercial.CashRegister", "Socket.LootContainer.Commercial.Freezer", "Socket.LootContainer.Commercial.Fridge", "Socket.LootContainer.Commercial.InformationTerminal", "Socket.LootContainer.Commercial.SosBooth01", "Socket.LootContainer.Commercial.VendingMachine", "Socket.LootContainer.Commercial.StackingBox", "Socket.LootContainer.Electrical.LargeTicketBooth", "Socket.LootContainer.Electrical.PhoneBooth"]), new LootPlacement("Socket.LootContainer.Industrial", ["Socket.LootContainer.Industrial.RsrMachineM01.Door"])],
             []),
+    ];
+}
+
+/// <summary>Entries 523 to 592 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart5
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(523, "DA_Item_Salvage_FrozenTrailMat2", "/Game/Pioneer/Items/Salvage/FrozenTrailMat2/DA_Item_Salvage_FrozenTrailMat2.DA_Item_Salvage_FrozenTrailMat2",
             -1472796710L, -1472796710L, 0, [], ItemCategory.Misc, ItemRarity.Rare,
             5, 0.5, false, false, false,
@@ -4793,6 +4823,14 @@ internal static class UsableItemsPart2
             ["Online.Release.2.0"],
             [],
             []),
+    ];
+}
+
+/// <summary>Entries 593 to 669 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart6
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(593, "DA_Item_Salvage_MetalBrackets", "/Game/Pioneer/Items/Salvage/MetalBrackets/DA_Item_Salvage_MetalBrackets.DA_Item_Salvage_MetalBrackets",
             -959674358L, -959674358L, 0, [], ItemCategory.Misc, ItemRarity.Uncommon,
             3, 0.8, false, false, false,
@@ -5409,6 +5447,14 @@ internal static class UsableItemsPart2
             ["FE.Actors.RaiderDen.Item.Shelf", "Online.Release.Base"],
             [new LootPlacement("Socket.Loot", ["Socket.Loot.Car01", "Socket.Loot.Car02", "Socket.Loot.Car03", "Socket.Loot.CartSupplies", "Socket.Loot.Console", "Socket.Loot.Medical", "Socket.Loot.Nature", "Socket.Loot.StorageRack", "Socket.Loot.TrolleyCargo", "Socket.Loot.TrolleyTools", "Socket.Loot.TruckUtility_02", "Socket.Loot.Workstation", "Socket.Loot.WrhShelf01"]), new LootPlacement("Socket.LootContainer.Commercial", ["Socket.LootContainer.Commercial.Freezer", "Socket.LootContainer.Commercial.Fridge", "Socket.LootContainer.Commercial.InformationTerminal", "Socket.LootContainer.Commercial.SosBooth01", "Socket.LootContainer.Electrical.CoffeeMachine01"]), new LootPlacement("Socket.LootContainer.Medical", []), new LootPlacement("Socket.LootCOntainer.Medical.RsrCartShelf", []), new LootPlacement("Socket.LootContainer.Industrial", ["Socket.LootContainer.Industrial.RsrMachineM01.Door", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray"]), new LootPlacement("Socket.LootContainer.Residential", ["Socket.LootContainer.Residential.Refrigerator_01", "Socket.LootContainer.Residential.Trashbin"]), new LootPlacement("Socket.LootContainer.OldWorld", [])],
             ["Item.Drop.Type.Salvage.Trinket"]),
+    ];
+}
+
+/// <summary>Entries 670 to 730 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart7
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(670, "DA_Item_Salvage_RefinedExplosives", "/Game/Pioneer/Items/Salvage/RefinedExplosives/DA_Item_Salvage_RefinedExplosives.DA_Item_Salvage_RefinedExplosives",
             1004246812L, 1004246812L, 0, [], ItemCategory.Misc, ItemRarity.Rare,
             5, 0.3, false, false, false,
@@ -5897,6 +5943,14 @@ internal static class UsableItemsPart2
             ["FE.Actors.RaiderDen.Item.Floor", "Online.Release.Base"],
             [new LootPlacement("Socket.LootContainer.Residential", ["Socket.LootContainer.Residential.CupboardKitchen", "Socket.LootContainer.Residential.KitchenBench", "Socket.LootContainer.Residential.Refrigerator_01", "Socket.LootContainer.Residential.TVUnit", "Socket.LootContainer.Residential.Wrh"]), new LootPlacement("Socket.LootContainer.Commercial", ["Socket.LootContainer.Commercial.CashRegister", "Socket.LootContainer.Commercial.Centerbench", "Socket.LootContainer.Commercial.CupboardCafe", "Socket.LootContainer.Commercial.Freezer", "Socket.LootContainer.Commercial.Fridge", "Socket.LootContainer.Commercial.InformationTerminal"]), new LootPlacement("Socket.LootContainer.Industrial.Lockers.Door", []), new LootPlacement("Socket.Loot", ["Socket.Loot.Bus", "Socket.Loot.Cabinet", "Socket.Loot.Car01", "Socket.Loot.Car02", "Socket.Loot.Car03", "Socket.Loot.CartSupplies"]), new LootPlacement("Socket.LootCOntainer.Medical.RsrCartShelf", []), new LootPlacement("Socket.LootContainer.OldWorld", []), new LootPlacement("Socket.LootContainer.Generic", [])],
             ["Item.Drop.Type.Salvage.Recyclables"]),
+    ];
+}
+
+/// <summary>Entries 731 to 786 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart8
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(731, "DA_Item_Salvage_TelemetryTransceiver", "/Game/Pioneer/Items/Salvage/TelemetryTransceiver/DA_Item_Salvage_TelemetryTransceiver.DA_Item_Salvage_TelemetryTransceiver",
             -25914444L, -25914444L, 0, [], ItemCategory.Misc, ItemRarity.Rare,
             3, 1.5, false, false, false,
@@ -6049,14 +6103,6 @@ internal static class UsableItemsPart2
             ["Online.Release.1.26", "FE.Actors.RaiderDen.Item.Shelf.Overflow", "ItemSize.Large"],
             [],
             ["Item.Drop.Type.Salvage.Trinket"]),
-    ];
-}
-
-/// <summary>Entries 750 to 896 of <see cref="UsableItems.All"/>.</summary>
-internal static class UsableItemsPart3
-{
-    public static IReadOnlyList<UsableItem> Entries { get; } =
-    [
         new(750, "DA_Item_Salvage_Trinket_BoatModel_C_02", "/Game/Pioneer/Items/Salvage/Trinket_BoatModel_C_02/DA_Item_Salvage_Trinket_BoatModel_C_02.DA_Item_Salvage_Trinket_BoatModel_C_02",
             1414923729L, 1414923729L, 0, [], ItemCategory.Misc, ItemRarity.Legendary,
             1, 0.5, false, false, false,
@@ -6353,6 +6399,14 @@ internal static class UsableItemsPart3
             ["Online.Release.Base"],
             [new LootPlacement("Socket.LootContainer.Electrical", []), new LootPlacement("Socket.LootContainer.Tech", []), new LootPlacement("Socket.LootContainer.Mechanical", ["Socket.LootContainer.Mechanical.Bus.Lid2", "Socket.LootContainer.Mechanical.Bus.Lid1", "Socket.LootContainer.Mechanical.PressureMonitor", "Socket.LootContainer.Mechanical.UtilityTruck"]), new LootPlacement("Socket.Loot", ["Socket.Loot.Nature"]), new LootPlacement("Socket.LootContainer.Generic", [])],
             []),
+    ];
+}
+
+/// <summary>Entries 787 to 896 of <see cref="UsableItems.All"/>.</summary>
+internal static class UsableItemsPart9
+{
+    public static IReadOnlyList<UsableItem> Entries { get; } =
+    [
         new(787, "DA_Item_Salvage_WovenCloth", "/Game/Pioneer/Items/Salvage/WovenCloth/DA_Item_Salvage_WovenCloth.DA_Item_Salvage_WovenCloth",
             -799395426L, -799395426L, 0, [], ItemCategory.Misc, ItemRarity.Uncommon,
             10, 0.25, false, false, false,

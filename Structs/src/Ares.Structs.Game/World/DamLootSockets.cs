@@ -122,10 +122,39 @@ public static class DamLootSockets
         .. DamLootSocketsPart20.Sockets,
         .. DamLootSocketsPart21.Sockets,
         .. DamLootSocketsPart22.Sockets,
+        .. DamLootSocketsPart23.Sockets,
+        .. DamLootSocketsPart24.Sockets,
+        .. DamLootSocketsPart25.Sockets,
+        .. DamLootSocketsPart26.Sockets,
+        .. DamLootSocketsPart27.Sockets,
+        .. DamLootSocketsPart28.Sockets,
+        .. DamLootSocketsPart29.Sockets,
+        .. DamLootSocketsPart30.Sockets,
+        .. DamLootSocketsPart31.Sockets,
+        .. DamLootSocketsPart32.Sockets,
+        .. DamLootSocketsPart33.Sockets,
+        .. DamLootSocketsPart34.Sockets,
+        .. DamLootSocketsPart35.Sockets,
+        .. DamLootSocketsPart36.Sockets,
+        .. DamLootSocketsPart37.Sockets,
+        .. DamLootSocketsPart38.Sockets,
+        .. DamLootSocketsPart39.Sockets,
+        .. DamLootSocketsPart40.Sockets,
+        .. DamLootSocketsPart41.Sockets,
+        .. DamLootSocketsPart42.Sockets,
+        .. DamLootSocketsPart43.Sockets,
+        .. DamLootSocketsPart44.Sockets,
+        .. DamLootSocketsPart45.Sockets,
+        .. DamLootSocketsPart46.Sockets,
+        .. DamLootSocketsPart47.Sockets,
+        .. DamLootSocketsPart48.Sockets,
+        .. DamLootSocketsPart49.Sockets,
+        .. DamLootSocketsPart50.Sockets,
+        .. DamLootSocketsPart51.Sockets,
     ];
 }
 
-/// <summary>Sockets 0 to 499 of <see cref="DamLootSockets.All"/>.</summary>
+/// <summary>Sockets 0 to 217 of <see cref="DamLootSockets.All"/>.</summary>
 internal static class DamLootSocketsPart0
 {
     public static IReadOnlyList<LootSocket> Sockets { get; } =
@@ -348,6 +377,14 @@ internal static class DamLootSocketsPart0
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_041", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(433707.13, 412505.59, -33670.68), new Rotator(0.0, -167.557, 0.0), new Vector3D(1.0142, 1.0142, 1.0142), 73, [], null),
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_042", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(434143.17, 411599.21, -33280.74), new Rotator(0.0, -152.764, 0.0), new Vector3D(1.2008, 1.2008, 1.2008), 73, [], null),
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_043", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(433233.55, 413043.43, -33982.96), new Rotator(0.0, 134.637, 0.0), new Vector3D(0.9438, 0.9438, 0.9438), 73, [], null),
+    ];
+}
+
+/// <summary>Sockets 218 to 442 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart1
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_044", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(441399.99, 443632.42, -33733.33), new Rotator(0.0, 45.032, 0.0), new Vector3D(1.1995, 1.1995, 1.1995), 73, [], null),
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_045", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442915.15, 442533.34, -32987.18), new Rotator(0.0, -144.558, 0.0), new Vector3D(0.9791, 0.9791, 0.9791), 73, [], null),
         new("3OD8GYLNZP9M70VP1TZ98J8IB", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_046", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(417649.05, 436306.61, -38148.79), new Rotator(0.0, -125.996, 0.0), new Vector3D(0.9322, 0.9322, 0.9322), 73, [], null),
@@ -573,6 +610,14 @@ internal static class DamLootSocketsPart0
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_35", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(552183.8, 636021.72, -43506.43), new Rotator(84.098, 22.845, 13.239), new Vector3D(0.9151, 0.9151, 0.9151), 71, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_35", "StaticMeshComponent0", "Loot_Container_5", "Socket.LootContainer.Nature.Moss", new Vector3D(552241.74, 636125.0, -43485.38), new Rotator(90.0, -90.0, 27.46), new Vector3D(0.9151, 0.9151, 0.9151), 71, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_35", "StaticMeshComponent0", "Loot_Container_6", "Socket.LootContainer.Nature.Moss", new Vector3D(552288.52, 636082.34, -43508.58), new Rotator(86.346, 177.54, 5.036), new Vector3D(0.9151, 0.9151, 0.9151), 71, [], null),
+    ];
+}
+
+/// <summary>Sockets 443 to 666 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart2
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_41", "StaticMeshComponent0", "Loot_Container", "Socket.LootContainer.Nature.Moss", new Vector3D(553417.25, 647803.98, -43306.32), new Rotator(86.408, -173.791, 52.259), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_41", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(553415.93, 647833.72, -43255.01), new Rotator(80.966, 163.022, 27.118), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "BP_South_DeepForest_Tree_L_01_C_41", "StaticMeshComponent0", "Loot_Container_5", "Socket.LootContainer.Nature.Moss", new Vector3D(553286.34, 647817.55, -43240.16), new Rotator(86.408, -173.791, 177.259), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
@@ -630,14 +675,6 @@ internal static class DamLootSocketsPart0
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_003", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(570516.26, 642690.67, -45236.12), new Rotator(6.863, -138.626, -5.736), new Vector3D(0.9699, 0.9699, 0.9699), 76, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_004", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(569338.52, 649497.93, -43693.1), new Rotator(6.863, -167.488, -5.736), new Vector3D(0.9873, 0.9873, 0.9873), 76, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_005", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(569347.3, 644336.6, -44512.65), new Rotator(6.863, 102.958, -5.736), new Vector3D(0.7554, 0.7554, 0.7554), 76, [], null),
-    ];
-}
-
-/// <summary>Sockets 500 to 999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart1
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_006", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(555666.69, 615785.77, -44930.99), new Rotator(6.863, 63.341, -5.736), new Vector3D(0.9863, 0.9863, 0.9863), 76, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_007", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(552767.59, 616409.89, -44962.11), new Rotator(6.863, 41.663, -5.736), new Vector3D(0.9022, 0.9022, 0.9022), 76, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_008", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(552916.12, 614771.91, -44870.15), new Rotator(6.863, 41.487, -5.736), new Vector3D(0.9316, 0.9316, 0.9316), 76, [], null),
@@ -805,6 +842,14 @@ internal static class DamLootSocketsPart1
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_089", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(599933.95, 645732.55, -40278.54), new Rotator(-2.2, 134.161, 3.223), new Vector3D(0.8753, 0.8753, 0.8753), 77, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_090", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(598298.98, 643377.6, -42270.23), new Rotator(-2.2, 62.258, 3.223), new Vector3D(0.8662, 0.8662, 0.8662), 77, [], null),
         new("3XKNOQOY3Z0IY8EDUYR1AS3JQ", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_091", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(601421.87, 644844.02, -39912.88), new Rotator(-2.2, -32.341, 3.223), new Vector3D(0.9082, 0.9082, 0.9082), 77, [], null),
+    ];
+}
+
+/// <summary>Sockets 667 to 891 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart3
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("418E58TX3DAEY1FH9WC805A5X", "BP_Base_Rock_XL_05_C_53", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(540088.31, 563543.86, -44413.79), new Rotator(-13.808, 11.992, -5.491), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "BP_Base_Rock_XL_05_C_53", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(540447.61, 561312.31, -42638.16), new Rotator(-11.085, 76.572, -1.793), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "BP_Base_Rock_XL_05_C_53", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(540683.52, 561762.75, -43651.89), new Rotator(-26.657, 126.407, -30.684), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
@@ -1030,6 +1075,14 @@ internal static class DamLootSocketsPart1
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_018", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(520909.83, 557939.51, -44785.64), new Rotator(-2.2, -70.737, 3.223), new Vector3D(0.7512, 0.7512, 0.7512), 77, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_019", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(520125.54, 558272.42, -44603.15), new Rotator(-2.2, -56.456, 3.223), new Vector3D(0.8314, 0.8314, 0.8314), 77, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(516591.75, 556960.01, -44649.43), new Rotator(-2.2, 33.69, 3.223), new Vector3D(0.8479, 0.8479, 0.8479), 77, [], null),
+    ];
+}
+
+/// <summary>Sockets 892 to 1113 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart4
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(517554.0, 557033.3, -44671.7), new Rotator(-2.2, -177.405, 3.223), new Vector3D(0.9121, 0.9121, 0.9121), 77, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_022", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(505996.49, 569936.41, -43565.94), new Rotator(-2.2, 77.983, 3.223), new Vector3D(0.8356, 0.8356, 0.8356), 77, [], null),
         new("418E58TX3DAEY1FH9WC805A5X", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_023", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(505867.61, 571336.05, -43914.27), new Rotator(-2.2, -120.316, 3.223), new Vector3D(0.9283, 0.9283, 0.9283), 77, [], null),
@@ -1138,14 +1191,6 @@ internal static class DamLootSocketsPart1
         new("4HMRGDHGDLQGJYDT4YQTEC3F9", "BP_Base_Rock_XL_07_9", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(603756.58, 587392.91, -36381.18), new Rotator(0.0, 99.281, 0.0), new Vector3D(1.0, 1.0, 1.0), 66, [], null),
         new("4HMRGDHGDLQGJYDT4YQTEC3F9", "SM_South_Base_Rock_XL_05_8", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(599778.65, 561153.04, -31045.07), new Rotator(-8.702, 32.861, -4.801), new Vector3D(0.6919, 0.6919, 0.6919), 65, [], null),
         new("4HMRGDHGDLQGJYDT4YQTEC3F9", "SM_South_Base_Rock_XL_05_8", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(600464.06, 559753.19, -29809.72), new Rotator(-9.472, 96.688, 3.178), new Vector3D(0.6919, 0.6919, 0.6919), 65, [], null),
-    ];
-}
-
-/// <summary>Sockets 1000 to 1499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart2
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("4HMRGDHGDLQGJYDT4YQTEC3F9", "SM_South_Base_Rock_XL_05_8", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(600560.95, 560129.31, -30491.58), new Rotator(-29.301, 145.06, -25.678), new Vector3D(0.6919, 0.6919, 0.6919), 65, [], null),
         new("4HMRGDHGDLQGJYDT4YQTEC3F9", "SM_South_Base_Rock_XL_05_8", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(599944.97, 560928.08, -30703.57), new Rotator(-41.613, 147.195, -6.312), new Vector3D(0.6919, 0.6919, 0.6919), 65, [], null),
         new("4HVQFGPLQLU3CWONQIUAV0WDH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_001", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(598612.93, 648836.32, -39479.58), new Rotator(0.0, -149.917, 0.0), new Vector3D(1.0914, 1.0914, 1.0914), 73, [], null),
@@ -1260,6 +1305,14 @@ internal static class DamLootSocketsPart2
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_004", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(500811.07, 657996.58, -38003.19), new Rotator(6.863, 159.06, -5.736), new Vector3D(0.8881, 0.8881, 0.8881), 76, [], null),
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_005", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(501963.75, 658500.56, -38017.03), new Rotator(6.863, 172.806, -5.736), new Vector3D(0.8667, 0.8667, 0.8667), 76, [], null),
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_006", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(500926.55, 660513.65, -38442.84), new Rotator(6.863, -16.534, -5.736), new Vector3D(0.8279, 0.8279, 0.8279), 76, [], null),
+    ];
+}
+
+/// <summary>Sockets 1114 to 1335 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart5
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_007", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(497937.92, 662431.69, -37987.68), new Rotator(6.863, -81.101, -5.736), new Vector3D(0.9884, 0.9884, 0.9884), 76, [], null),
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_008", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(498524.31, 664285.18, -37529.37), new Rotator(6.863, 28.283, -5.736), new Vector3D(0.8068, 0.8068, 0.8068), 76, [], null),
         new("4S3LG54X8HMXGXWO0ZA7AI6TK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_009", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(497385.52, 664985.6, -37532.87), new Rotator(6.863, 97.938, -5.736), new Vector3D(0.7641, 0.7641, 0.7641), 76, [], null),
@@ -1482,6 +1535,14 @@ internal static class DamLootSocketsPart2
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_32", "StaticMeshComponent0", "Loot_Container", "Socket.LootContainer.Nature.Moss", new Vector3D(551684.42, 640345.73, -43792.67), new Rotator(86.217, 106.75, 80.0), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_32", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(551711.62, 640338.31, -43740.48), new Rotator(81.742, 66.414, 37.774), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_32", "StaticMeshComponent0", "Loot_Container_5", "Socket.LootContainer.Nature.Moss", new Vector3D(551733.91, 640466.94, -43725.15), new Rotator(86.217, 106.75, -155.0), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
+    ];
+}
+
+/// <summary>Sockets 1336 to 1558 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart6
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_32", "StaticMeshComponent0", "Loot_Container_6", "Socket.LootContainer.Nature.Moss", new Vector3D(551797.98, 640438.23, -43747.51), new Rotator(84.743, 150.817, -41.018), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_33", "StaticMeshComponent0", "Loot_Container", "Socket.LootContainer.Nature.Moss", new Vector3D(550756.19, 638823.09, -43774.02), new Rotator(90.0, -36.87, 61.852), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "BP_South_DeepForest_Tree_L_01_C_33", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(550731.14, 638806.34, -43722.94), new Rotator(84.098, -83.416, 13.239), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
@@ -1646,14 +1707,6 @@ internal static class DamLootSocketsPart2
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_057", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(535261.09, 637200.34, -43247.64), new Rotator(2.476, 146.644, 2.865), new Vector3D(0.8771, 0.8771, 0.8771), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_058", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(535628.2, 636026.75, -43245.0), new Rotator(-3.087, -133.645, -4.909), new Vector3D(0.857, 0.857, 0.857), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_059", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(540882.35, 640668.66, -43575.88), new Rotator(-0.349, -108.903, -4.922), new Vector3D(0.836, 0.836, 0.836), 74, [], null),
-    ];
-}
-
-/// <summary>Sockets 1500 to 1999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart3
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_060", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(533003.41, 646540.69, -43442.75), new Rotator(2.985, -178.764, -0.456), new Vector3D(0.9951, 0.9951, 0.9951), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_061", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(532129.31, 645609.73, -43322.77), new Rotator(-0.791, 16.626, -0.222), new Vector3D(0.8016, 0.8016, 0.8016), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_062", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(533440.38, 645569.53, -43456.21), new Rotator(0.926, -88.744, -0.064), new Vector3D(0.9442, 0.9442, 0.9442), 74, [], null),
@@ -1713,6 +1766,14 @@ internal static class DamLootSocketsPart3
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_116", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(544123.3, 647834.9, -43528.76), new Rotator(1.006, -31.082, 3.96), new Vector3D(0.7653, 0.7653, 0.7653), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_117", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(508862.14, 638261.52, -42413.45), new Rotator(-3.903, -23.438, -0.465), new Vector3D(0.9797, 0.9797, 0.9797), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_118", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(531624.44, 644522.62, -43408.73), new Rotator(0.18, -100.523, -2.091), new Vector3D(0.8132, 0.8132, 0.8132), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 1559 to 1778 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart7
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_119", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(546521.14, 643747.07, -43661.64), new Rotator(-3.363, 146.37, -0.451), new Vector3D(0.8007, 0.8007, 0.8007), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_120", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(546511.38, 642629.9, -43822.41), new Rotator(3.358, -164.336, -4.512), new Vector3D(0.7897, 0.7897, 0.7897), 74, [], null),
         new("5OWYRLHYGML7EH13TUCCBWG2L", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_121", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(545265.36, 643078.49, -43894.24), new Rotator(-3.139, 9.418, 2.589), new Vector3D(0.9126, 0.9126, 0.9126), 74, [], null),
@@ -1933,6 +1994,14 @@ internal static class DamLootSocketsPart3
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2029637935", "HuskMesh1", "ContainerSocket.Lid", "Socket.LootContainer.ARC.Wreck02", new Vector3D(478369.65, 519950.52, -40562.44), new Rotator(4.451, -26.195, 8.964), new Vector3D(1.0, 1.0, 1.0), 59, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2029637935", "HuskMesh2", "ContainerSocket.Lid", "Socket.LootContainer.ARC.Wreck02", new Vector3D(477746.86, 519650.96, -40509.62), new Rotator(-9.751, 102.941, -2.229), new Vector3D(1.0, 1.0, 1.0), 59, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2029637935", "HuskMesh3", "ContainerSocket.Lid", "Socket.LootContainer.ARC.Wreck02", new Vector3D(478756.42, 520191.41, -40604.91), new Rotator(-5.243, 31.363, 8.527), new Vector3D(1.0, 1.0, 1.0), 59, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
+    ];
+}
+
+/// <summary>Sockets 1779 to 1997 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart8
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2029637935", "HuskMesh4", "SocketLid", "Socket.LootContainer.ARC.Wreck03", new Vector3D(478357.71, 520245.55, -40654.84), new Rotator(-1.406, 30.674, 8.777), new Vector3D(1.0, 1.0, 1.0), 60, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2029637935", "HuskMesh5", "SocketLid", "Socket.LootContainer.ARC.Wreck03", new Vector3D(478231.75, 520286.17, -40637.92), new Rotator(2.87, -8.161, 20.583), new Vector3D(1.0, 1.0, 1.0), 60, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("6E2ARI82HTHOW2UAQ7EIEZLIG", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_2052046936", "HuskMesh", "ContainerSocket.Lid", "Socket.LootContainer.ARC.Wreck02", new Vector3D(488385.69, 541782.36, -40102.47), new Rotator(16.016, 40.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 59, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
@@ -2152,16 +2221,16 @@ internal static class DamLootSocketsPart3
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_018", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(439651.86, 567912.93, -40152.32), new Rotator(6.863, 151.29, -5.736), new Vector3D(0.9804, 0.9804, 0.9804), 76, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_019", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(449471.93, 598034.3, -35805.32), new Rotator(6.863, -175.246, -5.736), new Vector3D(0.9405, 0.9405, 0.9405), 76, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(448425.0, 595052.38, -35528.77), new Rotator(6.863, 117.843, -5.736), new Vector3D(0.8179, 0.8179, 0.8179), 76, [], null),
-        new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(453094.72, 569481.77, -37382.87), new Rotator(6.863, -115.514, -5.736), new Vector3D(0.8443, 0.8443, 0.8443), 76, [], null),
-        new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_022", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(450121.75, 570409.75, -37486.44), new Rotator(6.863, -139.158, -5.736), new Vector3D(0.7857, 0.7857, 0.7857), 76, [], null),
     ];
 }
 
-/// <summary>Sockets 2000 to 2499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart4
+/// <summary>Sockets 1998 to 2207 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart9
 {
     public static IReadOnlyList<LootSocket> Sockets { get; } =
     [
+        new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(453094.72, 569481.77, -37382.87), new Rotator(6.863, -115.514, -5.736), new Vector3D(0.8443, 0.8443, 0.8443), 76, [], null),
+        new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_022", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(450121.75, 570409.75, -37486.44), new Rotator(6.863, -139.158, -5.736), new Vector3D(0.7857, 0.7857, 0.7857), 76, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_023", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(452920.12, 571834.19, -37678.87), new Rotator(6.863, 161.791, -5.736), new Vector3D(0.9884, 0.9884, 0.9884), 76, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_024", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(426571.44, 600457.0, -36851.53), new Rotator(6.863, -12.858, -5.736), new Vector3D(0.9711, 0.9711, 0.9711), 76, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_025", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(425258.29, 601939.14, -36879.84), new Rotator(6.863, -126.018, -5.736), new Vector3D(0.9896, 0.9896, 0.9896), 76, [], null),
@@ -2370,6 +2439,14 @@ internal static class DamLootSocketsPart4
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5317", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Electrical.ButtonPanel", new Vector3D(445657.9, 562028.37, -38035.43), new Rotator(0.0, 75.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 51, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5318", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(444182.04, 562406.46, -38054.63), new Rotator(0.0, 75.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5318", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(444221.36, 562392.13, -38030.36), new Rotator(0.0, 75.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
+    ];
+}
+
+/// <summary>Sockets 2208 to 2410 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart10
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5495", "StaticMeshComponent0", "ContainerSocket.HatchLeft", "Socket.LootContainer.Mechanical.CompressorTrailer", new Vector3D(446500.46, 554117.92, -40136.19), new Rotator(-24.005, 12.581, 2.183), new Vector3D(1.0, 1.0, 1.0), 49, ["/Game/Pioneer/Environment/Props/Warehouse/TrailerCompressor_M_01/MI_Wrh_TrailerCompressor_M_01_A_Yellow.MI_Wrh_TrailerCompressor_M_01_A_Yellow"], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5495", "StaticMeshComponent0", "ContainerSocket.HatchRight", "Socket.LootContainer.Mechanical.CompressorTrailer", new Vector3D(446604.97, 554280.75, -40214.18), new Rotator(24.014, -167.322, -5.511), new Vector3D(1.0, 1.0, 1.0), 49, ["/Game/Pioneer/Environment/Props/Warehouse/TrailerCompressor_M_01/MI_Wrh_TrailerCompressor_M_01_A_Yellow.MI_Wrh_TrailerCompressor_M_01_A_Yellow"], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_5526", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(440688.07, 554782.6, -40580.0), new Rotator(0.0, -151.274, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
@@ -2573,6 +2650,14 @@ internal static class DamLootSocketsPart4
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1761", "StaticMeshComponent0", "ContainerSocket.Door.03", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(444705.6, 562486.95, -38985.7), new Rotator(0.0, -100.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1761", "StaticMeshComponent0", "ContainerSocket.Door.04", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(444755.0, 562478.24, -38985.7), new Rotator(0.0, -100.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1761", "StaticMeshComponent0", "ContainerSocket.Door.05", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(444805.22, 562469.38, -38985.7), new Rotator(0.0, -100.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
+    ];
+}
+
+/// <summary>Sockets 2411 to 2632 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart11
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1761", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(444853.75, 562460.82, -38985.7), new Rotator(0.0, -100.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1778", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Tech.TapeDrive02.PanelLarge", new Vector3D(443981.96, 561128.25, -38946.69), new Rotator(0.0, 117.788, 0.0), new Vector3D(1.0, 1.0, 1.0), 19, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_a8cd2ad1af69bea6_1778", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Tech.TapeDrive02.PanelSmall", new Vector3D(443909.26, 561106.36, -38819.01), new Rotator(0.0, -62.212, 0.0), new Vector3D(1.0, 1.0, 1.0), 19, [], null),
@@ -2662,14 +2747,6 @@ internal static class DamLootSocketsPart4
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_cebbdf80806a64b2_204", "StaticMeshComponent0", "ContainerSocket.Door", "Socket.LootContainer.Medical.RsrCabinetS.Door", new Vector3D(427665.1, 588086.48, -38784.89), new Rotator(0.0, 3.284, 0.0), new Vector3D(1.0, 1.0, 1.0), 24, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_db708d77640ca54e_11", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(443591.36, 576602.01, -38396.28), new Rotator(0.0, -159.879, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_db708d77640ca54e_2", "StaticMeshComponent0", "ContainerSocket.Door", "Socket.LootContainer.Electrical.CabinetDoor", new Vector3D(443654.88, 576485.17, -38399.68), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 27, [], null),
-    ];
-}
-
-/// <summary>Sockets 2500 to 2999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart5
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_db708d77640ca54e_40", "StaticMeshComponent0", "Container.Socket.Lid_01_A", "Socket.LootContainer.Electrical.GeneratorM02.Lid01", new Vector3D(443371.2, 576417.16, -38370.46), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 17, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_db708d77640ca54e_40", "StaticMeshComponent0", "Container.Socket.Lid_02_A", "Socket.LootContainer.Electrical.GeneratorM02.Lid02", new Vector3D(443338.99, 576396.02, -38483.17), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 17, [], null),
         new("6VLN5OPYR367ZIKOMVAOOKL4Z", "StaticMeshActor_db708d77640ca54e_42", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(443669.1, 576606.68, -38397.6), new Rotator(0.0, 118.871, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
@@ -2803,6 +2880,14 @@ internal static class DamLootSocketsPart5
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_8", "SM_Dam_WaterTankCarrier_01_A", "Loot_0", "Socket.LootContainer.Nature.WaterTank", new Vector3D(456460.38, 530110.37, -40522.99), new Rotator(0.0, -90.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_8", "SM_Dam_WaterTankCarrier_01_A", "Loot_1", "Socket.LootContainer.Nature.WaterTank", new Vector3D(456482.77, 530076.28, -40522.99), new Rotator(0.0, -90.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_8", "SM_Dam_WaterTankCarrier_01_A", "Loot_2", "Socket.LootContainer.Nature.WaterTank", new Vector3D(456419.23, 530076.28, -40522.99), new Rotator(0.0, -90.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
+    ];
+}
+
+/// <summary>Sockets 2633 to 2842 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart12
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_9", "SM_Dam_WaterTankCarrier_01_A", "Loot", "Socket.LootContainer.Nature.WaterTank", new Vector3D(466717.61, 530228.79, -40723.21), new Rotator(0.0, 60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_9", "SM_Dam_WaterTankCarrier_01_A", "Loot_0", "Socket.LootContainer.Nature.WaterTank", new Vector3D(466684.82, 530171.99, -40723.21), new Rotator(0.0, 60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "BP_Dam_WaterTank_01_C_9", "SM_Dam_WaterTankCarrier_01_A", "Loot_1", "Socket.LootContainer.Nature.WaterTank", new Vector3D(466682.47, 530212.71, -40723.21), new Rotator(0.0, 60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 9, [], null),
@@ -3013,6 +3098,14 @@ internal static class DamLootSocketsPart5
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_002", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(462926.81, 516463.44, -40755.95), new Rotator(-4.972, -32.937, -4.762), new Vector3D(0.8439, 0.8439, 0.8439), 74, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_003", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(461239.9, 515613.19, -40670.06), new Rotator(3.254, 44.964, 0.987), new Vector3D(0.7756, 0.7756, 0.7756), 74, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_004", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(461910.01, 516797.59, -40641.17), new Rotator(2.545, -66.136, -0.224), new Vector3D(0.8906, 0.8906, 0.8906), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 2843 to 3067 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart13
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_005", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(465715.09, 515694.44, -40757.64), new Rotator(-2.789, 74.395, -4.939), new Vector3D(0.9775, 0.9775, 0.9775), 74, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_006", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(458533.14, 537199.02, -40622.27), new Rotator(-2.165, -13.56, 2.414), new Vector3D(0.988, 0.988, 0.988), 74, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_007", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(483191.23, 527245.99, -40340.79), new Rotator(-0.477, 1.157, 4.633), new Vector3D(0.8933, 0.8933, 0.8933), 74, [], null),
@@ -3170,14 +3263,6 @@ internal static class DamLootSocketsPart5
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_001", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(480196.14, 516728.65, -39479.19), new Rotator(6.863, 3.777, -5.736), new Vector3D(0.7553, 0.7553, 0.7553), 76, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_002", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(479375.07, 518956.18, -40181.19), new Rotator(6.863, -2.323, -5.736), new Vector3D(0.7982, 0.7982, 0.7982), 76, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_003", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(478596.04, 515903.12, -39477.44), new Rotator(6.863, -24.481, -5.736), new Vector3D(0.9444, 0.9444, 0.9444), 76, [], null),
-    ];
-}
-
-/// <summary>Sockets 3000 to 3499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart6
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_004", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(477119.79, 519189.18, -40593.29), new Rotator(6.863, 156.706, -5.736), new Vector3D(0.7781, 0.7781, 0.7781), 76, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_005", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(475491.94, 517162.9, -40562.85), new Rotator(6.863, -104.499, -5.736), new Vector3D(0.8841, 0.8841, 0.8841), 76, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_006", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(474299.1, 517105.76, -40653.89), new Rotator(6.863, -118.403, -5.736), new Vector3D(0.817, 0.817, 0.817), 76, [], null),
@@ -3246,6 +3331,14 @@ internal static class DamLootSocketsPart6
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Forest_Tree_Pine_M_07_1684", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(497993.49, 518025.07, -36687.52), new Rotator(0.0, 1.303, 0.0), new Vector3D(1.0, 1.0, 1.0), 75, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Forest_Tree_Pine_M_07_1685", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(493690.82, 517250.98, -36672.93), new Rotator(2.184, 1.347, 2.287), new Vector3D(1.0, 1.0, 1.0), 75, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Gvt_FloodlightTower_01_A_203", "StaticMeshComponent0", "Lid01", "Socket.LootContainer.Electrical.FloodLight.Lid01", new Vector3D(501583.07, 523967.66, -38065.97), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, ["/Game/Pioneer/Environment/Props/Government/FloodlightTower_01/MI_Gvt_PropTrim_FloodlightTower_01_A.MI_Gvt_PropTrim_FloodlightTower_01_A", "/Game/Pioneer/MaterialLibrary/Material_Instances/Themes/Generic/MI_Concrete_Floor_Slab_01_A.MI_Concrete_Floor_Slab_01_A"], null),
+    ];
+}
+
+/// <summary>Sockets 3068 to 3273 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart14
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Gvt_FloodlightTower_01_A_203", "StaticMeshComponent0", "Lid02", "Socket.LootContainer.Electrical.FloodLight.Lid02", new Vector3D(501448.66, 523940.84, -38065.93), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, ["/Game/Pioneer/Environment/Props/Government/FloodlightTower_01/MI_Gvt_PropTrim_FloodlightTower_01_A.MI_Gvt_PropTrim_FloodlightTower_01_A", "/Game/Pioneer/MaterialLibrary/Material_Instances/Themes/Generic/MI_Concrete_Floor_Slab_01_A.MI_Concrete_Floor_Slab_01_A"], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Gvt_FloodlightTower_01_A_204", "StaticMeshComponent0", "Lid01", "Socket.LootContainer.Electrical.FloodLight.Lid01", new Vector3D(502861.07, 524705.54, -38065.97), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, ["/Game/Pioneer/Environment/Props/Government/FloodlightTower_01/MI_Gvt_PropTrim_FloodlightTower_01_A.MI_Gvt_PropTrim_FloodlightTower_01_A", "/Game/Pioneer/MaterialLibrary/Material_Instances/Themes/Generic/MI_Concrete_Floor_Slab_01_A.MI_Concrete_Floor_Slab_01_A"], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "SM_Gvt_FloodlightTower_01_A_204", "StaticMeshComponent0", "Lid02", "Socket.LootContainer.Electrical.FloodLight.Lid02", new Vector3D(502726.66, 524678.71, -38065.93), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, ["/Game/Pioneer/Environment/Props/Government/FloodlightTower_01/MI_Gvt_PropTrim_FloodlightTower_01_A.MI_Gvt_PropTrim_FloodlightTower_01_A", "/Game/Pioneer/MaterialLibrary/Material_Instances/Themes/Generic/MI_Concrete_Floor_Slab_01_A.MI_Concrete_Floor_Slab_01_A"], null),
@@ -3452,6 +3545,14 @@ internal static class DamLootSocketsPart6
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_1457", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(493843.83, 531128.88, -36612.79), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_1478", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(495395.19, 531596.68, -37515.67), new Rotator(0.0, 117.457, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_1478", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(495433.88, 531612.65, -37491.4), new Rotator(0.0, 117.457, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
+    ];
+}
+
+/// <summary>Sockets 3274 to 3501 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart15
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_542", "Mesh", "Lid01", "Socket.LootContainer.Electrical.FloodLight.Lid01", new Vector3D(488414.54, 527707.02, -37487.86), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, [null, null, "/Game/Pioneer/Maps/TheDam_02/TheDam_02_P/_Generated_/78VSCAY5CCYC9B657XV2IPJ4Z.TheDam_02_P.PersistentLevel.StaticMeshActor_430c3d9e3b496a7a_542.Mesh.LightMID"], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_542", "Mesh", "Lid02", "Socket.LootContainer.Electrical.FloodLight.Lid02", new Vector3D(488387.71, 527841.42, -37487.82), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 16, [null, null, "/Game/Pioneer/Maps/TheDam_02/TheDam_02_P/_Generated_/78VSCAY5CCYC9B657XV2IPJ4Z.TheDam_02_P.PersistentLevel.StaticMeshActor_430c3d9e3b496a7a_542.Mesh.LightMID"], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_430c3d9e3b496a7a_543", "StaticMeshComponent0", "Lid01", "Socket.LootContainer.Electrical.FloodLight.Lid01", new Vector3D(484404.7, 532096.4, -36651.24), new Rotator(0.098, -63.733, 1.505), new Vector3D(1.0, 1.0, 1.0), 16, [null, null], null),
@@ -3678,16 +3779,16 @@ internal static class DamLootSocketsPart6
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7643", "StaticMeshComponent0", "ContainerSocket.HatchLeft", "Socket.LootContainer.Mechanical.CompressorTrailer", new Vector3D(465281.92, 505855.09, -39734.55), new Rotator(-1.694, 19.761, 1.338), new Vector3D(1.0, 1.0, 1.0), 49, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7643", "StaticMeshComponent0", "ContainerSocket.HatchRight", "Socket.LootContainer.Mechanical.CompressorTrailer", new Vector3D(465383.42, 506036.46, -39752.51), new Rotator(1.702, -160.15, -4.702), new Vector3D(1.0, 1.0, 1.0), 49, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7644", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(467292.45, 504147.05, -39499.68), new Rotator(0.0, 105.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
+        new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7646", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(459706.58, 508964.47, -39596.61), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
+        new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7647", "StaticMeshComponent0", "ContainerSocket.Drawer.Left", "Socket.LootContainer.Commercial.GvtDesk.Drawer", new Vector3D(460329.22, 510512.47, -40106.68), new Rotator(-8.625, 109.29, -5.655), new Vector3D(1.0, 1.0, 1.0), 14, [], null),
     ];
 }
 
-/// <summary>Sockets 3500 to 3999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart7
+/// <summary>Sockets 3502 to 3704 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart16
 {
     public static IReadOnlyList<LootSocket> Sockets { get; } =
     [
-        new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7646", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(459706.58, 508964.47, -39596.61), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
-        new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7647", "StaticMeshComponent0", "ContainerSocket.Drawer.Left", "Socket.LootContainer.Commercial.GvtDesk.Drawer", new Vector3D(460329.22, 510512.47, -40106.68), new Rotator(-8.625, 109.29, -5.655), new Vector3D(1.0, 1.0, 1.0), 14, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_7647", "StaticMeshComponent0", "ContainerSocket.Drawer.Right", "Socket.LootContainer.Commercial.GvtDesk.Drawer", new Vector3D(460453.31, 510553.84, -40119.48), new Rotator(-8.625, 109.29, -5.655), new Vector3D(1.0, 1.0, 1.0), 14, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_774acc0159628c8f_105", "StaticMeshComponent0", "ContainerSocket.Door.01", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(485659.83, 523704.77, -36774.84), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_774acc0159628c8f_105", "StaticMeshComponent0", "ContainerSocket.Door.02", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(485703.18, 523729.79, -36774.84), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
@@ -3891,6 +3992,14 @@ internal static class DamLootSocketsPart7
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F6696A02_28ff9a09cd534ae2_1590064011", "StaticMeshComponent0", "Lid1_A", "Socket.LootContainer.Mechanical.Bus.Lid1", new Vector3D(495215.89, 512976.01, -36715.33), new Rotator(0.0, -50.0, -1.673), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F6696A02_28ff9a09cd534ae2_1590064011", "StaticMeshComponent0", "Lid1_B", "Socket.LootContainer.Mechanical.Bus.Lid1", new Vector3D(495130.46, 513078.68, -36715.28), new Rotator(0.0, -50.0, -1.673), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F6696A02_28ff9a09cd534ae2_1590064011", "StaticMeshComponent0", "Lid1_C", "Socket.LootContainer.Mechanical.Bus.Lid1", new Vector3D(495455.34, 513184.92, -36708.41), new Rotator(0.0, 130.0, 1.673), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
+    ];
+}
+
+/// <summary>Sockets 3705 to 3891 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart17
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F6696A02_28ff9a09cd534ae2_1590064011", "StaticMeshComponent0", "Lid2_A", "Socket.LootContainer.Mechanical.Bus.Lid2", new Vector3D(495792.24, 512535.47, -36646.32), new Rotator(0.0, 130.0, 1.285), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F66C6A02_f94e46824b659a43_2145424637", "StaticMeshComponent0", "Lid1_A", "Socket.LootContainer.Mechanical.Bus.Lid1", new Vector3D(495370.04, 511886.08, -36715.33), new Rotator(0.0, -40.0, -1.673), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_107C614142F66C6A02_f94e46824b659a43_2145424637", "StaticMeshComponent0", "Lid1_B", "Socket.LootContainer.Mechanical.Bus.Lid1", new Vector3D(495268.07, 511972.36, -36715.28), new Rotator(0.0, -40.0, -1.673), new Vector3D(1.0, 1.0, 1.0), 55, [], null),
@@ -4078,6 +4187,14 @@ internal static class DamLootSocketsPart7
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F4B402_ca2073eeb89b1243_1268654366", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(485143.5, 525402.06, -37635.7), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F6B402_ca2073eeb89b1243_1655894752", "StaticMeshComponent0", "ContainerSocket.Panel.Large_1", "Socket.LootContainer.Electrical.Transformer.PanelLarge", new Vector3D(494201.44, 526330.26, -37363.0), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, -1.0, 1.0), 30, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F6B402_ca2073eeb89b1243_1655894752", "StaticMeshComponent0", "ContainerSocket.Panel.Large_2", "Socket.LootContainer.Electrical.Transformer.PanelLarge", new Vector3D(494106.7, 526275.73, -37363.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, -1.0, 1.0), 30, [], null),
+    ];
+}
+
+/// <summary>Sockets 3892 to 4094 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart18
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F6B402_ca2073eeb89b1243_1655894752", "StaticMeshComponent0", "ContainerSocket.Panel.Large_3", "Socket.LootContainer.Electrical.Transformer.PanelLarge", new Vector3D(494005.99, 526217.59, -37363.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, -1.0, 1.0), 30, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F6B402_ca2073eeb89b1243_1655894752", "StaticMeshComponent0", "ContainerSocket.Panel.Main", "Socket.LootContainer.Electrical.Transformer.PanelMain", new Vector3D(493879.3, 526207.23, -37476.36), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, -1.0, 1.0), 30, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_UAID_ECE7A7024099F6B402_ca2073eeb89b1243_1655894752", "StaticMeshComponent0", "ContainerSocket.Panel.Small_1", "Socket.LootContainer.Electrical.Transformer.PanelSmall", new Vector3D(494267.08, 526372.98, -37480.55), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, -1.0, 1.0), 30, [], null),
@@ -4186,14 +4303,6 @@ internal static class DamLootSocketsPart7
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_28", "StaticMeshComponent0", "ContainerSocket.Panel.Small_5", "Socket.LootContainer.Electrical.Transformer.PanelSmall", new Vector3D(489332.74, 514172.15, -36672.18), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 30, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_346", "StaticMeshComponent0", "ContainerSocket.Door", "Socket.LootContainer.Electrical.CabinetDoor", new Vector3D(488945.18, 514232.12, -36699.12), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 27, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_390", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(489332.14, 513774.56, -36687.18), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
-    ];
-}
-
-/// <summary>Sockets 4000 to 4499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart8
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_391", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(488933.73, 514026.51, -36687.19), new Rotator(0.0, -40.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_396", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(488846.28, 514277.19, -36687.18), new Rotator(0.0, 22.33, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
         new("78VSCAY5CCYC9B657XV2IPJ4Z", "StaticMeshActor_e6fd3ae35a47b16a_400", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Electrical.ButtonPanel", new Vector3D(488519.2, 513781.3, -36637.13), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 51, [], null),
@@ -4289,6 +4398,14 @@ internal static class DamLootSocketsPart8
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Computer_03_A_C_091785a43ffd220e_1291", "StaticMeshComponent0", "ContainerSocket.Panel", "Socket.LootContainer.Tech.Computer03.Panel", new Vector3D(476526.2, 567746.12, -36696.86), new Rotator(0.0, -64.042, 0.0), new Vector3D(1.0, 1.0, 1.0), 13, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Computer_03_A_C_091785a43ffd220e_290", "StaticMeshComponent0", "ContainerSocket.Panel", "Socket.LootContainer.Tech.Computer03.Panel", new Vector3D(476815.01, 566625.73, -36696.86), new Rotator(0.0, 123.038, 0.0), new Vector3D(1.0, 1.0, 1.0), 13, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Machine_M_02_A_C_091785a43ffd220e_869", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Tech.TapeDrive02.PanelLarge", new Vector3D(479776.97, 565943.2, -28379.66), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 19, [], null),
+    ];
+}
+
+/// <summary>Sockets 4095 to 4295 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart19
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Machine_M_02_A_C_091785a43ffd220e_869", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Tech.TapeDrive02.PanelSmall", new Vector3D(479705.17, 565918.51, -28251.97), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 19, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Server_01_x400z250_A_C_091785a43ffd220e_872", "StaticMeshComponent0", "ContainerSocket.Door_1", "Socket.LootContainer.Tech.Server.Door", new Vector3D(480975.94, 567197.8, -28474.61), new Rotator(0.0, 30.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_SalvageContainer_Gvt_Server_01_x400z250_A_C_091785a43ffd220e_872", "StaticMeshComponent0", "ContainerSocket.Door_2", "Socket.LootContainer.Tech.Server.Door", new Vector3D(480906.95, 567157.96, -28474.61), new Rotator(0.0, 30.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
@@ -4490,6 +4607,14 @@ internal static class DamLootSocketsPart8
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9719102_1455794868", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(478412.34, 597259.73, -39129.39), new Rotator(84.098, -109.695, 13.239), new Vector3D(1.2018, 1.2018, 1.332), 71, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9719102_1455794868", "StaticMeshComponent0", "Loot_Container_5", "Socket.LootContainer.Nature.Moss", new Vector3D(478460.83, 597111.96, -39098.75), new Rotator(90.0, 0.0, -110.0), new Vector3D(1.2018, 1.2018, 1.332), 71, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9719102_1455794868", "StaticMeshComponent0", "Loot_Container_6", "Socket.LootContainer.Nature.Moss", new Vector3D(478378.01, 597104.57, -39132.52), new Rotator(86.346, 45.0, 5.036), new Vector3D(1.2018, 1.2018, 1.332), 71, [], null),
+    ];
+}
+
+/// <summary>Sockets 4296 to 4519 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart20
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9729102_1442171051", "StaticMeshComponent0", "Loot_Container", "Socket.LootContainer.Nature.Moss", new Vector3D(476255.36, 596763.52, -39142.33), new Rotator(90.0, 165.964, 60.964), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9729102_1442171051", "StaticMeshComponent0", "Loot_Container_4", "Socket.LootContainer.Nature.Moss", new Vector3D(476271.56, 596788.93, -39091.24), new Rotator(84.098, 120.305, 13.239), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "BP_South_DeepForest_Tree_L_01_C_UAID_107C613EB6D9729102_1442171051", "StaticMeshComponent0", "Loot_Container_5", "Socket.LootContainer.Nature.Moss", new Vector3D(476151.43, 596837.06, -39068.24), new Rotator(90.0, 90.0, 110.0), new Vector3D(1.0, 1.0, 1.0), 71, [], null),
@@ -4694,14 +4819,6 @@ internal static class DamLootSocketsPart8
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_038", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(465636.31, 580502.18, -36790.97), new Rotator(6.863, 51.054, -5.736), new Vector3D(0.7912, 0.7912, 0.7912), 76, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_001", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(501259.96, 592009.99, -42123.12), new Rotator(-2.2, -80.316, 3.223), new Vector3D(0.8021, 0.8021, 0.8021), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_002", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(503774.55, 595792.13, -43042.5), new Rotator(-2.2, -130.756, 3.223), new Vector3D(0.9795, 0.9795, 0.9795), 77, [], null),
-    ];
-}
-
-/// <summary>Sockets 4500 to 4999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart9
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_003", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(503878.66, 593653.7, -42929.22), new Rotator(-2.2, 55.998, 3.223), new Vector3D(0.9677, 0.9677, 0.9677), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_004", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(503342.85, 592153.76, -42733.65), new Rotator(-2.2, 109.518, 3.223), new Vector3D(0.8352, 0.8352, 0.8352), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_005", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(502209.35, 594558.29, -42109.56), new Rotator(-2.2, -127.168, 3.223), new Vector3D(0.9622, 0.9622, 0.9622), 77, [], null),
@@ -4722,6 +4839,14 @@ internal static class DamLootSocketsPart9
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(504000.74, 581099.14, -44334.58), new Rotator(-2.2, 6.72, 3.223), new Vector3D(0.909, 0.909, 0.909), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(464301.42, 565585.03, -36711.09), new Rotator(-2.2, -87.352, 3.223), new Vector3D(0.9138, 0.9138, 0.9138), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_022", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(499121.9, 577352.4, -44584.63), new Rotator(-2.2, -42.49, 3.223), new Vector3D(0.8845, 0.8845, 0.8845), 77, [], null),
+    ];
+}
+
+/// <summary>Sockets 4520 to 4729 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart21
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_023", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(465100.88, 584366.96, -38210.21), new Rotator(-2.2, -138.617, 3.223), new Vector3D(0.9815, 0.9815, 0.9815), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_024", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(462784.18, 583528.19, -36983.31), new Rotator(-2.2, 8.264, 3.223), new Vector3D(0.8639, 0.8639, 0.8639), 77, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_025", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(466541.98, 583055.06, -38677.02), new Rotator(-2.2, -168.203, 3.223), new Vector3D(0.9173, 0.9173, 0.9173), 77, [], null),
@@ -4932,6 +5057,14 @@ internal static class DamLootSocketsPart9
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_1909", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Commercial.Gvt.Trashbin", new Vector3D(480231.99, 566301.52, -36698.76), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 10, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_1910", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Commercial.Gvt.Trashbin", new Vector3D(480265.41, 566186.6, -36774.24), new Rotator(0.0, 60.0, -85.321), new Vector3D(1.0, 1.0, 1.0), 10, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_1911", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Commercial.Gvt.Trashbin", new Vector3D(480428.65, 567001.01, -36698.76), new Rotator(0.0, 25.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 10, [], null),
+    ];
+}
+
+/// <summary>Sockets 4730 to 4931 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart22
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_1923", "StaticMeshComponent0", "ContainerSocket.Door", "Socket.LootContainer.Industrial.RsrMachineM01.Door", new Vector3D(479550.43, 563380.57, -37499.03), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 29, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_2129", "StaticMeshComponent0", "LidA", "Socket.LootContainer.Commercial.TrashBin.LidA", new Vector3D(476356.52, 563366.08, -36690.49), new Rotator(0.0, 20.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 5, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_091785a43ffd220e_2129", "StaticMeshComponent0", "LidB", "Socket.LootContainer.Commercial.TrashBin.LidA", new Vector3D(476325.65, 563450.91, -36690.49), new Rotator(0.0, 20.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 5, [], null),
@@ -5134,6 +5267,14 @@ internal static class DamLootSocketsPart9
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_1262", "StaticMeshComponent0", "ContainerSocket.Drawers.Right", "Socket.LootContainer.Commercial.Centerbench.Drawers", new Vector3D(475213.74, 571631.96, -35375.93), new Rotator(0.0, 30.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 11, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_1263", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Commercial.Gvt.Trashbin", new Vector3D(475621.12, 572187.14, -35325.0), new Rotator(0.0, -70.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 10, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_1264", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Commercial.Gvt.Trashbin", new Vector3D(475586.6, 572200.26, -35325.0), new Rotator(0.0, 35.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 10, [], null),
+    ];
+}
+
+/// <summary>Sockets 4932 to 5124 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart23
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_128", "StaticMeshComponent0", "ContainerSocket.Door_1", "Socket.LootContainer.Tech.Server.Door", new Vector3D(475932.83, 572371.15, -35279.05), new Rotator(0.0, 120.577, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_128", "StaticMeshComponent0", "ContainerSocket.Door_2", "Socket.LootContainer.Tech.Server.Door", new Vector3D(475973.36, 572302.56, -35279.05), new Rotator(0.0, 120.577, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_128", "StaticMeshComponent0", "ContainerSocket.Door_3", "Socket.LootContainer.Tech.Server.Door", new Vector3D(476014.37, 572233.68, -35278.86), new Rotator(0.0, 120.577, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
@@ -5202,14 +5343,6 @@ internal static class DamLootSocketsPart9
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.01", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472852.58, 569568.32, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.02", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472809.23, 569543.29, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.03", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472765.76, 569518.19, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
-    ];
-}
-
-/// <summary>Sockets 5000 to 5499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart10
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.04", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472722.32, 569493.11, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.05", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472678.15, 569467.61, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_17", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(472635.47, 569442.98, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
@@ -5335,6 +5468,14 @@ internal static class DamLootSocketsPart10
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_415", "StaticMeshComponent0", "ContainerSocket.Door.04", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(473245.52, 569795.19, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_415", "StaticMeshComponent0", "ContainerSocket.Door.05", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(473201.35, 569769.69, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_415", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(473158.68, 569745.05, -35398.2), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, ["/Game/Pioneer/Environment/Props/Research/Lockers_01/MI_Rsr_Lockers_01_A_Green.MI_Rsr_Lockers_01_A_Green"], null),
+    ];
+}
+
+/// <summary>Sockets 5125 to 5333 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart24
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_417", "StaticMeshComponent0", "ContainerSocket.Screen", "Socket.LootContainer.Tech.Computer01.Screen", new Vector3D(474666.13, 570367.26, -35369.23), new Rotator(51.844, 6.315, 2.331), new Vector3D(1.0, 1.0, 1.0), 44, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_421", "StaticMeshComponent0", "ContainerSocket.Screen", "Socket.LootContainer.Tech.Computer01.Screen", new Vector3D(474192.18, 570444.67, -35379.38), new Rotator(0.0, 74.859, 0.0), new Vector3D(1.0, 1.0, 1.0), 44, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_4896d35478120a39_425", "StaticMeshComponent0", "ContainerSocket.Screen", "Socket.LootContainer.Tech.Computer01.Screen", new Vector3D(474166.97, 570451.18, -35383.16), new Rotator(-0.201, -34.369, 62.088), new Vector3D(1.0, 1.0, 1.0), 44, [], null),
@@ -5544,6 +5685,14 @@ internal static class DamLootSocketsPart10
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1726", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(470877.18, 567704.16, -37698.44), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1727", "StaticMeshComponent0", "ContainerSocket.Drawer_01", "Socket.LootContainer.Industrial.Wrh.ShippingCon.Drawer", new Vector3D(470920.8, 566027.05, -37679.78), new Rotator(0.0, -65.0, 0.712), new Vector3D(1.0, 1.0, 1.0), 45, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1727", "StaticMeshComponent0", "ContainerSocket.Drawer_02", "Socket.LootContainer.Industrial.Wrh.ShippingCon.Drawer", new Vector3D(470950.04, 565967.76, -37679.8), new Rotator(0.0, -65.0, 0.712), new Vector3D(1.0, 1.0, 1.0), 45, [], null),
+    ];
+}
+
+/// <summary>Sockets 5334 to 5533 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart25
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1727", "StaticMeshComponent0", "ContainerSocket.Drawer_03", "Socket.LootContainer.Industrial.Wrh.ShippingCon.Drawer", new Vector3D(470953.29, 565971.25, -37617.09), new Rotator(0.0, -65.0, 0.712), new Vector3D(1.0, 1.0, 1.0), 45, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1727", "StaticMeshComponent0", "ContainerSocket.Drawer_04", "Socket.LootContainer.Industrial.Wrh.ShippingCon.Drawer", new Vector3D(470983.01, 565905.68, -37678.83), new Rotator(0.0, -65.0, 0.712), new Vector3D(1.0, 1.0, 1.0), 45, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_8dcfce4758e17c9e_1727", "StaticMeshComponent0", "ContainerSocket.Drawer_05", "Socket.LootContainer.Industrial.Wrh.ShippingCon.Drawer", new Vector3D(470990.46, 565909.15, -37743.08), new Rotator(0.0, -65.0, 0.712), new Vector3D(1.0, 1.0, 1.0), 45, [], null),
@@ -5710,14 +5859,6 @@ internal static class DamLootSocketsPart10
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_105", "StaticMeshComponent0", "ContainerSocket.Door.02", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(466921.76, 579038.69, -36759.01), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_105", "StaticMeshComponent0", "ContainerSocket.Door.03", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(466946.86, 578995.21, -36759.01), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_105", "StaticMeshComponent0", "ContainerSocket.Door.04", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(466971.94, 578951.77, -36759.01), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
-    ];
-}
-
-/// <summary>Sockets 5500 to 5999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart11
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_105", "StaticMeshComponent0", "ContainerSocket.Door.05", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(466997.44, 578907.61, -36759.01), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_105", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(467022.08, 578864.93, -36759.01), new Rotator(0.0, -150.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a13088f6642146c5_157", "StaticMeshComponent0", "ContainerSocket.Door.01", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(467220.78, 578342.36, -36759.01), new Rotator(0.0, 120.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
@@ -5752,6 +5893,14 @@ internal static class DamLootSocketsPart11
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_138", "StaticMeshComponent0", "ContainerSocket.Door_2", "Socket.LootContainer.Tech.Server.Door", new Vector3D(485200.59, 566934.42, -41043.12), new Rotator(0.0, -60.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_138", "StaticMeshComponent0", "ContainerSocket.Door_3", "Socket.LootContainer.Tech.Server.Door", new Vector3D(485160.28, 567003.71, -41042.93), new Rotator(0.0, -60.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_138", "StaticMeshComponent0", "ContainerSocket.Door_4", "Socket.LootContainer.Tech.Server.Door", new Vector3D(485120.09, 567073.32, -41042.93), new Rotator(0.0, -60.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
+    ];
+}
+
+/// <summary>Sockets 5534 to 5725 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart26
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_138", "StaticMeshComponent0", "ContainerSocket.Door_5", "Socket.LootContainer.Tech.Server.Door", new Vector3D(485080.37, 567142.11, -41042.93), new Rotator(0.0, -60.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_139", "StaticMeshComponent0", "ContainerSocket.Door_1", "Socket.LootContainer.Tech.Server.Door", new Vector3D(484370.54, 566800.42, -41043.12), new Rotator(0.0, 120.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_a49fd4f7f8af6403_139", "StaticMeshComponent0", "ContainerSocket.Door_2", "Socket.LootContainer.Tech.Server.Door", new Vector3D(484410.38, 566731.43, -41043.12), new Rotator(0.0, 120.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
@@ -5944,6 +6093,14 @@ internal static class DamLootSocketsPart11
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2000", "StaticMeshComponent0", "ContainerSocket.Door_5", "Socket.LootContainer.Tech.Server.Door", new Vector3D(498679.89, 590257.39, -41066.97), new Rotator(0.0, 30.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2043", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Tech.TapeDrive01.Lid", new Vector3D(499041.13, 589517.24, -41091.88), new Rotator(0.0, -155.001, 0.0), new Vector3D(1.0, 1.0, 1.0), 18, [], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2060", "StaticMeshComponent0", "LootSocket1", "Socket.LootContainer.Medical.Rsr.CabinetM01.Drawer", new Vector3D(495320.61, 591178.74, -40533.34), new Rotator(0.0, -51.397, 0.0), new Vector3D(1.0, 1.0, 1.0), 23, ["/Game/Pioneer/Environment/Props/Research/Cabinet_M_01/MI_Rsr_Cabinet_M_01_A_Green.MI_Rsr_Cabinet_M_01_A_Green"], null),
+    ];
+}
+
+/// <summary>Sockets 5726 to 5942 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart27
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2060", "StaticMeshComponent0", "LootSocket2", "Socket.LootContainer.Medical.Rsr.CabinetM01.Drawer", new Vector3D(495437.13, 591271.77, -40533.34), new Rotator(0.0, -51.397, 0.0), new Vector3D(1.0, 1.0, 1.0), 23, ["/Game/Pioneer/Environment/Props/Research/Cabinet_M_01/MI_Rsr_Cabinet_M_01_A_Green.MI_Rsr_Cabinet_M_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2060", "StaticMeshComponent0", "LootSocket3", "Socket.LootContainer.Medical.Rsr.CabinetM01.Drawer", new Vector3D(495386.07, 591335.73, -40533.34), new Rotator(0.0, 128.603, 0.0), new Vector3D(1.0, 1.0, 1.0), 23, ["/Game/Pioneer/Environment/Props/Research/Cabinet_M_01/MI_Rsr_Cabinet_M_01_A_Green.MI_Rsr_Cabinet_M_01_A_Green"], null),
         new("799Z1TX1MWV1JVES1KJXD650D", "StaticMeshActor_f40b503706721af3_2060", "StaticMeshComponent0", "LootSocket4", "Socket.LootContainer.Medical.Rsr.CabinetM01.Drawer", new Vector3D(495269.53, 591242.72, -40533.34), new Rotator(0.0, 128.603, 0.0), new Vector3D(1.0, 1.0, 1.0), 23, ["/Game/Pioneer/Environment/Props/Research/Cabinet_M_01/MI_Rsr_Cabinet_M_01_A_Green.MI_Rsr_Cabinet_M_01_A_Green"], null),
@@ -6161,6 +6318,14 @@ internal static class DamLootSocketsPart11
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_034", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(469209.48, 486373.38, -34174.37), new Rotator(0.0, 149.965, 0.0), new Vector3D(1.0108, 1.0108, 1.0108), 73, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_035", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(468633.46, 486166.23, -34216.14), new Rotator(0.0, 30.919, 0.0), new Vector3D(1.006, 1.006, 1.006), 73, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_036", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(477272.23, 485967.82, -33659.5), new Rotator(0.0, -167.397, 0.0), new Vector3D(1.2253, 1.2253, 1.2253), 73, [], null),
+    ];
+}
+
+/// <summary>Sockets 5943 to 6168 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart28
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_037", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(476819.9, 486575.89, -34069.63), new Rotator(0.0, -86.638, 0.0), new Vector3D(1.0616, 1.0616, 1.0616), 73, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_038", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(476650.92, 484940.0, -33520.09), new Rotator(0.0, -132.012, 0.0), new Vector3D(1.1964, 1.1964, 1.1964), 73, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_039", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(477579.25, 488920.34, -35119.85), new Rotator(0.0, -54.488, 0.0), new Vector3D(0.939, 0.939, 0.939), 73, [], null),
@@ -6218,14 +6383,6 @@ internal static class DamLootSocketsPart11
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_016", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(468443.47, 499287.3, -38907.44), new Rotator(0.0, -78.933, 0.0), new Vector3D(1.2469, 1.2469, 1.2469), 74, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_017", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(480064.38, 497390.99, -37677.22), new Rotator(0.0, 77.177, 0.0), new Vector3D(1.1588, 1.1588, 1.1588), 74, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_018", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(481508.91, 495508.21, -36850.59), new Rotator(0.0, 80.518, 0.0), new Vector3D(1.056, 1.056, 1.056), 74, [], null),
-    ];
-}
-
-/// <summary>Sockets 6000 to 6499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart12
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_019", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(481078.59, 491242.0, -35301.04), new Rotator(0.0, -124.389, 0.0), new Vector3D(0.9368, 0.9368, 0.9368), 74, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(484371.13, 492547.91, -34632.19), new Rotator(0.0, -22.686, 0.0), new Vector3D(0.912, 0.912, 0.912), 74, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(483485.08, 493061.63, -35241.79), new Rotator(0.0, 25.911, 0.0), new Vector3D(0.9442, 0.9442, 0.9442), 74, [], null),
@@ -6395,6 +6552,14 @@ internal static class DamLootSocketsPart12
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_068", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(466151.7, 479674.12, -32469.2), new Rotator(0.0, 173.045, 0.0), new Vector3D(1.2404, 1.2404, 1.2404), 75, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_069", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(467025.16, 479664.08, -32204.41), new Rotator(0.0, -170.791, 0.0), new Vector3D(0.9646, 0.9646, 0.9646), 75, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_070", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(466666.93, 479347.84, -32146.67), new Rotator(0.0, -24.75, 0.0), new Vector3D(0.9386, 0.9386, 0.9386), 75, [], null),
+    ];
+}
+
+/// <summary>Sockets 6169 to 6385 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart29
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_071", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(491167.84, 496334.06, -35506.82), new Rotator(0.0, -36.678, 0.0), new Vector3D(1.052, 1.052, 1.052), 75, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_072", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(490652.06, 495881.0, -35503.85), new Rotator(0.0, 16.437, 0.0), new Vector3D(0.9832, 0.9832, 0.9832), 75, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_073", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(491751.95, 496680.09, -35523.86), new Rotator(0.0, -153.523, 0.0), new Vector3D(0.9197, 0.9197, 0.9197), 75, [], null),
@@ -6612,6 +6777,14 @@ internal static class DamLootSocketsPart12
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6985", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(477036.33, 501434.08, -39273.02), new Rotator(-10.851, 108.942, -2.391), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6986", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(471868.82, 499962.15, -39506.65), new Rotator(9.573, -130.459, -16.591), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6987", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(483670.14, 501942.02, -36438.56), new Rotator(1.682, -150.263, 1.835), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
+    ];
+}
+
+/// <summary>Sockets 6386 to 6593 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart30
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6988", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(469024.44, 493780.04, -35673.65), new Rotator(-2.38, 10.047, -0.041), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6989", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(473235.23, 497867.33, -38725.35), new Rotator(-30.751, 104.276, -2.764), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
         new("8635EV0VJ3V10LNUJ9RO28RQ9", "StaticMeshActor_6990", "StaticMeshComponent0", "ContainerSocket.Trunk", "Socket.LootContainer.Mechanical.Car01.Trunk", new Vector3D(472406.66, 502467.27, -40061.18), new Rotator(10.0, -90.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 56, ["/Game/Pioneer/Environment/Props/_Generic/Car_01/MI_Car_01_B.MI_Car_01_B"], null),
@@ -6726,14 +6899,6 @@ internal static class DamLootSocketsPart12
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_006", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(599904.75, 630494.74, -40141.82), new Rotator(6.863, -165.585, -5.736), new Vector3D(0.9558, 0.9558, 0.9558), 76, [], null),
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_007", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(602957.09, 629777.0, -40074.61), new Rotator(6.863, -55.832, -5.736), new Vector3D(0.9024, 0.9024, 0.9024), 76, [], null),
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_008", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(600734.53, 628852.55, -40424.08), new Rotator(6.863, 23.961, -5.736), new Vector3D(0.7938, 0.7938, 0.7938), 76, [], null),
-    ];
-}
-
-/// <summary>Sockets 6500 to 6999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart13
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_009", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(598804.85, 628699.99, -40874.21), new Rotator(6.863, 62.695, -5.736), new Vector3D(0.7688, 0.7688, 0.7688), 76, [], null),
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_010", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(598850.89, 644250.91, -40275.59), new Rotator(6.863, 171.997, -5.736), new Vector3D(0.8623, 0.8623, 0.8623), 76, [], null),
         new("9MGZCSTU8NBGS68DEQQ7ELMYK", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_011", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(601967.52, 640138.67, -39817.06), new Rotator(6.863, -140.896, -5.736), new Vector3D(0.841, 0.841, 0.841), 76, [], null),
@@ -6828,6 +6993,14 @@ internal static class DamLootSocketsPart13
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_29", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(444928.86, 518452.32, -40070.0), new Rotator(11.393, -4.096, -4.306), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_29", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(445605.35, 518334.67, -40679.36), new Rotator(-9.469, 40.844, -15.14), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_29", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(446664.72, 518872.27, -40472.49), new Rotator(-21.882, 40.124, 5.666), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
+    ];
+}
+
+/// <summary>Sockets 6594 to 6814 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart31
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_30", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(449613.17, 514007.48, -40281.93), new Rotator(-20.866, 169.431, -48.499), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_30", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(450510.95, 516152.82, -40354.12), new Rotator(20.12, -141.731, -29.647), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "BP_Base_Rock_XL_05_C_30", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(450074.75, 515488.95, -40814.35), new Rotator(14.499, -90.223, -24.934), new Vector3D(0.8095, 0.8095, 0.8095), 65, [], null),
@@ -7049,6 +7222,14 @@ internal static class DamLootSocketsPart13
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_019", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(436566.99, 524388.0, -40293.58), new Rotator(0.0, -141.683, 0.0), new Vector3D(1.0189, 1.0189, 1.0189), 73, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(440438.44, 518402.4, -39921.35), new Rotator(0.0, 65.535, 0.0), new Vector3D(1.0714, 1.0714, 1.0714), 73, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_021", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(439815.6, 521973.87, -40359.85), new Rotator(0.0, 54.605, 0.0), new Vector3D(1.1921, 1.1921, 1.1921), 73, [], null),
+    ];
+}
+
+/// <summary>Sockets 6815 to 7040 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart32
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_022", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(440541.83, 518934.75, -40030.98), new Rotator(0.0, -135.927, 0.0), new Vector3D(1.1719, 1.1719, 1.1719), 73, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_023", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(440568.18, 521697.59, -40389.4), new Rotator(0.0, 22.234, 0.0), new Vector3D(0.9964, 0.9964, 0.9964), 73, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_A_024", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442392.98, 520415.1, -40584.63), new Rotator(0.0, 43.547, 0.0), new Vector3D(1.1176, 1.1176, 1.1176), 73, [], null),
@@ -7234,14 +7415,6 @@ internal static class DamLootSocketsPart13
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_116", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(450028.31, 513507.59, -40054.24), new Rotator(0.0, 137.934, 0.0), new Vector3D(0.9158, 0.9158, 0.9158), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_117", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(448304.98, 511774.18, -39687.17), new Rotator(0.0, -2.401, 0.0), new Vector3D(0.992, 0.992, 0.992), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_118", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(449115.08, 513237.81, -40080.42), new Rotator(0.0, -131.633, 0.0), new Vector3D(1.1271, 1.1271, 1.1271), 74, [], null),
-    ];
-}
-
-/// <summary>Sockets 7000 to 7499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart14
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_119", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(418865.44, 522085.56, -39224.27), new Rotator(0.0, 171.623, 0.0), new Vector3D(1.1966, 1.1966, 1.1966), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_120", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(418129.28, 521474.46, -39206.92), new Rotator(0.0, -37.567, 0.0), new Vector3D(1.1172, 1.1172, 1.1172), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_121", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(417736.41, 520553.26, -39027.69), new Rotator(0.0, -167.037, 0.0), new Vector3D(0.9372, 0.9372, 0.9372), 74, [], null),
@@ -7283,6 +7456,14 @@ internal static class DamLootSocketsPart14
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_157", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(417869.03, 522462.49, -39170.73), new Rotator(0.0, -1.918, 0.0), new Vector3D(1.0407, 1.0407, 1.0407), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_158", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442157.68, 514681.05, -40381.36), new Rotator(0.0, 161.355, 0.0), new Vector3D(1.1192, 1.1192, 1.1192), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_159", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(443206.28, 514939.15, -40545.52), new Rotator(0.0, 5.041, 0.0), new Vector3D(1.1296, 1.1296, 1.1296), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 7041 to 7266 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart33
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_160", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442044.7, 515718.11, -40673.02), new Rotator(0.0, 37.559, 0.0), new Vector3D(0.9596, 0.9596, 0.9596), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_161", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442539.44, 513721.96, -40043.54), new Rotator(0.0, 151.11, 0.0), new Vector3D(0.9818, 0.9818, 0.9818), 74, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_162", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(441142.13, 514865.04, -39998.69), new Rotator(0.0, 177.28, 0.0), new Vector3D(1.0161, 1.0161, 1.0161), 74, [], null),
@@ -7509,6 +7690,14 @@ internal static class DamLootSocketsPart14
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_114", "StaticMeshComponent0", "ContainerSocket.Door_5", "Socket.LootContainer.Tech.Server.Door", new Vector3D(424110.66, 536580.83, -40668.91), new Rotator(0.0, -150.802, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_118", "StaticMeshComponent0", "ContainerSocket.Trays", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray", new Vector3D(425065.47, 537107.23, -40792.11), new Rotator(0.0, 132.882, 0.0), new Vector3D(1.0, 1.0, 1.0), 50, [null], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_121", "StaticMeshComponent0", "ContainerSocket.Screen", "Socket.LootContainer.Tech.Computer01.Screen", new Vector3D(424799.6, 537377.97, -40707.37), new Rotator(0.0, -79.792, 0.0), new Vector3D(1.0, 1.0, 1.0), 44, [], null),
+    ];
+}
+
+/// <summary>Sockets 7267 to 7495 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart34
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_122", "StaticMeshComponent0", "ContainerSocket.Door_1", "Socket.LootContainer.Tech.Server.Door", new Vector3D(424185.72, 536622.46, -40669.1), new Rotator(0.0, -150.802, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_122", "StaticMeshComponent0", "ContainerSocket.Door_2", "Socket.LootContainer.Tech.Server.Door", new Vector3D(424255.26, 536661.33, -40669.1), new Rotator(0.0, -150.802, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_0fcc3ecca9190265_122", "StaticMeshComponent0", "ContainerSocket.Door_3", "Socket.LootContainer.Tech.Server.Door", new Vector3D(424325.11, 536700.67, -40668.91), new Rotator(0.0, -150.802, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
@@ -7738,18 +7927,18 @@ internal static class DamLootSocketsPart14
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "LootSocket_3", "Socket.LootContainer.Nature.Mushroom", new Vector3D(426626.24, 539241.31, -40793.44), new Rotator(3.849, -50.654, 21.713), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "LootSocket_4", "Socket.LootContainer.Nature.Moss", new Vector3D(426665.27, 539020.61, -40825.27), new Rotator(-5.416, -139.546, -3.937), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "LootSocket_5", "Socket.LootContainer.Nature.Moss", new Vector3D(425058.03, 541106.61, -40980.48), new Rotator(-5.416, -139.546, -3.937), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
+    ];
+}
+
+/// <summary>Sockets 7496 to 7704 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart35
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "LootSocket_7", "Socket.LootContainer.Nature.Moss", new Vector3D(425034.12, 540788.26, -40738.8), new Rotator(-87.306, -37.077, -117.759), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(426898.65, 538981.16, -40804.25), new Rotator(-5.416, -139.546, -3.937), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_998", "StaticMeshComponent0", "Socket_6", "Socket.LootContainer.Nature.Moss", new Vector3D(426468.2, 539095.05, -40831.32), new Rotator(-5.416, -139.546, -3.937), new Vector3D(1.0, 1.0, 1.0), 69, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_9ec5cdb67e188d86_101", "StaticMeshComponent0", "LootLid_01_A", "Socket.LootContainer.Residential.Refrigerator_01", new Vector3D(426801.94, 516035.15, -37703.15), new Rotator(0.0, -121.273, 0.0), new Vector3D(1.0, 1.0, 1.0), 40, [], null),
-    ];
-}
-
-/// <summary>Sockets 7500 to 7999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart15
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_9ec5cdb67e188d86_113", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(427664.63, 515472.66, -38116.21), new Rotator(0.0, 61.677, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_9ec5cdb67e188d86_113", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(427699.59, 515449.64, -38091.94), new Rotator(0.0, 61.677, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_9ec5cdb67e188d86_133", "StaticMeshComponent0", "LidSocket", "Socket.LootContainer.Residential.Closet", new Vector3D(427366.69, 515181.42, -37580.73), new Rotator(0.0, -116.889, 0.0), new Vector3D(1.0, 1.0, 1.0), 31, [], null),
@@ -7955,6 +8144,14 @@ internal static class DamLootSocketsPart15
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_554", "StaticMeshComponent0", "LidSocket", "Socket.LootContainer.Residential.Closet", new Vector3D(421985.53, 518702.27, -37875.53), new Rotator(0.0, 63.165, 0.0), new Vector3D(1.0, 1.0, 1.0), 31, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_558", "StaticMeshComponent0", "ContainerSocket.DrawerLarge", "Socket.LootContainer.Residential.Wrh.Desk.DrawerLarge", new Vector3D(422336.54, 518517.28, -38092.92), new Rotator(0.0, 68.165, 0.0), new Vector3D(1.0, 1.0, 1.0), 46, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_558", "StaticMeshComponent0", "ContainerSocket.DrawerSmall", "Socket.LootContainer.Residential.Wrh.Desk.DrawerSmall", new Vector3D(422273.16, 518534.12, -38070.96), new Rotator(0.0, 68.165, 0.0), new Vector3D(1.0, 1.0, 1.0), 46, [], null),
+    ];
+}
+
+/// <summary>Sockets 7705 to 7903 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart36
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_566", "StaticMeshComponent0", "ContainerSocket.DrawerLarge", "Socket.LootContainer.Residential.Wrh.Desk.DrawerLarge", new Vector3D(421914.46, 519510.96, -38091.22), new Rotator(0.0, 148.165, 0.0), new Vector3D(1.0, 1.0, 1.0), 46, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_566", "StaticMeshComponent0", "ContainerSocket.DrawerSmall", "Socket.LootContainer.Residential.Wrh.Desk.DrawerSmall", new Vector3D(421886.87, 519451.47, -38069.26), new Rotator(0.0, 148.165, 0.0), new Vector3D(1.0, 1.0, 1.0), 46, [], null),
         new("9S6VM9T6Q1DWC3A03BDTNBDPO", "StaticMeshActor_b714d8000f2a1eb0_573", "StaticMeshComponent0", "Commercial.WallAdd_03.Lid_01", "Socket.LootContainer.Electrical.Cmr.WallAdd_03.Lid_01", new Vector3D(422197.32, 519269.59, -37988.5), new Rotator(0.0, 150.758, 0.0), new Vector3D(1.0, 1.0, 1.0), 7, [], null),
@@ -8154,6 +8351,14 @@ internal static class DamLootSocketsPart15
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997501580", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(467142.9, 519308.29, -40628.27), new Rotator(-4.119, 3.687, 1.382), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997502581", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(462833.69, 524735.98, -40595.14), new Rotator(2.494, -5.931, -2.139), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997505585", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(459182.87, 527781.91, -40963.22), new Rotator(2.471, 25.162, -4.56), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
+    ];
+}
+
+/// <summary>Sockets 7904 to 8091 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart37
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997506586", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(484865.67, 545289.21, -39477.81), new Rotator(-0.776, -0.058, -3.445), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997515596", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(485974.18, 520926.34, -40646.72), new Rotator(0.081, 25.49, 0.423), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("9TWXQE5AJSL0LYHOTQX9HL8ZC", "StaticMeshActor_UAID_A0369F20482019B702_1997517599", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(468221.76, 507435.42, -40123.97), new Rotator(4.484, 18.459, -3.127), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
@@ -8250,14 +8455,6 @@ internal static class DamLootSocketsPart15
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997367436", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(519393.32, 524110.15, -38009.98), new Rotator(2.499, 14.33, 2.053), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997417490", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(505487.39, 512590.82, -35699.6), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997421497", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(518270.73, 522958.24, -38055.44), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
-    ];
-}
-
-/// <summary>Sockets 8000 to 8499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart16
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997428505", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(522370.28, 523318.26, -39241.97), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997435511", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(511548.27, 521178.21, -37284.23), new Rotator(0.0, 0.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("ADDFA48OLR9K7L49CS4GAGP2H", "StaticMeshActor_UAID_A0369F20482019B702_1997453530", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(512294.58, 521498.2, -37407.36), new Rotator(-1.851, 18.688, 3.795), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
@@ -8350,6 +8547,14 @@ internal static class DamLootSocketsPart16
         new("AJXQH751F197O9O3ZZ78Y7T3H", "StaticMeshActor_UAID_A0369F20482019B702_1997611709", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(416472.05, 546435.93, -40901.53), new Rotator(-4.699, -29.866, -1.315), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("AJXQH751F197O9O3ZZ78Y7T3H", "StaticMeshActor_UAID_A0369F20482019B702_1997612710", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(450329.37, 514047.62, -40201.58), new Rotator(-2.679, 32.756, 4.013), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("AJXQH751F197O9O3ZZ78Y7T3H", "StaticMeshActor_UAID_A0369F20482019B702_1997620719", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(431091.32, 542718.18, -40570.32), new Rotator(-0.647, 8.34, -2.186), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
+    ];
+}
+
+/// <summary>Sockets 8092 to 8321 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart38
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("AJXQH751F197O9O3ZZ78Y7T3H", "StaticMeshActor_UAID_A0369F20482019B702_1997623722", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(444054.12, 532148.79, -40941.42), new Rotator(-4.58, 0.775, 4.907), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("AJXQH751F197O9O3ZZ78Y7T3H", "StaticMeshActor_UAID_A0369F20482019B702_1997631730", "StaticMeshComponent0", "LootSocket", "Socket.LootContainer.Nature.Candleberries", new Vector3D(450660.28, 510939.97, -39756.23), new Rotator(2.129, -31.859, -4.15), new Vector3D(1.0, 1.0, 1.0), 1, [], "DataLayer_3D6B641041B18DF5CAFA5CBE822CC44A"),
         new("APNOWDKO7I24R3FS12RRCMW9B", "BP_Base_Rock_XL_05_C_2", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(327419.31, 610904.49, -34780.08), new Rotator(14.547, 167.488, -40.952), new Vector3D(-1.0, 1.0, 1.0), 65, [], null),
@@ -8580,6 +8785,14 @@ internal static class DamLootSocketsPart16
         new("C8WR1N3SUH9UDACQJA988UCF0", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_1795416919", "HuskMesh4", "SocketLid", "Socket.LootContainer.ARC.Wreck03", new Vector3D(508817.44, 559564.77, -45132.63), new Rotator(3.693, 115.502, 0.17), new Vector3D(1.0, 1.0, 1.0), 60, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("C8WR1N3SUH9UDACQJA988UCF0", "BP_HuskPile_C_UAID_BCFCE753915F08FC02_1795416919", "HuskMesh5", "SocketLid", "Socket.LootContainer.ARC.Wreck03", new Vector3D(508769.53, 559442.52, -45108.92), new Rotator(1.415, 76.468, 10.683), new Vector3D(1.0, 1.0, 1.0), 60, [], "DataLayer_302DC7E64361781C2D1C2BB18B5F4785"),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "BP_Base_Rock_XL_05_C_11", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(478874.57, 599890.07, -38589.62), new Rotator(-32.746, 79.627, -41.049), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
+    ];
+}
+
+/// <summary>Sockets 8322 to 8544 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart39
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "BP_Base_Rock_XL_05_C_11", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(481578.08, 598977.16, -38244.1), new Rotator(7.38, 130.669, -34.57), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "BP_Base_Rock_XL_05_C_11", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(480780.53, 599318.8, -38974.43), new Rotator(10.12, -179.471, -38.122), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "BP_Base_Rock_XL_05_C_11", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(479488.57, 599822.23, -38430.0), new Rotator(-1.589, -175.272, -17.197), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
@@ -8758,14 +8971,6 @@ internal static class DamLootSocketsPart16
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_020", "Loot.Moss_0", "Socket.LootContainer.Nature.Moss", new Vector3D(479141.82, 645937.88, -40049.44), new Rotator(7.737, -153.032, -5.214), new Vector3D(0.7347, 0.7347, 0.7347), 78, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_021", "Loot.Moss", "Socket.LootContainer.Nature.Moss", new Vector3D(480081.05, 646366.54, -40005.51), new Rotator(-61.39, -10.176, 49.591), new Vector3D(0.6182, 0.6182, 0.6182), 78, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_021", "Loot.Moss_0", "Socket.LootContainer.Nature.Moss", new Vector3D(480041.73, 646281.51, -39998.47), new Rotator(18.083, 43.05, 22.554), new Vector3D(0.6182, 0.6182, 0.6182), 78, [], null),
-    ];
-}
-
-/// <summary>Sockets 8500 to 8999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart17
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_022", "Loot.Moss", "Socket.LootContainer.Nature.Moss", new Vector3D(480927.59, 647786.74, -39930.81), new Rotator(-84.311, 76.647, -54.442), new Vector3D(0.6253, 0.6253, 0.6253), 78, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_022", "Loot.Moss_0", "Socket.LootContainer.Nature.Moss", new Vector3D(480869.47, 647712.13, -39921.57), new Rotator(3.305, 22.071, -4.633), new Vector3D(0.6253, 0.6253, 0.6253), 78, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_01_023", "Loot.Moss", "Socket.LootContainer.Nature.Moss", new Vector3D(481151.58, 649538.67, -39964.38), new Rotator(-78.648, 161.749, 21.846), new Vector3D(0.9397, 0.9397, 0.9397), 78, [], null),
@@ -8811,6 +9016,14 @@ internal static class DamLootSocketsPart17
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_007", "Loot.Moss", "Socket.LootContainer.Nature.Moss", new Vector3D(487918.08, 640735.39, -40666.71), new Rotator(3.442, -67.506, -11.361), new Vector3D(1.1274, 1.1274, 1.1274), 79, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_007", "Loot.Moss_1", "Socket.LootContainer.Nature.Moss", new Vector3D(487966.08, 640493.35, -40626.23), new Rotator(3.442, -67.506, 8.639), new Vector3D(1.1274, 1.1274, 1.1274), 79, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_007", "Loot.Mushrooms", "Socket.LootContainer.Nature.Mushroom", new Vector3D(487866.67, 640818.79, -40675.66), new Rotator(3.442, -67.506, -11.361), new Vector3D(1.1274, 1.1274, 1.1274), 79, [], null),
+    ];
+}
+
+/// <summary>Sockets 8545 to 8765 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart40
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_007", "Loot.Mushrooms_0", "Socket.LootContainer.Nature.Mushroom", new Vector3D(488032.95, 640313.67, -40594.61), new Rotator(-8.438, 21.595, 7.7), new Vector3D(1.1274, 1.1274, 1.1274), 79, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_008", "Loot.Moss", "Socket.LootContainer.Nature.Moss", new Vector3D(488710.79, 642459.87, -40785.41), new Rotator(-5.72, -168.191, -13.472), new Vector3D(0.8253, 0.8253, 0.8253), 79, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_ForestBurnt_Log_M_03_008", "Loot.Moss_1", "Socket.LootContainer.Nature.Moss", new Vector3D(488527.76, 642458.37, -40785.67), new Rotator(-5.72, -168.191, 6.528), new Vector3D(0.8253, 0.8253, 0.8253), 79, [], null),
@@ -9032,6 +9245,14 @@ internal static class DamLootSocketsPart17
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_115", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(475454.28, 621892.68, -37231.5), new Rotator(0.0, -82.646, 0.0), new Vector3D(1.025, 1.025, 1.025), 74, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_116", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(472970.85, 622453.66, -36460.36), new Rotator(0.0, 16.477, 0.0), new Vector3D(1.1118, 1.1118, 1.1118), 74, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_117", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(474607.69, 625343.31, -37879.98), new Rotator(0.0, 128.125, 0.0), new Vector3D(1.2291, 1.2291, 1.2291), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 8766 to 8989 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart41
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_118", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(475235.76, 624518.43, -37848.45), new Rotator(0.0, 67.292, 0.0), new Vector3D(1.2152, 1.2152, 1.2152), 74, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_119", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(475599.87, 625038.25, -38011.26), new Rotator(0.0, 96.194, 0.0), new Vector3D(1.0773, 1.0773, 1.0773), 74, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_120", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(460123.25, 639494.43, -34701.67), new Rotator(0.0, -70.799, 0.0), new Vector3D(0.9814, 0.9814, 0.9814), 74, [], null),
@@ -9256,6 +9477,14 @@ internal static class DamLootSocketsPart17
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_031", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(478778.16, 627465.22, -39465.03), new Rotator(-2.2, -51.067, 3.223), new Vector3D(0.922, 0.922, 0.922), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_032", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(479038.91, 628283.3, -39685.1), new Rotator(-2.2, 77.921, 3.223), new Vector3D(0.9445, 0.9445, 0.9445), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_033", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(478547.71, 628239.28, -39601.35), new Rotator(-2.2, 107.716, 3.223), new Vector3D(0.957, 0.957, 0.957), 77, [], null),
+    ];
+}
+
+/// <summary>Sockets 8990 to 9206 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart42
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_034", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(493618.86, 606417.02, -38554.04), new Rotator(-2.2, -144.333, 3.223), new Vector3D(0.874, 0.874, 0.874), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_035", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(491096.47, 604573.83, -37564.35), new Rotator(-2.2, 14.837, 3.223), new Vector3D(0.975, 0.975, 0.975), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_036", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(492224.61, 607557.28, -37861.01), new Rotator(-2.2, 135.865, 3.223), new Vector3D(0.9461, 0.9461, 0.9461), 77, [], null),
@@ -9266,14 +9495,6 @@ internal static class DamLootSocketsPart17
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_041", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(458528.11, 642773.79, -36156.74), new Rotator(-2.2, 48.267, 3.223), new Vector3D(0.7843, 0.7843, 0.7843), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_042", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(475826.09, 610467.82, -33935.5), new Rotator(-2.2, 83.834, 3.223), new Vector3D(0.8961, 0.8961, 0.8961), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_043", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(476906.75, 613602.09, -33886.09), new Rotator(-2.2, -21.493, 3.223), new Vector3D(0.8681, 0.8681, 0.8681), 77, [], null),
-    ];
-}
-
-/// <summary>Sockets 9000 to 9499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart18
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_044", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(461648.39, 623324.52, -33959.54), new Rotator(-2.2, 61.647, 3.223), new Vector3D(0.9493, 0.9493, 0.9493), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_045", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(464292.23, 625829.32, -35050.78), new Rotator(-2.2, 102.535, 3.223), new Vector3D(0.86, 0.86, 0.86), 77, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_046", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(483148.3, 611524.41, -34862.98), new Rotator(-2.2, -99.074, 3.223), new Vector3D(0.9941, 0.9941, 0.9941), 77, [], null),
@@ -9481,6 +9702,14 @@ internal static class DamLootSocketsPart18
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7216", "StaticMeshComponent0", "ContainerSocket.Trays", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray", new Vector3D(488688.72, 603246.04, -37224.17), new Rotator(-4.599, 80.363, -4.796), new Vector3D(1.0, 1.0, 1.0), 50, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7473", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(461841.52, 600837.25, -38745.18), new Rotator(-6.503, -133.967, 3.134), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7474", "StaticMeshComponent0", "ContainerSocket.Lid", "Socket.LootContainer.Industrial.Crate.TopLid", new Vector3D(461880.59, 600740.14, -38757.15), new Rotator(-5.025, -106.821, -6.972), new Vector3D(1.0, 1.0, 1.0), 58, [], null),
+    ];
+}
+
+/// <summary>Sockets 9207 to 9429 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart43
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7627", "StaticMeshComponent0", "ContainerSocket.Trays", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray", new Vector3D(461836.22, 602328.85, -38781.2), new Rotator(0.0, 60.438, 0.0), new Vector3D(1.0, 1.0, 1.0), 50, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7628", "StaticMeshComponent0", "ContainerSocket.Trays", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray", new Vector3D(461669.31, 602430.59, -38790.6), new Rotator(-1.475, 78.722, -5.093), new Vector3D(1.0, 1.0, 1.0), 50, [], null),
         new("CAMP3HBSEA6OHYXJ752UWG3X9", "StaticMeshActor_7629", "StaticMeshComponent0", "ContainerSocket.Trays", "Socket.LootContainer.Industrial.Wrh.ToolTrolley.Tray", new Vector3D(461753.01, 602399.14, -38790.8), new Rotator(1.683, 36.682, 1.006), new Vector3D(1.0, 1.0, 1.0), 50, [], null),
@@ -9704,6 +9933,14 @@ internal static class DamLootSocketsPart18
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_074", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(439433.13, 616640.18, -34677.2), new Rotator(0.0, 94.269, 0.0), new Vector3D(0.9506, 0.9506, 0.9506), 74, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_075", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(437994.67, 617477.44, -34765.32), new Rotator(0.0, -114.327, 0.0), new Vector3D(0.9155, 0.9155, 0.9155), 74, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_076", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(438295.08, 616948.97, -34626.07), new Rotator(0.0, -4.675, 0.0), new Vector3D(0.94, 0.94, 0.94), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 9430 to 9653 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart44
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_077", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(437994.45, 616936.17, -34603.85), new Rotator(0.0, 153.078, 0.0), new Vector3D(0.9802, 0.9802, 0.9802), 74, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_078", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(454207.12, 616315.3, -36004.58), new Rotator(0.0, 49.668, 0.0), new Vector3D(0.9246, 0.9246, 0.9246), 74, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_079", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(453495.02, 618192.84, -35764.54), new Rotator(0.0, 24.095, 0.0), new Vector3D(0.9116, 0.9116, 0.9116), 74, [], null),
@@ -9774,14 +10011,6 @@ internal static class DamLootSocketsPart18
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_034", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(448296.31, 645086.3, -36016.92), new Rotator(6.863, -124.231, -5.736), new Vector3D(0.9046, 0.9046, 0.9046), 76, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_035", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(451038.99, 644145.3, -35216.96), new Rotator(6.863, -177.707, -5.736), new Vector3D(0.822, 0.822, 0.822), 76, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_036", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(425472.93, 603675.9, -36646.15), new Rotator(6.863, -96.845, -5.736), new Vector3D(0.9412, 0.9412, 0.9412), 76, [], null),
-    ];
-}
-
-/// <summary>Sockets 9500 to 9999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart19
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_037", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(428202.38, 602179.42, -36754.78), new Rotator(6.863, -1.862, -5.736), new Vector3D(0.8147, 0.8147, 0.8147), 76, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_038", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(428006.71, 603493.24, -36620.06), new Rotator(6.863, 1.723, -5.736), new Vector3D(0.9013, 0.9013, 0.9013), 76, [], null),
         new("CQ20PUX5W75YZK1PSKT0OT1OH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_039", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(424059.76, 604027.2, -36557.81), new Rotator(6.863, -44.15, -5.736), new Vector3D(0.8021, 0.8021, 0.8021), 76, [], null),
@@ -9936,6 +10165,14 @@ internal static class DamLootSocketsPart19
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Gvt_Server_01_x400z250_A_C_987e59662c40308c_3217", "StaticMeshComponent0", "ContainerSocket.Door_5", "Socket.LootContainer.Tech.Server.Door", new Vector3D(505628.97, 523140.22, -37469.47), new Rotator(0.0, -150.0, 180.0), new Vector3D(1.0, 1.0, 1.0), 21, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Wrh_WallAdd_S_01_A_C_987e59662c40308c_3225", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(511747.8, 526273.82, -38786.71), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Wrh_WallAdd_S_01_A_C_987e59662c40308c_3225", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(511709.86, 526256.16, -38762.44), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
+    ];
+}
+
+/// <summary>Sockets 9654 to 9877 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart45
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Wrh_WallAdd_S_01_A_C_987e59662c40308c_3226", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(517399.08, 526823.07, -38832.37), new Rotator(0.0, -105.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Wrh_WallAdd_S_01_A_C_987e59662c40308c_3226", "StaticMeshComponent0", "ContainerSocket.PanelSmall", "Socket.LootContainer.Electrical.Fusebox.PanelSmall", new Vector3D(517359.76, 526837.41, -38808.1), new Rotator(0.0, -105.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "BP_SalvageContainer_Wrh_WallAdd_S_01_A_C_987e59662c40308c_3227", "StaticMeshComponent0", "ContainerSocket.PanelLarge", "Socket.LootContainer.Electrical.Fusebox.PanelLarge", new Vector3D(505285.89, 522744.76, -37431.64), new Rotator(0.0, -60.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 52, [], null),
@@ -10160,6 +10397,14 @@ internal static class DamLootSocketsPart19
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_057", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(510833.67, 532886.09, -42938.52), new Rotator(0.0, 52.713, 0.0), new Vector3D(0.9978, 0.9978, 0.9978), 75, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_058", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(511869.29, 532971.02, -42753.24), new Rotator(0.0, 158.624, 0.0), new Vector3D(1.1355, 1.1355, 1.1355), 75, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_059", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(521867.47, 518172.14, -37307.74), new Rotator(0.0, 162.354, 0.0), new Vector3D(1.2439, 1.2439, 1.2439), 75, [], null),
+    ];
+}
+
+/// <summary>Sockets 9878 to 10095 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart46
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_060", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(522321.85, 517324.32, -37442.36), new Rotator(0.0, -136.782, 0.0), new Vector3D(0.977, 0.977, 0.977), 75, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_061", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(522933.85, 517698.32, -37649.29), new Rotator(0.0, -99.659, 0.0), new Vector3D(1.2024, 1.2024, 1.2024), 75, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_C_062", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(522426.33, 518127.79, -37328.93), new Rotator(0.0, -72.037, 0.0), new Vector3D(1.1336, 1.1336, 1.1336), 75, [], null),
@@ -10282,14 +10527,6 @@ internal static class DamLootSocketsPart19
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_047", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(518706.17, 516780.29, -35903.88), new Rotator(-2.2, 20.737, 3.223), new Vector3D(0.9592, 0.9592, 0.9592), 77, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_048", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(524191.37, 514712.37, -36793.19), new Rotator(-2.2, -147.433, 3.223), new Vector3D(0.9986, 0.9986, 0.9986), 77, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_049", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(525465.32, 513794.65, -36704.29), new Rotator(-2.2, 5.441, 3.223), new Vector3D(0.9609, 0.9609, 0.9609), 77, [], null),
-    ];
-}
-
-/// <summary>Sockets 10000 to 10499 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart20
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_050", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(522991.52, 514635.48, -36698.5), new Rotator(-2.2, 42.425, 3.223), new Vector3D(0.8364, 0.8364, 0.8364), 77, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_051", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(524232.69, 513056.66, -36129.62), new Rotator(-2.2, 138.723, 3.223), new Vector3D(0.9359, 0.9359, 0.9359), 77, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "SM_Car_02_A_10", "StaticMeshComponent0", "Lid_A", "Socket.LootContainer.Mechanical.Car02.LidA", new Vector3D(523602.27, 524506.64, -39892.62), new Rotator(0.0, 26.918, 0.0), new Vector3D(1.0, 1.0, 1.0), 57, [], null),
@@ -10386,6 +10623,14 @@ internal static class DamLootSocketsPart20
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_129", "StaticMeshComponent0", "ContainerSocket.Door.06", "Socket.LootContainer.Industrial.Lockers.Door", new Vector3D(516199.87, 524563.2, -38156.65), new Rotator(0.0, -15.0, 0.0), new Vector3D(1.0, 1.0, 1.0), 28, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_17", "StaticMeshComponent0", "ContainerSocket.Drawer.01", "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer", new Vector3D(515974.56, 524488.91, -38138.84), new Rotator(0.0, -177.5, 90.0), new Vector3D(1.0, 1.0, 1.0), 47, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_17", "StaticMeshComponent0", "ContainerSocket.Drawer.02", "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer", new Vector3D(515976.68, 524449.95, -38138.84), new Rotator(0.0, -177.5, 90.0), new Vector3D(1.0, 1.0, 1.0), 47, [], null),
+    ];
+}
+
+/// <summary>Sockets 10096 to 10308 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart47
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_17", "StaticMeshComponent0", "ContainerSocket.Drawer.03", "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer", new Vector3D(515971.52, 524567.13, -38138.84), new Rotator(0.0, -177.5, 90.0), new Vector3D(1.0, 1.0, 1.0), 47, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_17", "StaticMeshComponent0", "ContainerSocket.Drawer.04", "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer", new Vector3D(515972.83, 524528.5, -38138.84), new Rotator(0.0, -177.5, 90.0), new Vector3D(1.0, 1.0, 1.0), 47, [], null),
         new("D7SLI18I6UYP3QP4VHBRYZMGH", "StaticMeshActor_3f127d0469c44935_19", "StaticMeshComponent0", "ContainerSocket.Drawer.01", "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer", new Vector3D(515914.18, 524692.22, -38059.88), new Rotator(0.0, -111.25, 0.0), new Vector3D(1.0, 1.0, 1.0), 47, [], null),
@@ -10599,6 +10844,14 @@ internal static class DamLootSocketsPart20
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_015", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(545140.76, 654464.19, -41566.19), new Rotator(6.863, 78.434, -5.736), new Vector3D(0.9362, 0.9362, 0.9362), 76, [], null),
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_016", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(546300.11, 655733.62, -41621.11), new Rotator(6.863, 16.271, -5.736), new Vector3D(0.8357, 0.8357, 0.8357), 76, [], null),
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_017", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(525611.06, 665412.47, -43471.58), new Rotator(6.863, 75.453, -5.736), new Vector3D(0.7942, 0.7942, 0.7942), 76, [], null),
+    ];
+}
+
+/// <summary>Sockets 10309 to 10533 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart48
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_018", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(523907.92, 663610.39, -41748.97), new Rotator(6.863, 84.317, -5.736), new Vector3D(0.7656, 0.7656, 0.7656), 76, [], null),
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_019", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(523671.84, 665279.88, -42585.44), new Rotator(6.863, -6.006, -5.736), new Vector3D(0.9552, 0.9552, 0.9552), 76, [], null),
         new("DGQTWA91ARBULLO304BAIC83Z", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_A_020", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(524331.26, 667638.91, -43514.01), new Rotator(6.863, -109.074, -5.736), new Vector3D(0.9238, 0.9238, 0.9238), 76, [], null),
@@ -10790,14 +11043,6 @@ internal static class DamLootSocketsPart20
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_52", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(559988.09, 569321.5, -42191.15), new Rotator(-7.349, -14.03, -21.488), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_52", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(561256.41, 568587.03, -41924.8), new Rotator(-19.761, -13.288, -1.052), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_57", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(594525.23, 581087.68, -38917.17), new Rotator(-14.844, 60.007, -13.223), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
-    ];
-}
-
-/// <summary>Sockets 10500 to 10999 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart21
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_57", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(596579.55, 579715.09, -37448.32), new Rotator(-4.809, 123.261, -6.055), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_57", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(596298.54, 580248.57, -38408.85), new Rotator(-19.357, 171.663, -28.535), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_C_57", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(594964.15, 580905.52, -38491.43), new Rotator(-31.57, 174.251, -9.043), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
@@ -10832,6 +11077,14 @@ internal static class DamLootSocketsPart21
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_NoScatter_C_7", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(595501.2, 565862.56, -34343.24), new Rotator(-4.03, -133.979, -55.35), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_NoScatter_C_7", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(593919.95, 568188.59, -34935.65), new Rotator(36.05, -81.96, -19.832), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_NoScatter_C_7", "StaticMeshComponent0", "Socket_1", "Socket.LootContainer.Nature.Moss", new Vector3D(594228.73, 567146.49, -35259.46), new Rotator(17.541, -29.956, -6.356), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
+    ];
+}
+
+/// <summary>Sockets 10534 to 10760 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart49
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_05_NoScatter_C_7", "StaticMeshComponent0", "Socket_2", "Socket.LootContainer.Nature.Moss", new Vector3D(595077.7, 566339.74, -34338.9), new Rotator(5.361, -32.51, 13.745), new Vector3D(1.0, 1.0, 1.0), 65, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_07_C_10", "StaticMeshComponent0", "Socket", "Socket.LootContainer.Nature.Moss", new Vector3D(558129.26, 561843.55, -43349.16), new Rotator(0.0, 117.577, 0.0), new Vector3D(0.6861, 0.6861, 0.6861), 66, [], null),
         new("ET8B0J10SY6E8VC3P6J6TYC1P", "BP_Base_Rock_XL_07_C_10", "StaticMeshComponent0", "Socket_0", "Socket.LootContainer.Nature.Moss", new Vector3D(558332.44, 561901.12, -43259.95), new Rotator(0.0, -34.776, 0.0), new Vector3D(0.6861, 0.6861, 0.6861), 66, [], null),
@@ -11059,6 +11312,14 @@ internal static class DamLootSocketsPart21
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_070", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(449255.81, 472678.24, -33556.86), new Rotator(0.0, -114.273, 0.0), new Vector3D(0.964, 0.964, 0.964), 74, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_071", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(452135.26, 472563.78, -31861.79), new Rotator(0.0, -14.538, 0.0), new Vector3D(1.0578, 1.0578, 1.0578), 74, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_072", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(450378.38, 471976.38, -32814.96), new Rotator(0.0, 51.271, 0.0), new Vector3D(1.0446, 1.0446, 1.0446), 74, [], null),
+    ];
+}
+
+/// <summary>Sockets 10761 to 10985 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart50
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_073", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(429840.86, 482670.24, -36652.93), new Rotator(0.0, -165.791, 0.0), new Vector3D(0.9458, 0.9458, 0.9458), 74, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_074", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(429495.88, 481373.82, -37000.71), new Rotator(0.0, 69.615, 0.0), new Vector3D(1.0958, 1.0958, 1.0958), 74, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_AleppoPine_01_B_075", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(429337.88, 482474.9, -36813.43), new Rotator(0.0, -124.653, 0.0), new Vector3D(1.2474, 1.2474, 1.2474), 74, [], null),
@@ -11284,6 +11545,14 @@ internal static class DamLootSocketsPart21
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_043", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(444103.68, 488256.22, -32844.76), new Rotator(-2.2, -115.241, 3.223), new Vector3D(0.8446, 0.8446, 0.8446), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_044", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(438821.89, 492767.04, -34371.55), new Rotator(-2.2, -104.765, 3.223), new Vector3D(0.9959, 0.9959, 0.9959), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_045", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(448785.55, 493869.7, -37454.73), new Rotator(-2.2, 69.941, 3.223), new Vector3D(0.7681, 0.7681, 0.7681), 77, [], null),
+    ];
+}
+
+/// <summary>Sockets 10986 to 11090 of <see cref="DamLootSockets.All"/>.</summary>
+internal static class DamLootSocketsPart51
+{
+    public static IReadOnlyList<LootSocket> Sockets { get; } =
+    [
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_046", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(438517.74, 492423.44, -34368.84), new Rotator(-2.2, -81.711, 3.223), new Vector3D(0.8747, 0.8747, 0.8747), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_047", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(444497.83, 494031.08, -36118.97), new Rotator(-2.2, -125.516, 3.223), new Vector3D(0.8031, 0.8031, 0.8031), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_048", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442366.72, 491079.85, -33559.77), new Rotator(-2.2, 95.723, 3.223), new Vector3D(0.9667, 0.9667, 0.9667), 77, [], null),
@@ -11298,14 +11567,6 @@ internal static class DamLootSocketsPart21
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_057", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(442036.25, 472934.44, -35959.26), new Rotator(-2.2, -78.797, 3.223), new Vector3D(0.9675, 0.9675, 0.9675), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_058", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(419985.71, 483613.74, -37418.11), new Rotator(-2.2, -9.18, 3.223), new Vector3D(0.9869, 0.9869, 0.9869), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_059", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(419276.39, 485568.12, -36186.95), new Rotator(-2.2, -13.629, 3.223), new Vector3D(0.9029, 0.9029, 0.9029), 77, [], null),
-    ];
-}
-
-/// <summary>Sockets 11000 to 11090 of <see cref="DamLootSockets.All"/>.</summary>
-internal static class DamLootSocketsPart22
-{
-    public static IReadOnlyList<LootSocket> Sockets { get; } =
-    [
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_060", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(418769.96, 484084.17, -37232.07), new Rotator(-2.2, -119.661, 3.223), new Vector3D(0.8602, 0.8602, 0.8602), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_061", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(440230.07, 486543.96, -33918.49), new Rotator(-2.2, 81.887, 3.223), new Vector3D(0.7946, 0.7946, 0.7946), 77, [], null),
         new("EUMNIE4IJI09RSYS7M47NHMBU", "MergedScatterActor_0", "SM_South_Forest_StonePine_01_B_062", "Socket", "Socket.LootContainer.Nature.Resin", new Vector3D(441913.85, 481906.19, -34535.52), new Rotator(-2.2, 89.419, 3.223), new Vector3D(0.9141, 0.9141, 0.9141), 77, [], null),
