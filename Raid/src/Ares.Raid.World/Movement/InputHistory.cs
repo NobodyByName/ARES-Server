@@ -81,6 +81,30 @@ public sealed class InputHistory
         return new Vector3D(world[0], world[1], world[2]);
     }
 
+    /// <summary>
+    /// Where the client's camera was for a frame it sent, relative to the character's feet in the control heading's
+    /// frame: X forward, Y to the right, Z up.
+    /// </summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>The camera offset, or null when the frame is unknown.</returns>
+    public Vector3D? CameraOffset(uint frame)
+    {
+        if (!_frames.TryGetValue(frame, out Dictionary<int, PendulumSlot>? slots)
+            || !slots.TryGetValue(PendulumInput.PositionSlot, out PendulumSlot? slot)
+            || slot.DescriptorId != PendulumInput.SlotDescriptors[PendulumInput.PositionSlot])
+        {
+            return null;
+        }
+
+        // The lowest and highest representable integers map to the two ends of the range.
+        double[] local = [.. Enumerable.Range(PendulumInput.CameraPositionXField, 3).Select(index =>
+        {
+            PendulumScalarField field = (PendulumScalarField)s_positionFields[index];
+            return (PendulumCodec.Integer(field, slot.Value) * (2 * PendulumInput.CameraPositionRange / (field.Maximum - 1.0))) - PendulumInput.CameraPositionRange;
+        })];
+        return new Vector3D(local[0], local[1], local[2]);
+    }
+
     /// <summary>The heading of the client's control rotation in a frame it sent (the character faces it).</summary>
     /// <param name="frame">Input frame.</param>
     /// <returns>The heading in radians, or null when the frame is unknown.</returns>

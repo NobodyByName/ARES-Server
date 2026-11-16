@@ -9,6 +9,9 @@ public readonly record struct HeldItemInput(HeldItemMovementParameters Item)
     /// <summary>Whether the held item is a weapon (its fire state drives the fire tag).</summary>
     public bool Weapon { get; init; }
 
+    /// <summary>Whether the held item is the Snap Hook, drawn and not being put away, so its primary use throws.</summary>
+    public bool SnapHookReady { get; init; }
+
     /// <summary>Whether the item's data enables aiming.</summary>
     public bool EnablesZoom { get; init; }
 

@@ -309,6 +309,9 @@ public sealed class PlayerMovement
         // A ladder climb starts with the client's press on the ladder's interaction; after its animated phases and a
         // followed vault the body follows the reports while the client is in the air or locked in the action.
         CharacterState previous = _simulation.State;
+        // The Snap Hook item ticks before the movement node; its move target may start a pull this tick.
+        _simulation.StepSnapHookItem(SnapHookControls.From(heldItem?.SnapHookReady ?? false, input.Weapon(frame), _yaw, input.Pitch(frame) ?? 0,
+            input.CameraOffset(frame)), frame);
         bool locked = _air.Unsettled || (input.Weapon(frame + 1)?.FireBlocked ?? false);
         LadderState? start = _ladderStarts.TryGetValue(frame, out LadderStart begun)
             ? LadderMovement.Begin(LadderLine.From(DamLadders.All[begun.Ladder]), begun.TopEntry) with { Ticks = begun.Attached ? s_attachedLadderTicks : 0 }
@@ -317,7 +320,12 @@ public sealed class PlayerMovement
         bool followingVault = start is null && previous.Ladder is null && !followingLadder && previous.VaultFollowedTicks is > 0 and < MostFollowedTicks
             && (VaultDetection.Requested(_claims) || (input.Weapon(frame + 1)?.FireBlocked ?? false));
         CharacterState state;
-        if (start is not null || previous.Ladder is not null || (followingLadder && input.Position(frame + 1) is not null))
+        if (start is null && (previous.SnapHook.Pull is not null || _simulation.PullStarts(frame)))
+        {
+            state = _simulation.StepPulled(_claims, _movement, _yaw, PawnBlackboard.TickSeconds, input.Weapon(frame)?.SecondaryPressed ?? false,
+                input.Position(frame + 1), input.Position(frame), _air.Unsettled);
+        }
+        else if (start is not null || previous.Ladder is not null || (followingLadder && input.Position(frame + 1) is not null))
         {
             state = _simulation.StepOnLadder(_claims, _movement, _yaw, PawnBlackboard.TickSeconds, input.Position(frame + 1), input.Position(frame), start,
                 _air.Unsettled);

@@ -1,3 +1,5 @@
+using Ares.Structs.Game.Collision;
+
 namespace Ares.Structs.Game.Movement;
 
 /// <summary>
@@ -117,8 +119,23 @@ public static class SnapHookParameters
     /// <summary>Gadget power recharged per second while below <see cref="PowerMaximum"/>.</summary>
     public const double PowerRechargePerSecond = 4.5;
 
-    /// <summary>Trace type query (<c>ETraceTypeQuery</c> value) of the throw's line trace.</summary>
-    public const int ThrowTraceQuery = 10;
+    /// <summary>Length of the crosshair trace along the view (<c>UAimComponent::CrosshairTrace</c>); with nothing in the way the aim point is its end.</summary>
+    public const double AimTraceLength = 50000;
+
+    /// <summary>Trace channel of the crosshair trace (trace type query 0, complex collision).</summary>
+    public const CollisionChannel AimTraceChannel = CollisionChannel.Visibility;
+
+    /// <summary>Trace channel of the throw's line trace (trace type query 10, complex collision).</summary>
+    public const CollisionChannel ThrowTraceChannel = GameCollisionChannels.AiTraceProjectile;
+
+    /// <summary>Distance to the right of the character's capsule centre of the point the hook is thrown from (<c>ShootOffset.Y</c>).</summary>
+    public const double ShootRight = 18;
+
+    /// <summary>Height above the character's capsule centre of the point the hook is thrown from.</summary>
+    public const double ShootHeight = 44;
+
+    /// <summary>Seconds over which the pull takes over the character's velocity from the movement it started from.</summary>
+    public const double EntryBlendSeconds = 0.1;
 
     /// <summary>
     /// Graph state flags while pulled: the snap hook animation state, and equipping and context interactions blocked.

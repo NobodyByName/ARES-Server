@@ -189,6 +189,20 @@ public static class SnapHookMovement
     }
 
     /// <summary>
+    /// The velocity while the pull takes over from the movement it started from (<see cref="SnapHookParameters.EntryBlendSeconds"/>):
+    /// the share of the pull's own velocity grows with the pull's steps; the first tick of the pull keeps the movement's.
+    /// </summary>
+    /// <param name="movement">Velocity the movement the pull started from gives this tick.</param>
+    /// <param name="pulled">Velocity of the pull's step this tick.</param>
+    /// <param name="steps">Pull steps taken, this one included (0 on the tick the pull starts).</param>
+    /// <returns>The character's velocity.</returns>
+    public static Vector3D BlendIn(Vector3D movement, Vector3D pulled, int steps)
+    {
+        double share = Math.Clamp(steps * PawnBlackboard.TickSeconds / SnapHookParameters.EntryBlendSeconds, 0, 1);
+        return Vectors.Add(Vectors.Scale(movement, 1 - share), Vectors.Scale(pulled, share));
+    }
+
+    /// <summary>
     /// The pulled flight's velocity step towards a requested velocity: the engine's flying velocity rule (friction
     /// turns the velocity towards the request, braking above the speed limit, fluid drag, then acceleration along the
     /// request, its length capped at one, up to the limit) with the node's flying parameters.
@@ -305,10 +319,11 @@ public static class SnapHookMovement
             return flat with { Z = velocity.Z - (AirMovementParameters.FallAcceleration * seconds) };
         }
 
+        // The ground step works on the whole velocity, the vertical part included.
         double horizontal = Math.Sqrt((velocity.X * velocity.X) + (velocity.Y * velocity.Y));
         GroundMovementParameters parameters = new(horizontal, SnapHookParameters.EndGroundAcceleration, SnapHookParameters.EndGroundBrakingDeceleration,
             SnapHookParameters.EndGroundFriction, SnapHookParameters.EndGroundBrakingFrictionFactor);
-        return FlatGroundMovement.CalculateVelocity(velocity with { Z = 0 }, input.Direction, seconds, parameters, true, true);
+        return FlatGroundMovement.CalculateVelocity(velocity, input.Direction, new Vector3D(0, 0, 1), seconds, parameters, true, true);
     }
 
     // A jump pitches the steering up about its own right axis.

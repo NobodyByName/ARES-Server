@@ -69,6 +69,15 @@ public static class PendulumInput
     /// <summary>Field of the position slot holding the quantized world Z position.</summary>
     public const int PositionZField = 9;
 
+    /// <summary>
+    /// Field of the position slot holding the camera location relative to the character's feet, along the control
+    /// heading (Y: to its right, Z: up, following): <see cref="CameraPositionRange"/> either way maps to 0 and Maximum - 1.
+    /// </summary>
+    public const int CameraPositionXField = 4;
+
+    /// <summary>Distance either way from the character's feet that the camera location fields span.</summary>
+    public const double CameraPositionRange = 400;
+
     /// <summary>Slot of the input variable holding the control (camera) rotation.</summary>
     public const int ControlRotationSlot = 4;
 

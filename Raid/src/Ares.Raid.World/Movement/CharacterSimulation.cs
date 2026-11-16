@@ -112,6 +112,9 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
     /// <summary>Whether the character vaults this tick, along a simulated path or a followed one.</summary>
     public bool Vaulting => Vault is not null || VaultFollowedTicks > 0;
 
+    /// <summary>The Snap Hook's hook, its move target and the pull it gives the character.</summary>
+    public SnapHookUse SnapHook { get; init; } = SnapHookUse.None;
+
     /// <summary>The graph-state flags the simulation decides (<see cref="GraphStateFlags.Simulated"/>).</summary>
     public ulong GraphFlags
     {
@@ -138,6 +141,7 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
                 ? (held.Zoom ? GraphStateTags.AbilityZooming : 0) | (held.PrimaryUseTag ? GraphStateTags.AbilityFirePrimaryPendulumWep : 0)
                     | (held.ReloadBlocked ? GraphStateTags.AbilityBlockReloadPendulumMove : 0)
                 : 0;
+            flags |= SnapHook.Pull is not null ? SnapHookParameters.PullingFlags : 0;
             return flags | (Ladder is not null ? LadderFlags : LadderFollowedTicks > 0 ? LadderParameters.ClimbingFlags : 0);
         }
     }
@@ -652,6 +656,108 @@ public sealed class CharacterSimulation
             VaultMissed = false,
             VaultFollowedTicks = 0,
             Unsettled = unsettled,
+        };
+        return State;
+    }
+
+    /// <summary>
+    /// The Snap Hook item's tick, which runs before the movement node: its hook is thrown, flies, holds on, is called back or
+    /// cleared (<see cref="SnapHookUse.StepItem"/>), from the feet before the tick.
+    /// </summary>
+    /// <param name="controls">The tick's Snap Hook controls.</param>
+    /// <param name="frame">Input frame of the tick.</param>
+    public void StepSnapHookItem(SnapHookControls controls, uint frame) =>
+        State = State with { SnapHook = State.SnapHook.StepItem(controls, frame, State.Body?.Position ?? State.Position, State.GraphFlags, _world) };
+
+    /// <summary>Whether the Snap Hook's move target starts a pull on a tick (from ground movement or a ladder).</summary>
+    /// <param name="frame">Input frame of the tick.</param>
+    /// <returns>Whether the pull starts.</returns>
+    public bool PullStarts(uint frame) =>
+        State is { SnapHook.Pull: null, Vaulting: false, Roll: null, Stance: not CharacterStance.Slide } && SnapHookMovement.CanStart(State.SnapHook.Target, SnapHookUse.Time(frame));
+
+    /// <summary>
+    /// A tick pulled by the Snap Hook (<see cref="SnapHookMovement"/>): the pull starts on its first tick, then steps
+    /// towards its target until an end releases the target. The client's reports give the position, as the simulated
+    /// pull's path depends on a target the server only approximates; without a report the simulated step moves the
+    /// character. The action layer shows the pull's stance and running.
+    /// </summary>
+    /// <param name="input">Character button claims.</param>
+    /// <param name="movement">Movement axes and buttons from the same frame.</param>
+    /// <param name="yaw">Control heading in radians.</param>
+    /// <param name="seconds">Simulation step duration in seconds.</param>
+    /// <param name="secondaryPressed">Whether secondary use went down with this frame.</param>
+    /// <param name="reported">Position the client reports after the tick, if known.</param>
+    /// <param name="before">Position the client reported before the tick, if known.</param>
+    /// <param name="unsettled">Whether the reported positions show the character jumping, falling or landing.</param>
+    /// <returns>The next character state.</returns>
+    public CharacterState StepPulled(CharacterInput input, MovementInput movement, double yaw, double seconds, bool secondaryPressed, Vector3D? reported,
+        Vector3D? before, bool unsettled = false)
+    {
+        Vector3D feet = State.Body?.Position ?? State.Position;
+        Vector3D location = feet with { Z = feet.Z + DamPlayerStarts.Capsule.HalfHeight };
+        int time = SnapHookUse.Time(input.Frame);
+        SnapHookUse use = State.SnapHook;
+        Vector3D direction = FlatGroundMovement.Direction(movement, yaw);
+        // While the pull takes over, the ground movement it started from still runs under it.
+        Vector3D velocity = FlatGroundMovement.StepVelocity(State.Velocity, direction, new Vector3D(0, 0, 1), seconds, GroundMovementParameters.Armed, true, true);
+        CharacterStance stance = State.Stance;
+        if (use.Pull is not { } pull)
+        {
+            // The first tick only starts the pull.
+            use = use.Target is { } target ? use with { Pull = SnapHookMovement.Begin(target, location) } : use;
+        }
+        else
+        {
+            GroundContact ground = State.Body?.Ground ?? default;
+            SnapHookStep step = SnapHookMovement.Step(pull, new SnapHookInput(direction, movement.Buttons.HasFlag(MovementButtons.Jump), secondaryPressed), location,
+                State.Velocity, new SnapHookGround(ground.Supported ? feet.Z - ground.Height : double.MaxValue, ground.Walkable), time, seconds);
+            velocity = step.Exit == SnapHookExit.None ? SnapHookMovement.BlendIn(velocity, step.Velocity, step.State.Ticks) : step.Velocity;
+            stance = step.ActionLayerWritten ? step.Stance : stance;
+            use = use with { Pull = step.Exit == SnapHookExit.None ? step.State : null, Target = step.State.Target };
+        }
+
+        Vector3D position = reported ?? new Vector3D(feet.X + (velocity.X * seconds), feet.Y + (velocity.Y * seconds), feet.Z + (velocity.Z * seconds));
+        if (reported is { } after && before is { } start)
+        {
+            velocity = new Vector3D((after.X - start.X) / seconds, (after.Y - start.Y) / seconds, (after.Z - start.Z) / seconds);
+        }
+
+        Step(input, position);
+        AdvanceNodes(input.Frame);
+        State = State with
+        {
+            Position = position,
+            Body = _world is not null ? BodyMotion.Start(_world, position, velocity) with { Jumping = false } : null,
+            Velocity = velocity,
+            Yaw = yaw,
+            SimulationSeconds = State.SimulationSeconds + seconds,
+            MovementStartedAt = null,
+            Stance = stance,
+            Locomotion = LocoMode.Running,
+            Shuffling = false,
+            SlideStartedAt = null,
+            Slide = null,
+            SlideExitTicks = 0,
+            Roll = null,
+            RollFinished = false,
+            RollExitTicks = 0,
+            HeavyLandingTicks = 0,
+            Landing = null,
+            LandingFinished = false,
+            LandingBlend = default,
+            LandingFollowed = false,
+            JumpAirTicks = 0,
+            CrouchLatched = false,
+            Ladder = null,
+            LadderFlags = 0,
+            LadderFollowedTicks = 0,
+            CrouchBlockTicks = Math.Max(0, State.CrouchBlockTicks - 1),
+            Vault = null,
+            VaultFinished = false,
+            VaultMissed = false,
+            VaultFollowedTicks = 0,
+            Unsettled = unsettled,
+            SnapHook = use,
         };
         return State;
     }

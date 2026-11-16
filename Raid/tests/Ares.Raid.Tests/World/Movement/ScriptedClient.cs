@@ -5,6 +5,7 @@ using Ares.Raid.World.Collision;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 
@@ -17,8 +18,10 @@ namespace Ares.Raid.Tests.World.Movement;
 /// <param name="Buttons">Movement buttons held; their previous-frame copies are added from the frame before.</param>
 /// <param name="Claims">Character claims flags.</param>
 /// <param name="FireBlocked">Whether the client blocks firing.</param>
+/// <param name="WeaponFlags">Further weapon control flags (<see cref="WeaponProtocol"/> bits).</param>
+/// <param name="Camera">Camera offset from the feet in the control heading's frame, if the frame carries one.</param>
 internal readonly record struct ScriptedFrame(Vector3D Position, sbyte Forward = 0, sbyte Right = 0, MovementButtons Buttons = MovementButtons.None,
-    ulong Claims = 0, bool FireBlocked = false);
+    ulong Claims = 0, bool FireBlocked = false, ulong WeaponFlags = 0, Vector3D? Camera = null);
 
 /// <summary>Builds client payloads from a per-frame script and delivers them to a character simulation as a raid does.</summary>
 internal static class ScriptedClient
@@ -44,7 +47,7 @@ internal static class ScriptedClient
     /// when it left the revisable window (or at the end), in frame order.
     /// </summary>
     public static List<CharacterState> Deliver(PlayerMovement movement, Func<uint, ScriptedFrame> script, IEnumerable<uint> packets,
-        Action<uint>? delivered = null)
+        Action<uint>? delivered = null, HeldItemInput? heldItem = null)
     {
         InputHistory history = new();
         Dictionary<uint, CharacterState> settled = [];
@@ -57,7 +60,7 @@ internal static class ScriptedClient
             movement.Revise(history);
             while (movement.Frame + 1 < latest)
             {
-                movement.Advance(history, armed: false);
+                movement.Advance(history, armed: false, heldItem);
             }
 
             for (uint frame = first; frame <= movement.Frame; frame++)
@@ -72,19 +75,24 @@ internal static class ScriptedClient
         return [.. settled.OrderBy(entry => entry.Key).Select(entry => entry.Value)];
     }
 
-    /// <summary>A level of axis-aligned boxes that block the character and climbing.</summary>
-    public static CollisionWorld World(params (Vector3D Center, Vector3 HalfExtents)[] boxes)
+    /// <summary>A level of axis-aligned boxes that block the character, climbing, sight and projectiles.</summary>
+    public static CollisionWorld World(params (Vector3D Center, Vector3 HalfExtents)[] boxes) => new(Map(boxes));
+
+    /// <summary>The map collision of <see cref="World"/>.</summary>
+    public static MapCollision Map(params (Vector3D Center, Vector3 HalfExtents)[] boxes)
     {
         MapCollisionBuilder builder = SyntheticMaps.Builder();
         int cell = builder.AddCell("/Game/Cell", []);
         int index = 0;
         foreach ((Vector3D center, Vector3 halfExtents) in boxes)
         {
-            builder.AddPlacement(builder.AddBody(SyntheticMaps.Body($"box{index++}", boxes: [SyntheticMaps.Box(halfExtents)])), cell,
-                SyntheticMaps.At(center.X, center.Y, center.Z), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable);
+            CollisionBody box = SyntheticMaps.Body($"box{index++}", boxes: [SyntheticMaps.Box(halfExtents)]) with { TraceFlag = CollisionTraceFlag.SimpleAsComplex };
+            builder.AddPlacement(builder.AddBody(box), cell,
+                SyntheticMaps.At(center.X, center.Y, center.Z), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable
+                | CollisionChannelMask.Of(CollisionChannel.Visibility) | CollisionChannelMask.Of(GameCollisionChannels.AiTraceProjectile));
         }
 
-        return new CollisionWorld(builder.Build());
+        return builder.Build();
     }
 
     // A client payload coded against the defaults, carrying the latest three frames.
@@ -114,9 +122,15 @@ internal static class ScriptedClient
             Quantized(positionDescriptor, PendulumInput.PositionYField, frame.Position.Y),
             Quantized(positionDescriptor, PendulumInput.PositionZField, frame.Position.Z),
         ];
-        if (frame.FireBlocked)
+        if (frame.Camera is { } camera)
         {
-            reported.Add(new PendulumIntegerValue(WeaponProtocol.InputFlagsField, 1UL << WeaponProtocol.FireBlockedBit));
+            double[] axes = [camera.X, camera.Y, camera.Z];
+            reported.AddRange(axes.Select((value, axis) => Camera(positionDescriptor, PendulumInput.CameraPositionXField + axis, value)));
+        }
+
+        if (frame.FireBlocked || frame.WeaponFlags != 0)
+        {
+            reported.Add(new PendulumIntegerValue(WeaponProtocol.InputFlagsField, (frame.FireBlocked ? 1UL << WeaponProtocol.FireBlockedBit : 0) | frame.WeaponFlags));
         }
 
         MovementButtons buttons = frame.Buttons;
@@ -149,6 +163,13 @@ internal static class ScriptedClient
         }
 
         return slots;
+    }
+
+    private static PendulumIntegerValue Camera(int descriptor, int field, double offset)
+    {
+        PendulumScalarField scalar = (PendulumScalarField)PendulumRegistry.Descriptors[descriptor].Fields[field];
+        return new PendulumIntegerValue(field,
+            (ulong)Math.Round((offset + PendulumInput.CameraPositionRange) * (scalar.Maximum - 1) / (2 * PendulumInput.CameraPositionRange)));
     }
 
     private static PendulumIntegerValue Quantized(int descriptor, int field, double world)

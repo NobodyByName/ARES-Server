@@ -1539,11 +1539,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
             if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
                 || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
                 || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0
-                || character.Roll is not null || character.Vaulting || character.Unsettled)
+                || character.Roll is not null || character.Vaulting || character.Unsettled || character.SnapHook.Busy)
             {
-                // A frame lacks the state of the client's own slide, roll, vault and landing nodes: it would end a slide, a
-                // roll, a vault or a landing recovery and drop a jumping or falling character to the ground. Wait until the character
-                // is back in ordinary ground movement.
+                // A frame lacks the state of the client's own slide, roll, vault, landing and Snap Hook nodes: it would end a
+                // slide, a roll, a vault, a landing recovery or a hook's flight and pull, and drop a jumping or falling character
+                // to the ground. Wait until the character is back in ordinary ground movement.
                 return;
             }
 

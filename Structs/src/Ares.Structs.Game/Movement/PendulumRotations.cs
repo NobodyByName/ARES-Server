@@ -75,6 +75,20 @@ public static class PendulumRotations
             : new PendulumQuaternion(0, 0, 0, Stored(w, scale, field), signs, 0, 1, 3);
     }
 
+    /// <summary>The rotation that turns the X axis to a direction without rolling (its heading and pitch).</summary>
+    /// <param name="x">Direction X.</param>
+    /// <param name="y">Direction Y.</param>
+    /// <param name="z">Direction Z.</param>
+    /// <param name="field">The quaternion field.</param>
+    /// <returns>The stored quaternion.</returns>
+    public static PendulumQuaternion FromDirection(double x, double y, double z, PendulumQuaternionField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        (double sinYaw, double cosYaw) = Math.SinCos(Math.Atan2(y, x) / 2.0);
+        (double sinPitch, double cosPitch) = Math.SinCos(Math.Atan2(z, Math.Sqrt((x * x) + (y * y))) / 2.0);
+        return Pack([sinPitch * sinYaw, -sinPitch * cosYaw, cosPitch * sinYaw, cosPitch * cosYaw], field);
+    }
+
     /// <summary>
     /// The rotation a ground normal is stored as: the rotation whose Z axis is the normal, its X axis perpendicular to
     /// world up (world X when the normal points straight up or down).

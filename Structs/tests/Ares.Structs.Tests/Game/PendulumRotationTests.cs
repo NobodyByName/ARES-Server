@@ -45,6 +45,18 @@ public sealed class PendulumRotationTests
         Assert.InRange(Math.Abs((PendulumRotations.Yaw(rotation, coarse) * 180.0 / Math.PI) - degrees), 0.0, 1.0);
     }
 
+    [Theory]
+    [InlineData(1.0, 0.0, 0.0, 0.0, 0.0)]
+    [InlineData(-3.0, 3.0, 0.0, 135.0, 0.0)]
+    [InlineData(0.0, -2.0, 2.0, -90.0, 45.0)]
+    [InlineData(5.0, 1.0, -3.0, 11.3, -30.5)]
+    public void A_direction_is_stored_as_its_heading_and_pitch(double x, double y, double z, double yaw, double pitch)
+    {
+        PendulumQuaternion rotation = PendulumRotations.FromDirection(x, y, z, s_field);
+        Assert.Equal(yaw, PendulumRotations.Yaw(rotation, s_field) * 180.0 / Math.PI, 1);
+        Assert.Equal(pitch, PendulumRotations.Pitch(rotation, s_field) * 180.0 / Math.PI, 1);
+    }
+
     [Fact]
     public void A_heading_rotation_stores_the_smaller_vertical_component()
     {
