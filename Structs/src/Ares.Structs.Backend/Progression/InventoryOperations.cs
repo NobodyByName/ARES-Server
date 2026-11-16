@@ -12,6 +12,7 @@ public sealed record InventoryOperationsRequest(
 [JsonDerivedType(typeof(SetItemParents), "setParents")]
 [JsonDerivedType(typeof(MoveItemAmount), "moveAmount")]
 [JsonDerivedType(typeof(AcceptOffer), "acceptOffer")]
+[JsonDerivedType(typeof(ScrapItem), "scrap")]
 public abstract record InventoryOperation;
 
 /// <summary>Changes the slots containing an existing item.</summary>
@@ -37,6 +38,18 @@ public sealed record AcceptOffer(
     [property: JsonPropertyName("times")] long Times,
     [property: JsonPropertyName("payment")] IReadOnlyList<ItemAmountToConsume>? Payment,
     [property: JsonPropertyName("paymentByAmounts")] IReadOnlyList<UnknownOfferPaymentByAmount>? PaymentByAmounts) : InventoryOperation;
+
+/// <summary>
+/// Sells an item for the coins of its <see cref="ItemDescription.Scrap"/> package: the whole item, with whatever it
+/// holds, or <paramref name="Amount"/> of a stack. Members other than these are rejected, so an operation of another
+/// shape is not mistaken for a sale.
+/// </summary>
+/// <param name="InstanceId">The item sold.</param>
+/// <param name="Amount">How many of the stack are sold, or null for the whole item.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ScrapItem(
+    [property: JsonPropertyName("instanceId"), JsonRequired] string InstanceId,
+    [property: JsonPropertyName("amount"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Amount) : InventoryOperation;
 
 /// <summary>An entry of <see cref="AcceptOffer.PaymentByAmounts"/>; the trade screen sends this list empty.</summary>
 public sealed record UnknownOfferPaymentByAmount;
