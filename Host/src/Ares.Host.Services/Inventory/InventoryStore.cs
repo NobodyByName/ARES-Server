@@ -150,7 +150,10 @@ public sealed partial class InventoryStore
             ?? throw new InvalidDataException("Inventory import is empty"), expectedRevision);
     }
 
-    /// <summary>Adds one supported item stack to the idle player's stash from the local operator console.</summary>
+    /// <summary>
+    /// Adds one supported item stack to the idle player's stash from the local operator console. A currency joins its
+    /// wallet stack instead.
+    /// </summary>
     public void AddItem(string technicalName, DateTimeOffset now, long quantity = 1)
     {
         if (!ItemTechnicalNames.AssetIds.ContainsKey(technicalName))
@@ -174,6 +177,24 @@ public sealed partial class InventoryStore
 
             OwnedItem item = new(Guid.NewGuid().ToString("D"), technicalName, quantity,
                 StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-operator", now.ToUnixTimeMilliseconds());
+            if (InventoryCatalog.IsCurrency(technicalName))
+            {
+                // A currency has one stack, which the added amount joins.
+                OwnedItem? owned = _state.Wallet.SingleOrDefault(stack => stack.Type == technicalName);
+                if (owned is not null && quantity > definition.MaxAmount - owned.Quantity)
+                {
+                    throw new InvalidDataException("Invalid item quantity");
+                }
+
+                OwnedItem stack = owned is null ? item : owned with { Quantity = owned.Quantity + quantity, ETag = item.ETag, UpdatedAt = item.UpdatedAt };
+                Save(_state with
+                {
+                    Revision = checked(_state.Revision + 1),
+                    Wallet = [.. _state.Wallet.Where(other => other.Type != technicalName), stack],
+                });
+                return;
+            }
+
             Save(_state with
             {
                 Revision = checked(_state.Revision + 1),

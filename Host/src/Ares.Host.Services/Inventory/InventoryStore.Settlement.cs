@@ -47,7 +47,7 @@ public sealed partial class InventoryStore
 
             HashSet<string> stashIds = _state.Stash.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
             Dictionary<string, (InventoryArea Area, OwnedItem Item)> brought = Enum.GetValues<InventoryArea>()
-                .Where(area => area != InventoryArea.Stash)
+                .Where(area => area is not (InventoryArea.Stash or InventoryArea.Wallet))
                 .SelectMany(area => InventoryCatalog.Items(_state, area).Select(item => (Area: area, Item: item)))
                 .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
             long revision = checked(_state.Revision + 1);

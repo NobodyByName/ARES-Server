@@ -34,6 +34,8 @@ internal sealed class InventoryProjection
 
         roots.Add(BuildNode(LoadoutItems.FrameSlotAssetId, "carried", null));
         roots.Add(BuildNode(AugmentItems.AugmentSlotAssetId, "augment", new InventoryPosition(InventoryArea.Augment, 0)));
+        items.AddRange(inventory.Wallet.Select(owned => new InventoryItem(owned.InstanceId, InventoryCatalog.AssetId(owned.Type), owned.Quantity, [],
+            owned.Durability, owned.MaxDurability, "", owned.ETag, owned.UpdatedAt)));
 
         Snapshot = InventorySnapshots.Copy(new InventorySnapshot(userId, inventory.Revision, items.AsReadOnly(), roots.AsReadOnly()));
         return;
@@ -175,6 +177,12 @@ internal sealed class InventoryProjection
                 if (item.Quantity > definition.MaxAmount || !definition.Stackable && item.Quantity != 1)
                 {
                     throw new InvalidDataException("Invalid item quantity");
+                }
+
+                if ((area == InventoryArea.Wallet) != InventoryCatalog.IsCurrency(item.Type)
+                    || area == InventoryArea.Wallet && contents.Count(other => other.Type == item.Type) != 1)
+                {
+                    throw new InvalidDataException("Currencies belong in the wallet, one stack each");
                 }
             }
         }

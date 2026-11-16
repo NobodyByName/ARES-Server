@@ -13,8 +13,15 @@ internal static class InventoryCatalog
 
     internal static bool UsesSlots(InventoryArea area) => area is InventoryArea.Backpack or InventoryArea.QuickUse or InventoryArea.SafePockets;
 
-    internal static int Capacity(PlayerInventory inventory, InventoryArea area) => area == InventoryArea.Stash
-        ? inventory.Stash.SlotCount : LoadoutCapacity(inventory.Loadout, area);
+    internal static int Capacity(PlayerInventory inventory, InventoryArea area) => area switch
+    {
+        InventoryArea.Stash => inventory.Stash.SlotCount,
+        InventoryArea.Wallet => CurrencyItems.Definitions.Count,
+        _ => LoadoutCapacity(inventory.Loadout, area),
+    };
+
+    /// <summary>Whether the item is a currency, owned in the wallet rather than in a container.</summary>
+    internal static bool IsCurrency(string name) => CurrencyItems.ItemAssetIds.ContainsKey(name);
 
     internal static long FrameAssetId(PlayerLoadoutState loadout) => LoadoutDefinitions.FrameAssetId(loadout.Augment is { } augment ? AssetId(augment.Type) : null);
 
@@ -45,6 +52,7 @@ internal static class InventoryCatalog
         InventoryArea.Shield => Single(inventory.Loadout.Shield),
         InventoryArea.MainWeapon => Single(inventory.Loadout.MainWeapon),
         InventoryArea.SecondaryWeapon => Single(inventory.Loadout.SecondaryWeapon),
+        InventoryArea.Wallet => inventory.Wallet,
         _ => throw new ArgumentOutOfRangeException(nameof(area)),
     };
 
@@ -63,6 +71,7 @@ internal static class InventoryCatalog
             InventoryArea.Shield => inventory with { Loadout = loadout with { Shield = items.SingleOrDefault() } },
             InventoryArea.MainWeapon => inventory with { Loadout = loadout with { MainWeapon = items.SingleOrDefault() } },
             InventoryArea.SecondaryWeapon => inventory with { Loadout = loadout with { SecondaryWeapon = items.SingleOrDefault() } },
+            InventoryArea.Wallet => inventory with { Wallet = items },
             _ => throw new ArgumentOutOfRangeException(nameof(area)),
         };
     }

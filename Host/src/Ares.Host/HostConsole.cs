@@ -204,7 +204,7 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("account delete <name>  Delete an account and all its player data");
                     AddLine("inventory <account>  Show stored items and the loadout reservation");
                     AddLine("inventory <account> import <path>  Replace an idle inventory from a JSON file");
-                    AddLine("inventory <account> add <technical-name> [quantity]  Add one supported stack to the stash");
+                    AddLine("inventory <account> add <technical-name> [quantity]  Add one supported stack to the stash (currencies: to the wallet)");
                     foreach (string usage in AdminApi.Usage)
                     {
                         AddLine($"raid {usage}");
@@ -437,7 +437,7 @@ internal sealed class HostConsole : ILoggerProvider
             }
 
             inventory.AddItem(parts[0], DateTimeOffset.UtcNow, quantity);
-            AddLine($"Added {quantity} x {parts[0]} to the stash. Start a fresh client to refresh inventory.");
+            AddLine($"Added {quantity} x {parts[0]}. Start a fresh client to refresh inventory.");
         }
         catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or OverflowException)
         {

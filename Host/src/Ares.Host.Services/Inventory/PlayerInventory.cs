@@ -38,6 +38,9 @@ public sealed record PlayerInventory(long Revision, PlayerStash Stash, PlayerLoa
 
     public IReadOnlyList<InventoryOperationReceipt> OperationReceipts { get; init; } = [];
 
+    /// <summary>Owned currency stacks, one per currency; they sit in no container.</summary>
+    public IReadOnlyList<OwnedItem> Wallet { get; init; } = [];
+
     [JsonIgnore]
     public int ItemCount => Enum.GetValues<InventoryArea>().Sum(area => InventoryCatalog.Items(this, area).Count);
 
@@ -55,6 +58,7 @@ internal enum InventoryArea
     Backpack,
     QuickUse,
     SafePockets,
+    Wallet,
 }
 
 internal sealed record InventoryPosition(InventoryArea Area, int Index, long? FrameAssetId = null);
