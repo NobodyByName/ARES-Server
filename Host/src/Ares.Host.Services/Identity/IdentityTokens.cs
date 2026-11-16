@@ -4,7 +4,7 @@ using Ares.Common.Security;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Identity;
 
-namespace Ares.Common.Game.Identity;
+namespace Ares.Host.Services.Identity;
 
 /// <summary>A player identity proven by a verified identity token.</summary>
 /// <param name="UserId">Tenancy user id (the token subject).</param>
@@ -12,19 +12,19 @@ namespace Ares.Common.Game.Identity;
 public sealed record IdentityPrincipal(long UserId, string TokenId);
 
 /// <summary>
-/// Identity tokens issued by Host (OAuth login) and checked by Host's protected routes and by Raid
-/// before admitting a player. Both sides share the signing key and the issuer (Host's public origin + "/").
+/// Identity tokens issued by Host (OAuth login) and checked by Host's protected routes. The signing key and
+/// the issuer (Host's public origin + "/") come from Host's configuration.
 /// </summary>
 public static class IdentityTokens
 {
     /// <summary>Key id ARES writes into token headers.</summary>
-    public const string KeyId = "ares-host";
+    private const string KeyId = "ares-host";
 
     /// <summary>Lifetime of issued tokens, in seconds.</summary>
     public const int LifetimeSeconds = 3600;
 
     /// <summary>Tolerated clock skew for <c>iat</c>, in seconds.</summary>
-    public const int IssuedAtSkewSeconds = 30;
+    private const int IssuedAtSkewSeconds = 30;
 
     /// <summary>Signs <paramref name="claims"/> with HS256.</summary>
     public static string Sign(IdentityTokenClaims claims, ReadOnlySpan<byte> key)

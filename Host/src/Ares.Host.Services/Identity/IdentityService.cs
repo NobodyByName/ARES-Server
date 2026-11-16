@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Ares.Common.Game.Identity;
 using Ares.Common.Security;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
