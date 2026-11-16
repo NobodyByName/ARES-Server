@@ -6,8 +6,8 @@ using Ares.Structs.Backend.Progression;
 namespace Ares.Host.Services.Content;
 
 /// <summary>
-/// Synthetic backend content Host serves. Each item is the minimum the client needs to reach
-/// the main menu and matchmaking; none of it is official data.
+/// Backend content Host serves. Apart from the game's trader offers, each item is the synthetic
+/// minimum the client needs to reach the main menu and matchmaking.
 /// </summary>
 public static class BackendContent
 {
@@ -36,19 +36,15 @@ public static class BackendContent
         [.. LevelGroups.Select(group => new LevelState(group.GroupId, 1, 0, []))];
 
     /// <summary>
-    /// Minimal definition tables. Startup needs at least one quest definition (else ARSQ0003) and one
-    /// offer definition (else ARSO0003).
+    /// Minimal definition tables and the trader offers. Startup needs at least one quest definition
+    /// (else ARSQ0003) and one offer definition (else ARSO0003).
     /// </summary>
     public static GameDataResponse GameData { get; } = new(
         new QuestDescriptionTable(
         [
             new QuestDescription(1000001, "Local bootstrap", "Synthetic local quest definition", [], [], [], []),
         ]),
-        new OfferDescriptionTable(
-        [
-            new OfferDescription(1000002, "local", "Local bootstrap definition", "Synthetic hidden offline offer", IsVisible: false, [],
-                new UnknownItemPackage(), new UnknownItemPackage(), new UnknownItemPackage()),
-        ]),
+        new OfferDescriptionTable(TraderOffers.Celeste),
         new ItemDescriptionTable(
         [
             new ItemDescription(1000003, "local", 1, Stackable: false, Unique: false, [], []),
