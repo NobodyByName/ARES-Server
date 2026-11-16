@@ -63,6 +63,15 @@ log.Write(new JsonObject
     ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "per-run-key",
 });
+if (configuration.MissingSettings.Count > 0)
+{
+    log.Write(new JsonObject
+    {
+        ["level"] = "WARNING",
+        ["missing_settings"] = string.Join(", ", configuration.MissingSettings),
+        ["action"] = "using their defaults; copy them from ares-host.conf.dist",
+    });
+}
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(app.Lifetime.ApplicationStopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);
 try

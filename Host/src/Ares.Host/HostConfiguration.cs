@@ -86,6 +86,9 @@ public sealed record HostConfiguration
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
 
+    /// <summary>Settings the configuration file leaves out, which take their defaults.</summary>
+    public IReadOnlyList<string> MissingSettings { get; private init; } = [];
+
     /// <summary>Operator console mode.</summary>
     public string ConsoleMode { get; private init; } = "auto";
 
@@ -215,6 +218,7 @@ public sealed record HostConfiguration
         return new HostConfiguration
         {
             ConfigurationFile = file.Path,
+            MissingSettings = file.Missing(),
             Settings = new HostSettings
             {
                 ServerName = serverName,

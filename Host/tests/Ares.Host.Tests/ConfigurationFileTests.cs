@@ -55,6 +55,7 @@ public sealed class ConfigurationFileTests : IDisposable
         string path = Path.Combine(_directory, HostConfigurationFile.DefaultName);
         Assert.Equal(path, configuration.ConfigurationFile);
         Assert.Contains("# NETWORK", File.ReadAllText(path), StringComparison.Ordinal);
+        Assert.Empty(configuration.MissingSettings);
         Assert.Equal("mongodb://127.0.0.1:27017/?directConnection=true", configuration.Settings.MongoDbUri);
         Assert.Equal(IPAddress.Loopback, configuration.Bind);
         Assert.Equal(18080, configuration.Port);
@@ -194,6 +195,17 @@ public sealed class ConfigurationFileTests : IDisposable
     {
         Write(content);
         Assert.Contains(expected, Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Settings_left_out_of_the_file_are_reported_unless_given_on_the_command_line()
+    {
+        File.WriteAllText(Path.Combine(_directory, HostConfigurationFile.DefaultName),
+            string.Join('\n', File.ReadLines(Path.Combine(AppContext.BaseDirectory, "ares-host.conf.dist"))
+                .Where(line => !line.StartsWith("stash-upgrade-coins", StringComparison.Ordinal) && !line.StartsWith("motd", StringComparison.Ordinal))));
+
+        Assert.Equal(["motd", "stash-upgrade-coins"], Parse().MissingSettings);
+        Assert.Equal(["stash-upgrade-coins"], Parse("--motd", "hello").MissingSettings);
     }
 
     [Fact]

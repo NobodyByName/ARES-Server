@@ -128,6 +128,9 @@ internal sealed class HostConfigurationFile
         }
     }
 
+    /// <summary>Settings read so far that neither the file nor the command line sets; they take their defaults.</summary>
+    internal IReadOnlyList<string> Missing() => [.. _consumed.Where(key => !_values.ContainsKey(key) && !_arguments.Has(key)).Order(StringComparer.Ordinal)];
+
     internal void RejectUnknown()
     {
         _arguments.RejectUnknown();
