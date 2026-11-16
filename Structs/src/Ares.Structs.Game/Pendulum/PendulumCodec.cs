@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using Ares.Structs.Core.Serialization;
 
@@ -22,7 +21,6 @@ public sealed class PendulumCodec
     public const int SlotCount = 64;
 
     private const int RemovedPosition = 255;
-    private const int QuaternionBytes = 21;
 
     private readonly IReadOnlyDictionary<int, PendulumDescriptor> _descriptors;
     // Shared by every user of Default, possibly on several threads.
@@ -85,10 +83,10 @@ public sealed class PendulumCodec
             switch (fields[value.Field], value)
             {
                 case (PendulumQuaternionField field, PendulumQuaternionValue quaternion):
-                    PutQuaternion(buffer, field.Offset, quaternion.Value);
+                    PendulumLayout.PutQuaternion(buffer, field.Offset, quaternion.Value);
                     break;
                 case (PendulumArrayField field, PendulumArrayValue array):
-                    byte[] empty = ElementDefault(field);
+                    byte[] empty = PendulumLayout.ElementDefault(field);
                     foreach (PendulumArrayElement element in array.Elements)
                     {
                         byte[] item = [.. empty];
@@ -98,7 +96,7 @@ public sealed class PendulumCodec
 
                     break;
                 case (var field, PendulumIntegerValue integer):
-                    PutInteger(buffer, field, integer.Value);
+                    PendulumLayout.PutInteger(buffer, field, integer.Value);
                     break;
                 default:
                     throw new InvalidPacketException("Value does not match its field");
@@ -115,12 +113,12 @@ public sealed class PendulumCodec
         ArgumentNullException.ThrowIfNull(buffer);
         return field switch
         {
-            PendulumScalarField scalar => Get(buffer, scalar.Offset, scalar.Width),
-            PendulumBitSetField set => Get(buffer, set.Offset, (set.BitCount + 7) / 8),
-            PendulumBitfieldField bits => Get(buffer, bits.Offset, (bits.BitCount + 7) / 8) & Mask(bits.BitCount),
+            PendulumScalarField scalar => PendulumLayout.Get(buffer, scalar.Offset, scalar.Width),
+            PendulumBitSetField set => PendulumLayout.Get(buffer, set.Offset, (set.BitCount + 7) / 8),
+            PendulumBitfieldField bits => PendulumLayout.Get(buffer, bits.Offset, (bits.BitCount + 7) / 8) & PendulumMasks.Mask(bits.BitCount),
             PendulumBitField bit => buffer[bit.Offset] & 1UL,
-            PendulumBoundedField bounded => Get(buffer, bounded.Offset, bounded.Width),
-            PendulumObjectField objectField => Get(buffer, objectField.Offset, 8),
+            PendulumBoundedField bounded => PendulumLayout.Get(buffer, bounded.Offset, bounded.Width),
+            PendulumObjectField objectField => PendulumLayout.Get(buffer, objectField.Offset, 8),
             _ => throw new InvalidPacketException("Not an integer field"),
         };
     }
@@ -135,10 +133,10 @@ public sealed class PendulumCodec
         ArgumentNullException.ThrowIfNull(buffer);
         int at = field.Offset;
         return new PendulumQuaternion(
-            (uint)Get(buffer, at, 4),
-            (uint)Get(buffer, at + 4, 4),
-            (uint)Get(buffer, at + 8, 4),
-            (uint)Get(buffer, at + 12, 4),
+            (uint)PendulumLayout.Get(buffer, at, 4),
+            (uint)PendulumLayout.Get(buffer, at + 4, 4),
+            (uint)PendulumLayout.Get(buffer, at + 8, 4),
+            (uint)PendulumLayout.Get(buffer, at + 12, 4),
             buffer[at + 16],
             buffer[at + 17],
             buffer[at + 18],
@@ -154,29 +152,29 @@ public sealed class PendulumCodec
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(previous);
         Dictionary<int, PendulumSlot> slots = new(previous);
-        ulong layout = reader.ReadBit() ? ReadSparseMask(reader) : 0;
+        ulong layout = reader.ReadBit() ? PendulumMasks.ReadSparseMask(reader) : 0;
         if (layout != 0)
         {
-            ulong removed = ReadSparseMask(reader);
+            ulong removed = PendulumMasks.ReadSparseMask(reader);
             for (int slot = 0; slot < SlotCount; slot++)
             {
-                if (!IsSet(layout, slot))
+                if (!PendulumMasks.IsSet(layout, slot))
                 {
                     continue;
                 }
 
-                int position = IsSet(removed, slot) ? RemovedPosition : (int)reader.ReadBounded(64);
+                int position = PendulumMasks.IsSet(removed, slot) ? RemovedPosition : (int)reader.ReadBounded(64);
                 int size = (int)reader.ReadBounded(63);
                 PendulumSlot old = slots.GetValueOrDefault(slot) ?? new PendulumSlot(slot, RemovedPosition, 0, null, []);
                 slots[slot] = old with { Position = position, Size = size };
             }
         }
 
-        ulong descriptors = reader.ReadBit() ? ReadSparseMask(reader) : 0;
+        ulong descriptors = reader.ReadBit() ? PendulumMasks.ReadSparseMask(reader) : 0;
         ulong fresh = 0;
         for (int slot = 0; slot < SlotCount; slot++)
         {
-            if (!IsSet(descriptors, slot))
+            if (!PendulumMasks.IsSet(descriptors, slot))
             {
                 continue;
             }
@@ -202,10 +200,10 @@ public sealed class PendulumCodec
             fresh |= 1UL << slot;
         }
 
-        ulong changed = ReadSparseMask(reader);
+        ulong changed = PendulumMasks.ReadSparseMask(reader);
         for (int slot = 0; slot < SlotCount; slot++)
         {
-            if (!IsSet(fresh | changed, slot))
+            if (!PendulumMasks.IsSet(fresh | changed, slot))
             {
                 continue;
             }
@@ -216,7 +214,7 @@ public sealed class PendulumCodec
                 throw new InvalidPacketException("Invalid slot");
             }
 
-            byte[] baseline = IsSet(fresh | layout, slot) ? DefaultValue(id) : value.Value;
+            byte[] baseline = PendulumMasks.IsSet(fresh | layout, slot) ? DefaultValue(id) : value.Value;
             slots[slot] = value with { Value = ReadValue(reader, id, baseline) };
         }
 
@@ -251,8 +249,8 @@ public sealed class PendulumCodec
         writer.WriteBit(layout != 0);
         if (layout != 0)
         {
-            WriteSparseMask(writer, layout);
-            WriteSparseMask(writer, 0);
+            PendulumMasks.WriteSparseMask(writer, layout);
+            PendulumMasks.WriteSparseMask(writer, 0);
             foreach (PendulumSlot slot in Ordered(frame, layout))
             {
                 writer.WriteBounded((uint)slot.Position, 64);
@@ -263,7 +261,7 @@ public sealed class PendulumCodec
         writer.WriteBit(descriptors != 0);
         if (descriptors != 0)
         {
-            WriteSparseMask(writer, descriptors);
+            PendulumMasks.WriteSparseMask(writer, descriptors);
             foreach (PendulumSlot slot in Ordered(frame, descriptors))
             {
                 // A laid-out slot without a variable is sent as a removed descriptor.
@@ -277,15 +275,15 @@ public sealed class PendulumCodec
 
         // New descriptors and changed slots are sent; a new descriptor or layout restarts from the default.
         ulong changed = frame.Values
-            .Where(slot => slot.DescriptorId is not null && !IsSet(descriptors, slot.Slot)
-                && (IsSet(layout, slot.Slot) || !previous[slot.Slot].Value.AsSpan().SequenceEqual(slot.Value)))
+            .Where(slot => slot.DescriptorId is not null && !PendulumMasks.IsSet(descriptors, slot.Slot)
+                && (PendulumMasks.IsSet(layout, slot.Slot) || !previous[slot.Slot].Value.AsSpan().SequenceEqual(slot.Value)))
             .Aggregate(0UL, (mask, slot) => mask | (1UL << slot.Slot));
 
-        WriteSparseMask(writer, changed);
+        PendulumMasks.WriteSparseMask(writer, changed);
         foreach (PendulumSlot slot in Ordered(frame, descriptors | changed).Where(slot => slot.DescriptorId is not null))
         {
             int id = slot.DescriptorId!.Value;
-            byte[] baseline = IsSet(descriptors | layout, slot.Slot) ? DefaultOf(id) : previous[slot.Slot].Value;
+            byte[] baseline = PendulumMasks.IsSet(descriptors | layout, slot.Slot) ? DefaultOf(id) : previous[slot.Slot].Value;
             WriteValue(writer, id, slot.Value, baseline);
         }
     }
@@ -313,14 +311,12 @@ public sealed class PendulumCodec
     {
         PendulumDescriptor descriptor = Descriptor(key);
         byte[] value = new byte[descriptor.Size];
-        SetDefaults(descriptor.Fields, value);
+        PendulumLayout.SetDefaults(descriptor.Fields, value);
         return value;
     });
 
     private static IEnumerable<PendulumSlot> Ordered(Dictionary<int, PendulumSlot> frame, ulong mask) =>
-        frame.Values.Where(slot => IsSet(mask, slot.Slot)).OrderBy(slot => slot.Slot);
-
-    private static bool IsSet(ulong mask, int bit) => ((mask >> bit) & 1) != 0;
+        frame.Values.Where(slot => PendulumMasks.IsSet(mask, slot.Slot)).OrderBy(slot => slot.Slot);
 
     // Values.
 
@@ -334,24 +330,24 @@ public sealed class PendulumCodec
         foreach (PendulumField field in fields.Where(Sent))
         {
             byte[] baseline = BaselineOf(field, previous, defaults);
-            Array.Copy(baseline, field.Offset, data, field.Offset, Extent(field));
+            Array.Copy(baseline, field.Offset, data, field.Offset, PendulumLayout.Extent(field));
             switch (field)
             {
                 case PendulumScalarField scalar:
-                    Put(data, scalar.Offset, scalar.Width, ReadScalar(reader, Get(data, scalar.Offset, scalar.Width), scalar.Maximum, scalar.Delta, true));
+                    PendulumLayout.Put(data, scalar.Offset, scalar.Width, ReadScalar(reader, PendulumLayout.Get(data, scalar.Offset, scalar.Width), scalar.Maximum, scalar.Delta, true));
                     break;
                 case PendulumBitSetField set:
                     if (reader.ReadBit())
                     {
-                        Put(data, set.Offset, (set.BitCount + 7) / 8, ReadBitfield(reader, Get(data, set.Offset, (set.BitCount + 7) / 8), set.BitCount));
+                        PendulumLayout.Put(data, set.Offset, (set.BitCount + 7) / 8, PendulumMasks.ReadBitfield(reader, PendulumLayout.Get(data, set.Offset, (set.BitCount + 7) / 8), set.BitCount));
                     }
 
                     break;
                 case PendulumBitfieldField bits:
                     int width = (bits.BitCount + 7) / 8;
-                    ulong mask = Mask(bits.BitCount);
-                    ulong stored = Get(data, bits.Offset, width);
-                    Put(data, bits.Offset, width, (stored & ~mask) | (ReadBitfield(reader, stored, bits.BitCount) & mask));
+                    ulong mask = PendulumMasks.Mask(bits.BitCount);
+                    ulong stored = PendulumLayout.Get(data, bits.Offset, width);
+                    PendulumLayout.Put(data, bits.Offset, width, (stored & ~mask) | (PendulumMasks.ReadBitfield(reader, stored, bits.BitCount) & mask));
                     break;
                 case PendulumBitField bit:
                     data[bit.Offset] = reader.ReadBit() ? (byte)1 : (byte)0;
@@ -359,21 +355,21 @@ public sealed class PendulumCodec
                 case PendulumBoundedField bounded:
                     if (reader.ReadBit())
                     {
-                        Put(data, bounded.Offset, bounded.Width, reader.ReadBounded(bounded.Maximum));
+                        PendulumLayout.Put(data, bounded.Offset, bounded.Width, reader.ReadBounded(bounded.Maximum));
                     }
 
                     break;
                 case PendulumObjectField objectField:
                     if (reader.ReadBit())
                     {
-                        Put(data, objectField.Offset, 8, ReadObject(reader));
+                        PendulumLayout.Put(data, objectField.Offset, 8, ReadObject(reader));
                     }
 
                     break;
                 case PendulumNameField nameField:
                     if (reader.ReadBit())
                     {
-                        Put(data, nameField.Offset, 8, ReadName(reader));
+                        PendulumLayout.Put(data, nameField.Offset, 8, ReadName(reader));
                     }
 
                     break;
@@ -399,45 +395,45 @@ public sealed class PendulumCodec
             switch (field)
             {
                 case PendulumScalarField scalar:
-                    WriteScalar(writer, Get(value, scalar.Offset, scalar.Width), Get(baseline, scalar.Offset, scalar.Width), scalar.Maximum, scalar.Delta, true);
+                    WriteScalar(writer, PendulumLayout.Get(value, scalar.Offset, scalar.Width), PendulumLayout.Get(baseline, scalar.Offset, scalar.Width), scalar.Maximum, scalar.Delta, true);
                     break;
                 case PendulumBitSetField set:
-                    ulong newSet = Get(value, set.Offset, (set.BitCount + 7) / 8);
-                    ulong oldSet = Get(baseline, set.Offset, (set.BitCount + 7) / 8);
+                    ulong newSet = PendulumLayout.Get(value, set.Offset, (set.BitCount + 7) / 8);
+                    ulong oldSet = PendulumLayout.Get(baseline, set.Offset, (set.BitCount + 7) / 8);
                     writer.WriteBit(newSet != oldSet);
                     if (newSet != oldSet)
                     {
-                        WriteBitfield(writer, newSet, oldSet, set.BitCount);
+                        PendulumMasks.WriteBitfield(writer, newSet, oldSet, set.BitCount);
                     }
 
                     break;
                 case PendulumBitfieldField bits:
                     int width = (bits.BitCount + 7) / 8;
-                    WriteBitfield(writer, Get(value, bits.Offset, width), Get(baseline, bits.Offset, width), bits.BitCount);
+                    PendulumMasks.WriteBitfield(writer, PendulumLayout.Get(value, bits.Offset, width), PendulumLayout.Get(baseline, bits.Offset, width), bits.BitCount);
                     break;
                 case PendulumBitField bit:
                     writer.WriteBit((value[bit.Offset] & 1) != 0);
                     break;
                 case PendulumBoundedField bounded:
-                    ulong newBounded = Get(value, bounded.Offset, bounded.Width);
-                    writer.WriteBit(newBounded != Get(baseline, bounded.Offset, bounded.Width));
-                    if (newBounded != Get(baseline, bounded.Offset, bounded.Width))
+                    ulong newBounded = PendulumLayout.Get(value, bounded.Offset, bounded.Width);
+                    writer.WriteBit(newBounded != PendulumLayout.Get(baseline, bounded.Offset, bounded.Width));
+                    if (newBounded != PendulumLayout.Get(baseline, bounded.Offset, bounded.Width))
                     {
                         writer.WriteBounded((uint)newBounded, bounded.Maximum);
                     }
 
                     break;
                 case PendulumObjectField objectField:
-                    ulong newObject = Get(value, objectField.Offset, 8);
-                    writer.WriteBit(newObject != Get(baseline, objectField.Offset, 8));
-                    if (newObject != Get(baseline, objectField.Offset, 8))
+                    ulong newObject = PendulumLayout.Get(value, objectField.Offset, 8);
+                    writer.WriteBit(newObject != PendulumLayout.Get(baseline, objectField.Offset, 8));
+                    if (newObject != PendulumLayout.Get(baseline, objectField.Offset, 8))
                     {
                         writer.WritePacked(checked((uint)newObject));
                     }
 
                     break;
                 case PendulumNameField name:
-                    writer.WriteBit(Get(value, name.Offset, 8) == Get(baseline, name.Offset, 8)
+                    writer.WriteBit(PendulumLayout.Get(value, name.Offset, 8) == PendulumLayout.Get(baseline, name.Offset, 8)
                         ? false
                         : throw new InvalidPacketException("Changed name values are not supported"));
                     break;
@@ -497,159 +493,6 @@ public sealed class PendulumCodec
         {
             writer.WriteBounded(checked((uint)value), maximum);
         }
-    }
-
-    // Bit fields: a byte coding (each byte unchanged, or its new bits) or a run coding (the positions of
-    // the changed or unchanged bits). The writer uses runs when few or almost all bits change.
-
-    private static ulong ReadBitfield(BitReader reader, ulong previous, int count)
-    {
-        if (!reader.ReadBit())
-        {
-            bool inverted = reader.ReadBit();
-            return previous ^ ToUlong(ReadRuns(reader, count, inverted));
-        }
-
-        ulong result = previous;
-        for (int offset = 0; offset < count; offset += 8)
-        {
-            int width = Math.Min(8, count - offset);
-            if (!reader.ReadBit())
-            {
-                result = (result & ~(Mask(width) << offset)) | (reader.ReadBits(width) << offset);
-            }
-        }
-
-        return result;
-    }
-
-    private static void WriteBitfield(BitWriter writer, ulong value, ulong previous, int count)
-    {
-        ulong mask = Mask(count);
-        value &= mask;
-        previous &= mask;
-        bool[] changes = FromUlong(value ^ previous, count);
-        if (UsesRuns(changes))
-        {
-            writer.WriteBit(false);
-            WriteRuns(writer, changes);
-            return;
-        }
-
-        writer.WriteBit(true);
-        WriteBytes(writer, FromUlong(value, count), FromUlong(previous, count));
-    }
-
-    private static bool[] ReadArrayMask(BitReader reader, int count)
-    {
-        bool inverted = reader.ReadBit();
-        if (!reader.ReadBit())
-        {
-            return ReadRuns(reader, count, inverted);
-        }
-
-        bool[] result = new bool[count];
-        Array.Fill(result, !inverted);
-        for (int offset = 0; offset < count; offset += 8)
-        {
-            int width = Math.Min(8, count - offset);
-            if (reader.ReadBit())
-            {
-                continue;
-            }
-
-            ulong bits = reader.ReadBits(width);
-            for (int index = 0; index < width; index++)
-            {
-                result[offset + index] = ((bits >> index) & 1) != 0;
-            }
-        }
-
-        return result;
-    }
-
-    private static void WriteArrayMask(BitWriter writer, bool[] changed)
-    {
-        bool inverted = Inverted(changed);
-        writer.WriteBit(inverted);
-        if (UsesRuns(changed))
-        {
-            writer.WriteBit(false);
-            WriteRunPositions(writer, changed, inverted);
-            return;
-        }
-
-        writer.WriteBit(true);
-        bool[] baseline = new bool[changed.Length];
-        Array.Fill(baseline, !inverted);
-        WriteBytes(writer, changed, baseline);
-    }
-
-    private static bool[] ReadRuns(BitReader reader, int count, bool inverted)
-    {
-        bool[] result = new bool[count];
-        Array.Fill(result, !inverted);
-        int position = 0;
-        for (int step = 0; step <= count; step++)
-        {
-            position += (int)reader.ReadBounded((ulong)(count - position + 1));
-            if (position == count)
-            {
-                return result;
-            }
-
-            result[position] = !result[position];
-        }
-
-        throw new InvalidPacketException("Invalid bit runs");
-    }
-
-    private static void WriteRuns(BitWriter writer, bool[] changes)
-    {
-        bool inverted = Inverted(changes);
-        writer.WriteBit(inverted);
-        WriteRunPositions(writer, changes, inverted);
-    }
-
-    private static void WriteRunPositions(BitWriter writer, bool[] changes, bool inverted)
-    {
-        int count = changes.Length;
-        int position = 0;
-        for (int index = 0; index < count; index++)
-        {
-            if (changes[index] != inverted)
-            {
-                continue;
-            }
-
-            writer.WriteBounded((uint)(index - position), (ulong)(count - position + 1));
-            position = index;
-        }
-
-        writer.WriteBounded((uint)(count - position), (ulong)(count - position + 1));
-    }
-
-    private static void WriteBytes(BitWriter writer, bool[] value, bool[] baseline)
-    {
-        for (int offset = 0; offset < value.Length; offset += 8)
-        {
-            int width = Math.Min(8, value.Length - offset);
-            bool same = value.AsSpan(offset, width).SequenceEqual(baseline.AsSpan(offset, width));
-            writer.WriteBit(same);
-            if (!same)
-            {
-                writer.WriteBits(ToUlong(value.AsSpan(offset, width)), width);
-            }
-        }
-    }
-
-    // Fewer than half the bits changed: list the changed ones; otherwise the unchanged ones.
-    private static bool Inverted(bool[] changes) => changes.Count(change => change) < changes.Length / 2;
-
-    private static bool UsesRuns(bool[] changes)
-    {
-        int changed = changes.Count(change => change);
-        return changed <= changes.Length / 8 || changed >= 7 * changes.Length / 8;
     }
 
     // Quaternions: the three smallest components, the largest first; later components are bounded by
@@ -733,12 +576,12 @@ public sealed class PendulumCodec
         int omitted = data[at + 20];
         if (omitted != oldOmitted)
         {
-            Put(data, at + (4 * oldOmitted), 4, ReadScalar(reader, field.Maximum / 2, field.Maximum, field.Delta, true));
+            PendulumLayout.Put(data, at + (4 * oldOmitted), 4, ReadScalar(reader, field.Maximum / 2, field.Maximum, field.Delta, true));
             for (int index = 0; index < 4; index++)
             {
                 if (index != omitted && index != oldOmitted)
                 {
-                    Put(data, at + (4 * index), 4, ReadScalar(reader, Get(data, at + (4 * index), 4), field.Maximum, field.Delta, true));
+                    PendulumLayout.Put(data, at + (4 * index), 4, ReadScalar(reader, PendulumLayout.Get(data, at + (4 * index), 4), field.Maximum, field.Delta, true));
                 }
             }
 
@@ -746,22 +589,22 @@ public sealed class PendulumCodec
         }
 
         int[] order = [data[at + 19], data[at + 18], data[at + 17]];
-        ulong first = ReadScalar(reader, Get(data, at + (4 * order[0]), 4), field.Maximum, field.Delta, false);
-        Put(data, at + (4 * order[0]), 4, first);
+        ulong first = ReadScalar(reader, PendulumLayout.Get(data, at + (4 * order[0]), 4), field.Maximum, field.Delta, false);
+        PendulumLayout.Put(data, at + (4 * order[0]), 4, first);
         long remaining = (long)field.Total - (2 * (long)first * (long)first);
         uint bound = Limit(remaining, first);
-        ulong second = bound >= 2 ? ReadScalar(reader, Get(data, at + (4 * order[1]), 4), bound, bound / 16, false) : 0;
-        Put(data, at + (4 * order[1]), 4, second);
+        ulong second = bound >= 2 ? ReadScalar(reader, PendulumLayout.Get(data, at + (4 * order[1]), 4), bound, bound / 16, false) : 0;
+        PendulumLayout.Put(data, at + (4 * order[1]), 4, second);
         bound = Limit(remaining - ((long)second * (long)second), second);
-        ulong third = bound >= 2 ? ReadScalar(reader, Get(data, at + (4 * order[2]), 4), bound, bound / 16, false) : 0;
-        Put(data, at + (4 * order[2]), 4, third);
+        ulong third = bound >= 2 ? ReadScalar(reader, PendulumLayout.Get(data, at + (4 * order[2]), 4), bound, bound / 16, false) : 0;
+        PendulumLayout.Put(data, at + (4 * order[2]), 4, third);
     }
 
     private static void WriteQuaternion(BitWriter writer, byte[] value, byte[] baseline, PendulumQuaternionField field)
     {
         int at = field.Offset;
-        ReadOnlySpan<byte> current = value.AsSpan(at, QuaternionBytes);
-        ReadOnlySpan<byte> old = baseline.AsSpan(at, QuaternionBytes);
+        ReadOnlySpan<byte> current = value.AsSpan(at, PendulumLayout.QuaternionBytes);
+        ReadOnlySpan<byte> old = baseline.AsSpan(at, PendulumLayout.QuaternionBytes);
         writer.WriteBit(!current.SequenceEqual(old));
         if (current.SequenceEqual(old))
         {
@@ -782,12 +625,12 @@ public sealed class PendulumCodec
         int oldOmitted = old[20];
         if (omitted != oldOmitted)
         {
-            WriteScalar(writer, Get(value, at + (4 * oldOmitted), 4), field.Maximum / 2, field.Maximum, field.Delta, true);
+            WriteScalar(writer, PendulumLayout.Get(value, at + (4 * oldOmitted), 4), field.Maximum / 2, field.Maximum, field.Delta, true);
             for (int index = 0; index < 4; index++)
             {
                 if (index != omitted && index != oldOmitted)
                 {
-                    WriteScalar(writer, Get(value, at + (4 * index), 4), Get(baseline, at + (4 * index), 4), field.Maximum, field.Delta, true);
+                    WriteScalar(writer, PendulumLayout.Get(value, at + (4 * index), 4), PendulumLayout.Get(baseline, at + (4 * index), 4), field.Maximum, field.Delta, true);
                 }
             }
 
@@ -795,20 +638,20 @@ public sealed class PendulumCodec
         }
 
         int[] order = [current[19], current[18], current[17]];
-        ulong first = Get(value, at + (4 * order[0]), 4);
-        WriteScalar(writer, first, Get(baseline, at + (4 * order[0]), 4), field.Maximum, field.Delta, false);
+        ulong first = PendulumLayout.Get(value, at + (4 * order[0]), 4);
+        WriteScalar(writer, first, PendulumLayout.Get(baseline, at + (4 * order[0]), 4), field.Maximum, field.Delta, false);
         long remaining = (long)field.Total - (2 * (long)first * (long)first);
         uint bound = Limit(remaining, first);
-        ulong second = Get(value, at + (4 * order[1]), 4);
+        ulong second = PendulumLayout.Get(value, at + (4 * order[1]), 4);
         if (bound >= 2)
         {
-            WriteScalar(writer, second, Get(baseline, at + (4 * order[1]), 4), bound, bound / 16, false);
+            WriteScalar(writer, second, PendulumLayout.Get(baseline, at + (4 * order[1]), 4), bound, bound / 16, false);
         }
 
         bound = Limit(remaining - ((long)second * (long)second), second);
         if (bound >= 2)
         {
-            WriteScalar(writer, Get(value, at + (4 * order[2]), 4), Get(baseline, at + (4 * order[2]), 4), bound, bound / 16, false);
+            WriteScalar(writer, PendulumLayout.Get(value, at + (4 * order[2]), 4), PendulumLayout.Get(baseline, at + (4 * order[2]), 4), bound, bound / 16, false);
         }
     }
 
@@ -825,8 +668,8 @@ public sealed class PendulumCodec
     private void ReadArray(BitReader reader, byte[] data, PendulumArrayField field, byte[] baseline, IReadOnlyList<PendulumField> siblings)
     {
         (int count, int oldCount) = Counts(field, data, baseline, siblings);
-        byte[] empty = ElementDefault(field);
-        bool[] changed = ReadArrayMask(reader, Math.Max(count, oldCount));
+        byte[] empty = PendulumLayout.ElementDefault(field);
+        bool[] changed = PendulumMasks.ReadArrayMask(reader, Math.Max(count, oldCount));
         for (int index = 0; index < changed.Length; index++)
         {
             int at = field.Offset + (index * field.Stride);
@@ -842,29 +685,26 @@ public sealed class PendulumCodec
     private void WriteArray(BitWriter writer, byte[] value, byte[] baseline, PendulumArrayField field, IReadOnlyList<PendulumField> siblings)
     {
         (int count, int oldCount) = Counts(field, value, baseline, siblings);
-        byte[] empty = ElementDefault(field);
+        byte[] empty = PendulumLayout.ElementDefault(field);
         bool[] changed = new bool[Math.Max(count, oldCount)];
         for (int index = 0; index < Math.Min(count, oldCount); index++)
         {
-            changed[index] = !SameFields(field.ElementFields, Item(value, field, index), Item(baseline, field, index));
+            changed[index] = !PendulumLayout.SameFields(field.ElementFields, PendulumLayout.Item(value, field, index), PendulumLayout.Item(baseline, field, index));
         }
 
-        WriteArrayMask(writer, changed);
+        PendulumMasks.WriteArrayMask(writer, changed);
         for (int index = 0; index < changed.Length; index++)
         {
             if (changed[index])
             {
-                WriteFields(writer, field.ElementFields, Item(value, field, index), Item(baseline, field, index), empty);
+                WriteFields(writer, field.ElementFields, PendulumLayout.Item(value, field, index), PendulumLayout.Item(baseline, field, index), empty);
             }
             else if (index >= oldCount && index < count)
             {
-                WriteFields(writer, field.ElementFields, Item(value, field, index), empty, empty);
+                WriteFields(writer, field.ElementFields, PendulumLayout.Item(value, field, index), empty, empty);
             }
         }
     }
-
-    private static byte[] Item(byte[] value, PendulumArrayField field, int index) =>
-        value[(field.Offset + (index * field.Stride))..(field.Offset + ((index + 1) * field.Stride))];
 
     // The element count and the count it is coded against. As the game reads it, the old count comes from the
     // baseline only when the count field itself is delta-coded; otherwise every element up to the count is new.
@@ -876,185 +716,10 @@ public sealed class PendulumCodec
         }
 
         PendulumScalarField counter = siblings[index] as PendulumScalarField ?? throw new InvalidPacketException("Invalid array count field");
-        ulong count = Get(value, counter.Offset, counter.Width);
-        ulong oldCount = (counter.Flags & _delta) != 0 ? Get(baseline, counter.Offset, counter.Width) : 0;
+        ulong count = PendulumLayout.Get(value, counter.Offset, counter.Width);
+        ulong oldCount = (counter.Flags & _delta) != 0 ? PendulumLayout.Get(baseline, counter.Offset, counter.Width) : 0;
         return count <= (ulong)field.Capacity && oldCount <= (ulong)field.Capacity
             ? ((int)count, (int)oldCount)
             : throw new InvalidPacketException("Array count above its capacity");
-    }
-
-    // Field-level comparison: bytes no field covers (padding) are never sent, so they never count as a change.
-    private static bool SameFields(IReadOnlyList<PendulumField> fields, byte[] value, byte[] other) =>
-        fields.All(field => field switch
-        {
-            PendulumBitfieldField bits => ((Get(value, bits.Offset, (bits.BitCount + 7) / 8) ^ Get(other, bits.Offset, (bits.BitCount + 7) / 8)) & Mask(bits.BitCount)) == 0,
-            PendulumBitField bit => ((value[bit.Offset] ^ other[bit.Offset]) & 1) == 0,
-            PendulumArrayField array => Enumerable.Range(0, array.Capacity).All(index => SameFields(array.ElementFields, Item(value, array, index), Item(other, array, index))),
-            _ => value.AsSpan(field.Offset, Extent(field)).SequenceEqual(other.AsSpan(field.Offset, Extent(field))),
-        });
-
-    // Defaults and raw access.
-
-    private static byte[] ElementDefault(PendulumArrayField field)
-    {
-        byte[] element = new byte[field.Stride];
-        SetDefaults(field.ElementFields, element);
-        return element;
-    }
-
-    private static void SetDefaults(IReadOnlyList<PendulumField> fields, byte[] buffer)
-    {
-        foreach (PendulumField field in fields)
-        {
-            switch (field)
-            {
-                case PendulumScalarField scalar:
-                    Put(buffer, scalar.Offset, scalar.Width, scalar.Default);
-                    break;
-                case PendulumBitSetField set:
-                    Put(buffer, set.Offset, (set.BitCount + 7) / 8, set.Default);
-                    break;
-                case PendulumBitfieldField bits:
-                    Put(buffer, bits.Offset, (bits.BitCount + 7) / 8, bits.Default);
-                    break;
-                case PendulumBitField bit:
-                    buffer[bit.Offset] = bit.Default ? (byte)1 : (byte)0;
-                    break;
-                case PendulumBoundedField bounded:
-                    Put(buffer, bounded.Offset, bounded.Width, bounded.Default);
-                    break;
-                case PendulumQuaternionField quaternion:
-                    PutQuaternion(buffer, quaternion.Offset, quaternion.Default);
-                    break;
-                case PendulumArrayField array:
-                    byte[] element = ElementDefault(array);
-                    for (int index = 0; index < array.Capacity; index++)
-                    {
-                        element.CopyTo(buffer, array.Offset + (index * array.Stride));
-                    }
-
-                    break;
-            }
-        }
-    }
-
-    private static void PutInteger(byte[] buffer, PendulumField field, ulong value)
-    {
-        switch (field)
-        {
-            case PendulumScalarField scalar:
-                Put(buffer, scalar.Offset, scalar.Width, value);
-                break;
-            case PendulumBitSetField set:
-                Put(buffer, set.Offset, (set.BitCount + 7) / 8, value);
-                break;
-            case PendulumBitfieldField bits:
-                int width = (bits.BitCount + 7) / 8;
-                ulong mask = Mask(bits.BitCount);
-                Put(buffer, bits.Offset, width, (Get(buffer, bits.Offset, width) & ~mask) | (value & mask));
-                break;
-            case PendulumBitField bit:
-                buffer[bit.Offset] = (byte)(value & 1);
-                break;
-            case PendulumBoundedField bounded:
-                Put(buffer, bounded.Offset, bounded.Width, value);
-                break;
-            case PendulumObjectField objectField:
-                Put(buffer, objectField.Offset, 8, value);
-                break;
-            default:
-                throw new InvalidPacketException("Integer value for a non-integer field");
-        }
-    }
-
-    private static void PutQuaternion(byte[] buffer, int at, PendulumQuaternion quaternion)
-    {
-        Put(buffer, at, 4, quaternion.Component0);
-        Put(buffer, at + 4, 4, quaternion.Component1);
-        Put(buffer, at + 8, 4, quaternion.Component2);
-        Put(buffer, at + 12, 4, quaternion.Component3);
-        buffer[at + 16] = quaternion.UnknownBits;
-        buffer[at + 17] = quaternion.Smallest;
-        buffer[at + 18] = quaternion.Middle;
-        buffer[at + 19] = quaternion.Largest;
-        buffer[at + 20] = (byte)quaternion.Omitted;
-    }
-
-    private static int Extent(PendulumField field) => field switch
-    {
-        PendulumScalarField scalar => scalar.Width,
-        PendulumBoundedField bounded => bounded.Width,
-        PendulumBitSetField set => (set.BitCount + 7) / 8,
-        PendulumBitfieldField bits => (bits.BitCount + 7) / 8,
-        PendulumBitField => 1,
-        PendulumObjectField or PendulumNameField => 8,
-        PendulumQuaternionField => QuaternionBytes,
-        PendulumArrayField array => array.Capacity * array.Stride,
-        _ => throw new InvalidPacketException("Unsupported field"),
-    };
-
-    private static ulong Get(byte[] data, int at, int width)
-    {
-        Span<byte> value = stackalloc byte[8];
-        data.AsSpan(at, width).CopyTo(value);
-        return BinaryPrimitives.ReadUInt64LittleEndian(value);
-    }
-
-    private static void Put(byte[] data, int at, int width, ulong value)
-    {
-        Span<byte> bytes = stackalloc byte[8];
-        BinaryPrimitives.WriteUInt64LittleEndian(bytes, value);
-        bytes[..width].CopyTo(data.AsSpan(at, width));
-    }
-
-    private static ulong Mask(int count) => count >= 64 ? ulong.MaxValue : (1UL << count) - 1;
-
-    private static ulong ReadSparseMask(BitReader reader)
-    {
-        ulong result = 0;
-        for (int offset = 0; offset < SlotCount; offset += 8)
-        {
-            if (!reader.ReadBit())
-            {
-                result |= reader.ReadBits(8) << offset;
-            }
-        }
-
-        return result;
-    }
-
-    private static void WriteSparseMask(BitWriter writer, ulong mask)
-    {
-        for (int offset = 0; offset < SlotCount; offset += 8)
-        {
-            ulong unit = (mask >> offset) & 0xFF;
-            writer.WriteBit(unit == 0);
-            if (unit != 0)
-            {
-                writer.WriteBits(unit, 8);
-            }
-        }
-    }
-
-    private static bool[] FromUlong(ulong value, int count)
-    {
-        bool[] result = new bool[count];
-        for (int index = 0; index < count; index++)
-        {
-            result[index] = ((value >> index) & 1) != 0;
-        }
-
-        return result;
-    }
-
-    private static ulong ToUlong(ReadOnlySpan<bool> bits)
-    {
-        ulong result = 0;
-        for (int index = 0; index < bits.Length; index++)
-        {
-            result |= bits[index] ? 1UL << index : 0;
-        }
-
-        return result;
     }
 }
