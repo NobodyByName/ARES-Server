@@ -14,56 +14,8 @@ namespace Ares.Host;
 /// <summary>Everything Host needs to start, read from its configuration file and command-line overrides.</summary>
 public sealed record HostConfiguration
 {
-    /// <summary>Default listen port shared with the launcher.</summary>
-    private const int DefaultPort = 18080;
-
-    /// <summary>Default UDP game port of the first Raid server.</summary>
-    private const int DefaultRaidPort = 7777;
-
-    /// <summary>Default allocation API port of the first Raid server.</summary>
-    private const int DefaultRaidControlPort = 17778;
-
-    /// <summary>Default archive keys file, relative to the configuration file.</summary>
-    private const string DefaultArchiveKeysFile = "archive-keys.txt";
-
     /// <summary>Command-line help.</summary>
-    public static readonly string Usage = $"""
-        Usage: ARES-Host [options]
-
-        ARES backend: synthetic identity, accounts, party and matchmaking. Unknown routes fail explicitly.
-
-          --config <path>                   Existing configuration file (default ares-host.conf; auto-created)
-
-        Settings below override the file. File paths are relative to the configuration file;
-        command-line paths are relative to the working directory. Restart Host to apply edits.
-
-          --port <n>                        Listen port (default {DefaultPort})
-          --bind <ip>                       Listen address (default 127.0.0.1); non-loopback requires --allow-network-clients
-          --public-origin <http://host:port>  Origin players configure; also the token issuer (default http://127.0.0.1:<port>)
-          --allow-network-clients           Serve players beyond this machine (plain HTTP; trust unverified)
-          --mongodb-uri <uri>               MongoDB connection URI
-          --mongodb-uri-file <path>         Private URI file; takes precedence over mongodb-uri
-          --mongodb-database <name>         Database for this Host/private server (default ares_host)
-          --raid-executable <path>          ARES-Raid executable Host starts for matchmaking (default: none; tickets stay MATCHING)
-          --session-control-token-file <f>  Operator token Host shares with the Raid servers it starts
-          --raid-players <n>                Most players in one raid, across every party (default 1)
-          --raid-fill-seconds <n>           Seconds after a raid's first party during which other parties may join (0 to 600, default 60)
-          --raid-port <n>                   UDP game port of the first raid; each further raid uses the next port (default {DefaultRaidPort})
-          --raid-control-port <n>           Loopback allocation API port of the first raid, counted the same way (default {DefaultRaidControlPort})
-          --raid-lighting <tag>             Lighting of every raid (default: picked by the map's weights)
-          --map-data-dir <dir>              Folder with the map files written by ARES-MapData, passed to every raid (default: none)
-          --stash-upgrade-coins <list>      Coin price of each stash upgrade, comma-separated from the first (default: the game's prices)
-          --auth-key-file <f>               Identity signing key, 32-4096 bytes (default: none; tokens are not checked)
-          --archive-keys-file <f>           Game archive keys for ARES-Launcher, required (default {DefaultArchiveKeysFile})
-          --server-name <text>              Shown in launcher server lists (default {HostSettings.DefaultServerName})
-          --motd <text>                     Message of the day for launcher server lists
-          --game-build <digits>             Steam build id this server supports (default {GameBuild.SteamBuildId})
-          --raid-capacity <n>               Most raids Host runs at once (default {HostSettings.DefaultRaidCapacity})
-          --log-file <path>                 Append JSON events to a file while keeping the console interactive
-          --console <mode>                  Console: auto, interactive, plain or json (default auto)
-          --help                            Show this help
-          --version                         Show the ARES version and supported game build
-        """;
+    public static string Usage => HostOptions.Usage;
 
     /// <summary>Absolute path of the loaded configuration file.</summary>
     public string? ConfigurationFile { get; private init; }
@@ -102,7 +54,7 @@ public sealed record HostConfiguration
     /// <summary>Loads configuration and verifies archive keys against the supplied fingerprint.</summary>
     internal static HostConfiguration Parse(IReadOnlyList<string> args, string archiveKeysSha256, string? workingDirectory = null)
     {
-        CommandLineArguments arguments = CommandLineArguments.Parse(args, new HashSet<string> { "allow-network-clients", "help", "version" });
+        CommandLineArguments arguments = CommandLineArguments.Parse(args, HostOptions.Flags);
         if (arguments.HelpRequested)
         {
             throw new HelpRequestedException();
@@ -114,28 +66,28 @@ public sealed record HostConfiguration
         }
 
         HostConfigurationFile file = HostConfigurationFile.Load(arguments, workingDirectory ?? Environment.CurrentDirectory);
-        int port = file.GetInt32("port", DefaultPort);
-        string bindText = file.GetString("bind", "127.0.0.1")!;
-        bool allowNetwork = file.GetBoolean("allow-network-clients");
-        string? publicOrigin = EmptyToNull(file.GetString("public-origin"));
-        string serverName = file.GetString("server-name", HostSettings.DefaultServerName)!;
-        string motd = file.GetString("motd", "")!;
-        string gameBuild = EmptyToNull(file.GetString("game-build")) ?? GameBuild.SteamBuildId.ToString(CultureInfo.InvariantCulture);
-        int raidCapacity = file.GetInt32("raid-capacity", HostSettings.DefaultRaidCapacity);
-        string? raidExecutable = file.GetPath("raid-executable");
-        string? controlTokenFile = file.GetPath("session-control-token-file");
-        int raidPlayers = file.GetInt32("raid-players", 1);
-        int raidFillSeconds = file.GetInt32("raid-fill-seconds", 60);
-        int raidPort = file.GetInt32("raid-port", DefaultRaidPort);
-        int raidControlPort = file.GetInt32("raid-control-port", DefaultRaidControlPort);
-        string? raidLighting = EmptyToNull(file.GetString("raid-lighting"));
-        string? mapDataDirectory = file.GetPath("map-data-dir");
-        string? authKeyFile = file.GetPath("auth-key-file");
-        string archiveKeysFile = file.GetPath("archive-keys-file", DefaultArchiveKeysFile)
+        int port = file.GetInt32(HostOptions.Port);
+        string bindText = file.GetString(HostOptions.Bind)!;
+        bool allowNetwork = file.GetBoolean(HostOptions.AllowNetworkClients);
+        string? publicOrigin = EmptyToNull(file.GetString(HostOptions.PublicOrigin));
+        string serverName = file.GetString(HostOptions.ServerName)!;
+        string motd = file.GetString(HostOptions.Motd)!;
+        string gameBuild = EmptyToNull(file.GetString(HostOptions.GameBuildId)) ?? HostOptions.GameBuildId.Default!;
+        int raidCapacity = file.GetInt32(HostOptions.RaidCapacity);
+        string? raidExecutable = file.GetPath(HostOptions.RaidExecutable);
+        string? controlTokenFile = file.GetPath(HostOptions.SessionControlTokenFile);
+        int raidPlayers = file.GetInt32(HostOptions.RaidPlayers);
+        int raidFillSeconds = file.GetInt32(HostOptions.RaidFillSeconds);
+        int raidPort = file.GetInt32(HostOptions.RaidPort);
+        int raidControlPort = file.GetInt32(HostOptions.RaidControlPort);
+        string? raidLighting = EmptyToNull(file.GetString(HostOptions.RaidLighting));
+        string? mapDataDirectory = file.GetPath(HostOptions.MapDataDirectory);
+        string? authKeyFile = file.GetPath(HostOptions.AuthKeyFile);
+        string archiveKeysFile = file.GetPath(HostOptions.ArchiveKeysFile)
             ?? throw new CommandLineException("archive-keys-file must not be empty");
-        string? mongoUriFile = file.GetPath("mongodb-uri-file");
-        string mongoDatabase = file.GetString("mongodb-database", "ares_host")!;
-        string? mongoUri = EmptyToNull(file.GetString("mongodb-uri"));
+        string? mongoUriFile = file.GetPath(HostOptions.MongoDbUriFile);
+        string mongoDatabase = file.GetString(HostOptions.MongoDbDatabase)!;
+        string? mongoUri = EmptyToNull(file.GetString(HostOptions.MongoDbUri));
         if (mongoUriFile is not null)
         {
             try
@@ -162,9 +114,9 @@ public sealed record HostConfiguration
             throw new CommandLineException(error.Message);
         }
 
-        string? stashUpgradeCoins = EmptyToNull(file.GetString("stash-upgrade-coins"));
-        string consoleMode = file.GetString("console", "auto")!;
-        string? logFile = file.GetPath("log-file");
+        string? stashUpgradeCoins = EmptyToNull(file.GetString(HostOptions.StashUpgradeCoins));
+        string consoleMode = file.GetString(HostOptions.Console)!;
+        string? logFile = file.GetPath(HostOptions.LogFile);
         file.RejectUnknown();
         if (consoleMode is not ("auto" or "interactive" or "plain" or "json"))
         {

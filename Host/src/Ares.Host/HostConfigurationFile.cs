@@ -23,7 +23,7 @@ internal sealed class HostConfigurationFile
 
     internal static HostConfigurationFile Load(CommandLineArguments arguments, string workingDirectory)
     {
-        string? requested = arguments.GetString("config");
+        string? requested = arguments.GetString(HostOptions.Config.Key);
         try
         {
             string path = System.IO.Path.GetFullPath(requested ?? DefaultName, workingDirectory);
@@ -77,43 +77,43 @@ internal sealed class HostConfigurationFile
         }
     }
 
-    internal string? GetString(string name, string? fallback = null)
+    /// <summary>The option's value, or its default.</summary>
+    internal string? GetString(HostOption option)
     {
-        _consumed.Add(name);
-        return _arguments.GetString(name, _values.TryGetValue(name, out string? value) ? value : fallback);
+        _consumed.Add(option.Key);
+        return _arguments.GetString(option.Key, _values.TryGetValue(option.Key, out string? value) ? value : option.Default);
     }
 
-    internal int GetInt32(string name, int fallback)
+    internal int GetInt32(HostOption option)
     {
-        string? value = GetString(name);
-        return value is null ? fallback
-            : int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number) ? number
-            : throw new CommandLineException($"{Path}: '{name}' expects an integer");
+        string? value = GetString(option);
+        return value is not null && int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int number) ? number
+            : throw new CommandLineException($"{Path}: '{option.Key}' expects an integer");
     }
 
-    internal bool GetBoolean(string name)
+    internal bool GetBoolean(HostOption option)
     {
-        _consumed.Add(name);
-        if (_arguments.Has(name))
+        _consumed.Add(option.Key);
+        if (_arguments.Has(option.Key))
         {
             return true;
         }
 
-        string value = _values.GetValueOrDefault(name, "false");
+        string value = _values.GetValueOrDefault(option.Key, "false");
         return bool.TryParse(value, out bool flag) ? flag
-            : throw new CommandLineException($"{Path}: '{name}' expects true or false");
+            : throw new CommandLineException($"{Path}: '{option.Key}' expects true or false");
     }
 
-    internal string? GetPath(string name, string? fallback = null)
+    internal string? GetPath(HostOption option)
     {
-        string? value = GetString(name, fallback);
+        string? value = GetString(option);
         if (string.IsNullOrEmpty(value))
         {
             return null;
         }
 
         // Resolve command-line paths from the working directory.
-        if (_arguments.Has(name))
+        if (_arguments.Has(option.Key))
         {
             return value;
         }
@@ -124,7 +124,7 @@ internal sealed class HostConfigurationFile
         }
         catch (Exception error) when (error is ArgumentException or NotSupportedException)
         {
-            throw new CommandLineException($"{Path}: invalid path for '{name}': {error.Message}");
+            throw new CommandLineException($"{Path}: invalid path for '{option.Key}': {error.Message}");
         }
     }
 

@@ -209,6 +209,31 @@ public sealed class ConfigurationFileTests : IDisposable
     }
 
     [Fact]
+    public void The_shipped_file_holds_exactly_the_settings_with_their_defaults()
+    {
+        Dictionary<string, string> shipped = File.ReadLines(Path.Combine(AppContext.BaseDirectory, "ares-host.conf.dist"))
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0 && !line.StartsWith('#'))
+            .Select(line => line.Split('=', 2, StringSplitOptions.TrimEntries))
+            .ToDictionary(parts => parts[0], parts => parts[1].Trim('"'), StringComparer.Ordinal);
+
+        Assert.Equal(HostOptions.Settings.Select(option => option.Key).Order(StringComparer.Ordinal), shipped.Keys.Order(StringComparer.Ordinal));
+        foreach (HostOption option in HostOptions.Settings.Where(option => option.Default is not null && option != HostOptions.GameBuildId))
+        {
+            Assert.Equal(option.Default, shipped[option.Key]);
+        }
+    }
+
+    [Fact]
+    public void Usage_lists_every_option()
+    {
+        foreach (HostOption option in HostOptions.Settings.Append(HostOptions.Config).Append(HostOptions.Help).Append(HostOptions.Version))
+        {
+            Assert.Contains(option.HelpLine, HostConfiguration.Usage, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
     public void Backslashes_and_environment_placeholders_are_literal()
     {
         Write("""
