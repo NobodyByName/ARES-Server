@@ -1,6 +1,6 @@
 namespace Ares.Common.Control;
 
-/// <summary>Operator → Raid: an admin command for the raid's players, as typed on a console.</summary>
+/// <summary>Operator → Raid: an admin command for one raid, as typed on a console after the raid id.</summary>
 /// <param name="Name">Command name, one of <see cref="AdminApi.Commands"/>.</param>
 /// <param name="Arguments">Its arguments.</param>
 public sealed record AdminCommand(string Name, IReadOnlyList<string> Arguments);
@@ -46,11 +46,25 @@ public static class AdminApi
     /// <summary>The raid has no such player.</summary>
     public const string PlayerNotFound = "player_not_found";
 
+    /// <summary>No running raid has that id (or id prefix).</summary>
+    public const string RaidNotFound = "raid_not_found";
+
+    /// <summary>Several running raids start with that id prefix.</summary>
+    public const string RaidAmbiguous = "raid_ambiguous";
+
     /// <summary>The raid's game loop did not take the command in time.</summary>
     public const string Busy = "raid_busy";
 
     /// <summary>Command names.</summary>
     public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot];
+
+    /// <summary>Commands that act on one player, and where the player is among their arguments.</summary>
+    public static IReadOnlyDictionary<string, int> PlayerArgument { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
+    {
+        [Teleport] = 0,
+        [TeleportToLoot] = 0,
+        [SpawnLoot] = 0,
+    };
 
     /// <summary>One line per command: its arguments and what it does. A player is a user id or an in-game name.</summary>
     public static IReadOnlyList<string> Usage { get; } =

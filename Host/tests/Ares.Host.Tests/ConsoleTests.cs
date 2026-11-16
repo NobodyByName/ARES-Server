@@ -21,6 +21,10 @@ public sealed class ConsoleTests
     [InlineData("  INVENTORY  tester  a", "  INVENTORY  tester  add")]
     [InlineData("inventory tester import inv", "inventory tester import inv")]
     [InlineData("unknown inv", "unknown inv")]
+    [InlineData("raid l", "raid list")]
+    [InlineData("raid 0a spawn-l", "raid 0a spawn-loot")]
+    [InlineData("raid list sp", "raid list sp")]
+    [InlineData("raid notanid sp", "raid notanid sp")]
     public void Completion_uses_the_command_context(string input, string expected)
     {
         using HostConsole console = new("plain", TextWriter.Null);

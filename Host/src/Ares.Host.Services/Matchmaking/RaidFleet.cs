@@ -22,6 +22,12 @@ public interface IRaidStarter
     IRaidServer Start(int slot);
 }
 
+/// <summary>A raid running on the fleet.</summary>
+/// <param name="Slot">Its slot.</param>
+/// <param name="MatchId">Its id, the match id; null while its server starts.</param>
+/// <param name="Players">User ids of the players reserved in it.</param>
+public sealed record RunningRaid(int Slot, string? MatchId, IReadOnlyList<long> Players);
+
 /// <summary>
 /// The Raid servers Host starts during matchmaking: one per raid, at most <c>capacity</c> at once.
 /// A new ticket joins a running raid that still takes parties, else starts a new server. A slot is
@@ -39,6 +45,9 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
 
     private readonly Dictionary<int, Slot> _slots = [];
     private readonly SemaphoreSlim _lock = new(1, 1);
+
+    // Held, besides the turn lock, while the slots change, so that Running can read them without waiting its turn.
+    private readonly Lock _state = new();
 
     /// <summary>
     /// Reserves a raid for <paramref name="request"/>: the ticket's own raid, a running raid that takes
@@ -88,7 +97,7 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
         try
         {
             RemoveExited();
-            (_, Slot? slot) = Find(item => item.Tickets.Contains(allocation.TicketId) && item.MatchId == allocation.MatchId);
+            (_, Slot? slot) = Find(item => item.Tickets.ContainsKey(allocation.TicketId) && item.MatchId == allocation.MatchId);
             if (slot is not null)
             {
                 await slot.Server.Allocator.SettleAsync(new AllocationSettleRequest(allocation.TicketId, allocation.MatchId, userIds), cancellationToken).ConfigureAwait(false);
@@ -106,7 +115,7 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            (int index, Slot? slot) = Find(item => item.MatchId is null && item.Tickets.Contains(ticketId));
+            (int index, Slot? slot) = Find(item => item.MatchId is null && item.Tickets.ContainsKey(ticketId));
             if (slot is not null)
             {
                 Stop(index);
@@ -118,31 +127,52 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
         }
     }
 
-    /// <summary>Runs an admin command on every running raid, in slot order.</summary>
-    /// <param name="command">The command.</param>
-    /// <param name="cancellationToken">Cancels the calls.</param>
-    /// <returns>Each raid's slot, HTTP status and reply; a raid that cannot be reached gives status 503 and <c>raid_unreachable</c>.</returns>
-    public async Task<IReadOnlyList<(int Slot, int StatusCode, AdminReply Reply)>> AdminAsync(AdminCommand command, CancellationToken cancellationToken)
+    /// <summary>The raids running now, in slot order, without waiting for a call in progress.</summary>
+    /// <returns>Each raid's slot, its id (the match id; null while its server starts) and the players of its tickets.</returns>
+    public IReadOnlyList<RunningRaid> Running()
     {
+        lock (_state)
+        {
+            return [.. _slots.Where(pair => !pair.Value.Server.HasExited).OrderBy(pair => pair.Key)
+                .Select(pair => new RunningRaid(pair.Key, pair.Value.MatchId, [.. pair.Value.Tickets.Values.SelectMany(ticketPlayers => ticketPlayers)]))];
+        }
+    }
+
+    /// <summary>Runs an admin command on one running raid.</summary>
+    /// <param name="raid">The raid's id (its match id), or the start of it when no other raid's id starts the same way; case is ignored.</param>
+    /// <param name="command">The command.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>
+    /// The raid's match id (null when none was chosen), the HTTP status and the reply. No matching raid gives status 404 and
+    /// <see cref="AdminApi.RaidNotFound"/>, several give 409 and <see cref="AdminApi.RaidAmbiguous"/>; a raid that cannot
+    /// be reached gives 503 and <c>raid_unreachable</c>.
+    /// </returns>
+    public async Task<(string? MatchId, int StatusCode, AdminReply Reply)> AdminAsync(string raid, AdminCommand command, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(raid);
+        ArgumentNullException.ThrowIfNull(command);
         await _lock.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             RemoveExited();
-            List<(int, int, AdminReply)> replies = [];
-            foreach ((int index, Slot slot) in _slots.OrderBy(pair => pair.Key))
+            Slot[] matches = raid.Length == 0 ? [] : [.. _slots.OrderBy(pair => pair.Key).Select(pair => pair.Value)
+                .Where(slot => slot.MatchId?.StartsWith(raid, StringComparison.OrdinalIgnoreCase) == true)];
+            if (matches is not [{ MatchId: { } matchId } target])
             {
-                try
-                {
-                    (int status, AdminReply reply) = await slot.Server.Allocator.AdminAsync(command, cancellationToken).ConfigureAwait(false);
-                    replies.Add((index, status, reply));
-                }
-                catch (AllocationUnavailableException error)
-                {
-                    replies.Add((index, 503, new AdminReply([error.Message], "raid_unreachable")));
-                }
+                return matches.Length == 0
+                    ? (null, 404, new AdminReply([$"No running raid has the id {raid}."], AdminApi.RaidNotFound))
+                    : (null, 409, new AdminReply([$"{matches.Length} running raids have ids starting with {raid}; type more of the id."], AdminApi.RaidAmbiguous));
             }
 
-            return replies;
+            try
+            {
+                (int status, AdminReply reply) = await target.Server.Allocator.AdminAsync(command, cancellationToken).ConfigureAwait(false);
+                return (matchId, status, reply);
+            }
+            catch (AllocationUnavailableException error)
+            {
+                return (matchId, 503, new AdminReply([error.Message], "raid_unreachable"));
+            }
         }
         finally
         {
@@ -170,7 +200,7 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
     private async Task<Allocation?> ReserveLockedAsync(AllocationRequest request, CancellationToken cancellationToken)
     {
         RemoveExited();
-        (int index, Slot? slot) = Find(item => item.Tickets.Contains(request.TicketId));
+        (int index, Slot? slot) = Find(item => item.Tickets.ContainsKey(request.TicketId));
         if (slot is null)
         {
             if (await JoinAsync(request, cancellationToken).ConfigureAwait(false) is { } joined)
@@ -185,8 +215,11 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
 
             index = Enumerable.Range(0, capacity).First(free => !_slots.ContainsKey(free));
             slot = new Slot(starter.Start(index), time.GetTimestamp());
-            slot.Tickets.Add(request.TicketId);
-            _slots[index] = slot;
+            lock (_state)
+            {
+                slot.Tickets[request.TicketId] = request.PartyMemberIds;
+                _slots[index] = slot;
+            }
         }
 
         Allocation? allocation;
@@ -212,7 +245,11 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
             return null;
         }
 
-        slot.MatchId = allocation.MatchId;
+        lock (_state)
+        {
+            slot.MatchId = allocation.MatchId;
+        }
+
         return allocation;
     }
 
@@ -238,7 +275,11 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
                 continue;
             }
 
-            slot.Tickets.Add(request.TicketId);
+            lock (_state)
+            {
+                slot.Tickets[request.TicketId] = request.PartyMemberIds;
+            }
+
             return allocation;
         }
 
@@ -252,7 +293,7 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
         try
         {
             RemoveExited();
-            (int index, Slot? slot) = Find(item => item.Tickets.Contains(ticketId) && match(item));
+            (int index, Slot? slot) = Find(item => item.Tickets.ContainsKey(ticketId) && match(item));
             if (slot is null)
             {
                 throw new AllocationExpiredException("The raid is over");
@@ -291,7 +332,11 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
     /// <summary>Forgets a ticket; a raid left without tickets is stopped.</summary>
     private void Leave(int index, Slot slot, string ticketId)
     {
-        slot.Tickets.Remove(ticketId);
+        lock (_state)
+        {
+            slot.Tickets.Remove(ticketId);
+        }
+
         if (slot.Tickets.Count == 0)
         {
             Stop(index);
@@ -311,16 +356,19 @@ public sealed class RaidFleet(IRaidStarter starter, int capacity, int players, T
 
     private void Stop(int index)
     {
-        if (_slots.Remove(index, out Slot? slot))
+        Slot? slot;
+        lock (_state)
         {
-            slot.Server.Dispose();
+            _slots.Remove(index, out slot);
         }
+
+        slot?.Server.Dispose();
     }
 
     private sealed class Slot(IRaidServer server, long started)
     {
-        /// <summary>Tickets reserved in this raid.</summary>
-        public HashSet<string> Tickets { get; } = [];
+        /// <summary>Tickets reserved in this raid, with their players.</summary>
+        public Dictionary<string, IReadOnlyList<long>> Tickets { get; } = [];
 
         public IRaidServer Server { get; } = server;
 

@@ -11,6 +11,7 @@ public sealed class RaidFleetAdminTests : IAsyncLifetime
 {
     private const string OperatorToken = "operator-token-operator-token-operator-token";
     private const string Ticket = "0b7f6c3e-9d0a-4c1b-8e2f-3a4b5c6d7e8f";
+    private const string OtherTicket = "1c8f7d4f-0e1b-4d2c-9f30-4b5c6d7e8f90";
 
     private readonly FakeRaid _raid = new();
     private WebApplication? _app;
@@ -31,16 +32,29 @@ public sealed class RaidFleetAdminTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Admin_commands_reach_every_running_raid()
+    public async Task Admin_commands_go_to_the_raid_their_id_or_its_start_names()
     {
-        using RaidFleet fleet = new(new Starter(_app!), 1, 1, TimeProvider.System);
-        Assert.Empty(await fleet.AdminAsync(new AdminCommand("players", []), TestContext.Current.CancellationToken));
+        using RaidFleet fleet = new(new Starter(_app!), 2, 1, TimeProvider.System);
+        Assert.Empty(fleet.Running());
+        (string? none, int missing, AdminReply notFound) = await fleet.AdminAsync("0", new AdminCommand("players", []), TestContext.Current.CancellationToken);
+        Assert.Equal((null, 404, AdminApi.RaidNotFound), (none, missing, notFound.Error));
 
         Assert.NotNull(await fleet.ReserveAsync(new AllocationRequest(Ticket, "TheDam", [42]), TestContext.Current.CancellationToken));
-        (int slot, int status, AdminReply reply) = Assert.Single(await fleet.AdminAsync(new AdminCommand("teleport", ["42", "1", "2", "3"]), TestContext.Current.CancellationToken));
+        Assert.NotNull(await fleet.ReserveAsync(new AllocationRequest(OtherTicket, "TheDam", [43]), TestContext.Current.CancellationToken));
+        IReadOnlyList<RunningRaid> running = fleet.Running();
+        Assert.Equal([0, 1], running.Select(raid => raid.Slot));
+        Assert.Equal([[42L], [43L]], running.Select(raid => raid.Players.ToArray()));
+        string second = running[1].MatchId!;
 
-        Assert.Equal((0, 200), (slot, status));
-        Assert.Equal("teleport 42 1 2 3", Assert.Single(reply.Lines));
+        (string? matchId, int status, AdminReply reply) = await fleet.AdminAsync(second.ToUpperInvariant(), new AdminCommand("teleport", ["43", "1", "2", "3"]),
+            TestContext.Current.CancellationToken);
+        (string? _, int ambiguous, AdminReply both) = await fleet.AdminAsync(second[..7], new AdminCommand("players", []), TestContext.Current.CancellationToken);
+        (string? prefixed, int found, AdminReply _) = await fleet.AdminAsync(second[..8], new AdminCommand("players", []), TestContext.Current.CancellationToken);
+
+        Assert.Equal((second, 200), (matchId, status));
+        Assert.Equal("teleport 43 1 2 3", Assert.Single(reply.Lines));
+        Assert.Equal((409, AdminApi.RaidAmbiguous), (ambiguous, both.Error));
+        Assert.Equal((second, 200), (prefixed, found));
     }
 
     private sealed class Starter(WebApplication app) : IRaidStarter
@@ -57,20 +71,31 @@ public sealed class RaidFleetAdminTests : IAsyncLifetime
         }
     }
 
+    // Every raid this fake hosts has an id starting with the same seven digits.
     private sealed class FakeRaid : IAllocationService, IAdminService
     {
-        private Allocation? _allocation;
+        private readonly Dictionary<string, Allocation> _allocations = [];
+        private int _raids;
 
         public AllocationResult Reserve(AllocationRequest request)
         {
-            _allocation = new Allocation(request.TicketId, Guid.NewGuid().ToString(), request.ScenarioName, request.PartyMemberIds,
+            if (_allocations.TryGetValue(request.TicketId, out Allocation? allocation))
+            {
+                return AllocationResult.Success(allocation);
+            }
+
+            _raids++;
+            allocation = new Allocation(request.TicketId, $"0000000{_raids}-0000-4000-8000-{_raids:D12}", request.ScenarioName, request.PartyMemberIds,
                 AllocationStates.Available, ServerInitializationStates.Ready, 2,
                 new GameServerEndpoint("raid", "127.0.0.1", 7777, "", Convert.ToBase64String(new byte[16]), false, "LOCAL"));
-            return AllocationResult.Success(_allocation);
+            _allocations[request.TicketId] = allocation;
+            return AllocationResult.Success(allocation);
         }
 
         public AllocationResult Status(AllocationStatusRequest request) =>
-            _allocation is null ? AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation") : AllocationResult.Success(_allocation);
+            request.TicketId is { } ticket && _allocations.TryGetValue(ticket, out Allocation? allocation)
+                ? AllocationResult.Success(allocation)
+                : AllocationResult.Failure(StatusCodes.Status404NotFound, "unknown_session_allocation");
 
         public AllocationResult Settle(AllocationSettleRequest request) => AllocationResult.NoContent();
 

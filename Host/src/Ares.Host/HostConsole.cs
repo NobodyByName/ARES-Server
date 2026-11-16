@@ -21,6 +21,7 @@ internal sealed class HostConsole : ILoggerProvider
     private const int HistoryLimit = 100;
     private const int LogLimit = 1000;
     private const int InputLimit = 512;
+    private const string ListRaids = "list";
     private readonly Lock _gate = new();
     private readonly TextWriter _output;
     private readonly StreamWriter? _file;
@@ -205,12 +206,14 @@ internal sealed class HostConsole : ILoggerProvider
                     AddLine("inventory <account>  Show stored items and the loadout reservation");
                     AddLine("inventory <account> import <path>  Replace an idle inventory from a JSON file");
                     AddLine("inventory <account> add <technical-name> [quantity]  Add one supported stack to the stash (currencies: to the wallet)");
+                    AddLine($"raid {ListRaids}  List the running raids: id and players");
                     foreach (string usage in AdminApi.Usage)
                     {
-                        AddLine($"raid {usage}");
+                        AddLine($"raid <raid-id> {usage}");
                     }
 
-                    AddLine("Tab completes commands, subcommands and item names; Shift+Tab cycles backward");
+                    AddLine("A raid id is the id the game shows in its bottom-right corner; its first characters are enough");
+                    AddLine("Tab completes commands, subcommands, raid ids, players and item names; Shift+Tab cycles backward");
                     break;
                 case "status" when words.Length == 1:
                     AddLine($@"ARES-Host {AresVersion.Current} | Steam build {GameBuild.SteamBuildId} | uptime {DateTimeOffset.Now - _started:hh\:mm\:ss}");
@@ -245,7 +248,8 @@ internal sealed class HostConsole : ILoggerProvider
         }
     }
 
-    // Sends an admin command to the running raids; their replies arrive as events (and in the log file) when they answer.
+    // Lists the running raids, or sends an admin command to one raid; its reply arrives as an event (and in the log file)
+    // when it answers.
     private void RaidCommand(string[] words)
     {
         if (Raids is not { } raids)
@@ -254,39 +258,87 @@ internal sealed class HostConsole : ILoggerProvider
             return;
         }
 
-        AdminCommand command = new(words[1].ToLowerInvariant(), words[2..]);
+        if (words is [_, var list] && list.Equals(ListRaids, StringComparison.OrdinalIgnoreCase))
+        {
+            IReadOnlyList<RunningRaid> running = raids.Running();
+            if (running.Count == 0)
+            {
+                AddLine("No raid is running.");
+            }
+
+            foreach (RunningRaid raid in running)
+            {
+                string players = string.Join(", ", raid.Players.Select(PlayerName));
+                AddLine($"{raid.MatchId ?? "(starting)"}  slot {raid.Slot}  players: {(players.Length == 0 ? "-" : SafeText(players))}");
+            }
+
+            return;
+        }
+
+        if (words.Length < 3 || !IsRaidId(words[1]))
+        {
+            AddLine($"Usage: raid {ListRaids} | raid <raid-id> <command> [arguments]. Type help for the commands.");
+            return;
+        }
+
+        string id = words[1];
+        AdminCommand command = new(words[2].ToLowerInvariant(), words[3..]);
         string text = string.Join(' ', words[1..]);
         _ = Task.Run(async () =>
         {
-            IReadOnlyList<(int Slot, int StatusCode, AdminReply Reply)> replies;
+            (string? MatchId, int StatusCode, AdminReply Reply) answer;
             try
             {
-                replies = await raids.AdminAsync(command, CancellationToken.None).ConfigureAwait(false);
+                answer = await raids.AdminAsync(id, command, CancellationToken.None).ConfigureAwait(false);
             }
             catch (ObjectDisposedException)
             {
                 return;
             }
 
-            // A command for one player concerns the raid that has the player; the others only say they do not.
-            (int Slot, int StatusCode, AdminReply Reply)[] relevant = [.. replies.Where(reply => reply.Reply.Error != AdminApi.PlayerNotFound)];
-            if (relevant.Length == 0)
+            Log.Write(new JsonObject
             {
-                Log.Write(new JsonObject { ["admin_command"] = text, ["result"] = replies.Count == 0 ? "No raid is running." : "No raid has that player." });
-            }
-
-            foreach ((int slot, int status, AdminReply reply) in relevant)
-            {
-                Log.Write(new JsonObject
-                {
-                    ["admin_command"] = text,
-                    ["raid_slot"] = slot,
-                    ["status"] = status,
-                    ["error"] = reply.Error,
-                    ["result"] = string.Join(" | ", reply.Lines),
-                });
-            }
+                ["admin_command"] = text,
+                ["raid"] = answer.MatchId,
+                ["status"] = answer.StatusCode,
+                ["error"] = answer.Reply.Error,
+                ["result"] = string.Join(" | ", answer.Reply.Lines),
+            });
         });
+    }
+
+    // A raid id or the start of one: the hexadecimal digits and dashes of a match id.
+    private static bool IsRaidId(string word) => word.All(character => char.IsAsciiHexDigit(character) || character == '-');
+
+    // A player as the operator names them: the account name, else the user id.
+    private string PlayerName(long userId) => Accounts?.Find(userId)?.Name ?? userId.ToString(CultureInfo.InvariantCulture);
+
+    // Completions after "raid": list or a raid id, then a command, then the names of the chosen raid's players where the
+    // command takes a player.
+    private IEnumerable<string> RaidCompletions(string[] preceding)
+    {
+        IReadOnlyList<RunningRaid> running = Raids?.Running() ?? [];
+        if (preceding.Length == 1)
+        {
+            return [ListRaids, .. running.Select(raid => raid.MatchId).OfType<string>()];
+        }
+
+        if (!IsRaidId(preceding[1]))
+        {
+            return [];
+        }
+
+        if (preceding.Length == 2)
+        {
+            return AdminApi.Commands;
+        }
+
+        string command = preceding[2].ToLowerInvariant();
+        int argument = preceding.Length - 3;
+        return AdminApi.PlayerArgument.TryGetValue(command, out int player) && player == argument
+            && running.Where(raid => raid.MatchId?.StartsWith(preceding[1], StringComparison.OrdinalIgnoreCase) == true).ToArray() is [{ } chosen]
+            ? chosen.Players.Select(PlayerName)
+            : [];
     }
 
     private void RunGuarded(string what, Action command)
@@ -577,7 +629,7 @@ internal sealed class HostConsole : ILoggerProvider
             IEnumerable<string> candidates = preceding switch
             {
                 [] => ["help", "status", "clear", "stop", "account", "inventory", "raid"],
-                [var command] when command.Equals("raid", StringComparison.OrdinalIgnoreCase) => AdminApi.Commands,
+                [var command, ..] when command.Equals("raid", StringComparison.OrdinalIgnoreCase) => RaidCompletions(preceding),
                 [var command] when command.Equals("account", StringComparison.OrdinalIgnoreCase) => ["list", "create", "password", "rename", "ban", "unban", "delete"],
                 [var command, _] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
                 [var command, _, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
