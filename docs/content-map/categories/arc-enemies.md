@@ -18,7 +18,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-1-7"></a>Heavy Drone Laser | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |
 | <a id="content-root-1-8"></a>Heavy Drone Missile | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |
 | <a id="content-root-1-9"></a>Kebab Gatling | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |
-| <a id="content-root-1-10"></a>Wasp | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. |
+| <a id="content-root-1-10"></a>Wasp | Partial | Operators can place a stationary Wasp with the raid spawn-arc command (not yet verified in the game). It does not spawn by itself; server AI, attacks, damage and drops are not implemented. |
 | <a id="content-root-1-11"></a>Meerkat | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |
 | <a id="content-root-1-12"></a>Peppermint | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |
 | <a id="content-root-1-13"></a>Spearmint | Not implemented | ARC type identified. Server AI, attacks, damage and drops are not implemented. Display uses the internal type name. |

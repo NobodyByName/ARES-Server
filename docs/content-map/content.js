@@ -648,8 +648,8 @@ globalThis.AresContent = {
         {
           "name": "Wasp",
           "technical": "DA_EnemyType_LightDrone_02",
-          "status": "pending",
-          "note": "ARC type identified. Server AI, attacks, damage and drops are not implemented."
+          "status": "partial",
+          "note": "Operators can place a stationary Wasp with the raid spawn-arc command (not yet verified in the game). It does not spawn by itself; server AI, attacks, damage and drops are not implemented."
         },
         {
           "name": "Meerkat",

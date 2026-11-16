@@ -69,9 +69,10 @@ Weapons are not placed in containers yet. In the Raid inventory, stacks can also
 to their stack limit. Searching several kinds of containers, taking items, splitting and bringing the
 loot home by extraction are stock-client verified with one player.
 
-Operators can steer running raids from the Host console with `raid players`, `raid teleport`,
-`raid teleport-to-loot` and `raid spawn-loot` (see `help`); each raid's answer appears in the Host log.
-These are development tools.
+Operators can steer running raids from the Host console: `raid list` shows the running raids, and
+`raid <raid-id> <command>` sends `players`, `teleport`, `teleport-to-loot`, `spawn-loot`, `spawn-arc`
+or `despawn-arcs` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
+is also shown in the game's bottom-right corner. These are development tools.
 
 With [map data](../../README.md#map-data) configured, each raid loads the map's collision when it
 starts, and Raid simulates each player's movement on it: walking, crouching, sprinting, sliding, dodge
@@ -146,6 +147,8 @@ Limitations:
 - Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
   its progress.
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
+- ARCs do not spawn by themselves. Operators can place a stationary Wasp (`spawn-arc`), not yet
+  verified in the game; it does not move, attack or take damage.
 - Loot drop rates are provisional and weapons never appear in containers. Plants and other nature
   containers, ARC wrecks, weapon racks (they need the Security Breach skill) and keycard rooms are not
   supported, and containers are only in Dam.
