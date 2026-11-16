@@ -1214,7 +1214,7 @@ globalThis.AresContent = {
               "name": "Snap Hook",
               "technical": "DA_Item_SnapHook",
               "status": "partial",
-              "note": "Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss, repair and value remain."
+              "note": "Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss and repair remain. It shows its value and sells from Storage for 14,000 coins, less when worn; selling is stock-client verified."
             },
             {
               "name": "Snowball",
@@ -1524,7 +1524,8 @@ globalThis.AresContent = {
             {
               "name": "Grind Currency",
               "technical": "DA_Item_GrindCurrency",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Coins: the menu wallet shows the player's coin stack, and selling items from Storage pays into it; stock-client verified. Host's inventory add command grants coins. Buying with coins from other traders, and coin rewards from quests or raids, are not implemented."
             },
             {
               "name": "Research Ascended Anti Shield",
@@ -1631,7 +1632,7 @@ globalThis.AresContent = {
               "name": "Light Shield",
               "technical": "DA_Item_Armor_LightBody",
               "status": "partial",
-              "note": "Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain."
+              "note": "Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain. It shows its value and sells from Storage for 640 coins, less when worn; selling is stock-client verified."
             },
             {
               "name": "Medium Shield",
@@ -1684,7 +1685,7 @@ globalThis.AresContent = {
               "name": "Rubber Duck",
               "technical": "DA_Item_Salvage_Trinket_RubberDuck_Standard",
               "status": "partial",
-              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender."
+              "note": "Stash/loadout persistence, Raid display and whole-stack moves work; the item comes home from a Dam extraction, and only Safe Pocket items survive surrender. It shows its value and sells from Storage for 1,000 coins; selling is stock-client verified."
             },
             {
               "name": "Rubber Duck",
@@ -1888,7 +1889,7 @@ globalThis.AresContent = {
               "name": "Salvage Chemicals",
               "technical": "DA_Item_Salvage_Chemicals",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Chonk Part",
@@ -2079,7 +2080,7 @@ globalThis.AresContent = {
               "name": "Salvage Fabric",
               "technical": "DA_Item_Salvage_Fabric",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Fertilizer",
@@ -2625,13 +2626,13 @@ globalThis.AresContent = {
               "name": "Salvage Planks",
               "technical": "DA_Item_Salvage_Planks",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic",
               "technical": "DA_Item_Salvage_Plastic",
               "status": "partial",
-              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic Trash",
@@ -2997,7 +2998,7 @@ globalThis.AresContent = {
               "name": "Salvage Rubber",
               "technical": "DA_Item_Salvage_Rubber",
               "status": "partial",
-              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Rubber Band 01",
@@ -3053,7 +3054,7 @@ globalThis.AresContent = {
               "name": "Salvage Scrap Metal",
               "technical": "DA_Item_Salvage_ScrapMetal",
               "status": "partial",
-              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Security Code",
@@ -3064,7 +3065,7 @@ globalThis.AresContent = {
               "name": "Salvage Seeds",
               "technical": "DA_Item_Salvage_Seeds",
               "status": "partial",
-              "note": "Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded."
+              "note": "Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Sensors",
@@ -3080,7 +3081,7 @@ globalThis.AresContent = {
               "name": "Salvage Sheet Metal",
               "technical": "DA_Item_Salvage_SheetMetal",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Shotgun Parts",
@@ -3546,7 +3547,7 @@ globalThis.AresContent = {
               "name": "Ferro I",
               "technical": "DA_Item_BattleRifle_BreachAction_01",
               "status": "partial",
-              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain."
+              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain. It shows its value and sells from Storage for 475 coins, less when worn; selling is stock-client verified."
             },
             {
               "name": "Battle Rifle Energy Burst 01",
@@ -3952,7 +3953,7 @@ globalThis.AresContent = {
               "name": "Heavy Ammo",
               "technical": "DA_Item_HeavyAmmo",
               "status": "partial",
-              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and stacks can be split and merged in the menu and in Raid; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified."
+              "note": "Stacks of up to 60 rounds, menu and Raid inventory, weight and whole-stack moves are supported, and stacks can be split and merged in the menu and in Raid; Ferro I reloads take rounds from carried stacks. Dropping stacks in Raid and picking them up again is stock-client verified. It shows its value and sells from Storage for 12 coins per round; selling is stock-client verified."
             },
             {
               "name": "Launcher Ammo",
@@ -5303,19 +5304,19 @@ globalThis.AresContent = {
               "name": "Combat Mk.1",
               "technical": "DA_Item_Augment_Combat_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
             },
             {
               "name": "Looting Mk.1",
               "technical": "DA_Item_Augment_Looting_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
             },
             {
               "name": "Tactical / Utility Mk.1",
               "technical": "DA_Item_Augment_Utility_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
             }
           ]
         }

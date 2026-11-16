@@ -90,6 +90,11 @@ The trader Celeste lists her seven permanent offers, one material for one or thr
 buying any quantity takes the seeds from the stash and puts the materials there, all in one saved change.
 Buying is stock-client verified in the menu.
 
+Every supported item shows its value in the menu, and right-clicking it in Storage sells all or part of
+the stack for coins, which collect in one stack shown as the wallet. The price is the item's game value
+scaled by its durability, never below a tenth of it. Selling is stock-client verified in the menu,
+including a stack split off just before.
+
 To grant menu test items from the Host console before a fresh client launch:
 
 ```text
@@ -97,6 +102,7 @@ inventory add DA_Item_BattleRifle_BreachAction_01
 inventory add DA_Item_HeavyAmmo 60
 inventory add DA_Item_SnapHook
 inventory add DA_Item_Salvage_Seeds 100
+inventory add DA_Item_GrindCurrency 5000
 ```
 
 `inventory add <technical-name> [quantity]` adds a new stack; quantity defaults to one and must
@@ -121,7 +127,8 @@ Limitations:
 - Broken-elevator repair and other extraction types are not implemented.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups, splitting and merging are not implemented yet.
 - Only Celeste trades, and only her permanent offers: daily-limited offers, unlock requirements, other
-  traders, selling, crafting and recycling are not implemented.
+  traders, crafting and recycling are not implemented. Selling gives no experience or quest progress
+  yet, and a weapon sells without mods since mods are not supported.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
