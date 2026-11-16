@@ -6,7 +6,7 @@ namespace Ares.Host.Services.Inventory;
 /// <summary>Maps technical item names and gameplay locations to shared definitions.</summary>
 internal static class InventoryCatalog
 {
-    private static readonly Dictionary<long, string> s_technicalNames = ItemTechnicalNames.AssetIds.ToDictionary(pair => pair.Value, pair => pair.Key);
+    private static readonly Dictionary<long, string> s_technicalNames = LoadoutDefinitions.AssetIds.ToDictionary(pair => pair.Value, pair => pair.Key);
 
     internal static IReadOnlyList<ItemDescription> Definitions => LoadoutDefinitions.All;
     internal static IReadOnlyDictionary<long, ItemDescription> ByAsset => LoadoutDefinitions.ByAsset;
@@ -36,7 +36,7 @@ internal static class InventoryCatalog
 
     private static int CapacityOf(PlayerLoadoutState loadout, long branch) => checked((int)LoadoutDefinitions.Container(FrameAssetId(loadout), branch).NumberOfSlots);
 
-    internal static long AssetId(string name) => ItemTechnicalNames.AssetIds.TryGetValue(name, out long assetId) ? assetId
+    internal static long AssetId(string name) => LoadoutDefinitions.AssetIds.TryGetValue(name, out long assetId) ? assetId
         : throw new InvalidDataException("Unknown inventory item technical name");
 
     internal static string TechnicalName(long assetId) => s_technicalNames.TryGetValue(assetId, out string? name) ? name

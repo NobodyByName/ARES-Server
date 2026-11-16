@@ -560,10 +560,8 @@ public sealed class LootStates(LootCatalog catalog)
     private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
 
     /// <summary>Unit weight of each item type a container may hold.</summary>
-    public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = new Dictionary<ushort, double>
-    {
-        [s_duck] = LoadoutDefinitions.ItemWeight(StorageItems.RubberDuckAssetId),
-    };
+    public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = LoadoutDefinitions.CarriedItems
+        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.Weight);
 
     /// <summary>The containers in the order they were first opened: every player's view of them changed then.</summary>
     public IReadOnlyList<int> Openings => _openings;

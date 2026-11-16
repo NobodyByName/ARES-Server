@@ -66,8 +66,8 @@ public sealed class ConsoleTests
     }
 
     [Theory]
-    [InlineData("augment")]
-    [InlineData("AuGmEnT")]
+    [InlineData("augment_")]
+    [InlineData("AuGmEnT_")]
     public void Partial_name_completion_cycles_all_matching_items_and_excludes_unrelated_items(string query)
     {
         using HostConsole console = new("plain", TextWriter.Null);

@@ -4,13 +4,13 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common;
 using Ares.Common.Control;
+using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
 namespace Ares.Host;
@@ -581,7 +581,7 @@ internal sealed class HostConsole : ILoggerProvider
                 [var command] when command.Equals("account", StringComparison.OrdinalIgnoreCase) => ["list", "create", "password", "rename", "ban", "unban", "delete"],
                 [var command, _] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase) => ["add", "import"],
                 [var command, _, var subcommand] when command.Equals("inventory", StringComparison.OrdinalIgnoreCase)
-                    && subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => ItemTechnicalNames.AssetIds.Keys,
+                    && subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => LoadoutDefinitions.AssetIds.Keys,
                 _ => [],
             };
             string query = input[_completionStart.._cursor];

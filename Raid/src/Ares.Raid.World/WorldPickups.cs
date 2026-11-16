@@ -2,7 +2,6 @@ using System.Globalization;
 using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
 using Ares.Raid.World.Inventory;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
@@ -64,9 +63,8 @@ public sealed class WorldPickups
     private const ulong GuidStride = 6;
 
     // Data asset of every item a player can carry (and so drop), by usable index.
-    private static readonly Dictionary<ushort, string> s_dataAssets = ItemTechnicalNames.AssetIds
-        .Where(pair => LoadoutDefinitions.SupportsCarriedItem(pair.Value))
-        .ToDictionary(pair => checked((ushort)LoadoutDefinitions.UsableIndex(pair.Value)), pair => ItemTechnicalNames.DataAssets[pair.Key]);
+    private static readonly Dictionary<ushort, string> s_dataAssets = LoadoutDefinitions.CarriedItems
+        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.DataAsset);
 
     private readonly ReplicationContext _replication;
     private readonly WorldState _state;
