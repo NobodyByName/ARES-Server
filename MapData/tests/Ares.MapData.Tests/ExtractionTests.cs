@@ -67,13 +67,16 @@ public sealed class ExtractionTests : IDisposable
         BodyPlacement mesh = Assert.Single(map.Placements, placement => map.Bodies[placement.BodyIndex].Name == BodyLibraryTests.MeshPath);
         Assert.Equal(1, mesh.CellIndex);
         Assert.Equal(new Vector3D(500, 600, 700), mesh.Translation);
-        Assert.Equal(PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable, mesh.Flags);
+        Assert.Equal(PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable, mesh.Flags & (PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable));
+        Assert.False(mesh.Flags.Blocks(GameCollisionChannels.HitScan));
+        Assert.True(mesh.Flags.Blocks(GameCollisionChannels.PlayerTraceProjectile));
         Assert.Single(map.Bodies[mesh.BodyIndex].Spheres);
 
         BodyPlacement box = Assert.Single(map.Placements, placement => placement.BodyIndex != mesh.BodyIndex);
         Assert.Equal(new Vector3D(-100, 0, 50), box.Translation);
-        Assert.Equal(PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable, box.Flags);
+        Assert.Equal(mesh.Flags, box.Flags);
         Assert.Equal(new Vector3(50, 60, 70), Assert.Single(map.Bodies[box.BodyIndex].Boxes).HalfExtents);
+        Assert.Equal(CollisionTraceFlag.SimpleAsComplex, map.Bodies[box.BodyIndex].TraceFlag);
 
         Assert.Contains("Placements: 2 of 2 bodies", output, StringComparison.Ordinal);
         Assert.Contains("Landscape tiles: 1", output, StringComparison.Ordinal);

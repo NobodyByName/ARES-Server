@@ -1,4 +1,5 @@
 using Ares.Common.Archives;
+using Ares.Common.Maps;
 using Ares.MapData.Archives;
 using Ares.MapData.Profiles;
 using Ares.Structs.Game.Collision;
@@ -28,6 +29,21 @@ public sealed class CollisionProfilesTests : IDisposable
         +DefaultChannelResponses=(Channel=ECC_GameTraceChannel3,DefaultResponse=ECR_Block,bTraceType=False,bStaticObject=False,Name="PlayerPawn")
         +DefaultChannelResponses=(Channel=ECC_GameTraceChannel10,DefaultResponse=ECR_Ignore,bTraceType=True,bStaticObject=False,Name="Climbable")
         +DefaultChannelResponses=(Channel=ECC_GameTraceChannel11,DefaultResponse=ECR_Ignore,bTraceType=True,bStaticObject=False,Name="HitScan")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel1,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="Minion")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel2,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="Harvester")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel4,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="Projectile")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel5,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="AIVisibility")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel6,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="ContextualActionCandidate")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel7,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="RadialBlock")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel8,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="InteractionProxy")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel9,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="RagdollProxy")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel12,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="DamageOcclusion")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel13,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="AudioOcclusion")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel14,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="UI")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel15,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="AITraceProjectile")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel16,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="PlayerTraceProjectile")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel17,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="WorldHitValidation")
+        +DefaultChannelResponses=(Channel=ECC_GameTraceChannel18,DefaultResponse=ECR_Block,bTraceType=True,bStaticObject=False,Name="PlayerPawnPhysics")
         +Profiles=(Name="PlayerPawn",CollisionEnabled=QueryOnly,ObjectTypeName="PlayerPawn",CustomResponses=((Channel="Visibility",Response=ECR_Ignore),(Channel="PhysicsBody",Response=ECR_Overlap),(Channel="HitScan")))
         +Profiles=(Name="InvisibleWall",CollisionEnabled=QueryAndPhysics,ObjectTypeName="WorldStatic",CustomResponses=((Channel="Visibility",Response=ECR_Ignore)))
         +Profiles=(Name="ClimbOnly",CollisionEnabled=QueryAndPhysics,ObjectTypeName="WorldDynamic",CustomResponses=((Channel="PlayerPawn",Response=ECR_Overlap),(Channel="Climbable")))
@@ -54,7 +70,7 @@ public sealed class CollisionProfilesTests : IDisposable
 
         Assert.Equal(CollisionChannel.PhysicsBody, profiles.Channels["PhysicsBody"]);
         Assert.Equal(CollisionChannel.GameTraceChannel3, profiles.Channels["PlayerPawn"]);
-        Assert.Equal(CollisionChannel.GameTraceChannel10, profiles.Channels[CollisionProfileConfig.ClimbableChannel]);
+        Assert.Equal(CollisionChannel.GameTraceChannel10, profiles.Channels["Climbable"]);
         Assert.Equal(CollisionResponse.Block, profiles.DefaultResponses[(int)CollisionChannel.Visibility]);
         Assert.Equal(CollisionResponse.Ignore, profiles.DefaultResponses[(int)CollisionChannel.GameTraceChannel10]);
         Assert.Equal(CollisionResponse.Block, profiles.DefaultResponses[(int)CollisionChannel.GameTraceChannel3]);
@@ -108,22 +124,22 @@ public sealed class CollisionProfilesTests : IDisposable
     }
 
     [Theory]
-    [InlineData("BlockAll", true, true)]
-    [InlineData("StaticMeshComponent", true, true)]
-    [InlineData("NoCollision", false, false)]
-    [InlineData("OverlapAll", false, false)]
-    [InlineData("Wall", true, false)]
-    [InlineData("ClimbOnly", false, true)]
-    [InlineData("Physics", false, true)]
-    [InlineData("Untyped", true, true)]
-    public void Named_profiles_decide_what_a_component_blocks(string profile, bool blocksPawn, bool blocksClimbable)
+    [InlineData("BlockAll", true, true, true)]
+    [InlineData("StaticMeshComponent", true, true, true)]
+    [InlineData("NoCollision", false, false, false)]
+    [InlineData("OverlapAll", false, false, false)]
+    [InlineData("Wall", true, false, true)]
+    [InlineData("ClimbOnly", false, true, false)]
+    [InlineData("Physics", true, true, false)]
+    [InlineData("Untyped", true, true, true)]
+    public void Named_profiles_decide_what_a_component_blocks(string profile, bool blocksPlayerChannel, bool blocksClimbable, bool blocksCapsule)
     {
         CollisionProfiles profiles = CollisionProfiles.Parse([Base, Default]);
 
         CollisionClassification result = profiles.Classify(profile, CollisionEnabled.NoCollision, CollisionChannel.PhysicsBody,
             [new CollisionResponseOverride("PlayerPawn", CollisionResponse.Ignore)]);
 
-        Assert.Equal(new CollisionClassification(blocksPawn, blocksClimbable), result);
+        Assert.Equal((blocksPlayerChannel, blocksClimbable, blocksCapsule), Bits(result));
     }
 
     [Fact]
@@ -131,15 +147,48 @@ public sealed class CollisionProfilesTests : IDisposable
     {
         CollisionProfiles profiles = CollisionProfiles.Parse([Base, Default]);
 
-        Assert.Equal(new CollisionClassification(true, false), profiles.Classify("Custom", CollisionEnabled.QueryAndPhysics, null, []));
-        Assert.Equal(new CollisionClassification(true, true),
-            profiles.Classify(null, CollisionEnabled.QueryOnly, CollisionChannel.WorldDynamic, [new CollisionResponseOverride("Climbable")]));
-        Assert.Equal(new CollisionClassification(false, true), profiles.Classify("Custom", CollisionEnabled.QueryAndProbe, CollisionChannel.WorldStatic,
-            [new CollisionResponseOverride("Climbable"), new CollisionResponseOverride("PlayerPawn", CollisionResponse.Overlap)]));
-        Assert.Equal(new CollisionClassification(false, false), profiles.Classify("Custom", CollisionEnabled.QueryAndPhysics, CollisionChannel.PhysicsBody,
-            [new CollisionResponseOverride("NotAChannel", CollisionResponse.Ignore)]));
-        Assert.Equal(new CollisionClassification(false, false), profiles.Classify("Custom", CollisionEnabled.PhysicsOnly, null, [new CollisionResponseOverride("Climbable")]));
+        Assert.Equal((true, false, true), Bits(profiles.Classify("Custom", CollisionEnabled.QueryAndPhysics, null, [])));
+        Assert.Equal((true, true, true),
+            Bits(profiles.Classify(null, CollisionEnabled.QueryOnly, CollisionChannel.WorldDynamic, [new CollisionResponseOverride("Climbable")])));
+        Assert.Equal((false, true, false), Bits(profiles.Classify("Custom", CollisionEnabled.QueryAndProbe, CollisionChannel.WorldStatic,
+            [new CollisionResponseOverride("Climbable"), new CollisionResponseOverride("PlayerPawn", CollisionResponse.Overlap)])));
+        Assert.Equal((true, false, false), Bits(profiles.Classify("Custom", CollisionEnabled.QueryAndPhysics, CollisionChannel.PhysicsBody,
+            [new CollisionResponseOverride("NotAChannel", CollisionResponse.Ignore)])));
+        Assert.Equal(default, profiles.Classify("Custom", CollisionEnabled.PhysicsOnly, null, [new CollisionResponseOverride("Climbable")]));
     }
+
+    [Fact]
+    public void A_body_that_takes_part_in_queries_blocks_every_named_channel_it_responds_to_with_block()
+    {
+        CollisionProfiles profiles = CollisionProfiles.Parse([Base, Default]);
+
+        PlacementFlags wall = profiles.Classify("Wall", CollisionEnabled.NoCollision, null, []).Channels;
+        PlacementFlags custom = profiles.Classify(null, CollisionEnabled.QueryOnly, CollisionChannel.WorldStatic,
+            [new CollisionResponseOverride("PlayerTraceProjectile", CollisionResponse.Overlap), new CollisionResponseOverride("HitScan")]).Channels;
+
+        // The engine trace channels the config does not name are left out.
+        PlacementFlags unnamed = Enumerable.Range((int)CollisionChannel.EngineTraceChannel1, 6)
+            .Aggregate(PlacementFlags.None, (mask, channel) => mask | CollisionChannelMask.Of((CollisionChannel)channel));
+        PlacementFlags ignoredByDefault = CollisionChannelMask.Of(GameCollisionChannels.Climbable) | CollisionChannelMask.Of(GameCollisionChannels.HitScan);
+        Assert.Equal(~(unnamed | ignoredByDefault | CollisionChannelMask.Of(CollisionChannel.Visibility)), wall);
+        Assert.Equal(~(unnamed | CollisionChannelMask.Of(GameCollisionChannels.Climbable) | CollisionChannelMask.Of(GameCollisionChannels.PlayerTraceProjectile)), custom);
+        Assert.True(custom.Blocks(GameCollisionChannels.HitScan));
+        Assert.False(custom.Blocks(GameCollisionChannels.PlayerTraceProjectile));
+    }
+
+    [Fact]
+    public void Game_channels_must_sit_where_structs_says()
+    {
+        string moved = Default.Replace("Channel=ECC_GameTraceChannel10,", "Channel=ECC_GameTraceChannel12,", StringComparison.Ordinal);
+        string otherCapsule = Default.Replace("ObjectTypeName=\"PlayerPawn\"", "ObjectTypeName=\"Pawn\"", StringComparison.Ordinal);
+
+        Assert.Throws<InvalidDataException>(() => CollisionProfiles.Parse([Base, moved]));
+        Assert.Throws<InvalidDataException>(() => CollisionProfiles.Parse([Base, otherCapsule]));
+    }
+
+    private static (bool PlayerChannel, bool Climbable, bool Capsule) Bits(CollisionClassification classification) =>
+        (classification.Channels.Blocks(GameCollisionChannels.PlayerPawn), classification.Channels.Blocks(GameCollisionChannels.Climbable),
+            classification.BlocksPlayerCapsule);
 
     [Fact]
     public void The_player_capsule_profile_and_the_climbable_channel_are_required()
@@ -190,6 +239,6 @@ public sealed class CollisionProfilesTests : IDisposable
         CollisionProfiles profiles = CollisionProfiles.Load(pak);
 
         Assert.False(profiles.Profiles.ContainsKey("Old"));
-        Assert.Equal(new CollisionClassification(true, true), profiles.Classify("BlockAll", CollisionEnabled.NoCollision, null, []));
+        Assert.Equal((true, true, true), Bits(profiles.Classify("BlockAll", CollisionEnabled.NoCollision, null, [])));
     }
 }

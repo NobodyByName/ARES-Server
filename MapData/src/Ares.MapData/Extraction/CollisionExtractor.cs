@@ -9,6 +9,7 @@ using Ares.MapData.Materials;
 using Ares.MapData.Packages;
 using Ares.MapData.Profiles;
 using Ares.Structs.Core;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.World;
 using Quaternion = System.Numerics.Quaternion;
@@ -18,7 +19,7 @@ namespace Ares.MapData.Extraction;
 /// <summary>
 /// Builds the static collision of the Dam map from the installed game: every cell the map's persistent level lists
 /// (the level itself included) with its data layers, the landscape tiles of every cell, and one placement for each
-/// component or instance whose collision blocks the player or vaulting and whose body has geometry. Static mesh
+/// component or instance whose collision blocks any channel and whose body has geometry. Static mesh
 /// components and instances use their mesh's body, spline mesh and brush components the body setup they own, and box,
 /// sphere and capsule components a body of their own shape. Components that cannot be decoded are counted in the
 /// summary instead of failing the extraction.
@@ -59,7 +60,11 @@ internal sealed class CollisionExtractor
     {
         CollisionExtractor extractor = new(packages, profiles);
         extractor.Run(cellPackages);
-        return (extractor._builder.Build(), extractor._summary);
+        MapCollision map = extractor._builder.Build();
+        extractor._summary.ComplexMeshBodies = map.Bodies.Count(body => !body.ComplexMeshes.IsEmpty);
+        extractor._summary.WithoutComplexCollision = map.Placements.Count(placement =>
+            map.Bodies[placement.BodyIndex] is { UsesSimpleAsComplex: false, ComplexMeshes.IsEmpty: true });
+        return (map, extractor._summary);
     }
 
     private void Run(IReadOnlyList<string> cellPackages)
@@ -138,7 +143,7 @@ internal sealed class CollisionExtractor
             return;
         }
 
-        PlacementFlags flags = Flags(blocks);
+        PlacementFlags flags = blocks.Channels;
         if (flags == PlacementFlags.None)
         {
             return;
@@ -167,6 +172,7 @@ internal sealed class CollisionExtractor
         {
             _builder.AddPlacement(_builder.AddBody(shapes), cellIndex, component.World, flags, surface, materialSurfaces);
             counts.Placements++;
+            CountPlayerCapsuleMismatch(blocks);
         }
         catch (ArgumentException error)
         {
@@ -189,7 +195,8 @@ internal sealed class CollisionExtractor
             return;
         }
 
-        PlacementFlags flags = Flags(ComponentCollision.Classify(_profiles, component.Body, ComponentCollisionDefaults.InstancedStaticMesh.ProfileName));
+        CollisionClassification blocks = ComponentCollision.Classify(_profiles, component.Body, ComponentCollisionDefaults.InstancedStaticMesh.ProfileName);
+        PlacementFlags flags = blocks.Channels;
         if (flags == PlacementFlags.None)
         {
             return;
@@ -203,7 +210,7 @@ internal sealed class CollisionExtractor
         }
 
         (PhysicalSurfaceType surface, ImmutableArray<PhysicalSurfaceType> materialSurfaces) = Surfaces(
-            () => _surfaces.OfCollision(component.Body?.PhysMaterialOverride, body.PhysMaterial, _surfaces.MeshMaterials(component.Mesh), !shapes.TriangleMeshes.IsEmpty));
+            () => _surfaces.OfCollision(component.Body?.PhysMaterialOverride, body.PhysMaterial, _surfaces.MeshMaterials(component.Mesh), HasTriangleMeshes(shapes)));
         if (_components.StoresInstancedOverrideMaterials(component))
         {
             _summary.InstancedOverrideMaterialsNotRead++;
@@ -226,6 +233,7 @@ internal sealed class CollisionExtractor
             {
                 _builder.AddPlacement(bodyIndex, cellIndex, TransformMath.FromMatrix(instance), flags, surface, materialSurfaces);
                 counts.Placements++;
+                CountPlayerCapsuleMismatch(blocks);
             }
             catch (Exception error) when (error is InvalidDataException or ArgumentException)
             {
@@ -247,14 +255,14 @@ internal sealed class CollisionExtractor
             ImmutableArray<ExportRef?> materials = [];
             if (component.Kind is not (CollisionComponentKind.StaticMesh or CollisionComponentKind.SplineMesh))
             {
-                return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, !shapes.TriangleMeshes.IsEmpty);
+                return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, HasTriangleMeshes(shapes));
             }
 
             ImmutableArray<ExportRef?> slots = _components.StaticMesh(cell, export) is { } mesh ? _surfaces.MeshMaterials(mesh.Path) : [];
             ImmutableArray<ExportRef?> overrides = _components.OverrideMaterials(cell, export) is { } stored ? _surfaces.Resolve(stored) : [];
             materials = [.. Enumerable.Range(0, Math.Max(slots.Length, overrides.Length))
                 .Select(slot => (slot < overrides.Length ? overrides[slot] : null) ?? (slot < slots.Length ? slots[slot] : null))];
-            return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, !shapes.TriangleMeshes.IsEmpty);
+            return _surfaces.OfCollision(component.Collision.PhysMaterialOverride, body.PhysMaterial, materials, HasTriangleMeshes(shapes));
         });
     }
 
@@ -285,7 +293,7 @@ internal sealed class CollisionExtractor
         if (kind is CollisionComponentKind.Box or CollisionComponentKind.Sphere or CollisionComponentKind.Capsule)
         {
             string path = cell.Header.ExportPath(export.Index);
-            return new AssetBody(path, ShapeBody(path, kind, _components.Shape(cell, export, kind)), CollisionTraceFlag.UseDefault, null);
+            return new AssetBody(path, ShapeBody(path, kind, _components.Shape(cell, export, kind)), ComponentCollisionDefaults.ShapeComponentTraceFlag, null);
         }
 
         ZenExport[] owned = [.. cell.ChildrenOf(export.Index).Where(child => child.Class == s_bodySetup)];
@@ -324,7 +332,7 @@ internal sealed class CollisionExtractor
                 return null;
             }
 
-            return Flags(blocks) != PlacementFlags.None && !(mesh ?? OwnBody(cell, export, kind)).IsEmpty;
+            return blocks.Channels != PlacementFlags.None && !(mesh ?? OwnBody(cell, export, kind)).IsEmpty;
         }
         catch (InvalidDataException)
         {
@@ -335,7 +343,7 @@ internal sealed class CollisionExtractor
     /// <summary>The body of a box, sphere or capsule component: one shape at the component's origin.</summary>
     private static CollisionBody ShapeBody(string name, CollisionComponentKind kind, ComponentShape shape)
     {
-        return kind switch
+        CollisionBody body = kind switch
         {
             CollisionComponentKind.Box => new CollisionBody(name,
                 [new CollisionBox(Vector3.Zero, Quaternion.Identity, new Vector3((float)shape.BoxExtent.X, (float)shape.BoxExtent.Y, (float)shape.BoxExtent.Z))],
@@ -345,11 +353,17 @@ internal sealed class CollisionExtractor
                 [new CollisionCapsule(Vector3.Zero, Quaternion.Identity, (float)shape.Radius, (float)Math.Max(0, shape.HalfHeight - shape.Radius))],
                 [], []),
         };
+        return body with { TraceFlag = ComponentCollisionDefaults.ShapeComponentTraceFlag };
     }
 
-    private static PlacementFlags Flags(CollisionClassification classification)
+    private static bool HasTriangleMeshes(CollisionBody body) => !body.TriangleMeshes.IsEmpty || !body.ComplexMeshes.IsEmpty;
+
+    /// <summary>Counts a placement whose player channel bit disagrees with whether it blocks the player capsule.</summary>
+    private void CountPlayerCapsuleMismatch(CollisionClassification blocks)
     {
-        return (classification.BlocksPawn ? PlacementFlags.BlocksPawn : PlacementFlags.None)
-            | (classification.BlocksClimbable ? PlacementFlags.BlocksClimbable : PlacementFlags.None);
+        if (blocks.Channels.Blocks(GameCollisionChannels.PlayerPawn) != blocks.BlocksPlayerCapsule)
+        {
+            _summary.PlayerChannelMismatches++;
+        }
     }
 }

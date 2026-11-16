@@ -76,10 +76,11 @@ public sealed class BodyLibraryTests
     }
 
     [Fact]
-    public void Simple_bodies_keep_their_shapes_and_cooked_hulls_but_not_mirrored_hulls()
+    public void Simple_and_complex_bodies_keep_their_shapes_and_cooked_hulls_and_their_triangle_meshes_as_complex_collision()
     {
         ConvexHull hull = Hull(1);
-        BodySetupContents contents = Contents(CollisionTraceFlag.UseDefault, [hull, null], [Hull(2)], [Mesh()]);
+        TriangleMesh mesh = Mesh();
+        BodySetupContents contents = Contents(CollisionTraceFlag.UseDefault, [hull, null], [Hull(2)], [mesh]);
 
         AssetBody body = BodyLibrary.FromContents("Body", contents, CollisionProfileConfig.EngineDefaultShapeComplexity);
 
@@ -87,6 +88,33 @@ public sealed class BodyLibraryTests
         Assert.Same(hull, Assert.Single(body.Body!.ConvexHulls));
         Assert.Single(body.Body.Boxes);
         Assert.Empty(body.Body.TriangleMeshes);
+        Assert.Same(mesh, Assert.Single(body.Body.ComplexMeshes));
+        Assert.Equal(CollisionTraceFlag.SimpleAndComplex, body.Body.TraceFlag);
+    }
+
+    [Fact]
+    public void Simple_as_complex_bodies_keep_no_triangle_meshes()
+    {
+        BodySetupContents contents = Contents(CollisionTraceFlag.SimpleAsComplex, [Hull(1)], [], [Mesh()]);
+
+        AssetBody body = BodyLibrary.FromContents("Body", contents, CollisionProfileConfig.EngineDefaultShapeComplexity);
+
+        Assert.Single(body.Body!.ConvexHulls);
+        Assert.Empty(body.Body.TriangleMeshes);
+        Assert.Empty(body.Body.ComplexMeshes);
+        Assert.Equal(CollisionTraceFlag.SimpleAsComplex, body.Body.TraceFlag);
+    }
+
+    [Fact]
+    public void A_simple_and_complex_body_with_only_a_triangle_mesh_has_complex_collision_only()
+    {
+        BodySetupContents contents = Contents(CollisionTraceFlag.SimpleAndComplex, [], [], [Mesh()]) with { Boxes = [] };
+
+        AssetBody body = BodyLibrary.FromContents("Body", contents, CollisionProfileConfig.EngineDefaultShapeComplexity);
+
+        Assert.False(body.IsEmpty);
+        Assert.Empty(body.Body!.Boxes);
+        Assert.Single(body.Body.ComplexMeshes);
     }
 
     [Fact]
@@ -100,7 +128,9 @@ public sealed class BodyLibraryTests
         Assert.Same(mesh, Assert.Single(body.Body!.TriangleMeshes));
         Assert.Empty(body.Body.Boxes);
         Assert.Empty(body.Body.ConvexHulls);
+        Assert.Empty(body.Body.ComplexMeshes);
         Assert.Equal(CollisionTraceFlag.ComplexAsSimple, body.TraceFlag);
+        Assert.Equal(CollisionTraceFlag.ComplexAsSimple, body.Body.TraceFlag);
     }
 
     [Fact]
@@ -121,9 +151,11 @@ public sealed class BodyLibraryTests
     {
         BodySetupContents simple = Contents(CollisionTraceFlag.SimpleAsComplex, [], [], [Mesh()]) with { Boxes = [] };
         BodySetupContents complex = Contents(CollisionTraceFlag.ComplexAsSimple, [Hull(1)], [], []);
+        BodySetupContents both = Contents(CollisionTraceFlag.SimpleAndComplex, [], [], []) with { Boxes = [] };
 
         Assert.True(BodyLibrary.FromContents("Simple", simple, CollisionProfileConfig.EngineDefaultShapeComplexity).IsEmpty);
         Assert.True(BodyLibrary.FromContents("Complex", complex, CollisionProfileConfig.EngineDefaultShapeComplexity).IsEmpty);
+        Assert.True(BodyLibrary.FromContents("Both", both, CollisionProfileConfig.EngineDefaultShapeComplexity).IsEmpty);
     }
 
     [Fact]

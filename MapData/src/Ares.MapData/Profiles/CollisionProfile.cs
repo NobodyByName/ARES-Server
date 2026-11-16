@@ -1,3 +1,4 @@
+using Ares.Common.Maps;
 using Ares.Structs.Game.Collision;
 
 namespace Ares.MapData.Profiles;
@@ -15,6 +16,9 @@ internal sealed record CollisionProfile(string Name, CollisionEnabled CollisionE
 internal readonly record struct CollisionResponseOverride(string Channel, CollisionResponse Response = CollisionResponse.Block);
 
 /// <summary>What a body's collision stops.</summary>
-/// <param name="BlocksPawn">Whether it blocks the player character's movement capsule.</param>
-/// <param name="BlocksClimbable">Whether it blocks the traces of vaulting, mantling and wall checks.</param>
-internal readonly record struct CollisionClassification(bool BlocksPawn, bool BlocksClimbable);
+/// <param name="Channels">The channels whose queries it blocks.</param>
+/// <param name="BlocksPlayerCapsule">
+/// Whether it blocks the player character's movement capsule: it blocks the capsule's channel and the capsule's profile
+/// blocks the body's object type.
+/// </param>
+internal readonly record struct CollisionClassification(PlacementFlags Channels, bool BlocksPlayerCapsule);

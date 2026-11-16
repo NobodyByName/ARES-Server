@@ -39,6 +39,7 @@ internal sealed partial class ExtractionSummary
     private readonly SortedDictionary<string, FailureCounts> _failures = new(StringComparer.Ordinal);
     private readonly SortedDictionary<string, int> _surfaceFailures = new(StringComparer.Ordinal);
     private readonly SortedDictionary<PhysicalSurfaceType, int> _surfaces = [];
+    private readonly SortedDictionary<string, int> _splineFallbacks = new(StringComparer.Ordinal);
 
     /// <summary>Counts per component class, by class name.</summary>
     private readonly SortedDictionary<string, ComponentCounts> _classes = new(StringComparer.Ordinal);
@@ -60,6 +61,24 @@ internal sealed partial class ExtractionSummary
 
     /// <summary>Instanced components whose override materials are stored but not read (their mesh's materials apply).</summary>
     public int InstancedOverrideMaterialsNotRead { get; set; }
+
+    /// <summary>
+    /// Placements that block the player capsule's channel although the capsule's profile does not block their object
+    /// type; player movement treats them as blocking.
+    /// </summary>
+    public int PlayerChannelMismatches { get; set; }
+
+    /// <summary>Bodies whose complex collision is a triangle mesh of its own.</summary>
+    public int ComplexMeshBodies { get; set; }
+
+    /// <summary>Placements whose body offers complex queries nothing, so complex queries miss them.</summary>
+    public int WithoutComplexCollision { get; set; }
+
+    /// <summary>Spline mesh components whose complex collision is their static mesh's, bent along their segment.</summary>
+    public int BentSplineMeshes { get; set; }
+
+    /// <summary>Counts a spline mesh component whose simple shapes answer complex queries because its complex collision cannot be built.</summary>
+    public void AddSplineFallback(string reason) => _splineFallbacks[reason] = _splineFallbacks.GetValueOrDefault(reason) + 1;
 
     /// <summary>Total placements written.</summary>
     private int Placements => _classes.Values.Sum(counts => counts.Placements);
@@ -127,6 +146,23 @@ internal sealed partial class ExtractionSummary
         if (WithoutMesh > 0)
         {
             output.WriteLine(string.Create(culture, $"Static mesh components without a mesh: {WithoutMesh:N0}"));
+        }
+
+        output.WriteLine(string.Create(culture,
+            $"Complex collision: {ComplexMeshBodies:N0} bodies with triangle meshes; {WithoutComplexCollision:N0} placements without any (complex queries miss them)"));
+        if (BentSplineMeshes + _splineFallbacks.Values.Sum() > 0)
+        {
+            output.WriteLine(string.Create(culture,
+                $"Spline meshes without cooked complex collision: {BentSplineMeshes:N0} bent from their mesh, {_splineFallbacks.Values.Sum():N0} use their simple shapes"));
+            foreach ((string reason, int count) in _splineFallbacks.OrderByDescending(entry => entry.Value))
+            {
+                output.WriteLine(string.Create(culture, $"  {count,6:N0}  {reason}"));
+            }
+        }
+
+        if (PlayerChannelMismatches > 0)
+        {
+            output.WriteLine(string.Create(culture, $"Placements blocking the player channel but not the player capsule's object type: {PlayerChannelMismatches:N0}"));
         }
 
         output.WriteLine(string.Create(culture, $"Surface types (components): {string.Join(", ", _surfaces.Select(entry => $"{entry.Key} {entry.Value:N0}"))}"));

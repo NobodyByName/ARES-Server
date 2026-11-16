@@ -8,7 +8,7 @@ namespace Ares.MapData.Bodies;
 
 /// <summary>The collision of one asset: a static mesh's body setup, or a body setup a component owns.</summary>
 /// <param name="Path">Object path of the static mesh or body setup.</param>
-/// <param name="Body">The shapes a moving character collides with, or <see langword="null"/> when the asset has none.</param>
+/// <param name="Body">The body's simple and complex collision, or <see langword="null"/> when the asset has none.</param>
 /// <param name="TraceFlag">Which collision the body offers to simple and complex queries.</param>
 /// <param name="DefaultInstance">Collision settings of components that use the body's defaults, or <see langword="null"/>
 /// when the body setup stores none (the class defaults apply) or the asset has no body setup.</param>
@@ -22,8 +22,10 @@ internal sealed record AssetBody(string Path, CollisionBody? Body, CollisionTrac
 /// <summary>
 /// The collision bodies of the assets one extraction places, each decoded once. A body keeps the simple shapes (boxes,
 /// spheres, capsules and the cooked convex hulls, which already include each element's transform) unless its trace flag
-/// is <see cref="CollisionTraceFlag.ComplexAsSimple"/>, in which case it keeps only the cooked triangle meshes. A body
-/// whose trace flag is <see cref="CollisionTraceFlag.UseDefault"/> takes the project's default shape complexity.
+/// is <see cref="CollisionTraceFlag.ComplexAsSimple"/>, in which case it keeps only the cooked triangle meshes as its
+/// simple collision. With <see cref="CollisionTraceFlag.SimpleAndComplex"/> it also keeps the cooked triangle meshes as
+/// its complex collision. A body whose trace flag is <see cref="CollisionTraceFlag.UseDefault"/> takes the project's
+/// default shape complexity.
 /// Mirrored hulls are not kept: placements whose scale flips handedness mirror the hulls through their scale.
 /// </summary>
 internal sealed class BodyLibrary
@@ -86,28 +88,40 @@ internal sealed class BodyLibrary
     public static AssetBody FromContents(string path, BodySetupContents contents, CollisionTraceFlag defaultShapeComplexity)
     {
         CollisionTraceFlag traceFlag = contents.TraceFlag == CollisionTraceFlag.UseDefault ? defaultShapeComplexity : contents.TraceFlag;
+        if (traceFlag == CollisionTraceFlag.UseDefault)
+        {
+            // A default that is itself UseDefault offers both kinds of collision, like the engine default.
+            traceFlag = CollisionTraceFlag.SimpleAndComplex;
+        }
+
         return new AssetBody(path, Shapes(path, contents, traceFlag), traceFlag, contents.DefaultInstance, contents.PhysMaterial);
     }
 
-    /// <summary>The shapes of a body the character collides with, or <see langword="null"/> when there are none.</summary>
+    /// <summary>The simple and complex collision of a body, or <see langword="null"/> when it has none.</summary>
     private static CollisionBody? Shapes(string name, BodySetupContents contents, CollisionTraceFlag traceFlag)
     {
+        ImmutableArray<TriangleMesh> meshes = contents.Cooked?.TriangleMeshes ?? [];
         CollisionBody body;
         if (traceFlag == CollisionTraceFlag.ComplexAsSimple)
         {
-            body = new CollisionBody(name, [], [], [], [], contents.Cooked?.TriangleMeshes ?? []);
+            body = new CollisionBody(name, [], [], [], [], meshes) { TraceFlag = traceFlag };
         }
         else
         {
             ImmutableArray<ConvexHull> hulls = contents.Cooked is { } cooked
                 ? [.. cooked.ConvexHulls.OfType<ConvexHull>()]
                 : [];
-            body = new CollisionBody(name, contents.Boxes, contents.Spheres, contents.Capsules, hulls, []);
+            body = new CollisionBody(name, contents.Boxes, contents.Spheres, contents.Capsules, hulls, [])
+            {
+                TraceFlag = traceFlag,
+                ComplexMeshes = traceFlag == CollisionTraceFlag.SimpleAndComplex ? meshes : [],
+            };
         }
 
-        return body.Boxes.IsEmpty && body.Spheres.IsEmpty && body.Capsules.IsEmpty && body.ConvexHulls.IsEmpty && body.TriangleMeshes.IsEmpty
-            ? null
-            : body;
+        return body.Boxes.IsEmpty && body.Spheres.IsEmpty && body.Capsules.IsEmpty && body.ConvexHulls.IsEmpty && body.TriangleMeshes.IsEmpty &&
+            body.ComplexMeshes.IsEmpty
+                ? null
+                : body;
     }
 
     private AssetBody ReadMeshBody(string meshPath)

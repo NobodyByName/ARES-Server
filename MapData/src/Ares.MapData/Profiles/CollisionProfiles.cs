@@ -1,5 +1,6 @@
 using System.Text;
 using Ares.Common.Archives;
+using Ares.Common.Maps;
 using Ares.MapData.Archives;
 using Ares.Structs.Game.Collision;
 
@@ -14,7 +15,8 @@ namespace Ares.MapData.Profiles;
 /// responses; <c>Profiles</c> defines profiles by name; <c>EditProfiles</c> changes responses of existing profiles
 /// once every file is read; <c>ProfileRedirects</c> renames profiles. A profile's responses start from the channel
 /// defaults (engine channels block) and take its custom responses, then its edits. A profile without a known object
-/// type is <see cref="CollisionChannel.WorldStatic"/>. The last <see cref="CollisionProfileConfig.DefaultShapeComplexity"/>
+/// type is <see cref="CollisionChannel.WorldStatic"/>. The game channels must sit where <see cref="GameCollisionChannels"/>
+/// says, and the player capsule profile must have the <see cref="GameCollisionChannels.PlayerPawn"/> object type. The last <see cref="CollisionProfileConfig.DefaultShapeComplexity"/>
 /// line of the physics settings wins; a clearing line restores the engine default.
 /// </remarks>
 internal sealed class CollisionProfiles
@@ -41,7 +43,7 @@ internal sealed class CollisionProfiles
     private readonly Dictionary<string, string> _redirects;
     private readonly CollisionResponse[] _defaults;
     private readonly CollisionProfile _playerCapsule;
-    private readonly CollisionChannel _climbable;
+    private readonly PlacementFlags _namedChannels;
 
     private CollisionProfiles(Dictionary<string, CollisionChannel> channels, Dictionary<string, CollisionProfile> profiles,
         Dictionary<string, string> redirects, CollisionResponse[] defaults, CollisionTraceFlag defaultShapeComplexity)
@@ -51,11 +53,26 @@ internal sealed class CollisionProfiles
         _profiles = profiles;
         _redirects = redirects;
         _defaults = defaults;
+        foreach ((string name, CollisionChannel expected) in GameCollisionChannels.ByName)
+        {
+            if (!channels.TryGetValue(name, out CollisionChannel channel))
+            {
+                throw new InvalidDataException($"The collision config has no {name} channel");
+            }
+
+            if (channel != expected)
+            {
+                throw new InvalidDataException($"The collision config puts the {name} channel at {channel}, not {expected}");
+            }
+        }
+
+        _namedChannels = channels.Values.Aggregate(PlacementFlags.None, (mask, channel) => mask | CollisionChannelMask.Of(channel));
         _playerCapsule = profiles.GetValueOrDefault(CollisionProfileConfig.PlayerCapsuleProfile)
             ?? throw new InvalidDataException($"The collision config has no {CollisionProfileConfig.PlayerCapsuleProfile} profile");
-        _climbable = channels.TryGetValue(CollisionProfileConfig.ClimbableChannel, out CollisionChannel climbable)
-            ? climbable
-            : throw new InvalidDataException($"The collision config has no {CollisionProfileConfig.ClimbableChannel} channel");
+        if (_playerCapsule.ObjectType != GameCollisionChannels.PlayerPawn)
+        {
+            throw new InvalidDataException($"The {CollisionProfileConfig.PlayerCapsuleProfile} profile's object type is {_playerCapsule.ObjectType}");
+        }
     }
 
     /// <summary>Channels by name: the engine's object types and the game's named channels.</summary>
@@ -102,7 +119,7 @@ internal sealed class CollisionProfiles
     /// <summary>Applies the collision sections of <paramref name="configTexts"/> in order.</summary>
     /// <exception cref="InvalidDataException">
     /// The collision config is malformed or lacks the player capsule profile or the climbable channel, or the default shape
-    /// complexity is not a trace flag.
+    /// complexity is not a trace flag, or a game channel is missing or moved.
     /// </exception>
     public static CollisionProfiles Parse(IEnumerable<string> configTexts)
     {
@@ -230,21 +247,32 @@ internal sealed class CollisionProfiles
     }
 
     /// <summary>
-    /// What a body with these settings blocks. It blocks the player's movement when it takes part in queries, blocks
-    /// the player capsule's object type, and the player capsule's profile blocks the body's object type. It blocks
-    /// vaulting when it takes part in queries and blocks the climbable channel. An object type outside the channel
-    /// table counts as blocked by the player capsule.
+    /// What a body with these settings blocks. When it takes part in queries it blocks every named channel (the engine's
+    /// and those the config names; nothing queries the others) it responds to with block, and it blocks the player capsule when it also blocks the capsule's channel and the capsule's profile blocks
+    /// the body's object type (an object type outside the channel table counts as blocked by the capsule). A body
+    /// that takes no part in queries blocks nothing.
     /// </summary>
     public CollisionClassification Classify(CollisionEnabled collisionEnabled, CollisionChannel objectType, IReadOnlyList<CollisionResponse> responses)
     {
         if (collisionEnabled is not (CollisionEnabled.QueryOnly or CollisionEnabled.QueryAndPhysics or CollisionEnabled.QueryAndProbe))
         {
-            return new CollisionClassification(false, false);
+            return new CollisionClassification(PlacementFlags.None, false);
         }
 
-        bool blocksPawn = responses[(int)_playerCapsule.ObjectType] == CollisionResponse.Block
+        PlacementFlags channels = PlacementFlags.None;
+        for (int channel = 0; channel < ChannelCount; channel++)
+        {
+            if (responses[channel] == CollisionResponse.Block)
+            {
+                channels |= CollisionChannelMask.Of((CollisionChannel)channel);
+            }
+        }
+
+        channels &= _namedChannels;
+
+        bool blocksCapsule = channels.Blocks(_playerCapsule.ObjectType)
             && ((int)objectType >= ChannelCount || _playerCapsule.Responses[(int)objectType] == CollisionResponse.Block);
-        return new CollisionClassification(blocksPawn, responses[(int)_climbable] == CollisionResponse.Block);
+        return new CollisionClassification(channels, blocksCapsule);
     }
 
     private static void Clear(string key, Dictionary<string, (CollisionChannel Channel, CollisionResponse Response)> gameChannels,
