@@ -253,7 +253,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-43"></a>Salvage Candle Holder | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-44"></a>Salvage Canister | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-45"></a>Salvage Cat Bed 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-46"></a>Salvage Chemicals | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-46"></a>Salvage Chemicals | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
 | <a id="content-root-2-3-47"></a>Salvage Chonk Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-48"></a>Salvage Collector Key 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-49"></a>Salvage Collector Key Component 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -291,7 +291,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-81"></a>Salvage Expired Security Code | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-82"></a>Salvage Explosive Mixture | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-83"></a>Salvage Extractor Part | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-84"></a>Salvage Fabric | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-84"></a>Salvage Fabric | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. |
 | <a id="content-root-2-3-85"></a>Salvage Fertilizer | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-86"></a>Salvage Film Reel 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-87"></a>Salvage Fine Wristwatch 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -400,8 +400,8 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-190"></a>Salvage Peppermint Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-191"></a>Salvage Pilgrims Peak Security Code | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-192"></a>Salvage Pinger Part | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-193"></a>Salvage Planks | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-194"></a>Salvage Plastic | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-193"></a>Salvage Planks | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
+| <a id="content-root-2-3-194"></a>Salvage Plastic | Partial | Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
 | <a id="content-root-2-3-195"></a>Salvage Plastic Trash | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-196"></a>Salvage Polluted Air Filter | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-197"></a>Salvage Pop Part | Not assessed | Availability and server behavior have not been assessed. |
@@ -474,7 +474,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-264"></a>Salvage Rope | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-265"></a>Salvage Rosary 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-266"></a>Salvage Rotary Encoder | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-267"></a>Salvage Rubber | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-267"></a>Salvage Rubber | Partial | Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
 | <a id="content-root-2-3-268"></a>Salvage Rubber Band 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-269"></a>Salvage Rubber Pad | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-270"></a>Salvage Ruined Augment | Not assessed | Availability and server behavior have not been assessed. |
@@ -485,12 +485,12 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-275"></a>Salvage Rusted Weapon | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-276"></a>Salvage Sample Cleaner | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-277"></a>Salvage Scanner 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-278"></a>Salvage Scrap Metal | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-278"></a>Salvage Scrap Metal | Partial | Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
 | <a id="content-root-2-3-279"></a>Salvage Security Code | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-280"></a>Salvage Seeds | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-280"></a>Salvage Seeds | Partial | Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded. |
 | <a id="content-root-2-3-281"></a>Salvage Sensors | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-282"></a>Salvage Sextant | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-283"></a>Salvage Sheet Metal | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-283"></a>Salvage Sheet Metal | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. |
 | <a id="content-root-2-3-284"></a>Salvage Shotgun Parts | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-285"></a>Salvage Signal Amplifier | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-286"></a>Salvage Silver Teaspoon Set 01 | Not assessed | Availability and server behavior have not been assessed. |

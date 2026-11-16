@@ -1887,7 +1887,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Chemicals",
               "technical": "DA_Item_Salvage_Chemicals",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Chonk Part",
@@ -2077,7 +2078,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Fabric",
               "technical": "DA_Item_Salvage_Fabric",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented."
             },
             {
               "name": "Salvage Fertilizer",
@@ -2622,12 +2624,14 @@ globalThis.AresContent = {
             {
               "name": "Salvage Planks",
               "technical": "DA_Item_Salvage_Planks",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Plastic",
               "technical": "DA_Item_Salvage_Plastic",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Plastic Trash",
@@ -2992,7 +2996,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Rubber",
               "technical": "DA_Item_Salvage_Rubber",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Rubber Band 01",
@@ -3047,7 +3052,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Scrap Metal",
               "technical": "DA_Item_Salvage_ScrapMetal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Security Code",
@@ -3057,7 +3063,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Seeds",
               "technical": "DA_Item_Salvage_Seeds",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded."
             },
             {
               "name": "Salvage Sensors",
@@ -3072,7 +3079,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Sheet Metal",
               "technical": "DA_Item_Salvage_SheetMetal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Shotgun Parts",
@@ -8578,7 +8586,8 @@ globalThis.AresContent = {
         {
           "name": "NPC Celeste",
           "technical": "DA_Item_NPC_Celeste",
-          "status": "unassessed"
+          "status": "partial",
+          "note": "The trade screen lists Celeste's seven permanent offers (basic materials for Assorted Seeds) and buying them in any quantity is stock-client verified. Her daily-limited offers, their unlock requirements, her quests and dialogue are not implemented."
         },
         {
           "name": "NPC Juanito",

@@ -84,12 +84,19 @@ to where the hook lands and costs gadget power, which recharges over time. These
 verified with one player; other players see the throw and pull, which has not been tried with the
 stock client. Durability loss, repair and value remain future work.
 
+Assorted Seeds and seven basic materials (Metal Parts, Plastic Parts, Rubber Parts, Chemicals, Fabric,
+Sheet Metal and Planks) are stackable items in the menu and in Raid, with their stack limits and weights.
+The trader Celeste lists her seven permanent offers, one material for one or three Assorted Seeds, and
+buying any quantity takes the seeds from the stash and puts the materials there, all in one saved change.
+Buying is stock-client verified in the menu.
+
 To grant menu test items from the Host console before a fresh client launch:
 
 ```text
 inventory add DA_Item_BattleRifle_BreachAction_01
 inventory add DA_Item_HeavyAmmo 60
 inventory add DA_Item_SnapHook
+inventory add DA_Item_Salvage_Seeds 100
 ```
 
 `inventory add <technical-name> [quantity]` adds a new stack; quantity defaults to one and must
@@ -113,6 +120,8 @@ Limitations:
   in Dam.
 - Broken-elevator repair and other extraction types are not implemented.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups, splitting and merging are not implemented yet.
+- Only Celeste trades, and only her permanent offers: daily-limited offers, unlock requirements, other
+  traders, selling, crafting and recycling are not implemented.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not

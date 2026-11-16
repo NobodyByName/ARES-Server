@@ -10,7 +10,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | --- | --- | --- |
 | <a id="content-root-6-0"></a>NPC Apollo | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-6-1"></a>NPC Bilguun | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-6-2"></a>NPC Celeste | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-6-2"></a>NPC Celeste | Partial | The trade screen lists Celeste's seven permanent offers (basic materials for Assorted Seeds) and buying them in any quantity is stock-client verified. Her daily-limited offers, their unlock requirements, her quests and dialogue are not implemented. |
 | <a id="content-root-6-3"></a>NPC Juanito | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-6-4"></a>NPC Lance | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-6-5"></a>NPC Posh | Not assessed | Availability and server behavior have not been assessed. |
