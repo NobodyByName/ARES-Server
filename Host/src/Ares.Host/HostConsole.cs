@@ -717,7 +717,7 @@ internal sealed class HostConsole : ILoggerProvider
                 }
             }
 
-            bool error = value.Any(entry => entry.Key.Contains("error", StringComparison.OrdinalIgnoreCase));
+            bool error = value.Any(entry => entry.Value is not null && entry.Key.Contains("error", StringComparison.OrdinalIgnoreCase));
             bool warning = value["status"] is JsonValue status && status.TryGetValue(out int statusCode) && statusCode >= 400;
             string level = value["level"]?.ToString() ?? (error ? "ERROR" : warning ? "WARNING" : "INFO");
             string fields = string.Join(" | ", value.Where(entry => entry.Key != "level")

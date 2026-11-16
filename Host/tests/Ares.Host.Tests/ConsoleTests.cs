@@ -245,6 +245,26 @@ public sealed class ConsoleTests
     }
 
     [Fact]
+    public void Events_are_errors_only_when_an_error_field_has_a_value()
+    {
+        using StringWriter succeeded = new();
+        using (HostConsole console = new("plain", succeeded))
+        {
+            console.Log.Write(new JsonObject { ["admin_command"] = "x despawn-arcs", ["status"] = 200, ["error"] = null });
+        }
+
+        using StringWriter failed = new();
+        using (HostConsole console = new("plain", failed))
+        {
+            console.Log.Write(new JsonObject { ["admin_command"] = "x despawn-arcs", ["status"] = 400, ["error"] = "invalid_admin_command" });
+        }
+
+        Assert.Contains("INFO", succeeded.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("ERROR", succeeded.ToString(), StringComparison.Ordinal);
+        Assert.Contains("ERROR", failed.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Framework_warnings_use_the_same_log_and_low_levels_are_ignored()
     {
         using StringWriter output = new();
