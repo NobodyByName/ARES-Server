@@ -45,16 +45,13 @@ public readonly record struct BodyState(Vector3D Position, Vector3D Velocity, Gr
     public int LandingTicks { get; init; }
 
     /// <summary>
-    /// Height of the feet above the ground as the last ground trace measured it, negative when it found them under the
-    /// ground. A body that stands still is not traced and keeps its last measure.
+    /// Height of the feet above the ground as the last ground trace measured it before the tick's move, negative when it
+    /// found them under the ground. A body that stands still is not traced and keeps its last measure.
     /// </summary>
     public double GroundDistance { get; init; }
 
-    /// <summary>
-    /// Whether the last ground trace was a high one. Traces alternate, and every other one reads the ground one step
-    /// of its height's precision higher.
-    /// </summary>
-    public bool HighTrace { get; init; }
+    /// <summary>Whether the feet ended the last traced tick under the ground that trace measured.</summary>
+    public bool FeetUnderGround { get; init; }
 
     /// <summary>Whether a body in the air has reached ground that carries it: its next tick is on the ground.</summary>
     public bool Touching => Airborne && Ground.Carries
@@ -100,8 +97,8 @@ public static class BodyMotion
         {
             Airborne = airborne,
             Jumping = airborne && velocity.Z > 0,
-            HighTrace = true,
-            GroundDistance = ground.Supported ? Distance(position.Z, ground, high: true) : 0,
+            GroundDistance = ground.Supported ? Distance(position.Z, ground) : 0,
+            FeetUnderGround = ground.Supported && Distance(position.Z, ground) < 0,
         };
     }
 
@@ -182,7 +179,7 @@ public static class BodyMotion
         GroundContact ground = Probe(world, position);
         bool landing = body.Landing;
         int landingTicks = body.LandingTicks;
-        bool high = body.HighTrace;
+        bool under = body.FeetUnderGround;
         double distance = body.GroundDistance;
         switch (body.Airborne)
         {
@@ -211,13 +208,18 @@ public static class BodyMotion
                 break;
             case false when ground.Carries && position.Z - ground.Highest <= GroundContactParameters.StepDownReach:
                 // A body that has stopped keeps its height; a moving one settles on the ground under its new position.
-                // The ground is traced on a tick that starts or ends in motion, and each tick that starts in motion takes
-                // the other kind of trace.
+                // The ground is traced on a tick that starts or ends in motion.
                 bool wasMoving = body.Velocity.X != 0 || body.Velocity.Y != 0;
                 bool moving = velocity.X != 0 || velocity.Y != 0 || Math.Abs(velocity.Z) > GroundMovementParameters.BrakingStopSpeed;
-                high = wasMoving ? !high : high;
-                distance = wasMoving || moving ? Distance(position.Z, ground, high) : distance;
-                double rise = moving ? Settle(Along(body.Ground, velocity), distance, seconds) : 0;
+                double rise = 0;
+                if (wasMoving || moving)
+                {
+                    double measured = MeasuredGround(position.Z, ground);
+                    distance = position.Z - measured;
+                    rise = moving ? Settle(Along(body.Ground, velocity), distance, seconds) : 0;
+                    under = position.Z + (rise * seconds) < measured;
+                }
+
                 velocity = velocity with { Z = rise };
                 position = position with { Z = position.Z + (rise * seconds) };
                 break;
@@ -233,14 +235,21 @@ public static class BodyMotion
             Ground = ground,
             Landing = landing,
             LandingTicks = landingTicks,
-            HighTrace = high,
             GroundDistance = distance,
+            FeetUnderGround = under,
         };
     }
 
     // Height of the feet above the ground as a trace measures it.
-    private static double Distance(double feet, GroundContact ground, bool high) =>
-        feet - (high ? MathF.BitIncrement((float)ground.Height) : ground.Height);
+    private static double Distance(double feet, GroundContact ground) => feet - MeasuredGround(feet, ground);
+
+    // The ground height a trace from the feet reports, in single precision: one step of that precision higher when the
+    // feet are above the ground by at most half a step (they round onto it).
+    private static double MeasuredGround(double feet, GroundContact ground)
+    {
+        float height = (float)ground.Height;
+        return feet > height && ((float)feet).Equals(height) ? MathF.BitIncrement(height) : height;
+    }
 
     // Vertical speed of a velocity that runs along the ground the body stood on, in whole units like the walking velocity.
     private static double Along(GroundContact ground, Vector3D velocity) =>
