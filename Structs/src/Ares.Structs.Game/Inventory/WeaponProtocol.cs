@@ -36,6 +36,15 @@ public static class WeaponProtocol
     /// <summary>ReloadOldBit in the supported weapon protocol.</summary>
     public const int ReloadOldBit = 9;
 
+    /// <summary>FireOldBit in the supported weapon protocol.</summary>
+    public const int FireOldBit = 2;
+
+    /// <summary>SecondaryDownBit in the supported weapon protocol.</summary>
+    public const int SecondaryDownBit = 4;
+
+    /// <summary>SecondaryOldBit in the supported weapon protocol.</summary>
+    public const int SecondaryOldBit = 5;
+
     /// <summary>InventorySlot in the supported weapon protocol.</summary>
     public const int InventorySlot = 4;
 
@@ -137,6 +146,12 @@ public static class WeaponProtocol
 
     /// <summary>WeaponUnequipTimeField in the supported weapon protocol.</summary>
     public const int WeaponUnequipTimeField = 22;
+
+    /// <summary>WeaponOffhandEquipTimeField in the supported weapon protocol.</summary>
+    public const int WeaponOffhandEquipTimeField = 23;
+
+    /// <summary>WeaponOffhandUnequipTimeField in the supported weapon protocol.</summary>
+    public const int WeaponOffhandUnequipTimeField = 24;
 
     /// <summary>WeaponReloadTimeField in the supported weapon protocol.</summary>
     public const int WeaponReloadTimeField = 25;

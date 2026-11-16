@@ -36,4 +36,13 @@ public static class HandItems
     /// <summary>RaiderToolUnequipSeconds in the supported weapon protocol.</summary>
     public const double RaiderToolUnequipSeconds = 0.3;
 
+    /// <summary>Time to put empty hands away for a quick-use item, in seconds.</summary>
+    public const double UnarmedUnequipToItemsSeconds = 0.2;
+
+    /// <summary>Time to put the Raider Tool away for a quick-use item, in seconds.</summary>
+    public const double RaiderToolUnequipToItemsSeconds = 0.2;
+
+    /// <summary>Time to draw empty hands or the Raider Tool back after a quick-use item, in seconds.</summary>
+    public const double ReEquipFromItemSeconds = 0.2;
+
 }

@@ -18,6 +18,12 @@ public static class FerroDefaults
     /// <summary>Time to put the weapon away, in seconds.</summary>
     public const double UnequipSeconds = 0.7;
 
+    /// <summary>Time to put the weapon away for a quick-use item, in seconds (its node's offhand unequip time).</summary>
+    public const double UnequipToItemsSeconds = 0.25;
+
+    /// <summary>Time to draw the weapon back after a quick-use item, in seconds (its node's offhand equip time; the item data default).</summary>
+    public const double ReEquipFromItemSeconds = 0.2;
+
     /// <summary>Zoom time, in seconds.</summary>
     public const double ZoomSeconds = 1.0;
 
