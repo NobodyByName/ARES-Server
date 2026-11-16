@@ -3,26 +3,22 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Logging;
 using Ares.Host.Services;
-using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Identity;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
 using Ares.Host.Services.Routing;
 using Ares.Host.Services.Status;
-using Ares.Host.Services.Telemetry;
 using Ares.Structs.Backend;
-using Ares.Structs.Backend.Telemetry;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Primitives;
 
 namespace Ares.Host;
 
 /// <summary>
-/// Handles every request: logs request metadata, serves
-/// the public status, health and telemetry endpoints, dispatches backend routes and answers
-/// anything unknown with HTTP 501.
+/// Handles every request: logs request metadata, dispatches it through <see cref="BackendRoutes"/> and
+/// answers anything unknown with HTTP 501. Raw (non-JSON) replies are sent without a response log entry.
 /// </summary>
-public sealed class RequestDispatcher(HostSettings settings, BackendRoutes routes, IdentityService identity, PlayerRegistry players, SignInService signIn,
+public sealed class RequestDispatcher(HostSettings settings, BackendRoutes routes, IdentityService identity, PlayerRegistry players,
     JsonEventLog log, TimeProvider time)
 {
     /// <summary>Largest accepted request body.</summary>
@@ -41,7 +37,7 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
         if (body is null)
         {
             log.Write(new JsonObject { ["http_error"] = 413, ["method"] = method, ["path"] = path });
-            await WriteJsonAsync(context, 413, new ErrorResponse("request_too_large")).ConfigureAwait(false);
+            await WriteAsync(context, 413, new ErrorResponse("request_too_large")).ConfigureAwait(false);
             return;
         }
 
@@ -59,49 +55,13 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             log.Write(RequestEvent(request, method, path, body.Length, declared, backend.Json, form, backend.Authorization));
         }
 
-        int status;
-        object reply;
-        switch (path)
+        (int status, object reply) = await DispatchAsync(backend, context.RequestAborted).ConfigureAwait(false);
+        if (reply is not RawReply)
         {
-            case PublicStatus.Path when method == HttpMethods.Get:
-                (status, reply) = (200, PublicStatusDocument());
-                break;
-            case ArchiveKeysEndpoint.Path when method == HttpMethods.Get:
-                (status, reply) = (200, settings.ArchiveKeys.ToDocument(settings.GameBuild));
-                break;
-            case SignInService.StartPath when method == HttpMethods.Post:
-                (status, reply) = Reply(signIn.Start(backend.Read<SignInStartRequest>()));
-                break;
-            case SignInService.FinishPath when method == HttpMethods.Post:
-                (status, reply) = Reply(signIn.Finish(backend.Read<SignInFinishRequest>()));
-                break;
-            case "/health":
-                (status, reply) = (200, new JsonObject { ["service"] = "ARES-Host" });
-                break;
-            case UiTelemetry.TransferBatchedPath:
-                await TelemetryAsync(context, body).ConfigureAwait(false);
-                return;
-            default:
-                (status, reply) = await DispatchAsync(backend, context.RequestAborted).ConfigureAwait(false);
-                break;
+            log.Write(new JsonObject { ["response"] = $"{method} {path}", ["status"] = status });
         }
 
-        log.Write(new JsonObject { ["response"] = $"{method} {path}", ["status"] = status });
-        await WriteJsonAsync(context, status, reply).ConfigureAwait(false);
-    }
-
-    private async Task TelemetryAsync(HttpContext context, byte[] body)
-    {
-        foreach (JsonObject item in UiTelemetryLog.Project(body))
-        {
-            log.Write(new JsonObject { ["time"] = Now(), ["client_ui_event"] = item });
-        }
-
-        byte[] payload = GrpcWeb.EmptyOkResponse();
-        context.Response.StatusCode = 200;
-        context.Response.ContentType = GrpcWeb.ContentType;
-        context.Response.ContentLength = payload.Length;
-        await context.Response.Body.WriteAsync(payload, context.RequestAborted).ConfigureAwait(false);
+        await WriteAsync(context, status, reply).ConfigureAwait(false);
     }
 
     private async Task<(int Status, object Reply)> DispatchAsync(BackendRequest request, CancellationToken cancellationToken)
@@ -114,10 +74,13 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
 
         try
         {
-            request.Player = identity.Authenticate(request.Authorization) is { } userId ? players.SignedIn(userId) : null;
-            if (route.RequiresIdentity && request.Player is null)
+            if (route.RequiresIdentity)
             {
-                return (401, new ErrorResponse("backend_identity_required"));
+                request.Player = identity.Authenticate(request.Authorization) is { } userId ? players.SignedIn(userId) : null;
+                if (request.Player is null)
+                {
+                    return (401, new ErrorResponse("backend_identity_required"));
+                }
             }
 
             if (route.Delay > TimeSpan.Zero && settings.RouteDelayScale > 0)
@@ -142,15 +105,6 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
             log.Write("database_error", "Invalid persisted player data");
             return (503, new ErrorResponse("invalid_player_data"));
         }
-    }
-
-    private static (int Status, object Reply) Reply(ServiceReply reply) => (reply.StatusCode, reply.Body);
-
-    private PublicStatus PublicStatusDocument()
-    {
-        (int raids, int inRaids) = players.CurrentRaids;
-        return new PublicStatus(1, settings.ServerName, settings.Motd, settings.GameBuild,
-            new RaidCounts(raids, settings.RaidCapacity), inRaids, players.HasAllocator);
     }
 
     private JsonObject RequestEvent(HttpRequest request, string method, string path, int bytes, long declared, JsonElement? json,
@@ -272,13 +226,16 @@ public sealed class RequestDispatcher(HostSettings settings, BackendRoutes route
         return buffer.ToArray();
     }
 
-    private static async Task WriteJsonAsync(HttpContext context, int status, object body)
+    private static async Task WriteAsync(HttpContext context, int status, object body)
     {
-        byte[] payload = body is JsonNode node
-            ? Encoding.UTF8.GetBytes(node.ToJsonString())
-            : JsonSerializer.SerializeToUtf8Bytes(body, body.GetType(), BackendJson.Options);
+        (byte[] payload, string contentType) = body switch
+        {
+            RawReply raw => (raw.Payload, raw.ContentType),
+            JsonNode node => (Encoding.UTF8.GetBytes(node.ToJsonString()), "application/json"),
+            _ => (JsonSerializer.SerializeToUtf8Bytes(body, body.GetType(), BackendJson.Options), "application/json"),
+        };
         context.Response.StatusCode = status;
-        context.Response.ContentType = "application/json";
+        context.Response.ContentType = contentType;
         context.Response.ContentLength = payload.Length;
         try
         {

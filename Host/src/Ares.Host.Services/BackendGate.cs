@@ -34,7 +34,7 @@ public sealed class BackendGate : IDisposable
 
 /// <summary>A status code and JSON body produced by a backend service.</summary>
 /// <param name="StatusCode">HTTP status.</param>
-/// <param name="Body">Object serialized with the backend JSON settings.</param>
+/// <param name="Body">Object serialized with the backend JSON settings, or a <see cref="RawReply"/> sent as is.</param>
 public sealed record ServiceReply(int StatusCode, object Body)
 {
     /// <summary>200 with <paramref name="body"/>.</summary>
@@ -49,3 +49,8 @@ public sealed record ServiceReply(int StatusCode, object Body)
         return new ServiceReply(statusCode, new Structs.Backend.ErrorResponse(code));
     }
 }
+
+/// <summary>A non-JSON reply body sent unchanged.</summary>
+/// <param name="ContentType">Value of the Content-Type header.</param>
+/// <param name="Payload">Response bytes.</param>
+public sealed record RawReply(string ContentType, byte[] Payload);

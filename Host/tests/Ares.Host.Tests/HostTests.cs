@@ -169,6 +169,21 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Routes_match_method_and_path_exactly()
+    {
+        using HttpClient client = Anonymous();
+        HttpResponseMessage statusByPost = await client.PostAsJsonAsync(PublicStatus.Path, new { }, TestContext.Current.CancellationToken);
+        HttpResponseMessage scenariosByGet = await client.GetAsync("/v1/shared/scenarios", TestContext.Current.CancellationToken);
+        HttpResponseMessage trailingSlash = await client.PostAsJsonAsync("/v1/shared/heartbeat/", new { }, TestContext.Current.CancellationToken);
+        HttpResponseMessage healthByPost = await client.PostAsJsonAsync("/health", new { }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.NotImplemented, statusByPost.StatusCode);
+        Assert.Equal(HttpStatusCode.NotImplemented, scenariosByGet.StatusCode);
+        Assert.Equal(HttpStatusCode.NotImplemented, trailingSlash.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, healthByPost.StatusCode);
+    }
+
+    [Fact]
     public async Task Every_backend_route_except_sign_in_needs_a_signed_in_player()
     {
         using HttpClient client = Anonymous();

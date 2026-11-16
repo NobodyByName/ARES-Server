@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Ares.Host.Services.Players;
 
 namespace Ares.Host.Services.Status;
 
@@ -17,6 +18,14 @@ public sealed record PublicStatus(
 {
     /// <summary>Current status path.</summary>
     public const string Path = "/ares/v1/status";
+
+    /// <summary>The status of this Host right now.</summary>
+    public static PublicStatus Current(HostSettings settings, PlayerRegistry players)
+    {
+        (int raids, int inRaids) = players.CurrentRaids;
+        return new PublicStatus(1, settings.ServerName, settings.Motd, settings.GameBuild,
+            new RaidCounts(raids, settings.RaidCapacity), inRaids, players.HasAllocator);
+    }
 }
 
 /// <summary>Active and maximum concurrent raids.</summary>

@@ -7,15 +7,13 @@ namespace Ares.Host.Services.Routing;
 /// <summary>A received backend request: its body as JSON object, form fields, or neither.</summary>
 public sealed class BackendRequest
 {
-    private readonly byte[] _body;
-
     /// <summary>Creates a request from its raw parts.</summary>
     public BackendRequest(string method, string path, string? authorization, byte[] body, IReadOnlyDictionary<string, string>? form)
     {
         Method = method;
         Path = path;
         Authorization = authorization;
-        _body = body;
+        Body = body;
         Form = form;
         try
         {
@@ -37,7 +35,10 @@ public sealed class BackendRequest
     /// <summary>The Authorization header, if any.</summary>
     public string? Authorization { get; }
 
-    /// <summary>The signed-in player, set by the dispatcher; never null in a route that requires identity.</summary>
+    /// <summary>The raw request body.</summary>
+    public ReadOnlyMemory<byte> Body { get; }
+
+    /// <summary>The signed-in player, set by the dispatcher for routes that require identity, where it is never null.</summary>
     public PlayerServices? Player { get; set; }
 
     /// <summary>The body when it is a JSON object.</summary>
@@ -60,7 +61,7 @@ public sealed class BackendRequest
 
         try
         {
-            return JsonSerializer.Deserialize<T>(_body, BackendJson.Options) ?? EmptyObject<T>();
+            return JsonSerializer.Deserialize<T>(Body.Span, BackendJson.Options) ?? EmptyObject<T>();
         }
         catch (JsonException)
         {

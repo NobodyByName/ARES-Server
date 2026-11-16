@@ -73,8 +73,8 @@ public static class HostApplication
 
         builder.Services.AddHostedService(_ => new InventoryReservationRecovery(players, time));
         IdentityService identity = new(settings, accounts, time);
-        BackendRoutes routes = new(identity, log, time);
-        RequestDispatcher dispatcher = new(settings, routes, identity, players, new SignInService(accounts, log, time), log, time);
+        BackendRoutes routes = new(settings, identity, players, new SignInService(accounts, log, time), log, time);
+        RequestDispatcher dispatcher = new(settings, routes, identity, players, log, time);
 
         WebApplication app = builder.Build();
         _ = app.Services.GetRequiredService<HostDatabase>();
