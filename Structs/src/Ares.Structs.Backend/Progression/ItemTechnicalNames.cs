@@ -19,6 +19,7 @@ public static class ItemTechnicalNames
     public const string RubberParts = "DA_Item_Salvage_Rubber";
     public const string SheetMetal = "DA_Item_Salvage_SheetMetal";
     public const string MetalParts = "DA_Item_Salvage_ScrapMetal";
+    public const string Coins = "DA_Item_GrindCurrency";
 
     /// <summary>Protocol asset IDs indexed by technical item name.</summary>
     public static IReadOnlyDictionary<string, long> AssetIds { get; } = new Dictionary<string, long>(StringComparer.Ordinal)
@@ -28,7 +29,7 @@ public static class ItemTechnicalNames
         [FerroI] = WeaponItems.FerroIAssetId,
         [HeavyAmmo] = WeaponItems.HeavyAmmoAssetId,
         [SnapHook] = GadgetItems.SnapHookAssetId,
-    }.Concat(AugmentItems.ItemAssetIds).Concat(SalvageItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+    }.Concat(AugmentItems.ItemAssetIds).Concat(SalvageItems.ItemAssetIds).Concat(CurrencyItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
 
     /// <summary>Object path of each supported item's data asset (the item in the world, for example on the ground), by technical item name.</summary>
     public static IReadOnlyDictionary<string, string> DataAssets { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
