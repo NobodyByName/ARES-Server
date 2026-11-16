@@ -157,7 +157,35 @@ public sealed record ItemDescription(
     /// </summary>
     [JsonPropertyName("recycle"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public OfferRewardPackage? Recycle { get; init; }
+
+    /// <summary>
+    /// What upgrading one item into the next item of its chain costs, or null when the item has no upgrade. The menu
+    /// offers the upgrade only when <see cref="ItemUpgradeDescription.NextItemGameAssetId"/> is set.
+    /// </summary>
+    [JsonPropertyName("upgrade"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ItemUpgradeDescription? Upgrade { get; init; }
 }
+
+/// <summary>An item's upgrade into the next item of its chain.</summary>
+/// <param name="NextItemGameAssetId">Item asset the upgraded item becomes.</param>
+/// <param name="CostPackage">Cost as read by the menu's upgrade confirmation.</param>
+/// <param name="Cost">The same cost as fixed item amounts.</param>
+/// <param name="Requirements">Items and projects the player must own first.</param>
+public sealed record ItemUpgradeDescription(
+    [property: JsonPropertyName("nextItemGameAssetId")] long NextItemGameAssetId,
+    [property: JsonPropertyName("costPackage")] OfferCostPackage CostPackage,
+    [property: JsonPropertyName("cost")] OfferCost Cost,
+    [property: JsonPropertyName("requirements")] ItemUpgradeRequirements Requirements);
+
+/// <summary>What the player must own before an upgrade.</summary>
+/// <param name="ItemRequirements">Item amounts the player must own.</param>
+/// <param name="ProjecRequirements">Projects the player must have completed.</param>
+public sealed record ItemUpgradeRequirements(
+    [property: JsonPropertyName("itemRequirements")] IReadOnlyList<ItemAssetAmount> ItemRequirements,
+    [property: JsonPropertyName("projecRequirements")] IReadOnlyList<ProjectRequirement> ProjecRequirements);
+
+/// <summary>A project the player must have completed.</summary>
+public sealed record ProjectRequirement([property: JsonPropertyName("gameAssetId")] long GameAssetId);
 
 /// <summary>
 /// What selling an item gives. The menu shows the coins of <paramref name="RewardPackage"/> as the item's value and

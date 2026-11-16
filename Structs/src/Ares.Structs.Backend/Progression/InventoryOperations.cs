@@ -14,6 +14,7 @@ public sealed record InventoryOperationsRequest(
 [JsonDerivedType(typeof(AcceptOffer), "acceptOffer")]
 [JsonDerivedType(typeof(ScrapItem), "scrap")]
 [JsonDerivedType(typeof(RecycleItem), "recycle")]
+[JsonDerivedType(typeof(UpgradeItem), "upgrade")]
 public abstract record InventoryOperation;
 
 /// <summary>Changes the slots containing an existing item.</summary>
@@ -63,6 +64,47 @@ public sealed record ScrapItem(
 public sealed record RecycleItem(
     [property: JsonPropertyName("instanceId"), JsonRequired] string InstanceId,
     [property: JsonPropertyName("amount"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Amount) : InventoryOperation;
+
+/// <summary>
+/// Upgrades an item into the next item of its chain (<see cref="ItemDescription.Upgrade"/>), keeping its identity.
+/// <paramref name="Payment"/> names the stacks that pay for it; when empty, the server chooses them.
+/// </summary>
+/// <param name="ItemInstanceId">The item upgraded.</param>
+/// <param name="Payment">Stacks that pay the upgrade cost.</param>
+/// <param name="TargetItemGameAssetId">Item asset to upgrade into, or zero for the next item of the chain.</param>
+public sealed record UpgradeItem(
+    [property: JsonPropertyName("itemInstanceId")] string ItemInstanceId,
+    [property: JsonPropertyName("payment")] UpgradePayment? Payment,
+    [property: JsonPropertyName("targetItemGameAssetId")] long TargetItemGameAssetId) : InventoryOperation;
+
+/// <summary>Stacks chosen to pay an <see cref="UpgradeItem"/>.</summary>
+public sealed record UpgradePayment([property: JsonPropertyName("items")] IReadOnlyList<ItemAmountToConsume>? Items);
+
+/// <summary>
+/// Request of the direct item upgrade call, outside operation batches. <paramref name="ItemsToConsume"/> names the
+/// stacks that pay for it; when empty, the server chooses them.
+/// </summary>
+/// <param name="InstanceId">The item upgraded.</param>
+/// <param name="ETag">The item version the client last saw.</param>
+/// <param name="ItemsToConsume">Stacks that pay the upgrade cost.</param>
+/// <param name="RequestId">Idempotency key.</param>
+/// <param name="TargetItemGameAssetId">Item asset to upgrade into, or zero for the next item of the chain.</param>
+public sealed record UpgradeInventoryItemRequest(
+    [property: JsonPropertyName("instanceId")] string? InstanceId,
+    [property: JsonPropertyName("etag")] string? ETag,
+    [property: JsonPropertyName("itemsToConsume")] IReadOnlyList<InventoryItemToConsume>? ItemsToConsume,
+    [property: JsonPropertyName("requestId")] string? RequestId,
+    [property: JsonPropertyName("targetItemGameAssetId")] long TargetItemGameAssetId);
+
+/// <summary>An amount the direct item upgrade call takes from one owned stack.</summary>
+public sealed record InventoryItemToConsume(
+    [property: JsonPropertyName("instanceId")] string InstanceId,
+    [property: JsonPropertyName("amount")] long Amount);
+
+/// <summary>Reply of the direct item upgrade call: the upgraded item and every change the upgrade made.</summary>
+public sealed record UpgradeInventoryItemResponse(
+    [property: JsonPropertyName("upgradedItem")] InventoryItem UpgradedItem,
+    [property: JsonPropertyName("changeset")] Changeset Changeset);
 
 /// <summary>An entry of <see cref="AcceptOffer.PaymentByAmounts"/>; the trade screen sends this list empty.</summary>
 public sealed record UnknownOfferPaymentByAmount;
