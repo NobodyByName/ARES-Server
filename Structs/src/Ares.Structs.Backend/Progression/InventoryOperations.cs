@@ -13,6 +13,7 @@ public sealed record InventoryOperationsRequest(
 [JsonDerivedType(typeof(MoveItemAmount), "moveAmount")]
 [JsonDerivedType(typeof(AcceptOffer), "acceptOffer")]
 [JsonDerivedType(typeof(ScrapItem), "scrap")]
+[JsonDerivedType(typeof(RecycleItem), "recycle")]
 public abstract record InventoryOperation;
 
 /// <summary>Changes the slots containing an existing item.</summary>
@@ -48,6 +49,18 @@ public sealed record AcceptOffer(
 /// <param name="Amount">How many of the stack are sold, or null for the whole item.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ScrapItem(
+    [property: JsonPropertyName("instanceId"), JsonRequired] string InstanceId,
+    [property: JsonPropertyName("amount"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Amount) : InventoryOperation;
+
+/// <summary>
+/// Recycles an item into the items of its <see cref="ItemDescription.Recycle"/> package, each times the recycled amount:
+/// the whole item, or <paramref name="Amount"/> of a stack. Members other than these are rejected, so an operation of
+/// another shape is not mistaken for recycling.
+/// </summary>
+/// <param name="InstanceId">The item recycled.</param>
+/// <param name="Amount">How many of the stack are recycled, or null for the whole item.</param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record RecycleItem(
     [property: JsonPropertyName("instanceId"), JsonRequired] string InstanceId,
     [property: JsonPropertyName("amount"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Amount) : InventoryOperation;
 
