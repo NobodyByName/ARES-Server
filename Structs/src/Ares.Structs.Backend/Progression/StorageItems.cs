@@ -49,6 +49,9 @@ public static class StorageItems
         {
             BaseGameAssetId = -848973549L,
             QualityLevel = 0L,
+            Upgrade = new ItemUpgradeDescription(670024569L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 5000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 5000L)]), new ItemUpgradeRequirements([], [])),
             SlotConfig = new ItemSlotArray(1440007245L, 64L),
         },
         new(1440007245L, "InventoryStructure", 1L, false, false,
@@ -178,6 +181,113 @@ public static class StorageItems
             BaseGameAssetId = 1738639721L,
             QualityLevel = 0L,
             SlotConfig = new NoItemSlots(),
+        },
+        new(670024569L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 1L,
+            Upgrade = new ItemUpgradeDescription(-935651405L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 10000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 10000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 88L),
+        },
+        new(-935651405L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 2L,
+            Upgrade = new ItemUpgradeDescription(459629608L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 15000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 15000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 112L),
+        },
+        new(459629608L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 3L,
+            Upgrade = new ItemUpgradeDescription(1466788008L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 25000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 25000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 136L),
+        },
+        new(1466788008L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 4L,
+            Upgrade = new ItemUpgradeDescription(492462603L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 40000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 40000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 160L),
+        },
+        new(492462603L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 5L,
+            Upgrade = new ItemUpgradeDescription(-223459290L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 60000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 60000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 184L),
+        },
+        new(-223459290L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 6L,
+            Upgrade = new ItemUpgradeDescription(686076007L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 90000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 90000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 208L),
+        },
+        new(686076007L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 7L,
+            Upgrade = new ItemUpgradeDescription(-47408010L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 130000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 130000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 232L),
+        },
+        new(-47408010L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 8L,
+            Upgrade = new ItemUpgradeDescription(824256753L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 200000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 200000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 256L),
+        },
+        new(824256753L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 9L,
+            Upgrade = new ItemUpgradeDescription(-584971121L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 750000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 750000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 280L),
+        },
+        new(-584971121L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 10L,
+            Upgrade = new ItemUpgradeDescription(1615602760L,
+                new OfferCostPackage([new OfferCostItem(-898439395L, 1500000L, 1.0)]),
+                new ItemAmountsOfferCost([new ItemAssetAmount(-898439395L, 1500000L)]), new ItemUpgradeRequirements([], [])),
+            SlotConfig = new ItemSlotArray(1440007245L, 304L),
+        },
+        new(1615602760L, "InventoryStructure", 1L, false, true,
+            ["Item.Flag.Unique", "Online.Release.Base"], [])
+        {
+            BaseGameAssetId = -848973549L,
+            QualityLevel = 11L,
+            SlotConfig = new ItemSlotArray(1440007245L, 328L),
         },
     ];
 }
