@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Ares.Host.Services.Content;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Progression;
 
@@ -11,14 +12,24 @@ public sealed partial class InventoryStore
     private const int MaximumReceipts = 32;
     private const int MaximumOperations = 64;
 
+    private static readonly Dictionary<long, OfferDescription> s_offers =
+        BackendContent.GameData.OfferDescriptions.OfferDescriptions.ToDictionary(offer => offer.OfferId);
+
     public ServiceReply Commit(InventoryOperationsRequest request, DateTimeOffset now)
     {
         if ((!string.IsNullOrEmpty(request.RequestId) && !ValidRequestId(request.RequestId))
             || request.Operations is not { Count: <= MaximumOperations } operations
             || operations.Any(operation => operation is not (SetItemParents { ItemInstanceId.Length: > 0, ParentInstanceIds: [{ Length: > 0 }] }
-                or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 })))
+                or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 }
+                or AcceptOffer { Times: > 0 }))
+            || operations.OfType<AcceptOffer>().Any(purchase => purchase.Payment?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true))
         {
             return ServiceReply.Error(400, "invalid_inventory_operations");
+        }
+
+        if (operations.OfType<AcceptOffer>().Any(purchase => !s_offers.ContainsKey(purchase.OfferId)))
+        {
+            return ServiceReply.Error(400, "unknown_offer");
         }
 
         string digest = Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(operations, BackendJson.Options)));
@@ -47,15 +58,30 @@ public sealed partial class InventoryStore
             HashSet<string> predictedParents = [.. parentMoves.SelectMany(operation => operation.ParentInstanceIds)];
             try
             {
-                // Amount moves only change quantities and create split stacks; the parent moves then
-                // decide the final layout, which also places every newly split stack.
+                // Amount moves and purchases only change quantities, create split stacks and add bought
+                // stacks to the stash; the parent moves then decide the final layout, which also places
+                // every newly split stack.
                 HashSet<string> created = new(StringComparer.Ordinal);
                 HashSet<string> consumed = new(StringComparer.Ordinal);
                 string etag = ItemETag(revision);
-                foreach (MoveItemAmount transfer in operations.OfType<MoveItemAmount>())
+                foreach (InventoryOperation operation in operations)
                 {
-                    candidate = MoveAmount(candidate, transfer, before, created, consumed, etag, now.ToUnixTimeMilliseconds());
-                    changed = true;
+                    switch (operation)
+                    {
+                        case MoveItemAmount transfer:
+                            candidate = MoveAmount(candidate, transfer, before, created, consumed, etag, now.ToUnixTimeMilliseconds());
+                            changed = true;
+                            break;
+                        case AcceptOffer purchase:
+                            if (Accept(candidate, purchase, consumed, etag, now.ToUnixTimeMilliseconds(), out string rejection) is not { } bought)
+                            {
+                                return ServiceReply.Error(400, rejection);
+                            }
+
+                            candidate = bought;
+                            changed = true;
+                            break;
+                    }
                 }
 
                 Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
@@ -123,7 +149,7 @@ public sealed partial class InventoryStore
                     changed |= moved;
                 }
             }
-            catch (Exception error) when (error is InvalidDataException or InvalidOperationException)
+            catch (Exception error) when (error is InvalidDataException or InvalidOperationException or OverflowException)
             {
                 return ServiceReply.Error(400, "invalid_inventory_move");
             }
@@ -209,6 +235,108 @@ public sealed partial class InventoryStore
         created.Remove(source.InstanceId);
         consumed.Add(source.InstanceId);
         return result;
+    }
+
+    /// <summary>
+    /// Buys an offer <see cref="AcceptOffer.Times"/> times. The cost comes from the named stacks, or else from
+    /// the player's stacks of each cost item, stash first and smaller stacks first. The rewards go to the stash,
+    /// filling stacks of the same item before starting new ones. Returns null with the reason when the player
+    /// cannot pay or the stash has no room.
+    /// </summary>
+    private static PlayerInventory? Accept(PlayerInventory inventory, AcceptOffer purchase, HashSet<string> consumed, string etag, long updatedAt,
+        out string rejection)
+    {
+        OfferDescription offer = s_offers[purchase.OfferId];
+        rejection = "offer_cost_not_met";
+        if (offer.Cost is not ItemAmountsOfferCost cost)
+        {
+            return null;
+        }
+
+        Dictionary<long, long> due = cost.ItemAmounts.GroupBy(price => price.GameAssetId)
+            .ToDictionary(group => group.Key, group => checked(group.Sum(price => price.Amount) * purchase.Times));
+        Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
+            .SelectMany(area => InventoryCatalog.Items(inventory, area).Select(item => (Area: area, Item: item)))
+            .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
+        Dictionary<string, long> taken = new(StringComparer.Ordinal);
+        if (purchase.Payment is [_, ..] chosen)
+        {
+            if (chosen.Any(item => !taken.TryAdd(item.ItemInstanceId, item.Amount)))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            foreach ((long asset, long amount) in due)
+            {
+                long remaining = amount;
+                foreach ((_, OwnedItem stack) in owned.Values.Where(entry => InventoryCatalog.AssetId(entry.Item.Type) == asset)
+                             .OrderBy(entry => entry.Area).ThenBy(entry => entry.Item.Quantity).TakeWhile(_ => remaining > 0))
+                {
+                    long take = Math.Min(remaining, stack.Quantity);
+                    taken[stack.InstanceId] = take;
+                    remaining -= take;
+                }
+            }
+        }
+
+        if (taken.Any(pair => !owned.TryGetValue(pair.Key, out (InventoryArea Area, OwnedItem Item) entry) || pair.Value > entry.Item.Quantity
+                || !due.ContainsKey(InventoryCatalog.AssetId(entry.Item.Type)))
+            || due.Any(pair => taken.Where(entry => InventoryCatalog.AssetId(owned[entry.Key].Item.Type) == pair.Key).Sum(entry => entry.Value) != pair.Value))
+        {
+            return null;
+        }
+
+        foreach ((string instanceId, long amount) in taken)
+        {
+            (InventoryArea area, OwnedItem stack) = owned[instanceId];
+            bool emptied = amount == stack.Quantity;
+            inventory = Replace(inventory, area, instanceId, emptied ? null : stack with { Quantity = stack.Quantity - amount, ETag = etag, UpdatedAt = updatedAt });
+            if (emptied)
+            {
+                consumed.Add(instanceId);
+            }
+        }
+
+        foreach (IGrouping<long, OfferRewardedItem> reward in offer.RewardPackage.RewardedItems.GroupBy(item => item.GameAssetId))
+        {
+            string type = InventoryCatalog.TechnicalName(reward.Key);
+            ItemDescription definition = InventoryCatalog.ByAsset[reward.Key];
+            long stackLimit = definition.Stackable ? definition.MaxAmount : 1;
+            long remaining = checked(reward.Sum(item => item.Amount) * purchase.Times);
+            List<OwnedItem> stash = [.. inventory.Stash.Items];
+            for (int index = 0; index < stash.Count && remaining > 0; index++)
+            {
+                OwnedItem stack = stash[index];
+                if (stack.Type != type || stack.Quantity >= stackLimit)
+                {
+                    continue;
+                }
+
+                long added = Math.Min(remaining, stackLimit - stack.Quantity);
+                stash[index] = stack with { Quantity = stack.Quantity + added, ETag = etag, UpdatedAt = updatedAt };
+                remaining -= added;
+            }
+
+            while (remaining > 0)
+            {
+                if (stash.Count >= inventory.Stash.SlotCount)
+                {
+                    rejection = "stash_full";
+                    return null;
+                }
+
+                long added = Math.Min(remaining, stackLimit);
+                stash.Add(new OwnedItem(Guid.NewGuid().ToString("D"), type, added,
+                    StorageItems.InitialDurability, StorageItems.InitialMaxDurability, etag, updatedAt));
+                remaining -= added;
+            }
+
+            inventory = inventory with { Stash = inventory.Stash with { Items = stash } };
+        }
+
+        return inventory;
     }
 
     private static (InventoryArea Area, OwnedItem Item)? Find(PlayerInventory inventory, string instanceId)

@@ -85,6 +85,24 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Game_data_lists_celestes_offers_and_buying_one_is_saved()
+    {
+        JsonElement offers = (await GetJson("/v1/pioneer/game-data")).GetProperty("offer-descriptions").GetProperty("offerDescriptions");
+        Assert.Equal(TraderOffers.Celeste.Select(offer => offer.OfferId), offers.EnumerateArray().Select(offer => offer.GetProperty("offerId").GetInt64()));
+        Assert.All(offers.EnumerateArray(), offer => Assert.Equal(TraderOffers.CelesteAssetId, offer.GetProperty("ownerGameAssetId").GetInt64()));
+
+        OfferDescription bought = TraderOffers.Celeste[0];
+        long seeds = Assert.Single(Assert.IsType<ItemAmountsOfferCost>(bought.Cost).ItemAmounts).Amount;
+        HostInventory().AddItem(ItemTechnicalNames.AssortedSeeds, DateTimeOffset.UnixEpoch, seeds);
+        object body = new { requestId = "buy", operations = new[] { new { discriminator = "acceptOffer", offerId = bought.OfferId, times = 1, payment = Array.Empty<object>(), paymentByAmounts = Array.Empty<object>() } } };
+        JsonElement items = (await Json(await Post("/v1/pioneer/v1/batch-operation", body, await SignIn()))).GetProperty("changeset").GetProperty("items");
+        JsonElement reward = Assert.Single(items.GetProperty("created").EnumerateArray());
+        Assert.Equal((bought.RewardPackage.RewardedItems[0].GameAssetId, 1L), (reward.GetProperty("gameAssetId").GetInt64(), reward.GetProperty("amount").GetInt64()));
+        Assert.Equal(1, items.GetProperty("deleted").GetArrayLength());
+        Assert.DoesNotContain(HostInventory().Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.AssortedSeeds);
+    }
+
+    [Fact]
     public async Task Invalid_persisted_data_returns_503_without_resetting_the_player()
     {
         await _database.Accounts.UpdateOneAsync(FilterDefinition<BsonDocument>.Empty,
