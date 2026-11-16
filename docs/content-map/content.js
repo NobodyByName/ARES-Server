@@ -1214,7 +1214,7 @@ globalThis.AresContent = {
               "name": "Snap Hook",
               "technical": "DA_Item_SnapHook",
               "status": "partial",
-              "note": "Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss and repair remain. It shows its value and sells from Storage for 14,000 coins, less when worn; selling is stock-client verified."
+              "note": "Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss and repair remain. It shows its value and sells from Storage for 14,000 coins, less when worn; selling is stock-client verified. It cannot be recycled yet: it gives Steel Cable and a Power Rod, which are not supported."
             },
             {
               "name": "Snowball",
@@ -1632,7 +1632,7 @@ globalThis.AresContent = {
               "name": "Light Shield",
               "technical": "DA_Item_Armor_LightBody",
               "status": "partial",
-              "note": "Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain. It shows its value and sells from Storage for 640 coins, less when worn; selling is stock-client verified."
+              "note": "Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain. It shows its value and sells from Storage for 640 coins, less when worn; selling is stock-client verified. Recycling it from Storage gives 4 Plastic Parts. Recycling from Storage is stock-client verified (Wires)."
             },
             {
               "name": "Medium Shield",
@@ -1793,7 +1793,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Battery",
               "technical": "DA_Item_Salvage_Battery",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 250 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Bicycle Pump 01",
@@ -1878,7 +1879,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Canister",
               "technical": "DA_Item_Salvage_Canister",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Cat Bed 01",
@@ -1889,7 +1891,7 @@ globalThis.AresContent = {
               "name": "Salvage Chemicals",
               "technical": "DA_Item_Salvage_Chemicals",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Chonk Part",
@@ -2024,12 +2026,14 @@ globalThis.AresContent = {
             {
               "name": "Salvage Duct Tape",
               "technical": "DA_Item_Salvage_DuctTape",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Electrical Components",
               "technical": "DA_Item_Salvage_ElectricalComponents",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Elephant Obelisk",
@@ -2069,7 +2073,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Explosive Mixture",
               "technical": "DA_Item_Salvage_ExplosiveMixture",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Crude Explosives. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 270 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Extractor Part",
@@ -2080,7 +2085,7 @@ globalThis.AresContent = {
               "name": "Salvage Fabric",
               "technical": "DA_Item_Salvage_Fabric",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Fertilizer",
@@ -2245,7 +2250,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Gun Parts",
               "technical": "DA_Item_Salvage_GunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Simple Gun Parts. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 330 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Handcuffs",
@@ -2315,7 +2321,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Magnet",
               "technical": "DA_Item_Salvage_Magnet",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Magnetic Accelerator",
@@ -2340,7 +2347,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Mat ARC Metal",
               "technical": "DA_Item_Salvage_Mat_ARC_Metal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "ARC Alloy. Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Mat Arc Circuit Board",
@@ -2485,7 +2493,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Mechanical Components",
               "technical": "DA_Item_Salvage_MechanicalComponents",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 2 Rubber Parts and 3 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Medical Kit Broken 01",
@@ -2580,7 +2589,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Oil",
               "technical": "DA_Item_Salvage_Oil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Old Book",
@@ -2626,13 +2636,13 @@ globalThis.AresContent = {
               "name": "Salvage Planks",
               "technical": "DA_Item_Salvage_Planks",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic",
               "technical": "DA_Item_Salvage_Plastic",
               "status": "partial",
-              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified."
+              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic Trash",
@@ -2998,7 +3008,7 @@ globalThis.AresContent = {
               "name": "Salvage Rubber",
               "technical": "DA_Item_Salvage_Rubber",
               "status": "partial",
-              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Rubber Band 01",
@@ -3054,7 +3064,7 @@ globalThis.AresContent = {
               "name": "Salvage Scrap Metal",
               "technical": "DA_Item_Salvage_ScrapMetal",
               "status": "partial",
-              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified."
+              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Security Code",
@@ -3081,7 +3091,7 @@ globalThis.AresContent = {
               "name": "Salvage Sheet Metal",
               "technical": "DA_Item_Salvage_SheetMetal",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Shotgun Parts",
@@ -3156,7 +3166,8 @@ globalThis.AresContent = {
             {
               "name": "Salvage Steel Spring",
               "technical": "DA_Item_Salvage_SteelSpring",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Synthesized Fuel",
@@ -3431,12 +3442,14 @@ globalThis.AresContent = {
             {
               "name": "Salvage Wires",
               "technical": "DA_Item_Salvage_Wires",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Rubber Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Woven Cloth",
               "technical": "DA_Item_Salvage_WovenCloth",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Durable Cloth. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 6 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
             }
           ]
         },
@@ -3547,7 +3560,7 @@ globalThis.AresContent = {
               "name": "Ferro I",
               "technical": "DA_Item_BattleRifle_BreachAction_01",
               "status": "partial",
-              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain. It shows its value and sells from Storage for 475 coins, less when worn; selling is stock-client verified."
+              "note": "Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain. It shows its value and sells from Storage for 475 coins, less when worn; selling is stock-client verified. Recycling it from Storage gives 1 Rubber Parts and 2 Metal Parts. Recycling from Storage is stock-client verified (Wires)."
             },
             {
               "name": "Battle Rifle Energy Burst 01",
@@ -5304,19 +5317,19 @@ globalThis.AresContent = {
               "name": "Combat Mk.1",
               "technical": "DA_Item_Augment_Combat_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires)."
             },
             {
               "name": "Looting Mk.1",
               "technical": "DA_Item_Augment_Looting_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires)."
             },
             {
               "name": "Tactical / Utility Mk.1",
               "technical": "DA_Item_Augment_Utility_T1",
               "status": "partial",
-              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified."
+              "note": "Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires)."
             }
           ]
         }

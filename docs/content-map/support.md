@@ -84,8 +84,10 @@ to where the hook lands and costs gadget power, which recharges over time. These
 verified with one player; other players see the throw and pull, which has not been tried with the
 stock client. Durability loss, repair and value remain future work.
 
-Assorted Seeds and seven basic materials (Metal Parts, Plastic Parts, Rubber Parts, Chemicals, Fabric,
-Sheet Metal and Planks) are stackable items in the menu and in Raid, with their stack limits and weights.
+Assorted Seeds, seven basic materials (Metal Parts, Plastic Parts, Rubber Parts, Chemicals, Fabric,
+Sheet Metal and Planks) and thirteen uncommon materials (Wires, Battery, Steel Spring, Duct Tape, Oil,
+Canister, Magnet, Durable Cloth, Mechanical Components, Electrical Components, Simple Gun Parts, Crude
+Explosives and ARC Alloy) are stackable items in the menu and in Raid, with their stack limits and weights.
 The trader Celeste lists her seven permanent offers, one material for one or three Assorted Seeds, and
 buying any quantity takes the seeds from the stash and puts the materials there, all in one saved change.
 Buying is stock-client verified in the menu.
@@ -94,6 +96,12 @@ Every supported item shows its value in the menu, and right-clicking it in Stora
 the stack for coins, which collect in one stack shown as the wallet. The price is the item's game value
 scaled by its durability, never below a tenth of it. Selling is stock-client verified in the menu,
 including a stack split off just before.
+
+Recycling from Storage breaks an item into the game's materials for it, times the stack size, whatever
+its durability: the uncommon materials, the Mk. 1 augments, the Light Shield and the Ferro can be
+recycled. The materials go to the stash, topping up existing stacks first, all in one saved change; with
+no room left the stash refuses the whole recycle. An item is offered for recycling only when every
+material it gives is supported. Recycling is stock-client verified in the menu.
 
 To grant menu test items from the Host console before a fresh client launch:
 
@@ -127,7 +135,8 @@ Limitations:
 - Broken-elevator repair and other extraction types are not implemented.
 - Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups, splitting and merging are not implemented yet.
 - Only Celeste trades, and only her permanent offers: daily-limited offers, unlock requirements, other
-  traders, crafting and recycling are not implemented. Selling gives no experience or quest progress
+  traders and crafting are not implemented. A full stash refuses recycling instead of overflowing, and
+  recycling in raids (field salvaging) is not implemented. Selling gives no experience or quest progress
   yet, and a weapon sells without mods since mods are not supported.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.

@@ -103,7 +103,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-0-88"></a>Scatter Missile Grenade | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-89"></a>Smelter 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-90"></a>Smoke Grenade | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-0-91"></a>Snap Hook | Partial | Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss and repair remain. It shows its value and sells from Storage for 14,000 coins, less when worn; selling is stock-client verified. |
+| <a id="content-root-2-0-91"></a>Snap Hook | Partial | Stash, quick-use slots and loadout return, drawing, putting away, throwing, the pull, gadget power and its recharge are stock-client verified with one player. Other players seeing the throw and pull is not yet verified. Durability loss and repair remain. It shows its value and sells from Storage for 14,000 coins, less when worn; selling is stock-client verified. It cannot be recycled yet: it gives Steel Cable and a Power Rod, which are not supported. |
 | <a id="content-root-2-0-92"></a>Snowball | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-93"></a>Special Beam Rifle 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-0-94"></a>Special Beam Rifle 01 Anti Weak Point | Not assessed | Availability and server behavior have not been assessed. |
@@ -198,7 +198,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | Content | Status | Details |
 | --- | --- | --- |
 | <a id="content-root-2-2-0"></a>Heavy Shield | Not implemented | Shield gameplay support is not implemented. |
-| <a id="content-root-2-2-1"></a>Light Shield | Partial | Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain. It shows its value and sells from Storage for 640 coins, less when worn; selling is stock-client verified. |
+| <a id="content-root-2-2-1"></a>Light Shield | Partial | Menu selection, Raid slot moves, initial shield health and weight work; damage absorption, depletion and repair remain. It shows its value and sells from Storage for 640 coins, less when worn; selling is stock-client verified. Recycling it from Storage gives 4 Plastic Parts. Recycling from Storage is stock-client verified (Wires). |
 | <a id="content-root-2-2-2"></a>Medium Shield | Not implemented | Shield gameplay support is not implemented. |
 
 <a id="content-root-2-3"></a>
@@ -234,7 +234,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-24"></a>Salvage Ascension Material3 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-25"></a>Salvage Ascension Material4 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-26"></a>Salvage Baton 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-27"></a>Salvage Battery | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-27"></a>Salvage Battery | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 250 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-28"></a>Salvage Bicycle Pump 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-29"></a>Salvage Blue Gate Utility Key1 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-30"></a>Salvage Blue Gate Utility Key2 | Not assessed | Availability and server behavior have not been assessed. |
@@ -251,9 +251,9 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-41"></a>Salvage Buried City Utility Key4 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-42"></a>Salvage Camera Lens 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-43"></a>Salvage Candle Holder | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-44"></a>Salvage Canister | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-44"></a>Salvage Canister | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-45"></a>Salvage Cat Bed 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-46"></a>Salvage Chemicals | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-46"></a>Salvage Chemicals | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-47"></a>Salvage Chonk Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-48"></a>Salvage Collector Key 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-49"></a>Salvage Collector Key Component 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -280,8 +280,8 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-70"></a>Salvage Dead Flower Bouquet 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-71"></a>Salvage Desk Lamp | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-72"></a>Salvage Diving Goggles 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-73"></a>Salvage Duct Tape | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-74"></a>Salvage Electrical Components | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-73"></a>Salvage Duct Tape | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
+| <a id="content-root-2-3-74"></a>Salvage Electrical Components | Partial | Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-75"></a>Salvage Elephant Obelisk | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-76"></a>Salvage Epic Ascension Module | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-77"></a>Salvage Equatorial Sundial | Not assessed | Availability and server behavior have not been assessed. |
@@ -289,9 +289,9 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-79"></a>Salvage Exodus Book | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-80"></a>Salvage Exodus Prototype | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-81"></a>Salvage Expired Security Code | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-82"></a>Salvage Explosive Mixture | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-82"></a>Salvage Explosive Mixture | Partial | Crude Explosives. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 270 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-83"></a>Salvage Extractor Part | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-84"></a>Salvage Fabric | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-84"></a>Salvage Fabric | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-85"></a>Salvage Fertilizer | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-86"></a>Salvage Film Reel 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-87"></a>Salvage Fine Wristwatch 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -324,7 +324,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-114"></a>Salvage Frying Pan | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-115"></a>Salvage Geiger Counter | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-116"></a>Salvage Guidance System 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-117"></a>Salvage Gun Parts | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-117"></a>Salvage Gun Parts | Partial | Simple Gun Parts. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 330 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-118"></a>Salvage Handcuffs | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-119"></a>Salvage Headphones | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-120"></a>Salvage Heavy Drone Laser Part | Not assessed | Availability and server behavior have not been assessed. |
@@ -338,12 +338,12 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-128"></a>Salvage Laboratory Reagents | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-129"></a>Salvage Legendary Ascension Module | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-130"></a>Salvage Light Gun Parts | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-131"></a>Salvage Magnet | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-131"></a>Salvage Magnet | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-132"></a>Salvage Magnetic Accelerator | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-133"></a>Salvage Magnetron | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-134"></a>Salvage Majolica Tazza 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-135"></a>Salvage Mat ARC Core | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-136"></a>Salvage Mat ARC Metal | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-136"></a>Salvage Mat ARC Metal | Partial | ARC Alloy. Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-137"></a>Salvage Mat Arc Circuit Board | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-138"></a>Salvage Mat Arc Mechanism | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-139"></a>Salvage Mat Baron Cloth | Not assessed | Availability and server behavior have not been assessed. |
@@ -372,7 +372,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-162"></a>Salvage Mat Tick Damaged Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-163"></a>Salvage Mat Tick Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-164"></a>Salvage Mat Wasp Part | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-165"></a>Salvage Mechanical Components | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-165"></a>Salvage Mechanical Components | Partial | Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 2 Rubber Parts and 3 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-166"></a>Salvage Medical Kit Broken 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-167"></a>Salvage Medium Gun Parts | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-168"></a>Salvage Meerkat Part | Not assessed | Availability and server behavior have not been assessed. |
@@ -391,7 +391,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-181"></a>Salvage Music Album 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-182"></a>Salvage Music Box 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-183"></a>Salvage Number Plate | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-184"></a>Salvage Oil | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-184"></a>Salvage Oil | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-185"></a>Salvage Old Book | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-186"></a>Salvage Paint | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-187"></a>Salvage Painted Box 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -400,8 +400,8 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-190"></a>Salvage Peppermint Part | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-191"></a>Salvage Pilgrims Peak Security Code | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-192"></a>Salvage Pinger Part | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-193"></a>Salvage Planks | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified. |
-| <a id="content-root-2-3-194"></a>Salvage Plastic | Partial | Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-193"></a>Salvage Planks | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-194"></a>Salvage Plastic | Partial | Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-195"></a>Salvage Plastic Trash | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-196"></a>Salvage Polluted Air Filter | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-197"></a>Salvage Pop Part | Not assessed | Availability and server behavior have not been assessed. |
@@ -474,7 +474,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-264"></a>Salvage Rope | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-265"></a>Salvage Rosary 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-266"></a>Salvage Rotary Encoder | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-267"></a>Salvage Rubber | Partial | Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-267"></a>Salvage Rubber | Partial | Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-268"></a>Salvage Rubber Band 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-269"></a>Salvage Rubber Pad | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-270"></a>Salvage Ruined Augment | Not assessed | Availability and server behavior have not been assessed. |
@@ -485,12 +485,12 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-275"></a>Salvage Rusted Weapon | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-276"></a>Salvage Sample Cleaner | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-277"></a>Salvage Scanner 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-278"></a>Salvage Scrap Metal | Partial | Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-278"></a>Salvage Scrap Metal | Partial | Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-279"></a>Salvage Security Code | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-280"></a>Salvage Seeds | Partial | Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-281"></a>Salvage Sensors | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-282"></a>Salvage Sextant | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-283"></a>Salvage Sheet Metal | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Crafting, recycling and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified. |
+| <a id="content-root-2-3-283"></a>Salvage Sheet Metal | Partial | Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified. |
 | <a id="content-root-2-3-284"></a>Salvage Shotgun Parts | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-285"></a>Salvage Signal Amplifier | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-286"></a>Salvage Silver Teaspoon Set 01 | Not assessed | Availability and server behavior have not been assessed. |
@@ -505,7 +505,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-295"></a>Salvage Spectrum Analyzer | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-296"></a>Salvage Spring Cushion | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-297"></a>Salvage Statuette 01 | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-298"></a>Salvage Steel Spring | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-298"></a>Salvage Steel Spring | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 | <a id="content-root-2-3-299"></a>Salvage Synthesized Fuel | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-300"></a>Salvage Syringe | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-301"></a>Salvage Tactical West | Not assessed | Availability and server behavior have not been assessed. |
@@ -560,8 +560,8 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-3-350"></a>Salvage Voltage Converter | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-351"></a>Salvage Water Filter | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-3-352"></a>Salvage Water Pump | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-353"></a>Salvage Wires | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-3-354"></a>Salvage Woven Cloth | Not assessed | Availability and server behavior have not been assessed. |
+| <a id="content-root-2-3-353"></a>Salvage Wires | Partial | Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Rubber Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
+| <a id="content-root-2-3-354"></a>Salvage Woven Cloth | Partial | Durable Cloth. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 6 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented. |
 
 <a id="content-root-2-4"></a>
 
@@ -589,7 +589,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-4-17"></a>Assault Rifle Pneumatic 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-18"></a>Assault Rifle Pneumatic 01 Full Auto | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-19"></a>Assault Rifle Pneumatic 01 XRounds | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-4-20"></a>Ferro I | Partial | Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain. It shows its value and sells from Storage for 475 coins, less when worn; selling is stock-client verified. |
+| <a id="content-root-2-4-20"></a>Ferro I | Partial | Menu equipment, empty muzzle, underbarrel and stock mod slots in the menu and Raid, Raid inventory and weight, drawing and switching, fire cadence and single-round reloads from carried Heavy Ammo are stock-client verified, with known issues. Dropping it from the Raid inventory and picking it up again is stock-client verified; dropping the weapon in hand is not handled. Damage, ballistics, fitting mods and upgrades remain. It shows its value and sells from Storage for 475 coins, less when worn; selling is stock-client verified. Recycling it from Storage gives 1 Rubber Parts and 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). |
 | <a id="content-root-2-4-21"></a>Battle Rifle Energy Burst 01 | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-22"></a>Battle Rifle Energy Burst 01 Ascended | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-4-23"></a>Battle Rifle Energy Burst 01 Bigger Mag | Not assessed | Availability and server behavior have not been assessed. |
@@ -970,6 +970,6 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 | <a id="content-root-2-9-10"></a>Augment Utility T3 Defensive | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-9-11"></a>Augment Utility T3 Healing | Not assessed | Availability and server behavior have not been assessed. |
 | <a id="content-root-2-9-12"></a>Augment Utility T3 Smoke | Not assessed | Availability and server behavior have not been assessed. |
-| <a id="content-root-2-9-13"></a>Combat Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. |
-| <a id="content-root-2-9-14"></a>Looting Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. |
-| <a id="content-root-2-9-15"></a>Tactical / Utility Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. |
+| <a id="content-root-2-9-13"></a>Combat Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). |
+| <a id="content-root-2-9-14"></a>Looting Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). |
+| <a id="content-root-2-9-15"></a>Tactical / Utility Mk.1 | Partial | Persistent menu selection and Raid frame, capacity and weight support; it comes home from a Dam extraction and is lost on surrender; the full raid lifecycle remains. It shows its value and sells from Storage for 640 coins; selling is stock-client verified. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). |
