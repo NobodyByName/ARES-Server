@@ -1,6 +1,9 @@
+using Ares.Common.Game.Inventory;
 using Ares.Raid.Replication;
+using Ares.Raid.Tests.World.Movement;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
@@ -233,6 +236,150 @@ public sealed class MultiplayerTests
         first.Sent.Clear();
         first.Service(at + 1);
         Assert.DoesNotContain(first.Sent, bunch => bunch.Channel == pawn.Channel || bunch.Channel == state.Channel);
+    }
+
+    [Fact]
+    public void Other_players_see_a_snap_hook_throw_and_pull_as_it_happens_while_the_throwers_own_frames_are_held()
+    {
+        // A floor just under the second player's start and a wall ahead of it (the default aim looks along +X at the feet).
+        PlayerLoadout hooked = GadgetTests.AddSnapHook(WeaponTests.WithWeapons() with { UserId = 43 }, 0);
+        Vector3D start = new ScriptedPlayer(new ScriptedPlayer(), 43, hooked).Member.Spawn.Location;
+        ScriptedPlayer first = new(collision: ScriptedClient.Map(
+            (start with { Z = start.Z - 11 }, new System.Numerics.Vector3(3000, 3000, 10)),
+            (start with { X = start.X + 600 }, new System.Numerics.Vector3(50, 2000, 2000))));
+        ScriptedPlayer second = new(first, 43, hooked);
+        first.Possess();
+        second.Possess();
+        (_, double at) = first.Settle(30, 101, first.Member.Spawn.Location);
+        (uint frame, at) = second.Settle(30, at, start);
+        Assert.Equal(start, second.Member.Spawn.Location);
+        at += 20;
+        for (int step = 0; step < 5; step++)
+        {
+            second.Input(frame, frame + 1, position: start);
+            frame++;
+            first.Service(at += 0.1);
+        }
+
+        while (first.Channels.LootWaiting > 0 || first.Channels.LootChannelsInUse > 0)
+        {
+            first.Service(at += 0.1);
+        }
+
+        ChannelBunch pawn = Assert.Single(first.Sent, bunch => OpenedActor(bunch) == second.Player.Pawn);
+        first.Sent.Clear();
+        second.Input(frame, frame + 1, position: start);
+        frame++;
+        first.Service(at += 0.1);
+        PlayerMotion opened = second.Member.Motion!;
+        Dictionary<int, PendulumSlot> seen = new(PawnBlackboardFrames.State(opened.Tick, opened.Motion, 0, weapons: opened.Weapons, timeOffset: opened.TimeOffset));
+        seen = first.PawnFrame(seen, pawn.Channel, PendulumCodec.Others);
+
+        // Draw the hook, throw it at the wall, ride the pull towards the wall, then let the client allow the next use.
+        const ulong Allowed = 1UL << WeaponProtocol.AllowPrimaryBit;
+        const ulong Throw = Allowed | (1UL << WeaponProtocol.FireDownBit) | (1UL << WeaponProtocol.FirePressedBit);
+        RaidInventory inventory = second.Member.Inventory;
+        second.Equip(frame + 1, second.Player.HeldItems[inventory.Containers[inventory.Belt].Items[0]!.Id], 1);
+        uint thrown = frame + 60;
+        uint? released = null;
+        Vector3D position = start;
+        Dictionary<uint, Vector3D> reports = [];
+        List<(uint Tick, Dictionary<int, PendulumSlot> State, PlayerMotion Motion)> shown = [];
+        for (int step = 0; step < 240 && (released is null || frame < released + 10); step++)
+        {
+            CharacterState? thrower = second.Member.Motion?.Motion.Character;
+            if (thrower?.SnapHook.Pull is not null)
+            {
+                position = position with { X = position.X + 15 };
+            }
+
+            if (released is null && frame > thrown && thrower is { SnapHook: { Busy: false, Target: not null } })
+            {
+                released = frame + 15;
+            }
+
+            ulong flags = frame + 1 == thrown ? Throw : frame + 1 < thrown || frame + 1 >= released ? Allowed : 0;
+            second.Input(frame, frame + 1, position: position, weaponFlags: flags);
+            frame++;
+            reports[frame] = position;
+            second.Service(at += 0.06);
+            first.Sent.Clear();
+            first.Service(at);
+            if (!first.Sent.Any(bunch => bunch.Channel == pawn.Channel && (bunch.Payload[0] & 3) == 2))
+            {
+                continue;
+            }
+
+            seen = first.PawnFrame(seen, pawn.Channel, PendulumCodec.Others);
+            shown.Add((first.LastFrameNumbers.Latest, seen, second.Member.Motion!));
+        }
+
+        // The thrower's own frames were held from the throw until the client allowed the next use.
+        Assert.Equal(1, second.Channels.QuickItemHolds);
+        Assert.Equal((thrown, released!.Value - 1), second.Channels.LastQuickItemHold);
+
+        // The watching client got a frame for every tick, through the throw and the pull, at the thrower's position.
+        Assert.All(shown.Zip(shown.Skip(1)), pair => Assert.Equal(pair.First.Tick + 1, pair.Second.Tick));
+        Assert.Contains(shown, entry => entry.Tick < thrown);
+        Assert.Contains(shown, entry => entry.Tick > released);
+        IReadOnlyList<PendulumField> item = PendulumRegistry.Descriptors[QuickItemProtocol.ItemNodeDescriptor].Fields;
+        IReadOnlyList<PendulumField> target = PendulumRegistry.Descriptors[QuickItemProtocol.MoveTargetDescriptor].Fields;
+        IReadOnlyList<PendulumField> node = PendulumRegistry.Descriptors[QuickItemProtocol.PullNodeDescriptor].Fields;
+        IReadOnlyList<PendulumField> graph = PendulumRegistry.Descriptors[PawnBlackboard.InitialState.Single(variable => variable.Slot == PawnBlackboard.GraphStateSlot).DescriptorId].Fields;
+        IReadOnlyList<PendulumField> movement = PendulumRegistry.Descriptors[PawnBlackboard.InitialState.Single(variable => variable.Slot == PawnBlackboard.MovementStateSlot).DescriptorId].Fields;
+        int pulled = 0;
+        foreach ((uint tick, Dictionary<int, PendulumSlot> state, PlayerMotion motion) in shown)
+        {
+            Assert.True(Distance(motion.Motion.Position, ToWorld(state[PawnBlackboard.MovementStateSlot].Value)) < 0.2);
+            SnapHookUse use = motion.Motion.Character!.Value.SnapHook;
+            // Before the draw no item node is laid out.
+            ulong bits = state.Values.SingleOrDefault(slot => slot.DescriptorId == QuickItemProtocol.ItemNodeDescriptor) is { } hook
+                ? PendulumCodec.Integer(item[QuickItemProtocol.HookStateField], hook.Value)
+                : 0;
+            Assert.Equal(use.Hook.Thrown, (bits & (1UL << QuickItemProtocol.HookOutBit)) != 0);
+            Assert.Equal(use.Hook is { Thrown: true, Attached: true }, (bits & (1UL << QuickItemProtocol.HookAttachedBit)) != 0);
+            PendulumSlot? moveTarget = state.Values.SingleOrDefault(slot => slot.DescriptorId == QuickItemProtocol.MoveTargetDescriptor);
+            Assert.Equal(use.Target is not null, moveTarget is not null);
+            PendulumSlot? pull = state.Values.SingleOrDefault(slot => slot.DescriptorId == QuickItemProtocol.PullNodeDescriptor);
+            Assert.Equal(use.Pull is not null, pull is not null);
+            bool pulling = (PendulumCodec.Integer(graph[PawnBlackboard.GraphTagsField], state[PawnBlackboard.GraphStateSlot].Value) & SnapHookParameters.PullingFlags)
+                == SnapHookParameters.PullingFlags;
+            Assert.Equal(use.Pull is not null, pulling);
+            if (moveTarget is not null)
+            {
+                Assert.Equal(use.Target!.Value.IsActive, PendulumCodec.Integer(target[QuickItemProtocol.MoveTargetCreatedField], moveTarget.Value) != PawnSlideState.TimeBias - 1);
+            }
+
+            if (pull is null)
+            {
+                continue;
+            }
+
+            // Pulled: the client's reported position, the pull node pointing at the move target.
+            pulled++;
+            Assert.Equal((ulong)moveTarget!.Slot, PendulumCodec.Integer(node[QuickItemProtocol.PullNodeMoveTargetField], pull.Value));
+            // Reported positions are quantized to about 0.1 per axis; the body stands on the floor.
+            Assert.True(Math.Min(Distance(motion.Motion.Position, reports[tick]), Distance(motion.Motion.Position, reports[tick + 1])) < 0.5);
+        }
+
+        Assert.InRange(pulled, 5, 60);
+        Assert.Contains(shown, entry => entry.Motion.Motion.Character!.Value.SnapHook.Hook is { Thrown: true, Attached: false });
+
+        // After the pull its node's slot stays laid out without a variable; the move target keeps its removal time.
+        Dictionary<int, PendulumSlot> after = shown[^1].State;
+        int pullSlot = shown.Last(entry => entry.State.Values.Any(slot => slot.DescriptorId == QuickItemProtocol.PullNodeDescriptor)).State.Values
+            .Single(slot => slot.DescriptorId == QuickItemProtocol.PullNodeDescriptor).Slot;
+        Assert.Null(after[pullSlot].DescriptorId);
+        PendulumSlot kept = Assert.Single(after.Values, slot => slot.DescriptorId == QuickItemProtocol.MoveTargetDescriptor);
+        Assert.NotEqual(PawnSlideState.TimeBias - 1, PendulumCodec.Integer(target[QuickItemProtocol.MoveTargetRemovedField], kept.Value));
+        Assert.Equal(0, second.Channels.InputDecodeFailures);
+        return;
+
+        Vector3D ToWorld(byte[] value) => new(Coordinate(value, PawnBlackboard.PositionXField), Coordinate(value, PawnBlackboard.PositionYField),
+            Coordinate(value, PawnBlackboard.PositionZField));
+
+        double Coordinate(byte[] value, int field) =>
+            (PendulumCodec.Integer(movement[field], value) * 2 * PawnBlackboard.PositionRange / (((PendulumScalarField)movement[field]).Maximum - 1.0)) - PawnBlackboard.PositionRange;
     }
 
     [Fact]

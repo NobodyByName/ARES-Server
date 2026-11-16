@@ -2406,7 +2406,10 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // Gives other players this character's movement: the input tick before the newest input, at the position the
     // client reported, with the simulated velocity, stance and locomotion (as the character's own frames carry it),
     // the held weapons and the aim pitch. Other clients have no item objects of this player, so the weapons go
-    // without item links: the client draws an equipped gun from its item type.
+    // without item links: the client draws an equipped gun or gadget from its item type. Other clients only show the
+    // character, so its movement goes out through a Snap Hook's throw and pull too, while this player's own frames are
+    // held: the Snap Hook's node carries the hook (other clients draw it and its cable from it), and the move target and
+    // pull node the pulled pose.
     private void PublishMotion(double now)
     {
         if (Phase != DeliveryPhase.Possessed || _blackboardFrame == 0 || InputFrame is not { } latest || latest <= PawnBlackboardFrames.FirstTick)
@@ -2415,14 +2418,16 @@ public sealed partial class PlayerChannels : IPlayerChannels
         }
 
         uint tick = latest - 1;
-        if ((_member.Motion is { } published && published.Tick >= tick) || _input.Position(latest) is not { } position
+        if ((_member.Motion is { } published && published.Tick >= tick) || !_member.Weapons.Describable(tick) || _input.Position(latest) is not { } position
             || _input.Position(tick) is not { } before || _input.Yaw(tick) is not { } yaw || _movement?.State(tick) is not { } character
             || _input.Pitch(tick) is not { } pitch)
         {
             return;
         }
 
-        _member.Publish(new PlayerMotion(tick, Motion(character, position, before, yaw, _input.ActionRotation(tick)), _member.Weapons.Variables(tick), pitch, TimeOffsetAt(tick, now)));
+        IReadOnlyList<PendulumVariable> weapons = _member.Weapons.ObservedVariables(tick, character.SnapHook);
+        _member.Publish(new PlayerMotion(tick, Motion(character, position, before, yaw, _input.ActionRotation(tick)),
+            [.. weapons, .. character.SnapHook.ObservedNodes(tick, weapons)], pitch, TimeOffsetAt(tick, now)));
     }
 
     // A tick's movement for a frame: the simulated body when the simulation moves it, otherwise the position the
@@ -2560,6 +2565,15 @@ public sealed partial class PlayerChannels : IPlayerChannels
         IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
         // The client may already have overwritten a baseline this far back; a reset frame starts from the defaults.
         bool reset = observed.State is null || motion.Tick - observed.Tick >= PendulumFrames.History;
+        if (!reset && WithEndedSlots(state, observed.State!) is { } kept)
+        {
+            state = kept;
+        }
+        else
+        {
+            reset = true;
+        }
+
         ActorContentBlock frame = reset
             ? _raid.State.BlackboardFrame(0, motion.Tick, state, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others)
             : _raid.State.BlackboardFrame(observed.Tick, motion.Tick, state, observed.State!, PendulumCodec.Others);
@@ -2580,6 +2594,33 @@ public sealed partial class PlayerChannels : IPlayerChannels
             InFlight = reset ? [sent] : [.. observed.InFlight.TakeLast(MaxObservedFramesInFlight - 1), sent],
             Keys = [],
         };
+    }
+
+    // A frame cannot take a slot out of the client's layout: the client keeps what its baseline has in a slot the frame
+    // does not name. A slot whose variable ended (the Snap Hook's pull node) stays laid out without a variable, as the
+    // game keeps it. Null when such a slot shares pages with the frame's own slots, which only a reset frame can clear.
+    private static IReadOnlyDictionary<int, PendulumSlot>? WithEndedSlots(IReadOnlyDictionary<int, PendulumSlot> state,
+        IReadOnlyDictionary<int, PendulumSlot> baseline)
+    {
+        PendulumSlot[] ended = [.. baseline.Values.Where(slot => !state.ContainsKey(slot.Slot))];
+        if (ended.Length == 0)
+        {
+            return state;
+        }
+
+        HashSet<int> pages = [.. state.Values.SelectMany(slot => Enumerable.Range(slot.Position, slot.Size))];
+        if (ended.Any(slot => Enumerable.Range(slot.Position, slot.Size).Any(pages.Contains)))
+        {
+            return null;
+        }
+
+        Dictionary<int, PendulumSlot> kept = new(state);
+        foreach (PendulumSlot slot in ended)
+        {
+            kept[slot.Slot] = slot with { DescriptorId = null, Value = [] };
+        }
+
+        return kept;
     }
 
     // The observed player with its baseline moved to the newest frame the client confirmed; lost or forgotten
