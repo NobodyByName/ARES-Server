@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Ares.Common.Control;
 using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
@@ -119,25 +118,7 @@ public sealed class BackendRoutes
         // Progression: empty state for a fresh account.
         Player(Get, ProgressionPaths.GameData, (_, player) => player.Inventory.GameData());
         Add(Get, ProgressionPaths.Quests, new QuestsResponse([]));
-        Player(Get, ProgressionPaths.Inventory, async (_, player, token) =>
-        {
-            if (player.Inventory.ReservedTicketId is null)
-            {
-                return ServiceReply.Ok(new InventoryResponse(player.Inventory.Snapshot.Items));
-            }
-
-            try
-            {
-                // Show a raid result Raid is still holding; if Raid is unreachable or its reply is unusable,
-                // serve what is saved and let the background check retry.
-                await player.Matchmaking.ReconcileInventoryAsync(token).ConfigureAwait(false);
-            }
-            catch (Exception error) when (error is AllocationUnavailableException or InvalidDataException)
-            {
-            }
-
-            return ServiceReply.Ok(new InventoryResponse(player.Inventory.Snapshot.Items));
-        });
+        Player(Get, ProgressionPaths.Inventory, async (_, player, token) => ServiceReply.Ok(await player.Matchmaking.InventoryAsync(token).ConfigureAwait(false)));
         Player(Post, ProgressionPaths.BatchOperation, (request, player, token) =>
         {
             LogUndecodedOperations(request, log);

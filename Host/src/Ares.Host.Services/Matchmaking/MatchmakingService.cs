@@ -41,6 +41,29 @@ public sealed class MatchmakingService(BackendGate gate, PartyService party, Pro
         await RefreshAssignmentLockedAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// <c>GET /v1/pioneer/inventory</c>: the saved inventory, first reconciled with a raid result Raid
+    /// still holds while a loadout is reserved. If Raid is unreachable or its reply is unusable, the saved
+    /// inventory is served and the background reconcile retries.
+    /// </summary>
+    public async Task<InventoryResponse> InventoryAsync(CancellationToken cancellationToken)
+    {
+        if (inventory.ReservedTicketId is null)
+        {
+            return new InventoryResponse(inventory.Snapshot.Items);
+        }
+
+        try
+        {
+            await ReconcileInventoryAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception error) when (error is AllocationUnavailableException or InvalidDataException)
+        {
+        }
+
+        return new InventoryResponse(inventory.Snapshot.Items);
+    }
+
     /// <summary>Players in the current live raid assignment (0 or the party size).</summary>
     public (bool Active, int Players) CurrentRaid
     {
