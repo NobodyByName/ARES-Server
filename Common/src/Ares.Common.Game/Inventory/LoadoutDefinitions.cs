@@ -6,7 +6,7 @@ namespace Ares.Common.Game.Inventory;
 /// <summary>Shared item definitions and the inventory frame selected by an equipped augment.</summary>
 public static class LoadoutDefinitions
 {
-    public static IReadOnlyList<ItemDescription> All { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions, .. ShieldItems.Definitions, .. WeaponItems.Definitions, .. GadgetItems.Definitions];
+    public static IReadOnlyList<ItemDescription> All { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions, .. ShieldItems.Definitions, .. WeaponItems.Definitions, .. GadgetItems.Definitions, .. SalvageItems.Definitions];
     public static IReadOnlyDictionary<long, ItemDescription> ByAsset { get; } = All.ToDictionary(item => item.GameAssetId);
 
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
@@ -25,7 +25,7 @@ public static class LoadoutDefinitions
         : assetId == WeaponItems.FerroIAssetId ? WeaponItems.FerroIWeight
         : assetId == WeaponItems.HeavyAmmoAssetId ? WeaponItems.HeavyAmmoWeight
         : assetId == GadgetItems.SnapHookAssetId ? GadgetItems.SnapHookWeight
-        : AugmentItems.ItemWeights.TryGetValue(assetId, out double weight) ? weight
+        : AugmentItems.ItemWeights.TryGetValue(assetId, out double weight) || SalvageItems.ItemWeights.TryGetValue(assetId, out weight) ? weight
         : throw new InvalidDataException("Unsupported carried inventory item");
 
     /// <summary>Maps a frame-specific branch to its standard equipment location.</summary>
@@ -48,10 +48,11 @@ public static class LoadoutDefinitions
         : assetId == WeaponItems.FerroIAssetId ? WeaponItems.FerroIUsableIndex
         : assetId == WeaponItems.HeavyAmmoAssetId ? WeaponItems.HeavyAmmoUsableIndex
         : assetId == GadgetItems.SnapHookAssetId ? GadgetItems.SnapHookUsableIndex
-        : AugmentItems.UsableIndices.TryGetValue(assetId, out int index) ? index
+        : AugmentItems.UsableIndices.TryGetValue(assetId, out int index) || SalvageItems.UsableIndices.TryGetValue(assetId, out index) ? index
         : throw new InvalidDataException("Unsupported carried inventory item");
 
     /// <summary>Whether the item has a supported Raid catalogue and weight mapping.</summary>
     public static bool SupportsCarriedItem(long assetId) => assetId is StorageItems.RubberDuckAssetId or ShieldItems.LightShieldAssetId
-        or WeaponItems.FerroIAssetId or WeaponItems.HeavyAmmoAssetId or GadgetItems.SnapHookAssetId || AugmentItems.UsableIndices.ContainsKey(assetId);
+        or WeaponItems.FerroIAssetId or WeaponItems.HeavyAmmoAssetId or GadgetItems.SnapHookAssetId || AugmentItems.UsableIndices.ContainsKey(assetId)
+        || SalvageItems.UsableIndices.ContainsKey(assetId);
 }

@@ -11,6 +11,14 @@ public static class ItemTechnicalNames
     public const string FerroI = "DA_Item_BattleRifle_BreachAction_01";
     public const string HeavyAmmo = "DA_Item_HeavyAmmo";
     public const string SnapHook = "DA_Item_SnapHook";
+    public const string AssortedSeeds = "DA_Item_Salvage_Seeds";
+    public const string Chemicals = "DA_Item_Salvage_Chemicals";
+    public const string Fabric = "DA_Item_Salvage_Fabric";
+    public const string Planks = "DA_Item_Salvage_Planks";
+    public const string PlasticParts = "DA_Item_Salvage_Plastic";
+    public const string RubberParts = "DA_Item_Salvage_Rubber";
+    public const string SheetMetal = "DA_Item_Salvage_SheetMetal";
+    public const string MetalParts = "DA_Item_Salvage_ScrapMetal";
 
     /// <summary>Protocol asset IDs indexed by technical item name.</summary>
     public static IReadOnlyDictionary<string, long> AssetIds { get; } = new Dictionary<string, long>(StringComparer.Ordinal)
@@ -20,7 +28,7 @@ public static class ItemTechnicalNames
         [FerroI] = WeaponItems.FerroIAssetId,
         [HeavyAmmo] = WeaponItems.HeavyAmmoAssetId,
         [SnapHook] = GadgetItems.SnapHookAssetId,
-    }.Concat(AugmentItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+    }.Concat(AugmentItems.ItemAssetIds).Concat(SalvageItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
 
     /// <summary>Object path of each supported item's data asset (the item in the world, for example on the ground), by technical item name.</summary>
     public static IReadOnlyDictionary<string, string> DataAssets { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -33,5 +41,13 @@ public static class ItemTechnicalNames
         [FerroI] = "/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/DA_Item_BattleRifle_BreachAction_01.DA_Item_BattleRifle_BreachAction_01",
         [HeavyAmmo] = "/Game/Pioneer/Items/Projectiles/HeavyAmmo/DA_Item_HeavyAmmo.DA_Item_HeavyAmmo",
         [SnapHook] = "/Game/Pioneer/Items/MobilityGadgets/SnapHook/DA_Item_SnapHook.DA_Item_SnapHook",
+        [AssortedSeeds] = "/Game/Pioneer/Items/Salvage/Seeds/DA_Item_Salvage_Seeds.DA_Item_Salvage_Seeds",
+        [Chemicals] = "/Game/Pioneer/Items/Salvage/Chemicals/DA_Item_Salvage_Chemicals.DA_Item_Salvage_Chemicals",
+        [Fabric] = "/Game/Pioneer/Items/Salvage/Fabric/DA_Item_Salvage_Fabric.DA_Item_Salvage_Fabric",
+        [Planks] = "/Game/Pioneer/Items/Salvage/Planks/DA_Item_Salvage_Planks.DA_Item_Salvage_Planks",
+        [PlasticParts] = "/Game/Pioneer/Items/Salvage/Plastic/DA_Item_Salvage_Plastic.DA_Item_Salvage_Plastic",
+        [RubberParts] = "/Game/Pioneer/Items/Salvage/Rubber/DA_Item_Salvage_Rubber.DA_Item_Salvage_Rubber",
+        [SheetMetal] = "/Game/Pioneer/Items/Salvage/SheetMetal/DA_Item_Salvage_SheetMetal.DA_Item_Salvage_SheetMetal",
+        [MetalParts] = "/Game/Pioneer/Items/Salvage/ScrapMetal/DA_Item_Salvage_ScrapMetal.DA_Item_Salvage_ScrapMetal",
     };
 }
