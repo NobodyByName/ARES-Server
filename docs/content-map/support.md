@@ -115,6 +115,11 @@ recycled. The materials go to the stash, topping up existing stacks first, all i
 no room left the stash refuses the whole recycle. An item is offered for recycling only when every
 material it gives is supported. Recycling is stock-client verified in the menu.
 
+The stash starts at 64 slots and the Storage screen offers its eleven upgrades, up to 328 slots. Each
+upgrade takes its price in coins and keeps every stored item in place. Operators set the prices with
+`stash-upgrade-coins` in `ares-host.conf`; the defaults follow the official game. Upgrading is
+stock-client verified in the menu.
+
 To grant menu test items from the Host console before a fresh client launch:
 
 ```text
@@ -152,6 +157,8 @@ Limitations:
   traders and crafting are not implemented. A full stash refuses recycling instead of overflowing, and
   recycling in raids (field salvaging) is not implemented. Selling gives no experience or quest progress
   yet, and a weapon sells without mods since mods cannot be fitted yet.
+- Only the main stash grows: the Stash Expansion offers, the expedition stash and the secret stash are
+  not implemented.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not
