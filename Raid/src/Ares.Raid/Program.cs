@@ -13,8 +13,8 @@ using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core;
-using Ares.Structs.Game.Network;
 using Ares.Structs.Game.World;
+using Ares.Structs.Game.Network;
 
 RaidConfiguration configuration;
 try
@@ -51,7 +51,7 @@ log.Write(collision is null
     ? new JsonObject { ["map_collision"] = "unavailable", ["warning"] = collisionProblem }
     : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });
 DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision);
-RaidAllocations allocations = new(new GameServerEndpoint("ares-raid-dam", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
+RaidAllocations allocations = new(new GameServerEndpoint("", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
     configuration.MaxPlayers, fillWindow: configuration.FillSeconds, log: log);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
 RaidConnections connections = new(handshake, new RoutingAuthenticator(allocations), worlds, packet => UdpPadding.Remove(packet), Clock);

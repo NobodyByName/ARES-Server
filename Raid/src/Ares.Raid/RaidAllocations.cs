@@ -49,7 +49,10 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
     private bool _released;
 
     /// <summary>Creates the service.</summary>
-    /// <param name="endpoint">Where players connect (its routing token is filled in per reservation).</param>
+    /// <param name="endpoint">
+    /// Where players connect. Its routing token is filled in per reservation and its name is the match id, which the
+    /// client shows in its build-version corner; operators address the raid by it.
+    /// </param>
     /// <param name="worlds">Prepares the raid world.</param>
     /// <param name="clock">Monotonic clock in seconds.</param>
     /// <param name="maxPlayers">Most players in the raid, across every party.</param>
@@ -373,7 +376,7 @@ public sealed class RaidAllocations : IAllocationService, IRouteResolver
             accepting ? AllocationStates.Available : AllocationStates.Waiting,
             accepting ? ServerInitializationStates.Ready : ServerInitializationStates.Initializing,
             PollingInterval,
-            _endpoint with { RoutingToken = Convert.ToBase64String(item.RoutingToken) },
+            _endpoint with { Name = matchId, RoutingToken = Convert.ToBase64String(item.RoutingToken) },
             [.. item.Loadouts.Select(InventorySnapshots.Receipt)],
             item.Results.Count == 0 ? null : [.. item.Results]);
     }

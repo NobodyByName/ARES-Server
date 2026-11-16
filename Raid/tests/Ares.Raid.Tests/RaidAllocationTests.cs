@@ -33,6 +33,9 @@ public sealed class RaidAllocationTests
         Allocation allocation = allocations.Reserve(Request()).Allocation!;
         Assert.Equal((AllocationStates.Available, ServerInitializationStates.Ready), (allocation.State, allocation.ServerInitializationState));
         Assert.True(SessionAllocatorClient.IsCanonicalUuid(allocation.MatchId));
+
+        // The client shows the server name in its build-version corner; operators address the raid by it.
+        Assert.Equal(allocation.MatchId, allocation.Gameserver.Name);
         byte[] token = Convert.FromBase64String(allocation.Gameserver.RoutingToken);
         Assert.Equal(16, token.Length);
         Assert.Equal([allocation.MatchId], _worlds.Prepared);
