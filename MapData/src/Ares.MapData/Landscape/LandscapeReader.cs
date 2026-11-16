@@ -19,16 +19,16 @@ internal sealed class LandscapeReader
     private static readonly PackageObjectIndex s_proxy = PackageObjectIndex.FromScriptPath(LandscapeStreamingProxyMembers.ClassPath);
     private static readonly PackageObjectIndex s_collision = PackageObjectIndex.FromScriptPath(LandscapeHeightfieldCollisionComponentMembers.ClassPath);
 
-    private readonly ComponentReader _components;
+    private readonly SceneResolver _scenes;
     private readonly SurfaceLibrary _surfaces;
 
     /// <summary>
-    /// A reader that places components with <paramref name="components"/> (which reads the proxies' root components) and
+    /// A reader that places components with <paramref name="scenes"/> (which resolves the proxies' root components) and
     /// gives their cells the surface types of their cooked physical materials from <paramref name="surfaces"/>.
     /// </summary>
-    public LandscapeReader(ComponentReader components, SurfaceLibrary surfaces)
+    public LandscapeReader(SceneResolver scenes, SurfaceLibrary surfaces)
     {
-        _components = components;
+        _scenes = scenes;
         _surfaces = surfaces;
     }
 
@@ -144,7 +144,7 @@ internal sealed class LandscapeReader
             throw new InvalidDataException($"The landscape collision component is attached to socket {socket}");
         }
 
-        Transform rootWorld = _components.WorldTransform(cell, root);
+        Transform rootWorld = _scenes.WorldTransform(cell, root);
         Transform own = TransformMath.FromParts(values.Location, values.Rotation, values.Scale);
         return TransformMath.Compose(own, rootWorld, values.Absolute);
     }

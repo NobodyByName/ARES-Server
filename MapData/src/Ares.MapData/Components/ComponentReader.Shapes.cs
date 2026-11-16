@@ -50,7 +50,7 @@ internal sealed partial class ComponentReader
             PackageObjectIndex template = level.Template;
             if (template.Kind == PackageObjectKind.ScriptImport)
             {
-                string defaultObject = packages.ScriptPath(template) ?? template.ToString();
+                string defaultObject = _packages.ScriptPath(template) ?? template.ToString();
                 return ShapeWithDefaults(kind, defaultObject, extent, radius, halfHeight);
             }
 
@@ -59,12 +59,12 @@ internal sealed partial class ComponentReader
                 throw new InvalidDataException("The component has no template");
             }
 
-            if (depth + 1 > MaxTemplateDepth)
+            if (depth + 1 > SceneResolver.MaxTemplateDepth)
             {
                 throw new InvalidDataException("The component's template chain is too long");
             }
 
-            ExportRef next = packages.Resolve(current, template) ?? throw new InvalidDataException("The component's template cannot be resolved");
+            ExportRef next = _packages.Resolve(current, template) ?? throw new InvalidDataException("The component's template cannot be resolved");
             if (next.Export.Class != level.Class)
             {
                 throw new InvalidDataException("The component's template has another class");

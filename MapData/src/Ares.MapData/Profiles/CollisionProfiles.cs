@@ -1,5 +1,4 @@
 using System.Text;
-using Ares.Common.Archives;
 using Ares.Common.Maps;
 using Ares.MapData.Archives;
 using Ares.Structs.Game.Collision;
@@ -89,14 +88,6 @@ internal sealed class CollisionProfiles
 
     /// <summary>Which collision bodies whose trace flag is <see cref="CollisionTraceFlag.UseDefault"/> offer.</summary>
     public CollisionTraceFlag DefaultShapeComplexity { get; }
-
-    /// <summary>Reads the collision config of the game installed at <paramref name="gameDirectory"/>.</summary>
-    /// <exception cref="InvalidDataException">The config pak or the collision config is missing or malformed.</exception>
-    public static CollisionProfiles Load(string gameDirectory, ArchiveKeys keys)
-    {
-        using PakFile pak = PakFile.Open(Path.Combine(gameDirectory, CollisionProfileConfig.ConfigPak), keys);
-        return Load(pak);
-    }
 
     /// <summary>Reads the collision config files from <paramref name="pak"/>.</summary>
     /// <exception cref="InvalidDataException">A config file is missing, or the collision config is malformed.</exception>

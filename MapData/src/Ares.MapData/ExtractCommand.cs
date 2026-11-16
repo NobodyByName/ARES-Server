@@ -7,6 +7,7 @@ using Ares.MapData.Archives;
 using Ares.MapData.Extraction;
 using Ares.MapData.Profiles;
 using Ares.Structs.Core;
+using Ares.Structs.Game.Collision;
 
 namespace Ares.MapData;
 
@@ -120,7 +121,12 @@ internal sealed class ExtractCommand
             ExtractionSummary summary;
             using (GameArchive archive = GameArchive.Open(GameDirectory, keys, tocKey))
             {
-                CollisionProfiles profiles = CollisionProfiles.Load(GameDirectory, keys);
+                CollisionProfiles profiles;
+                using (PakFile configPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
+                {
+                    profiles = CollisionProfiles.Load(configPak);
+                }
+
                 (map, summary) = CollisionExtractor.Extract(archive, profiles);
             }
 

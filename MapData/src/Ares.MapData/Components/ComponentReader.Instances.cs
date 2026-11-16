@@ -48,7 +48,7 @@ internal sealed partial class ComponentReader
         }
         else
         {
-            ExportRef template = Template(cell, export) ?? throw new InvalidDataException("The component stores no instances and has no template");
+            ExportRef template = Scenes.Template(cell, export) ?? throw new InvalidDataException("The component stores no instances and has no template");
             templatePath = template.Path;
             if (!_templateInstances.TryGetValue((template.Package, template.Export.Index), out InstanceBlock? cached))
             {
@@ -69,8 +69,8 @@ internal sealed partial class ComponentReader
         }
 
         ZenExport parentExport = cell.Exports[parent - 1];
-        Transform world = WorldTransform(cell, parentExport);
-        if (scene.Socket is { } socket && socket != CookedPackage.NoneName && SocketTransform(cell, parentExport, socket) is { } socketTransform)
+        Transform world = Scenes.WorldTransform(cell, parentExport);
+        if (scene.Socket is { } socket && socket != CookedPackage.NoneName && Scenes.SocketTransform(cell, parentExport, socket) is { } socketTransform)
         {
             world = TransformMath.Compose(socketTransform, world);
         }
@@ -206,7 +206,7 @@ internal sealed partial class ComponentReader
 
         try
         {
-            mesh = package.Header.Imports[-value - 1].Kind == PackageObjectKind.PackageImport ? packages.Reference(package, value) : null;
+            mesh = package.Header.Imports[-value - 1].Kind == PackageObjectKind.PackageImport ? _packages.Reference(package, value) : null;
         }
         catch (InvalidDataException)
         {
@@ -421,7 +421,7 @@ internal sealed partial class ComponentReader
     /// <summary>Whether an instanced component or the template that holds its instances stores override materials.</summary>
     public bool StoresInstancedOverrideMaterials(InstancedComponent component)
     {
-        if (packages.Load(component.Cell) is not { } cell)
+        if (_packages.Load(component.Cell) is not { } cell)
         {
             return false;
         }
@@ -433,6 +433,6 @@ internal sealed partial class ComponentReader
             return true;
         }
 
-        return Template(cell, export) is { } template && UnversionedHeader.Read(template.Package.Data, CookedPackage.StartOf(template.Export)).IsNonZero(index);
+        return Scenes.Template(cell, export) is { } template && UnversionedHeader.Read(template.Package.Data, CookedPackage.StartOf(template.Export)).IsNonZero(index);
     }
 }

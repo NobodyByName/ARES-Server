@@ -35,7 +35,7 @@ public sealed class ComponentReaderTests
         ];
         (ComponentReader reader, CookedPackage cell) = Read([("Actor", PackageObjectIndex.Null, s_actor, 0, []), ("Mesh", PackageObjectIndex.FromExport(0), s_staticMeshComponent, 0, component)]);
 
-        Assert.Equal(new Vector3D(1, 2, 3), reader.WorldTransform(cell, cell.Exports[1]).Translation);
+        Assert.Equal(new Vector3D(1, 2, 3), reader.Scenes.WorldTransform(cell, cell.Exports[1]).Translation);
     }
 
     [Theory]
@@ -64,7 +64,7 @@ public sealed class ComponentReaderTests
         ];
         (ComponentReader reader, CookedPackage cell) = Read([("Actor", PackageObjectIndex.Null, s_actor, 0, []), ("Mesh", PackageObjectIndex.FromExport(0), s_staticMeshComponent, 0, component)]);
 
-        Assert.Equal(new Vector3D(4, 5, 6), reader.WorldTransform(cell, cell.Exports[1]).Translation);
+        Assert.Equal(new Vector3D(4, 5, 6), reader.Scenes.WorldTransform(cell, cell.Exports[1]).Translation);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ComponentReaderTests
             ("Engine", PackageObjectIndex.FromExport(0), s_staticMeshComponent, 0, child),
         ]);
 
-        Assert.Equal(new Vector3D(100, 0, 50), reader.WorldTransform(cell, cell.Exports[2]).Translation);
+        Assert.Equal(new Vector3D(100, 0, 50), reader.Scenes.WorldTransform(cell, cell.Exports[2]).Translation);
     }
 
     [Fact]

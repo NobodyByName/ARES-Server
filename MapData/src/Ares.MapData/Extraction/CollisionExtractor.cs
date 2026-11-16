@@ -72,7 +72,7 @@ internal sealed class CollisionExtractor
         CookedPackage level = _packages.Load(DamMap.MapPackage)
             ?? throw new InvalidDataException($"The map package {DamMap.MapPackage} is not in the game archives");
         IReadOnlyList<MapCell> cells = MapCellReader.ReadCells(level, cellPackages, DamDataLayers.All);
-        LandscapeReader landscape = new(_components, _surfaces);
+        LandscapeReader landscape = new(_components.Scenes, _surfaces);
         foreach (MapCell cell in cells)
         {
             int cellIndex;

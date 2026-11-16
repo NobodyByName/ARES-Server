@@ -99,7 +99,7 @@ public sealed class LandscapeReaderTests
     private static IReadOnlyList<HeightFieldTile> Read(CookedPackage cell)
     {
         PackageCache packages = new(path => path == CellPath ? cell : null, _ => null);
-        return new LandscapeReader(new ComponentReader(packages), new SurfaceLibrary(packages)).ReadCell(cell, 4);
+        return new LandscapeReader(new ComponentReader(packages).Scenes, new SurfaceLibrary(packages)).ReadCell(cell, 4);
     }
 
     /// <summary>
