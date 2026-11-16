@@ -22,7 +22,8 @@ public sealed partial class InventoryStore
             || operations.Any(operation => operation is not (SetItemParents { ItemInstanceId.Length: > 0, ParentInstanceIds: [{ Length: > 0 }] }
                 or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 }
                 or AcceptOffer { Times: > 0 }
-                or ScrapItem { InstanceId.Length: > 0, Amount: null or > 0 }))
+                or ScrapItem { InstanceId.Length: > 0, Amount: null or > 0 }
+                or RecycleItem { InstanceId.Length: > 0, Amount: null or > 0 }))
             || operations.OfType<AcceptOffer>().Any(purchase => purchase.Payment?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true))
         {
             return ServiceReply.Error(400, "invalid_inventory_operations");
@@ -89,6 +90,15 @@ public sealed partial class InventoryStore
                             }
 
                             candidate = sold;
+                            changed = true;
+                            break;
+                        case RecycleItem recycling:
+                            if (Recycle(candidate, recycling, created, consumed, etag, now.ToUnixTimeMilliseconds(), out string reason) is not { } recycled)
+                            {
+                                return ServiceReply.Error(400, reason);
+                            }
+
+                            candidate = recycled;
                             changed = true;
                             break;
                     }
@@ -309,12 +319,22 @@ public sealed partial class InventoryStore
             }
         }
 
-        foreach (IGrouping<long, OfferRewardedItem> reward in offer.RewardPackage.RewardedItems.GroupBy(item => item.GameAssetId))
+        rejection = "stash_full";
+        return Give(inventory, offer.RewardPackage, purchase.Times, etag, updatedAt);
+    }
+
+    /// <summary>
+    /// Adds a reward package <paramref name="times"/> over to the stash, filling stacks of the same item before
+    /// starting new ones. Returns null when the stash has no room.
+    /// </summary>
+    private static PlayerInventory? Give(PlayerInventory inventory, OfferRewardPackage package, long times, string etag, long updatedAt)
+    {
+        foreach (IGrouping<long, OfferRewardedItem> reward in package.RewardedItems.GroupBy(item => item.GameAssetId))
         {
             string type = InventoryCatalog.TechnicalName(reward.Key);
             ItemDescription definition = InventoryCatalog.ByAsset[reward.Key];
             long stackLimit = definition.Stackable ? definition.MaxAmount : 1;
-            long remaining = checked(reward.Sum(item => item.Amount) * purchase.Times);
+            long remaining = checked(reward.Sum(item => item.Amount) * times);
             List<OwnedItem> stash = [.. inventory.Stash.Items];
             for (int index = 0; index < stash.Count && remaining > 0; index++)
             {
@@ -333,7 +353,6 @@ public sealed partial class InventoryStore
             {
                 if (stash.Count >= inventory.Stash.SlotCount)
                 {
-                    rejection = "stash_full";
                     return null;
                 }
 
@@ -372,14 +391,7 @@ public sealed partial class InventoryStore
             return null;
         }
 
-        bool emptied = amount == item.Quantity;
-        inventory = Replace(inventory, area, item.InstanceId, emptied ? null : item with { Quantity = item.Quantity - amount, ETag = etag, UpdatedAt = updatedAt });
-        if (emptied)
-        {
-            created.Remove(item.InstanceId);
-            consumed.Add(item.InstanceId);
-        }
-
+        inventory = Take(inventory, area, item, amount, created, consumed, etag, updatedAt);
         foreach (IGrouping<long, OfferRewardedItem> reward in scrap.RewardPackage.RewardedItems.GroupBy(rewarded => rewarded.GameAssetId))
         {
             string currency = InventoryCatalog.TechnicalName(reward.Key);
@@ -407,6 +419,52 @@ public sealed partial class InventoryStore
             inventory = inventory with { Wallet = [.. inventory.Wallet.Where(owned => owned.Type != currency), paid] };
         }
 
+        return inventory;
+    }
+
+    /// <summary>
+    /// Recycles the whole item, or <see cref="RecycleItem.Amount"/> of its stack, into its recycle package times the
+    /// amount. Whatever the item holds goes with it. The recycled items go to the stash like offer rewards
+    /// (<see cref="Give"/>). A stack split off earlier in the batch and recycled whole needs no parent move. Returns null
+    /// with the reason when the item cannot be recycled or the stash has no room.
+    /// </summary>
+    private static PlayerInventory? Recycle(PlayerInventory inventory, RecycleItem recycling, HashSet<string> created, HashSet<string> consumed,
+        string etag, long updatedAt, out string rejection)
+    {
+        rejection = "item_not_recyclable";
+        if (Find(inventory, recycling.InstanceId) is not var (area, item) || area == InventoryArea.Wallet
+            || InventoryCatalog.ByAsset[InventoryCatalog.AssetId(item.Type)].Recycle is not { } package)
+        {
+            return null;
+        }
+
+        long amount = recycling.Amount ?? item.Quantity;
+        if (amount > item.Quantity)
+        {
+            rejection = "invalid_recycle_amount";
+            return null;
+        }
+
+        rejection = "stash_full";
+        return Give(Take(inventory, area, item, amount, created, consumed, etag, updatedAt), package, amount, etag, updatedAt);
+    }
+
+    /// <summary>
+    /// Removes <paramref name="amount"/> of an owned stack, or the whole item when that is all of it; a removed item no
+    /// longer needs the parent move a split would.
+    /// </summary>
+    private static PlayerInventory Take(PlayerInventory inventory, InventoryArea area, OwnedItem item, long amount, HashSet<string> created,
+        HashSet<string> consumed, string etag, long updatedAt)
+    {
+        bool emptied = amount == item.Quantity;
+        inventory = Replace(inventory, area, item.InstanceId, emptied ? null : item with { Quantity = item.Quantity - amount, ETag = etag, UpdatedAt = updatedAt });
+        if (!emptied)
+        {
+            return inventory;
+        }
+
+        created.Remove(item.InstanceId);
+        consumed.Add(item.InstanceId);
         return inventory;
     }
 

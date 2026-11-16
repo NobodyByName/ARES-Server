@@ -6,13 +6,27 @@ namespace Ares.Common.Game.Inventory;
 /// <summary>Shared item definitions and the inventory frame selected by an equipped augment.</summary>
 public static class LoadoutDefinitions
 {
-    /// <summary>Supported item definitions, each with its sell value when it has one.</summary>
-    public static IReadOnlyList<ItemDescription> All { get; } =
+    private static readonly ItemDescription[] s_definitions =
     [
         .. new[] { StorageItems.Definitions, LoadoutItems.Definitions, AugmentItems.Definitions, ShieldItems.Definitions, WeaponItems.Definitions,
                 GadgetItems.Definitions, SalvageItems.Definitions, CurrencyItems.Definitions }
-            .SelectMany(definitions => definitions)
-            .Select(definition => definition with { Scrap = ItemSale.Scrap(definition.GameAssetId) }),
+            .SelectMany(definitions => definitions),
+    ];
+
+    private static readonly HashSet<long> s_supported = [.. s_definitions.Select(definition => definition.GameAssetId)];
+
+    /// <summary>
+    /// Supported item definitions, each with its sell value when it has one, and its recycle package when it has one
+    /// and every recycled item is supported.
+    /// </summary>
+    public static IReadOnlyList<ItemDescription> All { get; } =
+    [
+        .. s_definitions.Select(definition => definition with
+        {
+            Scrap = ItemSale.Scrap(definition.GameAssetId),
+            Recycle = ItemRecycle.Package(definition.GameAssetId) is { } recycle && recycle.RewardedItems.All(item => s_supported.Contains(item.GameAssetId))
+                ? recycle : null,
+        }),
     ];
 
     public static IReadOnlyDictionary<long, ItemDescription> ByAsset { get; } = All.ToDictionary(item => item.GameAssetId);
