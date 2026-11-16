@@ -146,7 +146,18 @@ public sealed record ItemDescription(
     /// <summary>Child-slot layout, when available.</summary>
     [JsonPropertyName("slotConfig"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ItemSlotConfiguration? SlotConfig { get; init; }
+
+    /// <summary>What selling one item gives, or null when the item cannot be sold.</summary>
+    [JsonPropertyName("scrap"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ItemScrapDescription? Scrap { get; init; }
 }
+
+/// <summary>
+/// What selling an item gives. The menu shows the coins of <paramref name="RewardPackage"/> as the item's value and
+/// offers to sell it only when the package has rewarded items.
+/// </summary>
+/// <param name="RewardPackage">Items one sold item gives at full durability.</param>
+public sealed record ItemScrapDescription([property: JsonPropertyName("rewardPackage")] OfferRewardPackage RewardPackage);
 
 public sealed record LevelGroupTable([property: JsonPropertyName("groups")] IReadOnlyList<LevelGroup> Groups);
 

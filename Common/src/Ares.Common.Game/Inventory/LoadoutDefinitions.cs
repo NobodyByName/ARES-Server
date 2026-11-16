@@ -6,7 +6,15 @@ namespace Ares.Common.Game.Inventory;
 /// <summary>Shared item definitions and the inventory frame selected by an equipped augment.</summary>
 public static class LoadoutDefinitions
 {
-    public static IReadOnlyList<ItemDescription> All { get; } = [.. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions, .. ShieldItems.Definitions, .. WeaponItems.Definitions, .. GadgetItems.Definitions, .. SalvageItems.Definitions];
+    /// <summary>Supported item definitions, each with its sell value when it has one.</summary>
+    public static IReadOnlyList<ItemDescription> All { get; } =
+    [
+        .. new[] { StorageItems.Definitions, LoadoutItems.Definitions, AugmentItems.Definitions, ShieldItems.Definitions, WeaponItems.Definitions,
+                GadgetItems.Definitions, SalvageItems.Definitions, CurrencyItems.Definitions }
+            .SelectMany(definitions => definitions)
+            .Select(definition => definition with { Scrap = ItemSale.Scrap(definition.GameAssetId) }),
+    ];
+
     public static IReadOnlyDictionary<long, ItemDescription> ByAsset { get; } = All.ToDictionary(item => item.GameAssetId);
 
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
