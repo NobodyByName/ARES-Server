@@ -105,6 +105,7 @@ public sealed class ConfigurationFileTests : IDisposable
             raid-control-port = 17000
             raid-lighting = Lighting.GreyMorning
             map-data-dir = maps
+            stash-upgrade-coins = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0
             console = json
             log-file = logs/host.log
             """);
@@ -121,6 +122,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
             "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "maps")), configuration.Raids);
+        Assert.Equal([1L, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0], configuration.Settings.StashUpgrades.Coins);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
     }
@@ -185,6 +187,8 @@ public sealed class ConfigurationFileTests : IDisposable
     [InlineData("raid-control-port = 18079\nraid-capacity = 2", "must not include the Host --port")]
     [InlineData("raid-port = 65535\nraid-capacity = 2", "one port from 1 to 65535")]
     [InlineData("archive-keys-file =", "must not be empty")]
+    [InlineData("stash-upgrade-coins = 1, 2, 3", "--stash-upgrade-coins expects 11 comma-separated coin prices")]
+    [InlineData("stash-upgrade-coins = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1", "--stash-upgrade-coins expects 11")]
     [InlineData("config = another.conf", "unknown setting")]
     public void Bad_files_fail_explicitly(string content, string expected)
     {

@@ -61,6 +61,11 @@ raid-lighting =
 # Empty: raids run without map collision.
 map-data-dir =
 
+# ECONOMY
+# Coin price of each stash upgrade (tier 2 to tier 12, 64 to 328 slots, 24 more each),
+# comma-separated. Empty: 5000, 10000, 15000, 25000, 40000, 60000, 90000, 130000, 200000, 750000, 1500000.
+stash-upgrade-coins =
+
 # CONSOLE AND LOGGING
 # auto, interactive, plain or json. auto selects interactive output in a terminal.
 console = auto

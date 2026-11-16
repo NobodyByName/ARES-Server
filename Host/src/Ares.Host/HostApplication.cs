@@ -49,7 +49,7 @@ public static class HostApplication
         raidStarter ??= configuration.Raids is { } launch ? new RaidProcesses(launch, log) : null;
         RaidFleet? raids = raidStarter is null ? null : new RaidFleet(raidStarter, settings.RaidCapacity, configuration.Raids?.Players ?? 1, time);
         AccountDirectory accounts = new(database, time);
-        PlayerRegistry players = new(database, accounts, raids, log, time);
+        PlayerRegistry players = new(database, accounts, raids, log, time, settings.StashUpgrades);
         try
         {
             database.Initialize();

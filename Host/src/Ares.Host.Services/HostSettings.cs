@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ares.Common.Archives;
+using Ares.Host.Services.Inventory;
 using SupportedGame = Ares.Structs.Core.GameBuild;
 
 namespace Ares.Host.Services;
@@ -42,6 +43,9 @@ public sealed record HostSettings
 
     /// <summary>One database per independent Host/private server.</summary>
     public string MongoDbDatabase { get; init; } = "ares_host";
+
+    /// <summary>Coin price of each stash upgrade.</summary>
+    public StashUpgradePrices StashUpgrades { get; init; } = StashUpgradePrices.Default;
 
     /// <summary>Scale factor applied to the bootstrap reply delays some routes need (tests use 0).</summary>
     public double RouteDelayScale { get; init; } = 1.0;
