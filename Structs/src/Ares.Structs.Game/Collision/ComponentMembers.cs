@@ -1,3 +1,5 @@
+using Ares.Structs.Core.Geometry;
+
 namespace Ares.Structs.Game.Collision;
 
 /// <summary>
@@ -184,14 +186,88 @@ public static class StreamingTextureBuildInfoMembers
     public const int ValueSize = 4;
 }
 
-/// <summary>Chain facts of a <c>USplineMeshComponent</c> (a static mesh component bent along a spline).</summary>
+/// <summary>
+/// Members of a <c>USplineMeshComponent</c> (a static mesh component bent along a spline): its own members come first,
+/// then the static mesh component's from <see cref="StaticMeshPart"/>. Own members not listed here are not decoded.
+/// </summary>
 public static class SplineMeshComponentMembers
 {
     /// <summary>Script path of the class.</summary>
     public const string ClassPath = "/Script/Engine.SplineMeshComponent";
 
+    /// <summary><c>SplineParams</c>: an <c>FSplineMeshParams</c> struct (see <see cref="SplineMeshParamsMembers"/>).</summary>
+    public const int SplineParams = 0;
+
+    /// <summary><c>CachedMeshBodySetupGuid</c>: a GUID (16 bytes).</summary>
+    public const int CachedMeshBodySetupGuid = 3;
+
+    /// <summary>Unknown member, a float.</summary>
+    public const int Unknown4 = 4;
+
+    /// <summary><c>BodySetup</c>: object reference (4 bytes) to the component's own body setup.</summary>
+    public const int BodySetup = 5;
+
+    /// <summary>Index where the static mesh component part (<see cref="StaticMeshComponentMembers"/>) starts.</summary>
+    public const int StaticMeshPart = 12;
+
     /// <summary>Index of the scene part.</summary>
-    public const int ScenePart = 185;
+    public const int ScenePart = StaticMeshPart + StaticMeshComponentMembers.ScenePart;
+
+    /// <summary>The class default's up direction of the spline frame.</summary>
+    public static Vector3D DefaultSplineUpDirection => new(0, 0, 1);
+
+    /// <summary>Bytes of the value of a fixed-size own member; <see langword="null"/> for the struct member and unknown members.</summary>
+    public static int? FixedValueSize(int member) => member switch
+    {
+        CachedMeshBodySetupGuid => 16,
+        Unknown4 or BodySetup => 4,
+        _ => null,
+    };
+}
+
+/// <summary>
+/// Members of the unversioned <c>FSplineMeshParams</c> struct: the cubic Hermite segment a spline mesh follows (in
+/// component space) and the scale, roll and offset of the mesh at both ends. Vectors are three doubles, 2D vectors two
+/// doubles, rolls floats in radians.
+/// </summary>
+public static class SplineMeshParamsMembers
+{
+    public const int StartPosition = 0;
+    public const int StartTangent = 1;
+    public const int StartScale = 2;
+    public const int StartRoll = 3;
+    public const int EndRoll = 4;
+    public const int StartOffset = 5;
+    public const int EndPosition = 6;
+    public const int EndScale = 7;
+    public const int EndTangent = 8;
+    public const int EndOffset = 9;
+
+    /// <summary>Members of the struct's chain.</summary>
+    public const int MemberCount = 10;
+
+    /// <summary>
+    /// The class default's value of a member, which a component that does not store the member keeps: a segment of
+    /// length 100 along X with unit scale, no roll and no offset.
+    /// </summary>
+    public static IReadOnlyList<double> DefaultValue(int member) => member switch
+    {
+        StartTangent or EndPosition or EndTangent => [100, 0, 0],
+        StartScale or EndScale => [1, 1],
+        StartPosition => [0, 0, 0],
+        StartOffset or EndOffset => [0, 0],
+        StartRoll or EndRoll => [0],
+        _ => throw new ArgumentOutOfRangeException(nameof(member)),
+    };
+
+    /// <summary>Bytes of a member's value.</summary>
+    public static int ValueSize(int member) => member switch
+    {
+        StartPosition or StartTangent or EndPosition or EndTangent => 3 * sizeof(double),
+        StartScale or StartOffset or EndScale or EndOffset => 2 * sizeof(double),
+        StartRoll or EndRoll => sizeof(float),
+        _ => throw new ArgumentOutOfRangeException(nameof(member)),
+    };
 }
 
 /// <summary>Chain facts of a <c>UBrushComponent</c> (the collision of volumes such as blocking volumes).</summary>

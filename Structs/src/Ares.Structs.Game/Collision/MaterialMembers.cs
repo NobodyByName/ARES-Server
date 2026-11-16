@@ -105,6 +105,44 @@ public static class StaticMeshMembers
     /// material slots; cooked triangle meshes store a slot per triangle.
     /// </summary>
     public const int StaticMaterials = 3;
+
+    /// <summary>Unknown member, a float.</summary>
+    public const int Unknown4 = 4;
+
+    /// <summary>Unknown member, an int32.</summary>
+    public const int Unknown5 = 5;
+
+    /// <summary>
+    /// <c>ExtendedBounds</c>: an <c>FBoxSphereBounds</c> struct (see <see cref="BoxSphereBoundsMembers"/>), the mesh's
+    /// bounds including its bounds extensions.
+    /// </summary>
+    public const int ExtendedBounds = 34;
+
+    /// <summary>Bytes of the value of a fixed-size member; <see langword="null"/> for structs, arrays and unknown members.</summary>
+    public static int? FixedValueSize(int member) => member switch
+    {
+        Unknown4 or Unknown5 => 4,
+        _ => null,
+    };
+}
+
+/// <summary>Members of the unversioned <c>FBoxSphereBounds</c> struct.</summary>
+public static class BoxSphereBoundsMembers
+{
+    /// <summary><c>Origin</c>: vector of three doubles, the box centre.</summary>
+    public const int Origin = 0;
+
+    /// <summary><c>BoxExtent</c>: vector of three doubles, half the box size.</summary>
+    public const int BoxExtent = 1;
+
+    /// <summary><c>SphereRadius</c>: double.</summary>
+    public const int SphereRadius = 2;
+
+    /// <summary>Members of the struct's chain.</summary>
+    public const int MemberCount = 3;
+
+    /// <summary>Bytes of a member's value.</summary>
+    public static int ValueSize(int member) => member == SphereRadius ? sizeof(double) : 3 * sizeof(double);
 }
 
 /// <summary>Members of the unversioned <c>FStaticMaterial</c> struct: one material slot of a static mesh.</summary>

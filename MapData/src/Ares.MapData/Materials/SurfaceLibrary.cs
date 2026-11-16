@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Ares.Common.Maps;
+using Ares.MapData.Bodies;
 using Ares.MapData.Packages;
 using Ares.Structs.Game.Collision;
 
@@ -14,7 +15,6 @@ namespace Ares.MapData.Materials;
 internal sealed class SurfaceLibrary
 {
     private const int MaxParentDepth = 32;
-    private const int MaxMaterialSlots = 256;
 
     private static readonly PackageObjectIndex s_physicalMaterial = PackageObjectIndex.FromScriptPath(PhysicalMaterialMembers.ClassPath);
     private static readonly PackageObjectIndex s_material = PackageObjectIndex.FromScriptPath(MaterialMembers.ClassPath);
@@ -198,52 +198,7 @@ internal sealed class SurfaceLibrary
     private ImmutableArray<ExportRef?> ReadMeshMaterials(CookedPackage package, ZenExport mesh)
     {
         UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(mesh));
-        if (!header.IsNonZero(StaticMeshMembers.StaticMaterials))
-        {
-            return [];
-        }
-
-        int at = ValueOffset(header, StaticMeshMembers.StaticMaterials, _ => null);
-        int end = CookedPackage.EndOf(mesh);
-        int count = package.ReadInt32(at);
-        if (count is < 0 or > MaxMaterialSlots)
-        {
-            throw new InvalidDataException($"{package.Name}: {mesh.Name} has {count} material slots");
-        }
-
-        at += sizeof(int);
-        ImmutableArray<ExportRef?>.Builder materials = ImmutableArray.CreateBuilder<ExportRef?>(count);
-        for (int slot = 0; slot < count; slot++)
-        {
-            UnversionedHeader element = UnversionedHeader.Read(package.Data, at, StaticMaterialMembers.MemberCount);
-            at = element.ValuesOffset;
-            ExportRef? material = null;
-            foreach (UnversionedMember member in element.Members.Where(member => member.IsNonZero))
-            {
-                switch (member.Index)
-                {
-                    case StaticMaterialMembers.MaterialInterface:
-                        material = _packages.Reference(package, package.ReadInt32(at));
-                        break;
-                    case StaticMaterialMembers.UvChannelData:
-                        UnversionedHeader channels = UnversionedHeader.Read(package.Data, at, MeshUvChannelInfoMembers.MemberCount);
-                        at = channels.ValuesOffset + channels.Members.Where(value => value.IsNonZero).Sum(value => MeshUvChannelInfoMembers.ValueSize(value.Index));
-                        continue;
-                }
-
-                at += StaticMaterialMembers.FixedValueSize(member.Index)
-                    ?? throw new InvalidDataException($"{package.Name}: static material member {member.Index} of {mesh.Name} has an unknown size");
-            }
-
-            if (at > end)
-            {
-                throw new InvalidDataException($"{package.Name}: the material slots of {mesh.Name} run past the export");
-            }
-
-            materials.Add(material);
-        }
-
-        return materials.MoveToImmutable();
+        return [.. StaticMeshValues.Materials(package, mesh, header).Materials.Select(material => _packages.Reference(package, material))];
     }
 
     /// <summary>Offset of member <paramref name="index"/>'s value when every stored member before it has a known fixed size.</summary>

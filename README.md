@@ -86,7 +86,7 @@ dotnet run --project MapData/src/Ares.MapData -- extract \
 | `--help`, `--version` | Show the usage, or the ARES version and supported game build. |
 
 All four options are required. The run takes up to a minute and about 2 GB of memory. It writes one
-file per supported map into the output folder (currently `TheDam_02_P.collision`, about 50 MB) and
+file per supported map into the output folder (currently `TheDam_02_P.collision`, about 115 MB) and
 replaces an earlier file only once the new one is complete. It prints what it wrote. Exit code 0 means
 success, 1 that the game's files could not be read, and 2 invalid options or inputs: a missing folder
 or file, keys for another game build, or a TOC key that does not decrypt the game's archive index.

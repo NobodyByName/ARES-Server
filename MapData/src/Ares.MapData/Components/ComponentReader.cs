@@ -180,12 +180,11 @@ internal sealed partial class ComponentReader(PackageCache packages)
     }
 
     /// <summary>
-    /// Offset of the stored <c>StaticMesh</c> value of a component. In a static mesh component every member before it has
-    /// a known size; a spline mesh component's own members do not, so there it is the one place in the values that
-    /// refers to a static mesh.
+    /// Offset of the stored <c>StaticMesh</c> value of a component: every member before it must have a known size (in a
+    /// spline mesh component, its own decoded members and then the static mesh part's).
     /// </summary>
     /// <exception cref="InvalidDataException">The value cannot be located.</exception>
-    private int MeshValueOffset(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
+    private static int MeshValueOffset(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
     {
         int meshIndex = chainStart + StaticMeshComponentMembers.StaticMesh;
         if (chainStart == 0)
@@ -193,35 +192,10 @@ internal sealed partial class ComponentReader(PackageCache packages)
             return ValueOffset(header, meshIndex, StaticMeshComponentMembers.FixedValueSize);
         }
 
-        int end = CookedPackage.EndOf(export);
-        int? found = null;
-        for (int at = header.ValuesOffset; at + sizeof(int) <= end; at++)
-        {
-            int value = package.ReadInt32(at);
-            if (!package.IsImportReference(value) || package.Header.Imports[-value - 1].Kind != PackageObjectKind.PackageImport)
-            {
-                continue;
-            }
-
-            ExportRef? target;
-            try
-            {
-                target = packages.Reference(package, value);
-            }
-            catch (InvalidDataException)
-            {
-                continue;
-            }
-
-            if (target?.Export.Class != s_staticMesh)
-            {
-                continue;
-            }
-
-            found = found is null ? at : throw new InvalidDataException("The component refers to more than one static mesh");
-        }
-
-        return found ?? throw new InvalidDataException("The component's static mesh reference cannot be located");
+        return SplineOwnMembersEnd(package, export, header) + header.Members
+            .Where(member => member.IsNonZero && member.Index >= chainStart && member.Index < meshIndex)
+            .Sum(member => StaticMeshComponentMembers.FixedValueSize(member.Index - chainStart)
+                ?? throw new InvalidDataException($"Member {member.Index} before StaticMesh has an unknown size"));
     }
 
     /// <summary>
@@ -261,7 +235,7 @@ internal sealed partial class ComponentReader(PackageCache packages)
         return CollisionKindOf(export) switch
         {
             CollisionComponentKind.StaticMesh => 0,
-            CollisionComponentKind.SplineMesh => SplineMeshComponentMembers.ScenePart - StaticMeshComponentMembers.ScenePart,
+            CollisionComponentKind.SplineMesh => SplineMeshComponentMembers.StaticMeshPart,
             CollisionComponentKind.Brush or CollisionComponentKind.Box or CollisionComponentKind.Sphere or CollisionComponentKind.Capsule or null =>
                 throw new InvalidDataException("The component is not a static mesh or spline mesh component"),
             _ => throw new InvalidDataException("The component is not a static mesh or spline mesh component"),
@@ -273,7 +247,7 @@ internal sealed partial class ComponentReader(PackageCache packages)
     /// mesh component, which must then store its static mesh, the value after it. Returns the offset and the first member
     /// index still to step over.
     /// </summary>
-    private (int At, int FirstMember) MaterialsSearchStart(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
+    private static (int At, int FirstMember) MaterialsSearchStart(CookedPackage package, ZenExport export, UnversionedHeader header, int chainStart)
     {
         int meshIndex = chainStart + StaticMeshComponentMembers.StaticMesh;
         if (chainStart == 0)

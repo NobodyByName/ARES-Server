@@ -167,6 +167,11 @@ internal sealed class CollisionExtractor
             return;
         }
 
+        if (component.Kind == CollisionComponentKind.SplineMesh && shapes is { TraceFlag: CollisionTraceFlag.SimpleAndComplex, ComplexMeshes.IsEmpty: true })
+        {
+            shapes = SplineComplexCollision(cell, export, shapes);
+        }
+
         (PhysicalSurfaceType surface, ImmutableArray<PhysicalSurfaceType> materialSurfaces) = PlacedSurfaces(cell, export, component, body, shapes);
         try
         {
@@ -300,6 +305,41 @@ internal sealed class CollisionExtractor
         return owned.Length == 1
             ? _bodies.GetCellBody(new ExportRef(cell, owned[0]))
             : throw new InvalidDataException($"The component owns {owned.Length} body setups");
+    }
+
+    /// <summary>
+    /// The complex collision of a spline mesh component whose own body has none: its static mesh's complex triangle
+    /// meshes bent along the component's segment. When the static mesh has no complex collision or the segment or the
+    /// mesh bounds cannot be decoded, the component's simple shapes answer complex queries instead (counted in the
+    /// summary).
+    /// </summary>
+    private CollisionBody SplineComplexCollision(CookedPackage cell, ZenExport export, CollisionBody shapes)
+    {
+        try
+        {
+            ExportRef mesh = _components.StaticMesh(cell, export) ?? throw new InvalidDataException("The spline mesh component shows no mesh");
+            ImmutableArray<TriangleMesh> complex = _bodies.GetMeshBody(mesh.Path).Body switch
+            {
+                { ComplexMeshes.IsEmpty: false } source => source.ComplexMeshes,
+                { TraceFlag: CollisionTraceFlag.ComplexAsSimple } source => source.TriangleMeshes,
+                _ => [],
+            };
+            if (complex.IsEmpty)
+            {
+                throw new InvalidDataException("The static mesh has no complex collision");
+            }
+
+            SplineMeshParams spline = ComponentReader.SplineParams(cell, export);
+            (Vector3D origin, Vector3D extent) = StaticMeshValues.ExtendedBounds(mesh.Package, mesh.Export);
+            ImmutableArray<TriangleMesh> bent = [.. complex.Select(source => SplineMeshDeformation.Bend(source, spline, origin.X - extent.X, 2 * extent.X))];
+            _summary.BentSplineMeshes++;
+            return shapes with { ComplexMeshes = bent };
+        }
+        catch (InvalidDataException error)
+        {
+            _summary.AddSplineFallback(error.Message);
+            return shapes with { TraceFlag = CollisionTraceFlag.SimpleAsComplex };
+        }
     }
 
     /// <summary>
