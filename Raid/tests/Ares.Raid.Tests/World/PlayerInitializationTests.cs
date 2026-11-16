@@ -1,6 +1,7 @@
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Movement;
+using Ares.Raid.World.Players;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;

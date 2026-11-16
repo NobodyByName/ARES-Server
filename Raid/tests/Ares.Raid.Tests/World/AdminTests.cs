@@ -1,4 +1,5 @@
-using Ares.Raid.World;
+using Ares.Raid.World.Loot;
+using Ares.Raid.World.Players;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;

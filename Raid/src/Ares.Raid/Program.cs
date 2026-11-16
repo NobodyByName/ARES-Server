@@ -12,6 +12,7 @@ using Ares.Raid;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Collision;
+using Ares.Raid.World.Players;
 using Ares.Structs.Core;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Session;

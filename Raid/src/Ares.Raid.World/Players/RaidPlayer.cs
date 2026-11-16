@@ -1,10 +1,11 @@
 using Ares.Common.Game.Inventory;
+using Ares.Raid.World.Actors;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Net.Replication;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Players;
 
 /// <summary>A reserved player of a raid: their frozen loadout and party profiles, inventory, weapons and spawn.</summary>
 public sealed class RaidPlayer

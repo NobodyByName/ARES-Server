@@ -1,13 +1,15 @@
-using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Raid.World.Actors;
+using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Players;
 
 /// <summary>Why an operator command could not act on the player.</summary>
 public enum AdminRefusal

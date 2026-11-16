@@ -3,6 +3,7 @@ using Ares.Common.Game.Inventory;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;

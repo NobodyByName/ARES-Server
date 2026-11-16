@@ -1,7 +1,7 @@
 using Ares.Common.Game.Inventory;
-using Ares.Raid.Replication;
-using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Loot;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;

@@ -1,7 +1,8 @@
-using Ares.Raid.Replication;
 using Ares.Raid.Transport;
+using Ares.Raid.World.Actors;
+using Ares.Raid.World.Replication;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Players;
 
 /// <summary>
 /// The raid's ARCs as this player sees them: each ARC relevant to the player is delivered on its own channel, which

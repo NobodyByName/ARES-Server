@@ -1,7 +1,7 @@
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>Whether a point lies inside a map volume made of convex parts.</summary>
 public static class LootVolumeRules

@@ -1,7 +1,7 @@
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>
 /// Which container classes the server may spawn at a loot socket: the container type registered for the socket's

@@ -1,12 +1,12 @@
 using System.Globalization;
-using Ares.Raid.Replication;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Actors;
 
 /// <summary>An ARC in the raid.</summary>
 /// <param name="Index">Index in <see cref="WorldArcs.All"/>.</param>

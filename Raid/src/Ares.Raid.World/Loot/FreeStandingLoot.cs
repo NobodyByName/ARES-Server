@@ -1,8 +1,7 @@
-using Ares.Common.Game.Loot;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>The loot containers of a map that do not stand on prop sockets, and which of them a raid may spawn.</summary>
 /// <param name="Groups">Dynamic loot groups: each picks some of its spawners when its round runs.</param>

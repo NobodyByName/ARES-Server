@@ -1,4 +1,5 @@
 using Ares.Common.Game.Inventory;
+using Ares.Raid.World.Players;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;

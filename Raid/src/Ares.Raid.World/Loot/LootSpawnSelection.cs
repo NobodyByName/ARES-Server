@@ -1,9 +1,8 @@
-using Ares.Common.Game.Loot;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>How a loot placement limiter decides which sockets it covers and which of its caps apply to a socket.</summary>
 public static class LootLimiterRules

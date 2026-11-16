@@ -1,4 +1,4 @@
-using Ares.Raid.World;
+using Ares.Raid.World.Actors;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Replication;

@@ -3,7 +3,8 @@ using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using Ares.Common.Logging;
 using Ares.Raid.Transport;
-using Ares.Raid.World;
+using Ares.Raid.World.Loot;
+using Ares.Raid.World.Players;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid;

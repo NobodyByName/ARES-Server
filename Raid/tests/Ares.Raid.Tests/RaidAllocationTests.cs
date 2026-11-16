@@ -4,6 +4,7 @@ using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Raid.World.Players;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Net.Control;
 using Ares.Structs.Net.Replication;

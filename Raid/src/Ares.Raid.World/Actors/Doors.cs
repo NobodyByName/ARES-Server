@@ -1,10 +1,10 @@
-using Ares.Raid.Replication;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Actors;
 
 /// <summary>A regular map door with its exported ids.</summary>
 /// <param name="Index">Index in <see cref="DamDoors.All"/>.</param>

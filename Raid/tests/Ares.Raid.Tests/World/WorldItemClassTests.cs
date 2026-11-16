@@ -1,5 +1,5 @@
-using Ares.Raid.Replication;
-using Ares.Raid.World;
+using Ares.Raid.World.Loot;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;

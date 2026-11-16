@@ -1,6 +1,8 @@
 using Ares.Common.Game.Inventory;
-using Ares.Raid.Replication;
 using Ares.Raid.World;
+using Ares.Raid.World.Actors;
+using Ares.Raid.World.Players;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;

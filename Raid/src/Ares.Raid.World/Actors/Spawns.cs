@@ -2,7 +2,7 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.GameplayTags;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Actors;
 
 /// <summary>Where a player spawns: the start, its group slot, and the world location and rotation.</summary>
 /// <param name="Start">Player start actor.</param>

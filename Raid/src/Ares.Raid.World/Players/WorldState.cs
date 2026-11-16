@@ -1,8 +1,9 @@
 using System.Globalization;
-using Ares.Raid.Replication;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -14,7 +15,7 @@ using Ares.Structs.Net.Control;
 using Ares.Structs.Net.GameplayTags;
 using Ares.Structs.Net.Replication;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Players;
 
 /// <summary>A server actor.</summary>
 /// <param name="Guid">Its dynamic id.</param>

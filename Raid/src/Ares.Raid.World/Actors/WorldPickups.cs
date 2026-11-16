@@ -1,7 +1,8 @@
 using System.Globalization;
 using Ares.Common.Game.Inventory;
-using Ares.Raid.Replication;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Players;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Inventory;
@@ -11,7 +12,7 @@ using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Actors;
 
 /// <summary>An item stack lying in the raid: a pickup actor.</summary>
 /// <param name="Index">Index in <see cref="WorldPickups.All"/>.</param>

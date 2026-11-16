@@ -2,6 +2,7 @@ using System.Net;
 using Ares.Common.Control;
 using Ares.Raid.Transport;
 using Ares.Raid.World;
+using Ares.Raid.World.Players;
 using Ares.Structs.Core;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;

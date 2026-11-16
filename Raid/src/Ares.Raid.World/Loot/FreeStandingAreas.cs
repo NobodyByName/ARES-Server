@@ -1,7 +1,7 @@
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
-namespace Ares.Raid.World;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>A spawned container that does not stand on a prop socket, with the named area it is in.</summary>
 /// <param name="Class">Short name of the container class.</param>

@@ -1,4 +1,4 @@
-using Ares.Raid.World;
+using Ares.Raid.World.Loot;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
