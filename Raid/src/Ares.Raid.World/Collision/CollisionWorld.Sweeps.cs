@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Numerics;
 using Ares.Common.Maps;
 using Ares.Structs.Core.Geometry;
@@ -6,18 +7,26 @@ using Quaternion = System.Numerics.Quaternion;
 
 namespace Ares.Raid.World.Collision;
 
-/// <summary>Shape sweeps, overlaps and penetration queries; see <see cref="Raycast"/> for the collision they see.</summary>
+/// <summary>Shape sweeps, overlaps and penetration queries; see <see cref="Raycast(Vector3D, Vector3, double, PlacementFlags, CollisionComplexity)"/> for the collision they see.</summary>
 public sealed partial class CollisionWorld
 {
     private const int PenetrationPasses = 16;
 
     /// <summary>
+    /// Sweeps a sphere on one channel; see <see cref="SweepSphere(Vector3D, Vector3D, double, PlacementFlags, CollisionComplexity)"/>.
+    /// </summary>
+    public CollisionHit? SweepSphere(Vector3D start, Vector3D end, double radius, CollisionChannel channel, CollisionComplexity complexity) =>
+        SweepSphere(start, end, radius, CollisionChannelMask.Of(channel), complexity);
+
+    /// <summary>
     /// Sweeps a sphere from <paramref name="start"/> to <paramref name="end"/> and returns the first surface it touches,
-    /// or null; see <see cref="SweepCapsule(Vector3D, Vector3D, Quaternion, double, double, PlacementFlags)"/>.
+    /// or null; see <see cref="SweepCapsule(Vector3D, Vector3D, Quaternion, double, double, PlacementFlags)"/>. A complex
+    /// sweep hits what each body offers complex queries, as a complex
+    /// <see cref="Raycast(Vector3D, Vector3, double, PlacementFlags, CollisionComplexity)"/> does.
     /// </summary>
     /// <exception cref="ArgumentException">A position or the radius is not finite, the radius is negative or the mask is empty.</exception>
-    public CollisionHit? SweepSphere(Vector3D start, Vector3D end, double radius, PlacementFlags mask) =>
-        Sweep(start, end, CapsuleAxis(Quaternion.Identity, radius, radius), radius, mask);
+    public CollisionHit? SweepSphere(Vector3D start, Vector3D end, double radius, PlacementFlags mask, CollisionComplexity complexity = CollisionComplexity.Simple) =>
+        Sweep(start, end, CapsuleAxis(Quaternion.Identity, radius, radius), radius, mask, complexity);
 
     /// <summary>
     /// Sweeps an upright capsule (its axis along world Z); see
@@ -35,7 +44,8 @@ public sealed partial class CollisionWorld
     /// of such surfaces wins). Otherwise a surface is hit only when the motion would take the capsule deeper than
     /// 0.001 cm into it, at the distance where they touch: resting or sliding contact (within that depth) and the
     /// seams between flat neighbouring shapes do not block, and a capsule that starts touching a surface hits it at
-    /// distance 0 only when it moves into it. Masks and the collision seen are those of <see cref="Raycast"/>.
+    /// distance 0 only when it moves into it. Masks are those of
+    /// <see cref="Raycast(Vector3D, Vector3, double, PlacementFlags, CollisionComplexity)"/>; the sweep hits simple collision.
     /// </summary>
     /// <param name="start">World centre of the capsule at the start, in centimetres.</param>
     /// <param name="end">World centre of the capsule at the end.</param>
@@ -48,7 +58,7 @@ public sealed partial class CollisionWorld
     /// mask is empty.
     /// </exception>
     public CollisionHit? SweepCapsule(Vector3D start, Vector3D end, Quaternion rotation, double radius, double halfHeight, PlacementFlags mask) =>
-        Sweep(start, end, CapsuleAxis(rotation, radius, halfHeight), radius, mask);
+        Sweep(start, end, CapsuleAxis(rotation, radius, halfHeight), radius, mask, CollisionComplexity.Simple);
 
     /// <summary>
     /// Whether a capsule penetrates any surface deeper than 0.001 cm (touching does not count); the parameters are
@@ -61,7 +71,7 @@ public sealed partial class CollisionWorld
         ValidateMask(mask);
         OverlapTest test = new(position, halfAxis, radius);
         WorldBox bounds = Bounds(position, test.Query.Extent);
-        PlacementVisitor<OverlapTest> placements = new(this, mask, test);
+        PlacementVisitor<OverlapTest> placements = new(this, mask, CollisionComplexity.Simple, test);
         _placementTree.Overlap(bounds, ref placements);
         if (placements.Test.Found)
         {
@@ -92,7 +102,7 @@ public sealed partial class CollisionWorld
         {
             PenetrationTest test = new(position, halfAxis, radius);
             WorldBox bounds = Bounds(position, test.Query.Extent);
-            PlacementVisitor<PenetrationTest> placements = new(this, mask, test);
+            PlacementVisitor<PenetrationTest> placements = new(this, mask, CollisionComplexity.Simple, test);
             _placementTree.Overlap(bounds, ref placements);
             TileVisitor<PenetrationTest> tiles = new(this, placements.Test);
             _tileTree.Overlap(bounds, ref tiles);
@@ -108,14 +118,14 @@ public sealed partial class CollisionWorld
         return moved ? (position - start).ToVector3D() : null;
     }
 
-    private CollisionHit? Sweep(Vector3D start, Vector3D end, Double3 halfAxis, double radius, PlacementFlags mask)
+    private CollisionHit? Sweep(Vector3D start, Vector3D end, Double3 halfAxis, double radius, PlacementFlags mask, CollisionComplexity complexity)
     {
         Double3 from = FinitePosition(start, nameof(start));
         Double3 motion = FinitePosition(end, nameof(end)) - from;
         ValidateMask(mask);
         SweepTest test = new(from, halfAxis, radius, motion);
         Double3 extent = test.Query.Extent;
-        PlacementVisitor<SweepTest> placements = new(this, mask, test);
+        PlacementVisitor<SweepTest> placements = new(this, mask, complexity, test);
         _placementTree.Sweep(from, motion, extent, 1, ref placements);
         TileVisitor<SweepTest> tiles = new(this, placements.Test);
         _tileTree.Sweep(from, motion, extent, tiles.Test.Limit, ref tiles);
@@ -169,12 +179,17 @@ public sealed partial class CollisionWorld
     private static WorldBox Bounds(Double3 center, Double3 extent) => new(center - extent, center + extent);
 
     /// <summary>Runs a test against every shape of a placement whose bounds the query reaches; false when the test stops.</summary>
-    private bool TestPlacement<TTest>(int placementIndex, ref TTest test)
+    private bool TestPlacement<TTest>(int placementIndex, CollisionComplexity complexity, ref TTest test)
         where TTest : struct, IShapeTest
     {
         BodyPlacement placement = Map.Placements[placementIndex];
         CollisionBody body = Map.Bodies[placement.BodyIndex];
         Vector3 scale = placement.Scale;
+        if (UsesComplexMeshes(body, complexity))
+        {
+            return TestMeshes(body.ComplexMeshes, scale, ref test);
+        }
+
         foreach (CollisionBox box in body.Boxes)
         {
             if (!TestBox(ConvexShapes.Box(box, scale), ref test))
@@ -212,7 +227,14 @@ public sealed partial class CollisionWorld
             }
         }
 
-        foreach (TriangleMesh mesh in body.TriangleMeshes)
+        return TestMeshes(body.TriangleMeshes, scale, ref test);
+    }
+
+    /// <summary>Runs a test against the triangle meshes whose bounds the query reaches; false when the test stops.</summary>
+    private bool TestMeshes<TTest>(ImmutableArray<TriangleMesh> meshes, Vector3 scale, ref TTest test)
+        where TTest : struct, IShapeTest
+    {
+        foreach (TriangleMesh mesh in meshes)
         {
             ScaledBounds(mesh.Bounds, scale, out Double3 minimum, out Double3 maximum);
             if (test.Query.Reaches(minimum, maximum, test.Limit) && !TestMesh(mesh, scale, ref test))
@@ -447,7 +469,7 @@ public sealed partial class CollisionWorld
     }
 
     /// <summary>Runs a test on the placements a broad-phase query reaches.</summary>
-    private struct PlacementVisitor<TTest>(CollisionWorld world, PlacementFlags mask, TTest test) : IRayVisitor, IOverlapVisitor
+    private struct PlacementVisitor<TTest>(CollisionWorld world, PlacementFlags mask, CollisionComplexity complexity, TTest test) : IRayVisitor, IOverlapVisitor
         where TTest : struct, IShapeTest
     {
         public TTest Test = test;
@@ -470,7 +492,7 @@ public sealed partial class CollisionWorld
             }
 
             Test.Enter(CollisionHitKind.Placement, placementIndex, Double3.From(placement.Translation), placement.Rotation);
-            bool goOn = world.TestPlacement(placementIndex, ref Test);
+            bool goOn = world.TestPlacement(placementIndex, complexity, ref Test);
             Test.Leave();
             return goOn;
         }

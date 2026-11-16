@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Numerics;
 using Ares.Common.Maps;
 using Ares.Structs.Core.Geometry;
@@ -9,8 +10,8 @@ namespace Ares.Raid.World.Collision;
 /// <summary>
 /// The static collision one raid queries: the placements and height-field tiles of the map's base cells and of the
 /// cells in the raid's active data layers, indexed once when the raid is prepared: a bounding volume hierarchy over
-/// the placements, one over the height-field tiles and one per large triangle mesh. Placements that block nothing, have
-/// no shapes or have a zero scale component are left out. Hulls and meshes take the placement's scale exactly; boxes,
+/// the placements, one over the height-field tiles and one per large triangle mesh. Placements that block no channel,
+/// have no shapes or have a zero scale component are left out. Hulls and meshes take the placement's scale exactly; boxes,
 /// spheres and capsules stay rigid: a box scales each half extent by its body axis's absolute scale, a sphere's
 /// radius by the smallest absolute scale, a capsule's radius by the larger absolute X or Y scale and its full half
 /// height by the absolute Z scale. Read-only after construction, so queries may run on any thread.
@@ -19,7 +20,6 @@ public sealed partial class CollisionWorld
 {
     private const float MinimumScale = 1e-6f;
     private const int MeshTreeMinimumTriangles = 16;
-    private const PlacementFlags QueryFlags = PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable;
 
     private readonly int[] _placements;
     private readonly BoundingVolumeHierarchy _placementTree;
@@ -46,7 +46,7 @@ public sealed partial class CollisionWorld
         for (int index = 0; index < map.Placements.Length; index++)
         {
             BodyPlacement placement = map.Placements[index];
-            if (!activeCells[placement.CellIndex] || (placement.Flags & QueryFlags) == 0 || !HasVolume(placement) || !HasShapes(map.Bodies[placement.BodyIndex]))
+            if (!activeCells[placement.CellIndex] || placement.Flags == PlacementFlags.None || !HasVolume(placement) || !HasShapes(map.Bodies[placement.BodyIndex]))
             {
                 continue;
             }
@@ -87,16 +87,26 @@ public sealed partial class CollisionWorld
     public int HeightFieldCount => _tiles.Length;
 
     /// <summary>
+    /// Casts a ray on one channel; see <see cref="Raycast(Vector3D, Vector3, double, PlacementFlags, CollisionComplexity)"/>.
+    /// </summary>
+    public CollisionHit? Raycast(Vector3D origin, Vector3 direction, double maxDistance, CollisionChannel channel, CollisionComplexity complexity) =>
+        Raycast(origin, direction, maxDistance, CollisionChannelMask.Of(channel), complexity);
+
+    /// <summary>
     /// Casts a ray and returns the first surface it reaches within <paramref name="maxDistance"/>, or null. Height
-    /// fields always collide; placements collide when they block any of <paramref name="mask"/>. Simple collision only:
-    /// boxes, spheres, capsules and convex hulls are solid, triangle meshes and height fields collide from both sides.
+    /// fields always collide; placements collide when they block any channel of <paramref name="mask"/>. Boxes,
+    /// spheres, capsules and convex hulls are solid, triangle meshes and height fields collide from both sides. A
+    /// simple query hits each body's simple collision; a complex query hits what the body offers complex queries (see
+    /// <see cref="CollisionBody.TraceFlag"/>) and reports the surface type of the triangle it hits.
     /// </summary>
     /// <param name="origin">World start of the ray, in centimetres.</param>
     /// <param name="direction">Ray direction; it is normalized.</param>
     /// <param name="maxDistance">Longest distance to test, in centimetres.</param>
-    /// <param name="mask">What the placements must block to be hit.</param>
+    /// <param name="mask">The channels the placements must block to be hit.</param>
+    /// <param name="complexity">Which collision of the bodies the ray hits.</param>
     /// <exception cref="ArgumentException">An argument is not finite, the direction is zero or the mask is empty.</exception>
-    public CollisionHit? Raycast(Vector3D origin, Vector3 direction, double maxDistance, PlacementFlags mask)
+    public CollisionHit? Raycast(Vector3D origin, Vector3 direction, double maxDistance, PlacementFlags mask,
+        CollisionComplexity complexity = CollisionComplexity.Simple)
     {
         Double3 start = Double3.From(origin);
         Double3 unit = Double3.From(direction);
@@ -118,7 +128,7 @@ public sealed partial class CollisionWorld
 
         ValidateMask(mask);
         unit *= 1 / length;
-        PlacementRay placementRay = new(this, start, unit, mask);
+        PlacementRay placementRay = new(this, start, unit, mask, complexity);
         _placementTree.Raycast(start, unit, maxDistance, ref placementRay);
         double limit = placementRay.Index >= 0 ? placementRay.Distance : maxDistance;
         TileRay tileRay = new(this, start, unit);
@@ -136,16 +146,16 @@ public sealed partial class CollisionWorld
 
     /// <summary>
     /// Height of the first surface straight below (<paramref name="x"/>, <paramref name="y"/>, <paramref name="fromZ"/>)
-    /// within <paramref name="maxDrop"/>, or null; a downward <see cref="Raycast"/>.
+    /// within <paramref name="maxDrop"/>, or null; a downward <see cref="Raycast(Vector3D, Vector3, double, PlacementFlags, CollisionComplexity)"/>.
     /// </summary>
     public double? GroundHeight(double x, double y, double fromZ, double maxDrop, PlacementFlags mask) =>
         Raycast(new Vector3D(x, y, fromZ), -Vector3.UnitZ, maxDrop, mask)?.Point.Z;
 
     private static void ValidateMask(PlacementFlags mask)
     {
-        if ((mask & QueryFlags) == 0 || (mask & ~QueryFlags) != 0)
+        if (mask == PlacementFlags.None)
         {
-            throw new ArgumentException("The mask must name what the placements block.", nameof(mask));
+            throw new ArgumentException("The mask must name at least one channel.", nameof(mask));
         }
     }
 
@@ -156,12 +166,18 @@ public sealed partial class CollisionWorld
         Math.Abs(placement.Scale.X) >= MinimumScale && Math.Abs(placement.Scale.Y) >= MinimumScale && Math.Abs(placement.Scale.Z) >= MinimumScale;
 
     private static bool HasShapes(CollisionBody body) =>
-        body.Boxes.Length + body.Spheres.Length + body.Capsules.Length + body.ConvexHulls.Length + body.TriangleMeshes.Length > 0;
+        body.Boxes.Length + body.Spheres.Length + body.Capsules.Length + body.ConvexHulls.Length + body.TriangleMeshes.Length +
+        body.ComplexMeshes.Length > 0;
+
+    /// <summary>Whether a query of <paramref name="complexity"/> hits the body's complex meshes instead of its simple collision.</summary>
+    private static bool UsesComplexMeshes(CollisionBody body, CollisionComplexity complexity) =>
+        complexity == CollisionComplexity.Complex && !body.UsesSimpleAsComplex;
 
     /// <summary>Indexes the triangles of the body's meshes that are large enough for the hierarchy to pay off.</summary>
     private void AddMeshTrees(CollisionBody body)
     {
-        foreach (TriangleMesh mesh in body.TriangleMeshes.Where(mesh => mesh.TriangleCount > MeshTreeMinimumTriangles && !_meshTrees.ContainsKey(mesh)))
+        foreach (TriangleMesh mesh in body.TriangleMeshes.Concat(body.ComplexMeshes)
+            .Where(mesh => mesh.TriangleCount > MeshTreeMinimumTriangles && !_meshTrees.ContainsKey(mesh)))
         {
             _meshTrees.Add(mesh, ShapeRaycasts.MeshTree(mesh));
         }
@@ -189,8 +205,8 @@ public sealed partial class CollisionWorld
     }
 
     /// <summary>Casts a world ray against one placement; the normal is a unit world vector, the surface type that of the shape hit.</summary>
-    private bool RaycastPlacement(int placementIndex, Double3 origin, Double3 direction, double maxT, out double t, out Double3 normal,
-        out PhysicalSurfaceType surface)
+    private bool RaycastPlacement(int placementIndex, CollisionComplexity complexity, Double3 origin, Double3 direction, double maxT, out double t,
+        out Double3 normal, out PhysicalSurfaceType surface)
     {
         ref readonly BodyPlacement placement = ref Map.Placements.ItemRef(placementIndex);
         (int bodyIndex, _, Vector3D translation, Quaternion rotation, Vector3 scale, _, _) = placement;
@@ -202,6 +218,13 @@ public sealed partial class CollisionWorld
         Double3 localDirection = frameDirection.DivideBy(scale);
         t = maxT;
         Double3 frameNormal = default;
+        if (UsesComplexMeshes(body, complexity))
+        {
+            bool complexHit = RaycastMeshes(placement, body.ComplexMeshes, localOrigin, localDirection, ref t, ref frameNormal, ref surface);
+            normal = !complexHit ? default : t == 0 ? -direction : frameNormal.Rotate(rotation).Normalized();
+            return complexHit;
+        }
+
         bool hit = false;
         foreach (CollisionBox box in body.Boxes)
         {
@@ -231,12 +254,25 @@ public sealed partial class CollisionWorld
             hit |= Closer(ShapeRaycasts.Hull(hull, localOrigin, localDirection, t, out double candidate, out Double3 shapeNormal), candidate, shapeNormal.DivideBy(scale), ref t, ref frameNormal);
         }
 
-        foreach (TriangleMesh mesh in body.TriangleMeshes)
+        hit |= RaycastMeshes(placement, body.TriangleMeshes, localOrigin, localDirection, ref t, ref frameNormal, ref surface);
+        normal = !hit ? default : t == 0 ? -direction : frameNormal.Rotate(rotation).Normalized();
+        return hit;
+    }
+
+    /// <summary>
+    /// Casts a body-space ray against triangle meshes of a placement, keeping the closest hit below <paramref name="t"/>
+    /// with its normal (in the placement's frame) and its triangle's surface type.
+    /// </summary>
+    private bool RaycastMeshes(in BodyPlacement placement, ImmutableArray<TriangleMesh> meshes, Double3 localOrigin, Double3 localDirection,
+        ref double t, ref Double3 frameNormal, ref PhysicalSurfaceType surface)
+    {
+        bool hit = false;
+        foreach (TriangleMesh mesh in meshes)
         {
             bool closer = Closer(
                 ShapeRaycasts.Mesh(mesh, _meshTrees.GetValueOrDefault(mesh), localOrigin, localDirection, t, out double candidate, out Double3 shapeNormal, out int triangle),
                 candidate,
-                shapeNormal.DivideBy(scale),
+                shapeNormal.DivideBy(placement.Scale),
                 ref t,
                 ref frameNormal);
             if (closer)
@@ -247,7 +283,6 @@ public sealed partial class CollisionWorld
             hit |= closer;
         }
 
-        normal = !hit ? default : t == 0 ? -direction : frameNormal.Rotate(rotation).Normalized();
         return hit;
     }
 
@@ -264,7 +299,7 @@ public sealed partial class CollisionWorld
     }
 
     /// <summary>Keeps the closest placement a ray hits.</summary>
-    private struct PlacementRay(CollisionWorld world, Double3 origin, Double3 direction, PlacementFlags mask) : IRayVisitor
+    private struct PlacementRay(CollisionWorld world, Double3 origin, Double3 direction, PlacementFlags mask, CollisionComplexity complexity) : IRayVisitor
     {
         public int Index { get; private set; } = -1;
 
@@ -278,7 +313,7 @@ public sealed partial class CollisionWorld
         {
             int placementIndex = world._placements[item];
             if ((world.Map.Placements[placementIndex].Flags & mask) == 0
-                || !world.RaycastPlacement(placementIndex, origin, direction, maxDistance, out double t, out Double3 normal, out PhysicalSurfaceType surface))
+                || !world.RaycastPlacement(placementIndex, complexity, origin, direction, maxDistance, out double t, out Double3 normal, out PhysicalSurfaceType surface))
             {
                 return maxDistance;
             }
