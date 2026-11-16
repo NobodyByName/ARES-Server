@@ -10,6 +10,7 @@ public static class ItemTechnicalNames
     public const string LightShield = "DA_Item_Armor_LightBody";
     public const string FerroI = "DA_Item_BattleRifle_BreachAction_01";
     public const string HeavyAmmo = "DA_Item_HeavyAmmo";
+    public const string SnapHook = "DA_Item_SnapHook";
 
     /// <summary>Protocol asset IDs indexed by technical item name.</summary>
     public static IReadOnlyDictionary<string, long> AssetIds { get; } = new Dictionary<string, long>(StringComparer.Ordinal)
@@ -18,6 +19,7 @@ public static class ItemTechnicalNames
         [LightShield] = ShieldItems.LightShieldAssetId,
         [FerroI] = WeaponItems.FerroIAssetId,
         [HeavyAmmo] = WeaponItems.HeavyAmmoAssetId,
+        [SnapHook] = GadgetItems.SnapHookAssetId,
     }.Concat(AugmentItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
 
     /// <summary>Object path of each supported item's data asset (the item in the world, for example on the ground), by technical item name.</summary>
@@ -30,5 +32,6 @@ public static class ItemTechnicalNames
         [LightShield] = "/Game/Pioneer/Items/Armor/LightBody/DA_Item_Armor_LightBody.DA_Item_Armor_LightBody",
         [FerroI] = "/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/DA_Item_BattleRifle_BreachAction_01.DA_Item_BattleRifle_BreachAction_01",
         [HeavyAmmo] = "/Game/Pioneer/Items/Projectiles/HeavyAmmo/DA_Item_HeavyAmmo.DA_Item_HeavyAmmo",
+        [SnapHook] = "/Game/Pioneer/Items/MobilityGadgets/SnapHook/DA_Item_SnapHook.DA_Item_SnapHook",
     };
 }

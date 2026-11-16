@@ -15,7 +15,7 @@ public sealed class ReplicationCatalogTests
         // 162 classes with replication data plus the package, world and level classes.
         Assert.Equal(165, Catalog.Classes.Count);
         Assert.Equal(1682, Catalog.Properties.Count);
-        Assert.Equal(22, Catalog.ReferenceClasses.Count);
+        Assert.Equal(25, Catalog.ReferenceClasses.Count);
     }
 
     [Fact]

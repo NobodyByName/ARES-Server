@@ -12,6 +12,7 @@ public static class ClassPaths
     public const string BpPickupBaseC = "/Game/Pioneer/Items/BP_PickupBase.BP_PickupBase_C";
     public const string BpItemBattleRifleBreachAction01C = "/Game/Pioneer/Items/Firearms/BattleRifle_BreachAction_01/BP_Item_BattleRifle_BreachAction_01.BP_Item_BattleRifle_BreachAction_01_C";
     public const string BpUnarmedItemC = "/Game/Pioneer/Items/Misc/Unarmed/BP_UnarmedItem.BP_UnarmedItem_C";
+    public const string BpMobilityGadgetSnapHookC = "/Game/Pioneer/Items/MobilityGadgets/SnapHook/BP_MobilityGadget_SnapHook.BP_MobilityGadget_SnapHook_C";
     public const string BpItemBasicMeleeWeaponC = "/Game/Pioneer/Items/_GENERATED_/P2Prototype/BasicMeleeWeapon/BP_Item_BasicMeleeWeapon.BP_Item_BasicMeleeWeapon_C";
     public const string TheDam02Pc = "/Game/Pioneer/Maps/TheDam_02/TheDam_02_P.TheDam_02_P_C";
     public const string ActorAudioDataComponent = "/Script/Angelscript.ActorAudioDataComponent";
@@ -37,6 +38,7 @@ public static class ClassPaths
     public const string EndOfRoundComponent = "/Script/Angelscript.EndOfRoundComponent";
     public const string ExtractionPointInfoComponent = "/Script/Angelscript.ExtractionPointInfoComponent";
     public const string FirearmItem = "/Script/Angelscript.FirearmItem";
+    public const string GadgetItem = "/Script/Angelscript.GadgetItem";
     public const string GameModeAnnouncementComponent = "/Script/Angelscript.GameModeAnnouncementComponent";
     public const string GameplayAbilityItem = "/Script/Angelscript.GameplayAbilityItem";
     public const string HealthComponent = "/Script/Angelscript.HealthComponent";
@@ -103,6 +105,7 @@ public static class ClassPaths
     public const string SalvageExtractionPointElevator = "/Script/Angelscript.SalvageExtractionPoint_Elevator";
     public const string SalvageExtractionPointMajor = "/Script/Angelscript.SalvageExtractionPoint_Major";
     public const string SimpleDoorActor = "/Script/Angelscript.SimpleDoorActor";
+    public const string SnaphookItem = "/Script/Angelscript.SnaphookItem";
     public const string StandardInteractionComponent = "/Script/Angelscript.StandardInteractionComponent";
     public const string SyncedEmoteInteraction = "/Script/Angelscript.SyncedEmoteInteraction";
     public const string TetherSystem = "/Script/Angelscript.TetherSystem";
