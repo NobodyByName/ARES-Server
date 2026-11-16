@@ -20,6 +20,13 @@ internal static class InventoryCatalog
         _ => LoadoutCapacity(inventory.Loadout, area),
     };
 
+    /// <summary>Slots of a stash container tier, or zero for an uninitialized stash.</summary>
+    internal static int StashCapacity(long containerAssetId) => containerAssetId == 0 ? 0
+        : ((SingleItemSlot)ByAsset[StorageItems.StashSlotAssetId].SlotConfig!).AllowedSlotAssetIds.Contains(containerAssetId)
+            && ByAsset.TryGetValue(containerAssetId, out ItemDescription? container) && container.SlotConfig is ItemSlotArray slots
+            ? checked((int)slots.NumberOfSlots)
+            : throw new InvalidDataException("Unsupported stash container");
+
     /// <summary>Whether the item is a currency, owned in the wallet rather than in a container.</summary>
     internal static bool IsCurrency(string name) => CurrencyItems.ItemAssetIds.ContainsKey(name);
 
@@ -87,16 +94,4 @@ internal static class InventoryCatalog
         LoadoutItems.MeleeSlotAssetId => null,
         _ => throw new InvalidDataException("Unsupported equipment branch"),
     };
-
-    internal static ItemDescription Definition(PlayerInventory inventory, ItemDescription definition)
-    {
-        if (definition.SlotConfig is not ItemSlotArray array)
-        {
-            return definition;
-        }
-
-        return definition.GameAssetId == StorageItems.StashContainerAssetId
-            ? definition with { SlotConfig = array with { NumberOfSlots = inventory.Stash.SlotCount } }
-            : definition;
-    }
 }

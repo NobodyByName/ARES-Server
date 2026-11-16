@@ -13,7 +13,7 @@ public sealed class InventoryProjectionTests
         OwnedItem carried = new("carried-duck", ItemTechnicalNames.RubberDuck, 2, 0.25, 1, "carried-version", 200) { Slot = 0 };
         PlayerInventory inventory = PlayerInventory.Empty with
         {
-            Stash = new PlayerStash(StorageItems.StashSlotCount, [stash]),
+            Stash = new PlayerStash(StorageItems.StashContainerAssetId, [stash]),
             Loadout = PlayerInventory.Empty.Loadout with { Backpack = new PlayerItemContainer([carried]) },
         };
         InventorySnapshot snapshot = InventoryProjection.Create(TestDatabase.UserId, inventory).Snapshot;
@@ -30,14 +30,16 @@ public sealed class InventoryProjectionTests
     }
 
     [Fact]
-    public void Increasing_stash_capacity_preserves_existing_slot_identities()
+    public void A_larger_stash_tier_keeps_the_container_and_existing_slot_identities()
     {
-        PlayerInventory inventory = PlayerInventory.Empty with { Stash = new PlayerStash(StorageItems.StashSlotCount, []) };
+        PlayerInventory inventory = PlayerInventory.Empty with { Stash = new PlayerStash(StorageItems.StashContainerAssetId, []) };
+        long next = TestStash.Next(StorageItems.StashContainerAssetId);
         InventorySnapshot before = InventoryProjection.Create(TestDatabase.UserId, inventory).Snapshot;
-        InventorySnapshot expanded = InventoryProjection.Create(TestDatabase.UserId, inventory with { Stash = inventory.Stash with { SlotCount = 128 } }).Snapshot;
+        InventorySnapshot expanded = InventoryProjection.Create(TestDatabase.UserId, inventory with { Stash = inventory.Stash with { ContainerAssetId = next } }).Snapshot;
         InventoryItem originalStash = Assert.Single(before.Items, item => item.GameAssetId == StorageItems.StashContainerAssetId);
-        InventoryItem expandedStash = Assert.Single(expanded.Items, item => item.GameAssetId == StorageItems.StashContainerAssetId);
-        Assert.Equal(128, expandedStash.Slots.Count);
+        InventoryItem expandedStash = Assert.Single(expanded.Items, item => item.GameAssetId == next);
+        Assert.Equal(originalStash.InstanceId, expandedStash.InstanceId);
+        Assert.Equal(88, expandedStash.Slots.Count);
         Assert.Equal(originalStash.Slots, expandedStash.Slots.Take(originalStash.Slots.Count));
         Assert.True(InventorySnapshots.Same(InventorySnapshots.Loadout(before), InventorySnapshots.Loadout(expanded)));
     }

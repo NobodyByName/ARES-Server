@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ares.Common.Game.Inventory;
-using Ares.Host.Services.Content;
 using Ares.Host.Services.Persistence;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Progression;
@@ -34,15 +33,17 @@ public sealed partial class InventoryStore
     private readonly Lock _lock = new();
     private readonly HostDatabase _database;
     private readonly long _userId;
+    private readonly StashUpgradePrices _stashUpgrades;
     private long _version;
     private PlayerInventory _state;
     private InventoryProjection _projection;
 
-    /// <summary>Opens the inventory of player <paramref name="userId"/>.</summary>
-    public InventoryStore(HostDatabase database, long userId)
+    /// <summary>Opens the inventory of player <paramref name="userId"/>, with the default stash upgrade prices unless given others.</summary>
+    public InventoryStore(HostDatabase database, long userId, StashUpgradePrices? stashUpgrades = null)
     {
         _database = database;
         _userId = userId;
+        _stashUpgrades = stashUpgrades ?? StashUpgradePrices.Default;
         (_state, _version) = _database.Read<PlayerInventory>(_userId, "inventory", SerializationOptions);
         _projection = InventoryProjection.Create(_userId, _state);
     }
@@ -53,20 +54,20 @@ public sealed partial class InventoryStore
         _projection = InventoryProjection.Create(_userId, _state);
     }
 
-    /// <summary>Sets missing stash capacity once. Positive capacity survives emptying the inventory.</summary>
+    /// <summary>Gives a missing stash its first container tier once. The tier survives emptying the inventory.</summary>
     public void InitializeLayout(DateTimeOffset now)
     {
         lock (_lock)
         {
             Refresh();
             PlayerInventory candidate = _state;
-            if (candidate.Stash.SlotCount == 0)
+            if (candidate.Stash.ContainerAssetId == 0)
             {
                 IReadOnlyList<OwnedItem> contents = candidate.Stash.Items.Count == 0
                     ? [new OwnedItem(Guid.NewGuid().ToString("D"), ItemTechnicalNames.RubberDuck, 1,
                         StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-initial", now.ToUnixTimeMilliseconds())]
                     : candidate.Stash.Items;
-                candidate = candidate with { Stash = new PlayerStash(StorageItems.StashSlotCount, contents) };
+                candidate = candidate with { Stash = new PlayerStash(StorageItems.StashContainerAssetId, contents) };
             }
 
             if (candidate != _state)
@@ -114,26 +115,10 @@ public sealed partial class InventoryStore
         }
     }
 
-    /// <summary>Shared item definitions adapted to the purchased stash capacity.</summary>
-    public GameDataResponse GameData()
-    {
-        lock (_lock)
-        {
-            Refresh();
-            return GameData(_state);
-        }
-    }
+    /// <summary>Shared definition tables, including every supported item and stash tier with its upgrade price.</summary>
+    public GameDataResponse GameData() => _stashUpgrades.GameData;
 
-    public string DefinitionHash() => DefinitionHashOf(GameData());
-
-    private static GameDataResponse GameData(PlayerInventory state)
-    {
-        IEnumerable<ItemDescription> definitions = InventoryCatalog.Definitions.Select(definition => InventoryCatalog.Definition(state, definition));
-        return BackendContent.GameData with
-        {
-            ItemDescriptions = new ItemDescriptionTable([.. BackendContent.GameData.ItemDescriptions.ItemDescriptions, .. definitions]),
-        };
-    }
+    public string DefinitionHash() => DefinitionHashOf(_stashUpgrades.GameData);
 
     private static string DefinitionHashOf(GameDataResponse data) =>
         "ares-host-" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(data, BackendJson.Options)));

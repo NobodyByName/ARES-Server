@@ -5,6 +5,7 @@ using Ares.Common.Logging;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Identity;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Players;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Accounts;
@@ -113,6 +114,13 @@ public sealed class BackendRoutes
         {
             LogUndecodedOperations(request, log);
             return player.Matchmaking.CommitInventoryAsync(request.Read<InventoryOperationsRequest>(), time.GetUtcNow(), token);
+        });
+        Player("POST /v1/pioneer/inventory/upgrade", async (request, player, token) =>
+        {
+            UpgradeInventoryItemRequest upgrade = request.Read<UpgradeInventoryItemRequest>();
+            ServiceReply reply = await player.Matchmaking.CommitInventoryAsync(InventoryStore.UpgradeOperations(upgrade), time.GetUtcNow(), token)
+                .ConfigureAwait(false);
+            return InventoryStore.UpgradeReply(reply, upgrade.InstanceId ?? "");
         });
         Add("GET /v1/pioneer/codex/entries/list", new CodexEntriesResponse([]));
         Add("POST /v1/pioneer/projects/list", new ProjectsResponse([]));

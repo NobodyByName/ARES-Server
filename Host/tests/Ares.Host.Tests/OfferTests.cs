@@ -107,7 +107,7 @@ public sealed class OfferTests : IDisposable
         InventoryStore store = Create();
         OfferDescription offer = Offer(ItemTechnicalNames.Fabric);
         Add(store, ItemTechnicalNames.AssortedSeeds, Price(offer) + 1);
-        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = store.Inventory.Stash.Items.Count } }, store.Inventory.Revision);
+        store.Import(TestStash.Full(store.Inventory), store.Inventory.Revision);
         long revision = store.Inventory.Revision;
 
         ServiceReply reply = store.Commit(Buy(offer, 1), DateTimeOffset.UnixEpoch);

@@ -10,8 +10,15 @@ public sealed record OwnedItem(string InstanceId, string Type, long Quantity, do
     public int? Slot { get; init; }
 }
 
-/// <summary>Purchased stash capacity and its unordered contents.</summary>
-public sealed record PlayerStash(int SlotCount, IReadOnlyList<OwnedItem> Items);
+/// <summary>
+/// The stash container tier the player owns and its unordered contents. <paramref name="ContainerAssetId"/> is zero
+/// until the stash is initialized; the tier's definition gives the capacity.
+/// </summary>
+public sealed record PlayerStash(long ContainerAssetId, IReadOnlyList<OwnedItem> Items)
+{
+    [JsonIgnore]
+    public int SlotCount => InventoryCatalog.StashCapacity(ContainerAssetId);
+}
 
 /// <summary>Occupied positions in one carried container. Capacity comes from the loadout definition.</summary>
 public sealed record PlayerItemContainer(IReadOnlyList<OwnedItem> Items);

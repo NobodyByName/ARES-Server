@@ -11,11 +11,12 @@ namespace Ares.Host.Services.Players;
 /// <summary>One account's settings, inventory, party and matchmaking.</summary>
 public sealed class PlayerServices : IDisposable
 {
-    internal PlayerServices(Account account, HostDatabase database, RaidFleet? raids, JsonEventLog log, TimeProvider time)
+    internal PlayerServices(Account account, HostDatabase database, RaidFleet? raids, JsonEventLog log, TimeProvider time,
+        StashUpgradePrices? stashUpgrades)
     {
         Account = account;
         Settings = new AccountStore(database, account.UserId);
-        Inventory = new InventoryStore(database, account.UserId);
+        Inventory = new InventoryStore(database, account.UserId, stashUpgrades);
         Inventory.InitializeLayout(time.GetUtcNow());
         Profiles = new ProfileFactory(() => Account, time);
         Gate = new BackendGate();
@@ -50,8 +51,10 @@ public sealed class PlayerServices : IDisposable
 /// <summary>
 /// The players this Host has loaded, keyed by user id. A player is loaded on its first signed-in
 /// request, or at startup while it holds a raid reservation, and stays loaded until its account is deleted.
+/// Players pay <paramref name="stashUpgrades"/>, or the default prices, for stash upgrades.
 /// </summary>
-public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accounts, RaidFleet? raids, JsonEventLog log, TimeProvider time) : IDisposable
+public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accounts, RaidFleet? raids, JsonEventLog log, TimeProvider time,
+    StashUpgradePrices? stashUpgrades = null) : IDisposable
 {
     private readonly Dictionary<long, PlayerServices> _players = [];
     private readonly Lock _lock = new();
@@ -158,7 +161,7 @@ public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accou
                 return null;
             }
 
-            PlayerServices player = new(account, database, raids, log, time);
+            PlayerServices player = new(account, database, raids, log, time, stashUpgrades);
             _players.Add(userId, player);
             return player;
         }

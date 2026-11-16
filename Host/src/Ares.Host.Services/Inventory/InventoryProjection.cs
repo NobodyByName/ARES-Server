@@ -6,7 +6,7 @@ using Ares.Structs.Backend.Progression;
 
 namespace Ares.Host.Services.Inventory;
 
-/// <summary>Builds the game's inventory graph from owned items, purchased stash capacity and shared loadout definitions.</summary>
+/// <summary>Builds the game's inventory graph from owned items, the stash container tier and shared loadout definitions.</summary>
 internal sealed class InventoryProjection
 {
     private readonly Dictionary<string, InventoryPosition> _positions = new(StringComparer.Ordinal);
@@ -19,7 +19,7 @@ internal sealed class InventoryProjection
         List<InventoryItem> items = [];
         List<string> roots = [];
         Dictionary<long, string> frames = [];
-        if (inventory.Stash.SlotCount > 0)
+        if (inventory.Stash.ContainerAssetId != 0)
         {
             BuildNode(StorageItems.StashSlotAssetId, "stash", new InventoryPosition(InventoryArea.Stash, 0));
         }
@@ -42,14 +42,16 @@ internal sealed class InventoryProjection
 
         string BuildNode(long asset, string path, InventoryPosition? position, long? frameAssetId = null)
         {
-            ItemDescription definition = InventoryCatalog.Definition(inventory, InventoryCatalog.ByAsset[asset]);
+            ItemDescription definition = InventoryCatalog.ByAsset[asset];
             string id = StructuralId(userId, path);
             List<string> children = [];
             switch (definition.SlotConfig)
             {
                 case SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } single:
+                    // The stash slot holds the owned container tier; its structural id stays the same across upgrades.
                     children.Add(asset == LoadoutItems.FrameSlotAssetId ? frames[selectedFrame]
-                        : BuildNode(single.DefaultSlotAssetId, path + "/container", position, frameAssetId));
+                        : BuildNode(asset == StorageItems.StashSlotAssetId ? inventory.Stash.ContainerAssetId : single.DefaultSlotAssetId,
+                            path + "/container", position, frameAssetId));
                     break;
                 case StructuralItemSlots structural:
                     children.AddRange(structural.SlotAssetIds.Select(branch =>
@@ -128,7 +130,7 @@ internal sealed class InventoryProjection
     {
         if (inventory is not
             {
-                Revision: >= 0, Stash.SlotCount: >= 0 and <= InventorySnapshots.MaximumItems,
+                Revision: >= 0, Stash.SlotCount: >= 0,
                 Loadout:
                 {
                     Backpack.Items.Count: <= InventorySnapshots.MaximumItems,

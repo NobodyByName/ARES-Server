@@ -98,7 +98,7 @@ public sealed class RecycleTests : IDisposable
         string metal = Add(store, ItemTechnicalNames.MetalParts, 2);
         string wires = Add(store, ItemTechnicalNames.Wires, 5);
         PlayerInventory state = store.Inventory;
-        store.Import(state with { Stash = state.Stash with { SlotCount = state.Stash.Items.Count } }, state.Revision);
+        store.Import(TestStash.Full(state), state.Revision);
         string saved = _database.InventoryJson;
 
         (InventoryOperationsRequest Request, string Error)[] rejected =

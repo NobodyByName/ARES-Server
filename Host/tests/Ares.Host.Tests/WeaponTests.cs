@@ -138,7 +138,7 @@ public sealed class WeaponTests : IDisposable
         Assert.Throws<InvalidOperationException>(() => store.AddItem(ItemTechnicalNames.HeavyAmmo, DateTimeOffset.UnixEpoch, 60));
         Assert.Equal(saved, _database.InventoryJson);
         store.Release(ticket);
-        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = store.Inventory.Stash.Items.Count } }, store.Inventory.Revision);
+        store.Import(TestStash.Full(store.Inventory), store.Inventory.Revision);
         saved = _database.InventoryJson;
         Assert.Throws<InvalidDataException>(() => store.AddItem(ItemTechnicalNames.HeavyAmmo, DateTimeOffset.UnixEpoch, 60));
         Assert.Equal(saved, _database.InventoryJson);

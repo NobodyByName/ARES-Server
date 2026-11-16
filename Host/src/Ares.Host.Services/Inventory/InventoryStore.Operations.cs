@@ -23,8 +23,10 @@ public sealed partial class InventoryStore
                 or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 }
                 or AcceptOffer { Times: > 0 }
                 or ScrapItem { InstanceId.Length: > 0, Amount: null or > 0 }
-                or RecycleItem { InstanceId.Length: > 0, Amount: null or > 0 }))
-            || operations.OfType<AcceptOffer>().Any(purchase => purchase.Payment?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true))
+                or RecycleItem { InstanceId.Length: > 0, Amount: null or > 0 }
+                or UpgradeItem { ItemInstanceId.Length: > 0 }))
+            || operations.OfType<AcceptOffer>().Any(purchase => purchase.Payment?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true)
+            || operations.OfType<UpgradeItem>().Any(upgrade => upgrade.Payment?.Items?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true))
         {
             return ServiceReply.Error(400, "invalid_inventory_operations");
         }
@@ -99,6 +101,15 @@ public sealed partial class InventoryStore
                             }
 
                             candidate = recycled;
+                            changed = true;
+                            break;
+                        case UpgradeItem upgrade:
+                            if (Upgrade(candidate, upgrade, before, consumed, etag, now.ToUnixTimeMilliseconds(), out string denial) is not { } upgraded)
+                            {
+                                return ServiceReply.Error(400, denial);
+                            }
+
+                            candidate = upgraded;
                             changed = true;
                             break;
                     }
@@ -208,6 +219,19 @@ public sealed partial class InventoryStore
         }
     }
 
+    /// <summary>The operation batch that performs a direct item upgrade call.</summary>
+    public static InventoryOperationsRequest UpgradeOperations(UpgradeInventoryItemRequest request) =>
+        new([new UpgradeItem(request.InstanceId ?? "",
+            new UpgradePayment([.. (request.ItemsToConsume ?? []).Select(item => new ItemAmountToConsume(item.InstanceId, item.Amount))]),
+            request.TargetItemGameAssetId)], request.RequestId);
+
+    /// <summary>Turns the reply to <see cref="UpgradeOperations"/> into the direct upgrade call's reply.</summary>
+    public static ServiceReply UpgradeReply(ServiceReply reply, string instanceId) =>
+        reply.Body is InventoryOperationsResponse { Changeset: var changes }
+        && changes.Items.Updated.FirstOrDefault(item => item.InstanceId == instanceId) is { } upgraded
+            ? ServiceReply.Ok(new UpgradeInventoryItemResponse(upgraded, changes))
+            : reply;
+
     /// <summary>
     /// Moves part of a stackable stack into an existing stack of the same item or into a new stack named
     /// by the target id. A source moved in full is removed. New stacks wait in the source's area for
@@ -268,18 +292,54 @@ public sealed partial class InventoryStore
     {
         OfferDescription offer = s_offers[purchase.OfferId];
         rejection = "offer_cost_not_met";
-        if (offer.Cost is not ItemAmountsOfferCost cost)
+        if (offer.Cost is not ItemAmountsOfferCost cost
+            || Pay(inventory, cost.ItemAmounts, purchase.Times, purchase.Payment, consumed, etag, updatedAt) is not { } paid)
         {
             return null;
         }
 
-        Dictionary<long, long> due = cost.ItemAmounts.GroupBy(price => price.GameAssetId)
-            .ToDictionary(group => group.Key, group => checked(group.Sum(price => price.Amount) * purchase.Times));
+        rejection = "stash_full";
+        return Give(paid, offer.RewardPackage, purchase.Times, etag, updatedAt);
+    }
+
+    /// <summary>
+    /// Upgrades the stash container into the next tier of its chain at this Host's stash upgrade price, paid like an
+    /// offer. The container keeps its identity and contents. Returns null with the reason when the item cannot be
+    /// upgraded or the player cannot pay.
+    /// </summary>
+    private PlayerInventory? Upgrade(PlayerInventory inventory, UpgradeItem upgrade, Dictionary<string, InventoryItem> before,
+        HashSet<string> consumed, string etag, long updatedAt, out string rejection)
+    {
+        rejection = "item_not_upgradable";
+        if (!before.TryGetValue(upgrade.ItemInstanceId, out InventoryItem? item) || item.GameAssetId != inventory.Stash.ContainerAssetId
+            || _stashUpgrades.Upgrade(item.GameAssetId) is not { NextItemGameAssetId: not 0 } description
+            || upgrade.TargetItemGameAssetId != 0 && upgrade.TargetItemGameAssetId != description.NextItemGameAssetId)
+        {
+            return null;
+        }
+
+        rejection = "upgrade_cost_not_met";
+        return description.Cost is ItemAmountsOfferCost cost
+            && Pay(inventory, cost.ItemAmounts, 1, upgrade.Payment?.Items, consumed, etag, updatedAt) is { } paid
+            ? paid with { Stash = paid.Stash with { ContainerAssetId = description.NextItemGameAssetId } }
+            : null;
+    }
+
+    /// <summary>
+    /// Takes <paramref name="price"/> <paramref name="times"/> over from the stacks named by <paramref name="chosen"/>, or,
+    /// when none are named, from the player's stacks of each cost item, stash first and smaller stacks first. Returns
+    /// null when the named stacks do not match the price or the player cannot pay.
+    /// </summary>
+    private static PlayerInventory? Pay(PlayerInventory inventory, IReadOnlyList<ItemAssetAmount> price, long times,
+        IReadOnlyList<ItemAmountToConsume>? chosen, HashSet<string> consumed, string etag, long updatedAt)
+    {
+        Dictionary<long, long> due = price.GroupBy(cost => cost.GameAssetId)
+            .ToDictionary(group => group.Key, group => checked(group.Sum(cost => cost.Amount) * times));
         Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
             .SelectMany(area => InventoryCatalog.Items(inventory, area).Select(item => (Area: area, Item: item)))
             .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
         Dictionary<string, long> taken = new(StringComparer.Ordinal);
-        if (purchase.Payment is [_, ..] chosen)
+        if (chosen is [_, ..])
         {
             if (chosen.Any(item => !taken.TryAdd(item.ItemInstanceId, item.Amount)))
             {
@@ -319,8 +379,7 @@ public sealed partial class InventoryStore
             }
         }
 
-        rejection = "stash_full";
-        return Give(inventory, offer.RewardPackage, purchase.Times, etag, updatedAt);
+        return inventory;
     }
 
     /// <summary>

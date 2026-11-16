@@ -542,13 +542,11 @@ public sealed class HostTests : IAsyncLifetime
         Assert.Equal("noSlot", duckDefinition.GetProperty("slotConfig").GetProperty("discriminator").GetString());
         JsonElement containerDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.StashContainerAssetId);
         Assert.Equal(StorageItems.StashSlotCount, containerDefinition.GetProperty("slotConfig").GetProperty("numberOfSlots").GetInt64());
-
-        JsonElement before = await Json(await Post("/v1/shared/manifest", new { }));
-        InventoryStore store = HostInventory();
-        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, store.Snapshot.Revision);
-        JsonElement after = await Json(await Post("/v1/shared/manifest", new { }));
-        Assert.NotEqual(before.GetProperty("partitioning_hash").GetString(), after.GetProperty("partitioning_hash").GetString());
-        Assert.NotEqual(before.GetProperty("non_partitioning_hash").GetString(), after.GetProperty("non_partitioning_hash").GetString());
+        JsonElement upgrade = containerDefinition.GetProperty("upgrade");
+        Assert.Equal(TestStash.Next(StorageItems.StashContainerAssetId), upgrade.GetProperty("nextItemGameAssetId").GetInt64());
+        Assert.Equal(CurrencyItems.CoinsAssetId, upgrade.GetProperty("costPackage").GetProperty("costItems")[0].GetProperty("gameAssetId").GetInt64());
+        Assert.Equal("itemAmounts", upgrade.GetProperty("cost").GetProperty("discriminant").GetString());
+        Assert.Equal(0, upgrade.GetProperty("requirements").GetProperty("projecRequirements").GetArrayLength());
     }
 
     [Fact]

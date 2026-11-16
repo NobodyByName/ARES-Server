@@ -61,7 +61,7 @@ public sealed class AugmentTests : IDisposable
         string saved = _database.InventoryJson;
         Assert.Throws<InvalidDataException>(() => store.AddItem("unknown", DateTimeOffset.UnixEpoch));
         Assert.Equal(saved, _database.InventoryJson);
-        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 2 } }, store.Inventory.Revision);
+        store.Import(TestStash.Full(store.Inventory), store.Inventory.Revision);
         saved = _database.InventoryJson;
         Assert.Throws<InvalidDataException>(() => store.AddItem(ItemTechnicalNames.TacticalMk1, DateTimeOffset.UnixEpoch));
         Assert.Equal(saved, _database.InventoryJson);

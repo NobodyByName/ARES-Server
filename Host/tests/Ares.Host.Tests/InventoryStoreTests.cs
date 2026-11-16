@@ -53,14 +53,15 @@ public sealed class InventoryStoreTests : IDisposable
     {
         InventoryStore store = Create();
         string itemId = Assert.Single(store.Inventory.Stash.Items).InstanceId;
-        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, store.Inventory.Revision);
+        long next = TestStash.Next(StorageItems.StashContainerAssetId);
+        store.Import(store.Inventory with { Stash = store.Inventory.Stash with { ContainerAssetId = next } }, store.Inventory.Revision);
         InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
-        Assert.Equal(128, restarted.Inventory.Stash.SlotCount);
+        Assert.Equal(88, restarted.Inventory.Stash.SlotCount);
         Assert.Equal(itemId, Assert.Single(restarted.Inventory.Stash.Items).InstanceId);
-        InventoryItem stash = Assert.Single(restarted.Snapshot.Items, item => item.GameAssetId == StorageItems.StashContainerAssetId);
-        Assert.Equal(128, stash.Slots.Count);
-        ItemDescription definition = Assert.Single(restarted.GameData().ItemDescriptions.ItemDescriptions, item => item.GameAssetId == StorageItems.StashContainerAssetId);
-        Assert.Equal(128, Assert.IsType<ItemSlotArray>(definition.SlotConfig).NumberOfSlots);
+        InventoryItem stash = Assert.Single(restarted.Snapshot.Items, item => item.GameAssetId == next);
+        Assert.Equal(88, stash.Slots.Count);
+        ItemDescription definition = Assert.Single(restarted.GameData().ItemDescriptions.ItemDescriptions, item => item.GameAssetId == next);
+        Assert.Equal(88, Assert.IsType<ItemSlotArray>(definition.SlotConfig).NumberOfSlots);
         Assert.Single(_database.Account["inventory"]["stash"]["items"].AsBsonArray);
     }
 
@@ -196,7 +197,8 @@ public sealed class InventoryStoreTests : IDisposable
             ["collMod"] = "accounts",
             ["validator"] = new BsonDocument("inventory.revision", revision),
         }, cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Throws<PersistenceException>(() => store.Import(store.Inventory with { Stash = store.Inventory.Stash with { SlotCount = 128 } }, revision));
+        Assert.Throws<PersistenceException>(() => store.Import(
+            store.Inventory with { Stash = store.Inventory.Stash with { ContainerAssetId = TestStash.Next(StorageItems.StashContainerAssetId) } }, revision));
         Assert.Equal(revision, store.Inventory.Revision);
         Assert.Equal(StorageItems.StashSlotCount, store.Inventory.Stash.SlotCount);
     }
