@@ -102,7 +102,7 @@ public sealed class SaleTests : IDisposable
 
         Assert.Equal(200, reply.StatusCode);
         Assert.Equal([.. held.Append(ferro).Order(StringComparer.Ordinal)], Changes(reply).Deleted.Order(StringComparer.Ordinal));
-        Assert.Equal(ItemSale.UnitPrice(475, 0.5), Coins(store));
+        Assert.Equal(ItemRewardPackages.SaleUnitPrice(475, 0.5), Coins(store));
         Assert.DoesNotContain(store.Snapshot.Items, item => held.Contains(item.InstanceId));
     }
 

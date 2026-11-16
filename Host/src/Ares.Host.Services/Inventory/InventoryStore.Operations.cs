@@ -429,7 +429,7 @@ public sealed partial class InventoryStore
 
     /// <summary>
     /// Sells the whole item, or <see cref="ScrapItem.Amount"/> of its stack, for its scrap package scaled by the item's
-    /// durability (<see cref="ItemSale.UnitPrice"/>). Whatever the item holds goes with it. The coins join the wallet's
+    /// durability (<see cref="ItemRewardPackages.SaleUnitPrice"/>). Whatever the item holds goes with it. The coins join the wallet's
     /// stack of each currency, which a sale may not fill beyond its maximum. A stack split off earlier in the batch and sold
     /// whole needs no parent move. Returns null with the reason when the item cannot be sold.
     /// </summary>
@@ -454,7 +454,7 @@ public sealed partial class InventoryStore
         foreach (IGrouping<long, OfferRewardedItem> reward in scrap.RewardPackage.RewardedItems.GroupBy(rewarded => rewarded.GameAssetId))
         {
             string currency = InventoryCatalog.TechnicalName(reward.Key);
-            long coins = checked(reward.Sum(rewarded => ItemSale.UnitPrice(rewarded.Amount, item.Durability)) * amount);
+            long coins = checked(reward.Sum(rewarded => ItemRewardPackages.SaleUnitPrice(rewarded.Amount, item.Durability)) * amount);
             if (!InventoryCatalog.IsCurrency(currency))
             {
                 throw new InvalidDataException("Unsupported scrap reward");

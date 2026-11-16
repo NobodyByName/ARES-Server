@@ -10,7 +10,7 @@ public sealed class ScrapJsonTests
     public void A_sellable_item_describes_its_coin_value_as_a_scrap_reward_package()
     {
         long metalParts = ItemTechnicalNames.AssetIds[ItemTechnicalNames.MetalParts];
-        ItemDescription description = SalvageItems.Definitions.Single(item => item.GameAssetId == metalParts) with { Scrap = ItemSale.Scrap(metalParts) };
+        ItemDescription description = SalvageItems.Definitions.Single(item => item.GameAssetId == metalParts) with { Scrap = ItemRewardPackages.Scrap(metalParts) };
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(description, BackendJson.Options));
 
         JsonElement scrap = document.RootElement.GetProperty("scrap");
@@ -26,8 +26,8 @@ public sealed class ScrapJsonTests
     public void An_item_without_a_value_has_no_scrap_member()
     {
         Assert.Equal(0, ItemValues.ScrapValues[CurrencyItems.CoinsAssetId]);
-        Assert.Null(ItemSale.Scrap(CurrencyItems.CoinsAssetId));
-        Assert.Null(ItemSale.Scrap(StorageItems.StashSlotAssetId));
+        Assert.Null(ItemRewardPackages.Scrap(CurrencyItems.CoinsAssetId));
+        Assert.Null(ItemRewardPackages.Scrap(StorageItems.StashSlotAssetId));
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(CurrencyItems.Definitions.Single(), BackendJson.Options));
         Assert.False(document.RootElement.TryGetProperty("scrap", out _));
     }
@@ -40,7 +40,7 @@ public sealed class ScrapJsonTests
     [InlineData(475, 0.333, 158)]
     public void The_sell_price_scales_with_durability_down_to_a_tenth(long value, double durability, long expected)
     {
-        Assert.Equal(expected, ItemSale.UnitPrice(value, durability));
+        Assert.Equal(expected, ItemRewardPackages.SaleUnitPrice(value, durability));
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public sealed class RecycleJsonTests
     public void A_recyclable_item_describes_its_outputs_as_a_recycle_reward_package()
     {
         long wires = ItemTechnicalNames.AssetIds[ItemTechnicalNames.Wires];
-        ItemDescription description = SalvageItems.Definitions.Single(item => item.GameAssetId == wires) with { Recycle = ItemRecycle.Package(wires) };
+        ItemDescription description = SalvageItems.Definitions.Single(item => item.GameAssetId == wires) with { Recycle = ItemRewardPackages.Recycle(wires) };
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(description, BackendJson.Options));
 
         JsonElement recycle = document.RootElement.GetProperty("recycle");
@@ -26,7 +26,7 @@ public sealed class RecycleJsonTests
     public void An_item_that_cannot_be_recycled_has_no_recycle_member()
     {
         long metalParts = ItemTechnicalNames.AssetIds[ItemTechnicalNames.MetalParts];
-        Assert.Null(ItemRecycle.Package(metalParts));
+        Assert.Null(ItemRewardPackages.Recycle(metalParts));
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(SalvageItems.Definitions.Single(item => item.GameAssetId == metalParts),
             BackendJson.Options));
         Assert.False(document.RootElement.TryGetProperty("recycle", out _));

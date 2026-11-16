@@ -43,8 +43,8 @@ public static class LoadoutDefinitions
     [
         .. s_definitions.Select(definition => definition with
         {
-            Scrap = ItemSale.Scrap(definition.GameAssetId),
-            Recycle = ItemRecycle.Package(definition.GameAssetId) is { } recycle && recycle.RewardedItems.All(item => s_supported.Contains(item.GameAssetId))
+            Scrap = ItemRewardPackages.Scrap(definition.GameAssetId),
+            Recycle = ItemRewardPackages.Recycle(definition.GameAssetId) is { } recycle && recycle.RewardedItems.All(item => s_supported.Contains(item.GameAssetId))
                 ? recycle : null,
         }),
     ];
