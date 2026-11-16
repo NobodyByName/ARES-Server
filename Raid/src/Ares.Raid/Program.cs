@@ -85,7 +85,7 @@ log.Write(new JsonObject
     ["fill_seconds"] = configuration.FillSeconds,
 });
 
-RaidServer server = new(socket, connections, log, Clock, admin);
+RaidServer server = new(socket, connections, log, Clock, admin, () => worlds.Current);
 CancellationToken stopping = app.Lifetime.ApplicationStopping;
 using CancellationTokenSource consoleStopping = CancellationTokenSource.CreateLinkedTokenSource(stopping);
 Task consoleTask = console.RunAsync(app.Lifetime.StopApplication, consoleStopping.Token);

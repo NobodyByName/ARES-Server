@@ -468,18 +468,6 @@ public sealed partial class PlayerChannels : IPlayerChannels
     public int LootWaiting =>
         _raid.Loot.Relevant(LootPosition).Count(container => Known(container.Index) == LootKnowledge.None && !_failedLoot.Contains(container.Index));
 
-    /// <summary>How the raid's container sockets turned into containers.</summary>
-    public LootSpawnCounts LootSpawn => _raid.Loot.Counts;
-
-    /// <summary>The seed the raid's loot was rolled with.</summary>
-    public int LootSeed => _raid.Loot.Seed;
-
-    /// <summary>The raid's containers that do not stand on prop sockets, with their areas.</summary>
-    public IReadOnlyList<FreeStandingContainer> LootFreeStanding => _raid.Loot.FreeStanding;
-
-    /// <summary>Containers holding the placeholder duck, by class name.</summary>
-    public IReadOnlyDictionary<string, int> LootPlaceholders => _raid.Loot.Placeholders;
-
     /// <summary>First openings of the raid's containers with what they held, oldest first.</summary>
     public IReadOnlyList<string> LootEvents => _raid.LootStates.Events;
 

@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using Ares.Common.Logging;
 using Ares.Raid.Transport;
+using Ares.Raid.World;
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Players;
 using Ares.Structs.Game.World;
@@ -19,7 +20,8 @@ namespace Ares.Raid;
 /// <param name="log">Event log.</param>
 /// <param name="clock">Monotonic clock in seconds.</param>
 /// <param name="admin">Admin commands, run between packets; null for none.</param>
-public sealed class RaidServer(Socket socket, RaidConnections connections, JsonEventLog log, Func<double> clock, RaidAdmin? admin = null)
+/// <param name="currentRaid">The raid being served, if any; null to log no raid-level events.</param>
+public sealed class RaidServer(Socket socket, RaidConnections connections, JsonEventLog log, Func<double> clock, RaidAdmin? admin = null, Func<RaidWorld?>? currentRaid = null)
 {
     private const int MaxDatagramBytes = 65536;
     private const int WaitMicroseconds = 50_000;
@@ -40,9 +42,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
 
     private readonly Dictionary<ConnectionEvent, int> _counts = [];
     private readonly Dictionary<IPEndPoint, DeliveryPhase> _phases = [];
-    private string? _lootLoggedFor;
-    private (string? Raid, int Logged) _pickupEvents;
-    private (string? Raid, int Logged) _lootEvents;
+    private (RaidWorld? World, int Pickups, int LootOpens) _raid;
     private double _summaryAt;
 
     /// <summary>Serves until <paramref name="stop"/> is cancelled.</summary>
@@ -99,82 +99,86 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
 
     private void Report()
     {
+        ReportRaid();
+        ReportPhases();
+        ReportTraffic();
+    }
+
+    // Raid-level events are logged once each from the raid itself, with its loot spawn summary when the raid appears.
+    private void ReportRaid()
+    {
+        if (currentRaid?.Invoke() is not { } raid)
+        {
+            return;
+        }
+
+        if (_raid.World != raid)
+        {
+            _raid = (raid, 0, 0);
+            LogLootSpawn(raid);
+        }
+
+        foreach (string entry in raid.Pickups.Events.Skip(_raid.Pickups))
+        {
+            log.Write("raid_pickup", entry);
+        }
+
+        // First openings of containers, with what they held.
+        foreach (string entry in raid.LootStates.Events.Skip(_raid.LootOpens))
+        {
+            log.Write("raid_loot_open", entry);
+        }
+
+        _raid = (raid, raid.Pickups.Events.Count, raid.LootStates.Events.Count);
+    }
+
+    private void LogLootSpawn(RaidWorld raid)
+    {
+        LootSpawnCounts loot = raid.Loot.Counts;
+        log.Write(new JsonObject
+        {
+            ["raid_loot"] = new JsonObject
+            {
+                ["sockets"] = loot.Sockets,
+                ["spawned"] = loot.Spawned,
+                ["classes"] = loot.Classes,
+                ["skipped_inactive_layer"] = loot.InactiveLayer,
+                ["skipped_no_container_type"] = loot.NoContainerType,
+                ["skipped_unsupported_class"] = loot.Unsupported,
+                ["skipped_by_roll"] = loot.SkippedByRoll,
+                ["skipped_by_group_cap"] = loot.SkippedByGroupCap,
+                ["skipped_by_limiter"] = loot.SkippedByLimiter,
+                ["spawned_by_loot_value"] = new JsonObject
+                {
+                    ["untiered"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Unknown],
+                    ["low"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Low],
+                    ["medium"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Medium],
+                    ["high"] = loot.SpawnedByLootValue[PointOfInterestLootValue.High],
+                },
+                ["spawners"] = new JsonObject
+                {
+                    ["spawners"] = loot.Spawners.Spawners,
+                    ["run"] = loot.Spawners.Run,
+                    ["spawned"] = loot.Spawners.Spawned,
+                    ["skipped_group_not_picked"] = loot.Spawners.NotPicked,
+                    ["skipped_inactive_layer"] = loot.Spawners.InactiveLayer,
+                    ["skipped_class_disabled"] = loot.Spawners.ClassDisabled,
+                    ["skipped_class_unsupported"] = loot.Spawners.ClassUnsupported,
+                },
+                ["placed"] = Placed(loot.Placed),
+                ["observed"] = Placed(loot.Observed),
+                ["seed"] = raid.Loot.Seed,
+                ["free_standing"] = FreeStanding(raid.Loot.FreeStanding),
+                ["placeholder_classes"] = Placeholders(raid.Loot.Placeholders),
+            },
+        });
+    }
+
+    private void ReportPhases()
+    {
         foreach ((IPEndPoint peer, IPlayerChannels? player) in connections.Players)
         {
-            if (player is not PlayerChannels channels)
-            {
-                continue;
-            }
-
-            // Pickup events belong to the raid; each is logged once, whichever player reports it.
-            if (_pickupEvents.Raid != channels.MatchId)
-            {
-                _pickupEvents = (channels.MatchId, 0);
-            }
-
-            foreach (string entry in channels.PickupEvents.Skip(_pickupEvents.Logged))
-            {
-                log.Write("raid_pickup", entry);
-            }
-
-            _pickupEvents = (channels.MatchId, channels.PickupEvents.Count);
-
-            // First openings of containers, with what they held: once per raid, whichever player reports them.
-            if (_lootEvents.Raid != channels.MatchId)
-            {
-                _lootEvents = (channels.MatchId, 0);
-            }
-
-            foreach (string entry in channels.LootEvents.Skip(_lootEvents.Logged))
-            {
-                log.Write("raid_loot_open", entry);
-            }
-
-            _lootEvents = (channels.MatchId, channels.LootEvents.Count);
-            if (_lootLoggedFor != channels.MatchId)
-            {
-                _lootLoggedFor = channels.MatchId;
-                LootSpawnCounts loot = channels.LootSpawn;
-                log.Write(new JsonObject
-                {
-                    ["raid_loot"] = new JsonObject
-                    {
-                        ["sockets"] = loot.Sockets,
-                        ["spawned"] = loot.Spawned,
-                        ["classes"] = loot.Classes,
-                        ["skipped_inactive_layer"] = loot.InactiveLayer,
-                        ["skipped_no_container_type"] = loot.NoContainerType,
-                        ["skipped_unsupported_class"] = loot.Unsupported,
-                        ["skipped_by_roll"] = loot.SkippedByRoll,
-                        ["skipped_by_group_cap"] = loot.SkippedByGroupCap,
-                        ["skipped_by_limiter"] = loot.SkippedByLimiter,
-                        ["spawned_by_loot_value"] = new JsonObject
-                        {
-                            ["untiered"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Unknown],
-                            ["low"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Low],
-                            ["medium"] = loot.SpawnedByLootValue[PointOfInterestLootValue.Medium],
-                            ["high"] = loot.SpawnedByLootValue[PointOfInterestLootValue.High],
-                        },
-                        ["spawners"] = new JsonObject
-                        {
-                            ["spawners"] = loot.Spawners.Spawners,
-                            ["run"] = loot.Spawners.Run,
-                            ["spawned"] = loot.Spawners.Spawned,
-                            ["skipped_group_not_picked"] = loot.Spawners.NotPicked,
-                            ["skipped_inactive_layer"] = loot.Spawners.InactiveLayer,
-                            ["skipped_class_disabled"] = loot.Spawners.ClassDisabled,
-                            ["skipped_class_unsupported"] = loot.Spawners.ClassUnsupported,
-                        },
-                        ["placed"] = Placed(loot.Placed),
-                        ["observed"] = Placed(loot.Observed),
-                        ["seed"] = channels.LootSeed,
-                        ["free_standing"] = FreeStanding(channels.LootFreeStanding),
-                        ["placeholder_classes"] = Placeholders(channels.LootPlaceholders),
-                    },
-                });
-            }
-
-            if (_phases.GetValueOrDefault(peer) == channels.Phase)
+            if (player is not PlayerChannels channels || _phases.GetValueOrDefault(peer) == channels.Phase)
             {
                 continue;
             }
@@ -187,7 +191,10 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
         {
             _phases.Remove(gone);
         }
+    }
 
+    private void ReportTraffic()
+    {
         double now = clock();
         if (now < _summaryAt)
         {
@@ -209,87 +216,92 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
         JsonArray players = [];
         foreach (PlayerChannels channels in connections.Players.Select(entry => entry.Player).OfType<PlayerChannels>())
         {
-            JsonObject calls = [];
-            foreach ((string name, int count) in channels.IgnoredCalls.OrderByDescending(entry => entry.Value).Take(8))
-            {
-                calls[name] = count;
-            }
-
-            players.Add(new JsonObject
-            {
-                ["phase"] = channels.Phase.ToString(),
-                ["input_frame"] = channels.InputFrame,
-                ["input_position"] = channels.InputPosition is { } position
-                    ? new JsonArray(Math.Round(position.X), Math.Round(position.Y), Math.Round(position.Z))
-                    : null,
-                ["input_yaw_degrees"] = channels.InputYaw is { } yaw ? Math.Round(yaw * 180 / Math.PI, 1) : null,
-                ["input_decode_failures"] = channels.InputDecodeFailures,
-                ["input_decode_error"] = channels.LastInputDecodeError,
-                ["input_equip_target"] = channels.LatestWeaponInput?.EquipTarget,
-                ["input_equip_change"] = channels.LatestWeaponInput?.EquipChange,
-                ["input_weapon_flags"] = channels.LatestWeaponInput is { } weapon ? $"0x{weapon.Flags:x}" : null,
-                ["blackboard_frames"] = channels.BlackboardFrames,
-                ["simulated_speed"] = channels.SimulatedCharacter is { } character
-                    ? Math.Round(Math.Sqrt((character.Velocity.X * character.Velocity.X) + (character.Velocity.Y * character.Velocity.Y)))
-                    : null,
-                ["simulated_stance"] = channels.SimulatedCharacter?.Stance.ToString(),
-                ["simulated_locomotion"] = channels.SimulatedCharacter?.Locomotion.ToString(),
-                ["simulated_flashlight"] = channels.SimulatedCharacter?.Flashlight,
-                ["simulated_missing_frames"] = channels.MissingInputFrames,
-                ["simulated_airborne"] = channels.SimulatedCharacter?.Body?.Airborne,
-                ["position_reseeds"] = channels.PositionReseeds,
-                ["position_reseed_worst"] = Math.Round(channels.WorstPositionReseed, 1),
-                ["position_reseed_last"] = channels.LastPositionReseed is { } reseed
-                    ? new JsonArray(reseed.Frame, Math.Round(reseed.Distance, 1), reseed.Airborne ? "air" : "ground")
-                    : null,
-                ["door_presses"] = channels.DoorPresses,
-                ["ignored_door_requests"] = channels.IgnoredDoorRequests,
-                ["door_breaches"] = channels.DoorBreaches,
-                ["cancelled_breaches"] = channels.CancelledBreaches,
-                ["breach_requests"] = string.Join(' ', channels.BreachRequests.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}x{entry.Value}")),
-                ["inventory_moves"] = channels.InventoryMoves,
-                ["shots_fired"] = channels.ShotsFired,
-                ["reloads_completed"] = channels.ReloadsCompleted,
-                ["quick_item_requests"] = channels.QuickItemRequests,
-                ["hook_throws"] = channels.HookThrows,
-                ["quick_item_frame_holds"] = channels.QuickItemHolds,
-                ["quick_item_last_hold"] = channels.LastQuickItemHold is { } hold ? new JsonArray(hold.From, hold.To) : null,
-                ["rejected_inventory_requests"] = channels.RejectedInventoryRequests,
-                ["rejected_inventory_log"] = string.Join(", ", channels.RejectedInventoryLog),
-                ["ladders_ready"] = channels.LaddersReady,
-                ["ladders_in_progress"] = channels.LaddersInProgress,
-                ["loot_ready"] = channels.LootReady,
-                ["loot_waiting"] = channels.LootWaiting,
-                ["loot_failed"] = channels.LootFailed,
-                ["loot_failures"] = string.Join(' ', channels.LootFailures),
-                ["loot_channels"] = channels.LootChannelsInUse,
-                ["loot_channel_opens"] = channels.LootChannelOpens,
-                ["loot_requests"] = string.Join(' ', channels.LootRequests),
-                ["items_dropped"] = channels.ItemsDropped,
-                ["pickups_taken"] = channels.PickupsTaken,
-                ["pickups_ready"] = channels.PickupsReady,
-                ["pickup_channels"] = channels.PickupChannelsInUse,
-                ["pickup_requests"] = string.Join(' ', channels.PickupRequests),
-                ["arcs_ready"] = channels.ArcsReady,
-                ["arc_channels"] = channels.ArcChannelsInUse,
-                ["arc_failures"] = string.Join(' ', channels.ArcFailures),
-                ["elevators_ready"] = channels.ElevatorsReady,
-                ["elevator_states"] = channels.ElevatorStates,
-                ["elevator_calls"] = channels.ElevatorCalls,
-                ["elevator_changes"] = string.Join(", ", channels.ElevatorChanges),
-                ["elevator_descents"] = channels.ElevatorDescents,
-                ["cancelled_descents"] = channels.CancelledDescents,
-                ["completed_descents"] = channels.CompletedDescents,
-                ["elevator_departures"] = channels.ElevatorDepartures,
-                ["departure"] = channels.Departure,
-                ["elevator_requests"] = string.Join(", ", channels.ElevatorRequests),
-                ["unknown_interaction_requests"] = string.Join(", ", channels.UnknownInteractionRequests),
-                ["unhandled_calls"] = calls,
-            });
+            players.Add(PlayerTraffic(channels));
         }
 
         log.Write(new JsonObject { ["raid_traffic"] = events, ["connections"] = connections.Count, ["players"] = players });
         _counts.Clear();
+    }
+
+    private static JsonObject PlayerTraffic(PlayerChannels channels)
+    {
+        JsonObject calls = [];
+        foreach ((string name, int count) in channels.IgnoredCalls.OrderByDescending(entry => entry.Value).Take(8))
+        {
+            calls[name] = count;
+        }
+
+        return new JsonObject
+        {
+            ["phase"] = channels.Phase.ToString(),
+            ["input_frame"] = channels.InputFrame,
+            ["input_position"] = channels.InputPosition is { } position
+                ? new JsonArray(Math.Round(position.X), Math.Round(position.Y), Math.Round(position.Z))
+                : null,
+            ["input_yaw_degrees"] = channels.InputYaw is { } yaw ? Math.Round(yaw * 180 / Math.PI, 1) : null,
+            ["input_decode_failures"] = channels.InputDecodeFailures,
+            ["input_decode_error"] = channels.LastInputDecodeError,
+            ["input_equip_target"] = channels.LatestWeaponInput?.EquipTarget,
+            ["input_equip_change"] = channels.LatestWeaponInput?.EquipChange,
+            ["input_weapon_flags"] = channels.LatestWeaponInput is { } weapon ? $"0x{weapon.Flags:x}" : null,
+            ["blackboard_frames"] = channels.BlackboardFrames,
+            ["simulated_speed"] = channels.SimulatedCharacter is { } character
+                ? Math.Round(Math.Sqrt((character.Velocity.X * character.Velocity.X) + (character.Velocity.Y * character.Velocity.Y)))
+                : null,
+            ["simulated_stance"] = channels.SimulatedCharacter?.Stance.ToString(),
+            ["simulated_locomotion"] = channels.SimulatedCharacter?.Locomotion.ToString(),
+            ["simulated_flashlight"] = channels.SimulatedCharacter?.Flashlight,
+            ["simulated_missing_frames"] = channels.MissingInputFrames,
+            ["simulated_airborne"] = channels.SimulatedCharacter?.Body?.Airborne,
+            ["position_reseeds"] = channels.PositionReseeds,
+            ["position_reseed_worst"] = Math.Round(channels.WorstPositionReseed, 1),
+            ["position_reseed_last"] = channels.LastPositionReseed is { } reseed
+                ? new JsonArray(reseed.Frame, Math.Round(reseed.Distance, 1), reseed.Airborne ? "air" : "ground")
+                : null,
+            ["door_presses"] = channels.DoorPresses,
+            ["ignored_door_requests"] = channels.IgnoredDoorRequests,
+            ["door_breaches"] = channels.DoorBreaches,
+            ["cancelled_breaches"] = channels.CancelledBreaches,
+            ["breach_requests"] = string.Join(' ', channels.BreachRequests.OrderBy(entry => entry.Key).Select(entry => $"{entry.Key}x{entry.Value}")),
+            ["inventory_moves"] = channels.InventoryMoves,
+            ["shots_fired"] = channels.ShotsFired,
+            ["reloads_completed"] = channels.ReloadsCompleted,
+            ["quick_item_requests"] = channels.QuickItemRequests,
+            ["hook_throws"] = channels.HookThrows,
+            ["quick_item_frame_holds"] = channels.QuickItemHolds,
+            ["quick_item_last_hold"] = channels.LastQuickItemHold is { } hold ? new JsonArray(hold.From, hold.To) : null,
+            ["rejected_inventory_requests"] = channels.RejectedInventoryRequests,
+            ["rejected_inventory_log"] = string.Join(", ", channels.RejectedInventoryLog),
+            ["ladders_ready"] = channels.LaddersReady,
+            ["ladders_in_progress"] = channels.LaddersInProgress,
+            ["loot_ready"] = channels.LootReady,
+            ["loot_waiting"] = channels.LootWaiting,
+            ["loot_failed"] = channels.LootFailed,
+            ["loot_failures"] = string.Join(' ', channels.LootFailures),
+            ["loot_channels"] = channels.LootChannelsInUse,
+            ["loot_channel_opens"] = channels.LootChannelOpens,
+            ["loot_requests"] = string.Join(' ', channels.LootRequests),
+            ["items_dropped"] = channels.ItemsDropped,
+            ["pickups_taken"] = channels.PickupsTaken,
+            ["pickups_ready"] = channels.PickupsReady,
+            ["pickup_channels"] = channels.PickupChannelsInUse,
+            ["pickup_requests"] = string.Join(' ', channels.PickupRequests),
+            ["arcs_ready"] = channels.ArcsReady,
+            ["arc_channels"] = channels.ArcChannelsInUse,
+            ["arc_failures"] = string.Join(' ', channels.ArcFailures),
+            ["elevators_ready"] = channels.ElevatorsReady,
+            ["elevator_states"] = channels.ElevatorStates,
+            ["elevator_calls"] = channels.ElevatorCalls,
+            ["elevator_changes"] = string.Join(", ", channels.ElevatorChanges),
+            ["elevator_descents"] = channels.ElevatorDescents,
+            ["cancelled_descents"] = channels.CancelledDescents,
+            ["completed_descents"] = channels.CompletedDescents,
+            ["elevator_departures"] = channels.ElevatorDepartures,
+            ["departure"] = channels.Departure,
+            ["elevator_requests"] = string.Join(", ", channels.ElevatorRequests),
+            ["unknown_interaction_requests"] = string.Join(", ", channels.UnknownInteractionRequests),
+            ["unhandled_calls"] = calls,
+        };
     }
 
     private static JsonArray FreeStanding(IReadOnlyList<FreeStandingContainer> containers)
