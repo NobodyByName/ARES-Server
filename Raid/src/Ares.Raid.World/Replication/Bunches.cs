@@ -2,7 +2,7 @@ using Ares.Structs.Core.Serialization;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
-namespace Ares.Raid.Replication;
+namespace Ares.Raid.World.Replication;
 
 /// <summary>Reliable bunches the server queues; the sender assigns their sequence numbers.</summary>
 public static class Bunches

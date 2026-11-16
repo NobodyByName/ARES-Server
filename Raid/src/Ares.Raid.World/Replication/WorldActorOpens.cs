@@ -1,7 +1,7 @@
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
-namespace Ares.Raid.Replication;
+namespace Ares.Raid.World.Replication;
 
 /// <summary>A map actor the server replicates on its own channel (it already exists on the client).</summary>
 /// <param name="Channel">Channel index.</param>

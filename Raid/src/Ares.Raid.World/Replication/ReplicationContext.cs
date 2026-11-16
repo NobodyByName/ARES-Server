@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Ares.Structs.Net.Replication;
 
-namespace Ares.Raid.Replication;
+namespace Ares.Raid.World.Replication;
 
 /// <summary>
 /// The replication schemas and the class imports of a world: makes property and function codecs for

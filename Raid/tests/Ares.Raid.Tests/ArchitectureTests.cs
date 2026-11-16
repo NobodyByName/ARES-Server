@@ -9,7 +9,7 @@ namespace Ares.Raid.Tests;
 /// </summary>
 public sealed class ArchitectureTests
 {
-    private static readonly string[] s_expected = ["Ares.Raid.Transport", "Ares.Raid.Replication", "Ares.Raid.World", "ARES-Raid"];
+    private static readonly string[] s_expected = ["Ares.Raid.Transport", "Ares.Raid.World", "ARES-Raid"];
     private static readonly string[] s_allowedPrefixes = ["System", "netstandard", "mscorlib", "Microsoft.", "Ares.Structs.", "Ares.Common", "Ares.Raid", "ARES-Raid"];
 
     public static TheoryData<string> Assemblies => new(s_expected);

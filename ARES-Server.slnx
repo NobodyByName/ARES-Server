@@ -21,7 +21,6 @@
   </Folder>
   <Folder Name="/Raid/">
     <Project Path="Raid/src/Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
-    <Project Path="Raid/src/Ares.Raid.Replication/Ares.Raid.Replication.csproj" />
     <Project Path="Raid/src/Ares.Raid.World/Ares.Raid.World.csproj" />
     <Project Path="Raid/src/Ares.Raid/Ares.Raid.csproj" />
     <Project Path="Raid/tests/Ares.Raid.Tests/Ares.Raid.Tests.csproj" />

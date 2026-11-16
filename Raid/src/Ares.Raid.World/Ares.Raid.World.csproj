@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Ares.Raid.Replication/Ares.Raid.Replication.csproj" />
+    <ProjectReference Include="../Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
     <ProjectReference Include="../../../Common/src/Ares.Common.Game/Ares.Common.Game.csproj" />
     <ProjectReference Include="../../../Common/src/Ares.Common.Maps/Ares.Common.Maps.csproj" />
   </ItemGroup>
