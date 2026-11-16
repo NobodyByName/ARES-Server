@@ -16,6 +16,9 @@ public static class Bunches
     /// <summary>Channel close reason when the actor's level is no longer visible.</summary>
     public const int LevelUnloaded = 2;
 
+    /// <summary>Channel close reason when the actor is no longer relevant to the connection: the client destroys it.</summary>
+    public const int Relevancy = 3;
+
     /// <summary>Object exports on the control channel.</summary>
     /// <param name="exports">The export records.</param>
     /// <param name="roots">Ids to export with their outers.</param>

@@ -331,6 +331,9 @@ public sealed record DynamicSubobjectContent(ulong Guid, ulong ClassGuid, ActorC
 /// <param name="Content">Initial content blocks (at most 256).</param>
 public sealed record ActorInitialization(ActorSpawn Spawn, PlayerControllerOpen? Controller, IReadOnlyList<ActorContentBlock> Content)
 {
+    /// <summary>Subobjects created with the actor, written after <see cref="Content"/>.</summary>
+    public IReadOnlyList<DynamicSubobjectContent> Subobjects { get; init; } = [];
+
     /// <summary>
     /// Builds the reliable opening bunch. The archetype and <paramref name="requiredGuids"/> (already exported)
     /// must be resolved by the client before it spawns the actor.
@@ -354,6 +357,11 @@ public sealed record ActorInitialization(ActorSpawn Spawn, PlayerControllerOpen?
         foreach (ActorContentBlock block in Content)
         {
             block.Write(writer);
+        }
+
+        foreach (DynamicSubobjectContent subobject in Subobjects)
+        {
+            subobject.Write(writer);
         }
 
         ChannelBunch bunch = new(channel, writer.ToArray(), writer.Length)
