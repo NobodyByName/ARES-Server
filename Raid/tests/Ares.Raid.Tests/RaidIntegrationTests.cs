@@ -5,7 +5,6 @@ using Ares.Raid.World;
 using Ares.Structs.Core;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
-using Ares.Structs.Game.Network;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Net.Control;
 using Ares.Structs.Net.Replication;

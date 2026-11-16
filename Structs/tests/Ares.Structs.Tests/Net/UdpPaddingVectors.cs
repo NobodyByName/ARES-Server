@@ -1,4 +1,4 @@
-namespace Ares.Structs.Tests.Game;
+namespace Ares.Structs.Tests.Net;
 
 /// <summary>Reference datagrams for the UDP padding tests (bytes in hex).</summary>
 internal static class UdpPaddingVectors

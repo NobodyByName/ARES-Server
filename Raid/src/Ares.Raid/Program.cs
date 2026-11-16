@@ -14,7 +14,7 @@ using Ares.Raid.World;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core;
 using Ares.Structs.Game.World;
-using Ares.Structs.Game.Network;
+using Ares.Structs.Net.Session;
 
 RaidConfiguration configuration;
 try

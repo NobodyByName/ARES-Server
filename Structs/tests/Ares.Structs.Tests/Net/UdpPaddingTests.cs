@@ -1,7 +1,7 @@
 using Ares.Structs.Core.Serialization;
-using Ares.Structs.Game.Network;
+using Ares.Structs.Net.Session;
 
-namespace Ares.Structs.Tests.Game;
+namespace Ares.Structs.Tests.Net;
 
 public sealed class UdpPaddingTests
 {

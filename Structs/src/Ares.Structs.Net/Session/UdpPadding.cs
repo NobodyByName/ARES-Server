@@ -1,6 +1,6 @@
 using Ares.Structs.Core.Serialization;
 
-namespace Ares.Structs.Game.Network;
+namespace Ares.Structs.Net.Session;
 
 /// <summary>
 /// Padding the client adds to short datagrams it sends, outside all packet handlers: fill bytes, a
