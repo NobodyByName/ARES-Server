@@ -3,8 +3,8 @@ using Ares.Structs.Core;
 namespace Ares.Structs.Game.Collision;
 
 /// <summary>
-/// Where the game defines its collision channels, profiles and physics settings, and the profile and channel names that
-/// decide what blocks a player's movement and vaulting.
+/// Where the game defines its collision channels (<see cref="GameCollisionChannels"/>), profiles and physics settings,
+/// and the profile of the player's movement capsule.
 /// </summary>
 public static class CollisionProfileConfig
 {
@@ -28,9 +28,6 @@ public static class CollisionProfileConfig
 
     /// <summary>The profile of the player character's movement capsule.</summary>
     public const string PlayerCapsuleProfile = "PlayerPawn";
-
-    /// <summary>The trace channel of vault, mantle and wall checks.</summary>
-    public const string ClimbableChannel = "Climbable";
 
     /// <summary>
     /// Config files that set <see cref="Section"/> and <see cref="PhysicsSection"/>, relative to the game's install

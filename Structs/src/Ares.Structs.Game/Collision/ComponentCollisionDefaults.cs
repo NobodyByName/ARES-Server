@@ -18,6 +18,12 @@ public static class ComponentCollisionDefaults
     private const string StaticMeshActorComponent = "/Script/Engine.Default__StaticMeshActor:StaticMeshComponent0";
     private const string StaticMeshComponent = "/Script/Engine.Default__StaticMeshComponent";
 
+    /// <summary>
+    /// Which collision the body of a box, sphere or capsule component offers: its one simple shape answers complex
+    /// queries too.
+    /// </summary>
+    public const CollisionTraceFlag ShapeComponentTraceFlag = CollisionTraceFlag.SimpleAsComplex;
+
     private static readonly Dictionary<string, ComponentCollisionDefault> s_native = new(StringComparer.Ordinal)
     {
         [StaticMeshActorComponent] = new ComponentCollisionDefault("BlockAll", true),
