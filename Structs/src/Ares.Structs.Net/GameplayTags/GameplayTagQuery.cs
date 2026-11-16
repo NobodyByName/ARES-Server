@@ -48,7 +48,7 @@ public sealed partial record GameplayTagQuery(IReadOnlyList<string> TagDictionar
             ? tag.ToLowerInvariant()
             : throw new InvalidPacketException("Invalid gameplay tag");
 
-    [GeneratedRegex("^[A-Za-z_][A-Za-z_0-9]*(?:\\.[A-Za-z_][A-Za-z_0-9]*)*$")]
+    [GeneratedRegex("^[A-Za-z_0-9]+(?:\\.[A-Za-z_0-9]+)*$")]
     private static partial Regex TagPattern();
 
     private sealed class Parser

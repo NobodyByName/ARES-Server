@@ -26,4 +26,12 @@ public sealed class GameplayTagQueryTests
 
         Assert.Throws<InvalidPacketException>(() => new GameplayTagQuery([], []).Matches(["bad tag"]));
     }
+
+    [Fact]
+    public void Tag_segments_may_start_with_a_digit()
+    {
+        GameplayTagQuery query = new(["Item.Drop.Rarity.01Common"], [0, 1, 1, 1, 0]);
+        Assert.True(query.Matches(["Item.Drop.Rarity.01Common"]));
+        Assert.False(query.Matches(["Item.Drop.Rarity.02Uncommon"]));
+    }
 }
