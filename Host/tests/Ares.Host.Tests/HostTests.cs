@@ -122,6 +122,19 @@ public sealed class HostTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_scrap_operation_with_members_Host_does_not_know_is_logged_as_received()
+    {
+        object body = new
+        {
+            requestId = "scrap-shape",
+            operations = new object[] { new { discriminator = "scrap", instanceId = "item", amount = 1, unexpectedMember = true } },
+        };
+        Assert.Equal(HttpStatusCode.BadRequest, (await Post("/v1/pioneer/v1/batch-operation", body, await SignIn())).StatusCode);
+        string logged = Assert.Single(_log.ToString().Split('\n'), line => line.Contains("undecoded_batch_operation", StringComparison.Ordinal));
+        Assert.Contains("\"unexpectedMember\"", logged, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Invalid_persisted_data_returns_503_without_resetting_the_player()
     {
         await _database.Accounts.UpdateOneAsync(FilterDefinition<BsonDocument>.Empty,

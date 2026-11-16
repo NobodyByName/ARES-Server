@@ -21,7 +21,8 @@ public sealed partial class InventoryStore
             || request.Operations is not { Count: <= MaximumOperations } operations
             || operations.Any(operation => operation is not (SetItemParents { ItemInstanceId.Length: > 0, ParentInstanceIds: [{ Length: > 0 }] }
                 or MoveItemAmount { FromInstanceId.Length: > 0, ToInstanceId.Length: > 0, Amount: > 0 }
-                or AcceptOffer { Times: > 0 }))
+                or AcceptOffer { Times: > 0 }
+                or ScrapItem { InstanceId.Length: > 0, Amount: null or > 0 }))
             || operations.OfType<AcceptOffer>().Any(purchase => purchase.Payment?.Any(item => item is not { ItemInstanceId.Length: > 0, Amount: > 0 }) == true))
         {
             return ServiceReply.Error(400, "invalid_inventory_operations");
@@ -79,6 +80,15 @@ public sealed partial class InventoryStore
                             }
 
                             candidate = bought;
+                            changed = true;
+                            break;
+                        case ScrapItem sale:
+                            if (Sell(candidate, sale, created, consumed, etag, now.ToUnixTimeMilliseconds(), out string refusal) is not { } sold)
+                            {
+                                return ServiceReply.Error(400, refusal);
+                            }
+
+                            candidate = sold;
                             changed = true;
                             break;
                     }
@@ -334,6 +344,67 @@ public sealed partial class InventoryStore
             }
 
             inventory = inventory with { Stash = inventory.Stash with { Items = stash } };
+        }
+
+        return inventory;
+    }
+
+    /// <summary>
+    /// Sells the whole item, or <see cref="ScrapItem.Amount"/> of its stack, for its scrap package scaled by the item's
+    /// durability (<see cref="ItemSale.UnitPrice"/>). Whatever the item holds goes with it. The coins join the wallet's
+    /// stack of each currency, which a sale may not fill beyond its maximum. A stack split off earlier in the batch and sold
+    /// whole needs no parent move. Returns null with the reason when the item cannot be sold.
+    /// </summary>
+    private static PlayerInventory? Sell(PlayerInventory inventory, ScrapItem sale, HashSet<string> created, HashSet<string> consumed, string etag,
+        long updatedAt, out string rejection)
+    {
+        rejection = "item_not_sellable";
+        if (Find(inventory, sale.InstanceId) is not var (area, item) || area == InventoryArea.Wallet
+            || InventoryCatalog.ByAsset[InventoryCatalog.AssetId(item.Type)].Scrap is not { } scrap)
+        {
+            return null;
+        }
+
+        long amount = sale.Amount ?? item.Quantity;
+        if (amount > item.Quantity)
+        {
+            rejection = "invalid_scrap_amount";
+            return null;
+        }
+
+        bool emptied = amount == item.Quantity;
+        inventory = Replace(inventory, area, item.InstanceId, emptied ? null : item with { Quantity = item.Quantity - amount, ETag = etag, UpdatedAt = updatedAt });
+        if (emptied)
+        {
+            created.Remove(item.InstanceId);
+            consumed.Add(item.InstanceId);
+        }
+
+        foreach (IGrouping<long, OfferRewardedItem> reward in scrap.RewardPackage.RewardedItems.GroupBy(rewarded => rewarded.GameAssetId))
+        {
+            string currency = InventoryCatalog.TechnicalName(reward.Key);
+            long coins = checked(reward.Sum(rewarded => ItemSale.UnitPrice(rewarded.Amount, item.Durability)) * amount);
+            if (!InventoryCatalog.IsCurrency(currency))
+            {
+                throw new InvalidDataException("Unsupported scrap reward");
+            }
+
+            if (coins == 0)
+            {
+                continue;
+            }
+
+            OwnedItem? stack = inventory.Wallet.SingleOrDefault(owned => owned.Type == currency);
+            if (coins > InventoryCatalog.ByAsset[reward.Key].MaxAmount - (stack?.Quantity ?? 0))
+            {
+                rejection = "currency_full";
+                return null;
+            }
+
+            OwnedItem paid = stack is null
+                ? new OwnedItem(Guid.NewGuid().ToString("D"), currency, coins, StorageItems.InitialDurability, StorageItems.InitialMaxDurability, etag, updatedAt)
+                : stack with { Quantity = stack.Quantity + coins, ETag = etag, UpdatedAt = updatedAt };
+            inventory = inventory with { Wallet = [.. inventory.Wallet.Where(owned => owned.Type != currency), paid] };
         }
 
         return inventory;
