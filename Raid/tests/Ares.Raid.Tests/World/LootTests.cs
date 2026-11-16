@@ -195,7 +195,7 @@ public sealed class LootTests
     }
 
     [Fact]
-    public void One_press_searches_a_container_which_opens_with_a_duck_that_can_be_taken()
+    public void One_press_searches_a_container_which_opens_with_its_rolled_stacks_that_can_be_taken()
     {
         ScriptedPlayer session = new();
         LootContainer container = Cabinet(session);
@@ -224,18 +224,22 @@ public sealed class LootTests
         Assert.Null(session.Member.Inventory.OpenLoot);
         Assert.DoesNotContain(session.Sent, bunch => bunch.Channel == reopen.Channel && bunch.CloseReason is not null);
 
-        // Then the container opens with its duck among the player's containers.
+        // Then the container opens with the stacks rolled at its creation among the player's containers.
         session.Sent.Clear();
         session.Service(opensAt);
         Assert.Equal(1, session.Channels.LootOpens);
         int loot = Assert.IsType<int>(session.Member.Inventory.OpenLoot);
+        Assert.Equal("Tech", container.Contents.Pool);
+        Assert.InRange(container.Contents.Stacks.Count, 2, 4);
+        Assert.Equal(container.Contents.Stacks.Select(stack => ((ushort)stack.Item.UsableIndex, stack.Amount)),
+            session.Member.Inventory.LootItems.OfType<ContainerItem>().Select(item => (item.AssetIndex, item.Amount)));
         ContainerItem duck = Assert.IsType<ContainerItem>(session.Member.Inventory.LootItems[0]);
-        Assert.Equal(InventoryBlackboard.RubberDuckIndex, duck.AssetIndex);
         Assert.Equal(container.Class.SlotCount, session.Member.Inventory.LootItems.Count);
+        Assert.Single(session.Channels.LootEvents, line => line.StartsWith($"open #{container.Index} ", StringComparison.Ordinal) && line.Contains(" pool Tech: ", StringComparison.Ordinal));
         Assert.Contains(session.Sent, bunch => bunch.Channel == reopen.Channel);
         Assert.Contains(session.Sent, bunch => bunch.Channel == 6);
 
-        // Taking the duck moves it into the backpack.
+        // Taking the first stack moves it into the backpack.
         int backpack = session.Member.Inventory.Backpack;
         ushort free = (ushort)Enumerable.Range(0, session.Member.Inventory.Containers[backpack].Items.Count).First(slot => session.Member.Inventory.Containers[backpack].Items[slot] is null);
         double carried = session.Member.Inventory.Weight;
@@ -253,7 +257,8 @@ public sealed class LootTests
         session.Service(opensAt + 2);
         Assert.Null(session.Member.Inventory.OpenLoot);
         Assert.Equal(duck, session.Member.Inventory.Containers[backpack].Items[free]);
-        Assert.All(session.Raid.LootStates.Items(container.Index), Assert.Null);
+        Assert.Null(session.Raid.LootStates.Items(container.Index)[0]);
+        Assert.Equal(container.Contents.Stacks.Count - 1, session.Raid.LootStates.Items(container.Index).Count(item => item is not null));
 
         // Its channel then goes dormant; the client sends only channel bookkeeping there.
         session.Service(opensAt + 3);
@@ -279,8 +284,10 @@ public sealed class LootTests
         session.Service(ready + container.Class.AlignmentSeconds + container.Class.HoldSeconds);
         Assert.Equal(1, session.Channels.LootOpens);
         Assert.NotNull(session.Member.Inventory.OpenLoot);
-        ContainerItem duck = Assert.IsType<ContainerItem>(session.Member.Inventory.LootItems[0]);
-        Assert.Equal(InventoryBlackboard.RubberDuckIndex, duck.AssetIndex);
+        Assert.StartsWith("Raider", container.Contents.Pool, StringComparison.Ordinal);
+        Assert.NotEmpty(container.Contents.Stacks);
+        Assert.Equal(container.Contents.Stacks.Select(stack => ((ushort)stack.Item.UsableIndex, stack.Amount)),
+            session.Member.Inventory.LootItems.OfType<ContainerItem>().Select(item => (item.AssetIndex, item.Amount)));
         Assert.NotNull(session.Raid.LootStates.OpenedAt(container.Index));
     }
 

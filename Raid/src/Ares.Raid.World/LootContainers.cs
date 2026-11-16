@@ -1,4 +1,6 @@
+using System.Globalization;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Game.Loot;
 using Ares.Raid.Replication;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
@@ -41,8 +43,21 @@ public enum LootContainerSource
 /// <param name="Archetype">Exported id of its class default.</param>
 /// <param name="SearchAnimation">Exported id of the animation set of its search, or 0 when it has none.</param>
 /// <param name="Components">Its components (dynamic ids), in <see cref="LootContainerClass.Components"/> order.</param>
-public sealed record LootContainer(int Index, LootContainerSource Source, Vector3D Location, Rotator Rotation, LootSocket? Socket, LootContainerClass Class, ulong Guid, ulong Archetype, ulong SearchAnimation, IReadOnlyList<ulong> Components)
+/// <param name="Tag">Its container tag: its socket's tag, else the tag of the container type that lists its class; null when none does.</param>
+/// <param name="LootValue">Loot value of the area around it.</param>
+/// <param name="Contents">What it holds from its creation.</param>
+public sealed record LootContainer(int Index, LootContainerSource Source, Vector3D Location, Rotator Rotation, LootSocket? Socket, LootContainerClass Class, ulong Guid, ulong Archetype, ulong SearchAnimation, IReadOnlyList<ulong> Components, string? Tag, PointOfInterestLootValue LootValue, LootContents Contents)
 {
+    /// <summary>Short name of its class (the class name without its <c>_C</c> suffix).</summary>
+    public string ClassName
+    {
+        get
+        {
+            string name = Class.Container.Class[(Class.Container.Class.LastIndexOf('.') + 1)..];
+            return name.EndsWith("_C", StringComparison.Ordinal) ? name[..^2] : name;
+        }
+    }
+
     /// <summary>The search interaction.</summary>
     public ulong Interaction => Components[ComponentIndex(LootContainerClasses.InteractionComponent)];
 
@@ -144,6 +159,9 @@ public sealed class LootCatalog
     // Where the raid's pickups start: containers spawned during the raid stay below it.
     private const ulong EndGuid = 0x400000;
 
+    // Turns the raid's seed into the seed of its contents, so contents draw apart from the spawn rolls.
+    private const int ContentSeedSalt = 0x4C4F4F54;
+
     private readonly ReplicationContext _replication;
     private readonly ObjectExports _classExports;
     private readonly Dictionary<string, ulong> _exported;
@@ -151,6 +169,9 @@ public sealed class LootCatalog
     private ulong _nextGuid = FirstGuid;
     private readonly Dictionary<ulong, LootContainer> _interactions = [];
     private readonly Dictionary<(long X, long Y), List<LootContainer>> _cells = [];
+    private readonly Random _contents;
+    private readonly LootValueAreas _areas;
+    private readonly SortedDictionary<string, int> _placeholders = new(StringComparer.Ordinal);
 
     /// <summary>Spawns the containers of a Dam raid.</summary>
     /// <param name="replication">Replication context.</param>
@@ -171,7 +192,7 @@ public sealed class LootCatalog
     /// <param name="activeDataLayers">Names of the raid's active data layers.</param>
     /// <param name="seed">
     /// The raid's seed: it rolls the sockets, picks among a socket's classes when there are several, picks the spawners
-    /// and rolls the placed containers.
+    /// and rolls the placed containers; a second stream drawn from it rolls every container's contents.
     /// </param>
     /// <param name="rules">Spawn chances, limiters and free-standing containers.</param>
     public LootCatalog(ReplicationContext replication, IReadOnlyList<LootSocket> sockets, IReadOnlyList<LootSocketMesh> meshes, string round, IReadOnlyCollection<string> activeDataLayers, int seed, LootSpawnRules rules)
@@ -184,6 +205,8 @@ public sealed class LootCatalog
         ArgumentNullException.ThrowIfNull(rules);
         HashSet<string> active = new(activeDataLayers, StringComparer.Ordinal);
         Random random = new(seed);
+        _contents = new Random(seed ^ ContentSeedSalt);
+        _areas = new LootValueAreas(rules.Areas);
         List<StaticObjectExport> classes = [];
         Dictionary<string, ulong> paths = new(StringComparer.Ordinal);
         List<LootContainer> containers = _containers;
@@ -230,7 +253,6 @@ public sealed class LootCatalog
         int onSockets = containers.Count;
         FreeStandingLoot free = rules.FreeStanding ?? FreeStandingLoot.None;
         LootSpawnerCounts spawners = Spawners();
-        LootValueAreas areas = new(rules.Areas);
         LootPlacedCounts placed = Placed(LootContainerSource.Placed, [.. free.Placed.Select(entry => (entry.Class, entry.Location, (Rotator?)entry.Rotation, entry.DataLayer))]);
         LootPlacedCounts observed = Placed(LootContainerSource.Observed, [.. free.Observed.Select(entry => (entry.Class, entry.Location, entry.Rotation, (string?)null))]);
 
@@ -315,7 +337,7 @@ public sealed class LootCatalog
                 {
                     untagged++;
                 }
-                else if (rules.Rolls && random.NextDouble() >= rules.Chance(tag, areas.At(location)))
+                else if (rules.Rolls && random.NextDouble() >= rules.Chance(tag, _areas.At(location)))
                 {
                     rolls++;
                 }
@@ -365,8 +387,14 @@ public sealed class LootCatalog
     public IReadOnlyList<FreeStandingContainer> FreeStanding { get; }
 
     /// <summary>
-    /// Spawns a container during the raid. Every player within its relevance gets it like the others; it holds the
-    /// same contents as any container.
+    /// Containers holding the placeholder duck because no pool has an item for them, by class name (see
+    /// <see cref="LootContainer.ClassName"/>), including those spawned during the raid.
+    /// </summary>
+    public IReadOnlyDictionary<string, int> Placeholders => _placeholders;
+
+    /// <summary>
+    /// Spawns a container during the raid. Every player within its relevance gets it like the others; its contents are
+    /// drawn like those of any container.
     /// </summary>
     /// <param name="type">Its class.</param>
     /// <param name="location">World location.</param>
@@ -520,13 +548,21 @@ public sealed class LootCatalog
         values[PropertyNames.UseWaitDelayForAnimationNonLocal] = false;
     }
 
-    // Gives a container the next ids and indexes it by its interaction and its place.
+    // Gives a container the next ids, draws its contents and indexes it by its interaction and its place.
     private LootContainer Place(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type, ulong archetype, ulong animation)
     {
         ulong guid = _nextGuid;
         ulong[] parts = [.. type.Components.Select((_, index) => guid + (2 * (ulong)(index + 1)))];
         _nextGuid = guid + (2 * (ulong)(type.Components.Count + 1));
-        LootContainer container = new(_containers.Count, source, location, rotation, socket, type, guid, archetype, animation, parts);
+        string? tag = socket?.ContainerTag ?? LootSocketClasses.ContainerTag(type.Container.Class);
+        PointOfInterestLootValue value = _areas.At(location);
+        LootContents contents = LootContentRolls.Roll(tag, type.Container.Class, type.SlotCount, value, _contents);
+        LootContainer container = new(_containers.Count, source, location, rotation, socket, type, guid, archetype, animation, parts, tag, value, contents);
+        if (contents.Stacks.Count == 0)
+        {
+            _placeholders[container.ClassName] = _placeholders.GetValueOrDefault(container.ClassName) + 1;
+        }
+
         _containers.Add(container);
         _interactions[container.Interaction] = container;
         (long X, long Y) cell = Cell(location);
@@ -547,8 +583,8 @@ public sealed class LootCatalog
 }
 
 /// <summary>
-/// What each loot container of a raid holds, shared by its players: a container keeps what the players who
-/// opened it left inside, and the time it was first opened.
+/// What each loot container of a raid holds, shared by its players: a container starts with the contents drawn at its
+/// creation and keeps what the players who opened it left inside, and the time it was first opened.
 /// </summary>
 /// <param name="catalog">The raid's containers.</param>
 public sealed class LootStates(LootCatalog catalog)
@@ -556,8 +592,12 @@ public sealed class LootStates(LootCatalog catalog)
     private readonly Dictionary<int, IReadOnlyList<ContainerItem?>> _items = [];
     private readonly Dictionary<int, double> _openedAt = [];
     private readonly List<int> _openings = [];
+    private readonly List<string> _events = [];
 
     private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
+
+    private static readonly Dictionary<ushort, string> s_names = LoadoutDefinitions.CarriedItems
+        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.TechnicalName);
 
     /// <summary>Unit weight of each item type a container may hold.</summary>
     public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = LoadoutDefinitions.CarriedItems
@@ -566,7 +606,12 @@ public sealed class LootStates(LootCatalog catalog)
     /// <summary>The containers in the order they were first opened: every player's view of them changed then.</summary>
     public IReadOnlyList<int> Openings => _openings;
 
-    /// <summary>A container's slots: one rubber duck until real loot tables are supported.</summary>
+    /// <summary>One line per first opening, oldest first: the container, its tag, pool and what it held.</summary>
+    public IReadOnlyList<string> Events => _events;
+
+    /// <summary>
+    /// A container's slots: its drawn stacks from the first slot on, or one placeholder rubber duck when it drew none.
+    /// </summary>
     /// <param name="index">Container index.</param>
     /// <returns>Its slots.</returns>
     public IReadOnlyList<ContainerItem?> Items(int index)
@@ -578,9 +623,32 @@ public sealed class LootStates(LootCatalog catalog)
             return items;
         }
 
-        ContainerItem?[] slots = new ContainerItem?[catalog.Containers[index].Class.SlotCount];
-        slots[0] = new ContainerItem(s_duck, Guid.NewGuid(), 1, 1);
+        LootContainer container = catalog.Containers[index];
+        ContainerItem?[] slots = new ContainerItem?[container.Class.SlotCount];
+        IReadOnlyList<LootStack> stacks = container.Contents.Stacks;
+        if (stacks.Count == 0)
+        {
+            slots[0] = new ContainerItem(s_duck, Guid.NewGuid(), 1, 1);
+        }
+
+        for (int slot = 0; slot < stacks.Count && slot < slots.Length; slot++)
+        {
+            slots[slot] = new ContainerItem(checked((ushort)stacks[slot].Item.UsableIndex), Guid.NewGuid(), stacks[slot].Amount, stacks[slot].Durability);
+        }
+
         return _items[index] = Array.AsReadOnly(slots);
+    }
+
+    /// <summary>Describes a container and what it holds now: class, tag, loot value, pool and items.</summary>
+    /// <param name="index">Container index.</param>
+    /// <returns>One line.</returns>
+    public string Describe(int index)
+    {
+        LootContainer container = catalog.Containers[index];
+        string items = string.Join(", ", Items(index).OfType<ContainerItem>()
+            .Select(item => string.Create(CultureInfo.InvariantCulture, $"{item.Amount}x {s_names.GetValueOrDefault(item.AssetIndex, $"item {item.AssetIndex}")}")));
+        string pool = (container.Contents.Pool ?? "none") + (container.Contents.Stacks.Count == 0 ? " (placeholder duck)" : "");
+        return $"#{index} {container.ClassName} tag {container.Tag ?? "-"} value {container.LootValue} pool {pool}: {(items.Length == 0 ? "empty" : items)}";
     }
 
     /// <summary>Keeps what a player left in a container.</summary>
@@ -603,9 +671,12 @@ public sealed class LootStates(LootCatalog catalog)
     /// <param name="at">Server time.</param>
     public void Open(int index, double at)
     {
-        if (_openedAt.TryAdd(index, at))
+        if (!_openedAt.TryAdd(index, at))
         {
-            _openings.Add(index);
+            return;
         }
+
+        _openings.Add(index);
+        _events.Add($"open {Describe(index)}");
     }
 }

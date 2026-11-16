@@ -217,7 +217,8 @@ public sealed class RaidAdmin : IAdminService
         AdminRefusal refusal = player.TeleportToLoot(found);
         LootContainer chosen = containers[found];
         return refusal == AdminRefusal.None
-            ? AdminResult.Success([$"Teleporting {player.UserId} to container {found} ({ShortName(chosen.Class)}, {chosen.Source}) at {Text(chosen.Location)}; now at {Text(player.CharacterPosition!.Value)}."])
+            ? AdminResult.Success([$"Teleporting {player.UserId} to container {found} ({ShortName(chosen.Class)}, {chosen.Source}) at {Text(chosen.Location)}; now at {Text(player.CharacterPosition!.Value)}.",
+                $"Holds {player.DescribeLoot(found)}"])
             : Refused(refusal);
     }
 
@@ -225,7 +226,8 @@ public sealed class RaidAdmin : IAdminService
     {
         AdminRefusal refusal = player.SpawnLoot(type, out LootContainer? container);
         return refusal == AdminRefusal.None && container is not null
-            ? AdminResult.Success([$"Spawned container {container.Index} ({ShortName(type)}) id 0x{container.Guid:x} at {Text(container.Location)} yaw {container.Rotation.Yaw.ToString("0.#", CultureInfo.InvariantCulture)}."])
+            ? AdminResult.Success([$"Spawned container {container.Index} ({ShortName(type)}) id 0x{container.Guid:x} at {Text(container.Location)} yaw {container.Rotation.Yaw.ToString("0.#", CultureInfo.InvariantCulture)}.",
+                $"Holds {player.DescribeLoot(container.Index)}"])
             : Refused(refusal);
     }
 

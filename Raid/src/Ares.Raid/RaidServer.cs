@@ -41,6 +41,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
     private readonly Dictionary<IPEndPoint, DeliveryPhase> _phases = [];
     private string? _lootLoggedFor;
     private (string? Raid, int Logged) _pickupEvents;
+    private (string? Raid, int Logged) _lootEvents;
     private double _summaryAt;
 
     /// <summary>Serves until <paramref name="stop"/> is cancelled.</summary>
@@ -116,6 +117,19 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
             }
 
             _pickupEvents = (channels.MatchId, channels.PickupEvents.Count);
+
+            // First openings of containers, with what they held: once per raid, whichever player reports them.
+            if (_lootEvents.Raid != channels.MatchId)
+            {
+                _lootEvents = (channels.MatchId, 0);
+            }
+
+            foreach (string entry in channels.LootEvents.Skip(_lootEvents.Logged))
+            {
+                log.Write("raid_loot_open", entry);
+            }
+
+            _lootEvents = (channels.MatchId, channels.LootEvents.Count);
             if (_lootLoggedFor != channels.MatchId)
             {
                 _lootLoggedFor = channels.MatchId;
@@ -154,6 +168,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                         ["observed"] = Placed(loot.Observed),
                         ["seed"] = channels.LootSeed,
                         ["free_standing"] = FreeStanding(channels.LootFreeStanding),
+                        ["placeholder_classes"] = Placeholders(channels.LootPlaceholders),
                     },
                 });
             }
@@ -285,6 +300,17 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["parent_area"] = container.ParentArea,
                 ["location"] = new JsonArray(Math.Round(container.Location.X), Math.Round(container.Location.Y), Math.Round(container.Location.Z)),
             });
+        }
+
+        return entries;
+    }
+
+    private static JsonObject Placeholders(IReadOnlyDictionary<string, int> classes)
+    {
+        JsonObject entries = [];
+        foreach ((string name, int count) in classes)
+        {
+            entries[name] = count;
         }
 
         return entries;

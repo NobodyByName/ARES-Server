@@ -61,6 +61,33 @@ public sealed class PlainItemTests : IDisposable
         Assert.Equal<(string, string, long, int?)>((found.InstanceId, "DA_Item_Salvage_Sensors", 2, 3), (loot.InstanceId, loot.Type, loot.Quantity, loot.Slot));
     }
 
+    [Fact]
+    public void Container_loot_of_several_kinds_and_partial_stacks_settles_home_after_an_extraction()
+    {
+        InventoryStore store = Create();
+        string ticket = Guid.NewGuid().ToString("D");
+        PlayerLoadout reserved = store.Reserve(ticket);
+        (string Type, long Amount)[] found = [("DA_Item_Salvage_ScrapMetal", 5), ("DA_Item_LightAmmo", 10), ("DA_Item_WeaponMod_Muzzle_Brake_01", 1), ("DA_Item_Consumable_Mushroom", 1)];
+        CarriedItem[] carried =
+        [
+            .. found.Select((entry, slot) => new CarriedItem(CarriedPlaces.Backpack, slot,
+                new InventoryItem(Guid.NewGuid().ToString("D"), UsableItems.ByTechnicalName[entry.Type].AssetId, entry.Amount, [], 1, 1, "", "", 0))),
+        ];
+        RaidResult result = new(ticket, TestDatabase.UserId, reserved.Revision, RaidOutcomes.Extracted, carried);
+        Assert.Equal(RaidSettlement.Saved, store.Settle(result, DateTimeOffset.UnixEpoch.AddDays(1)));
+
+        PlayerInventory home = new InventoryStore(_database.Store, TestDatabase.UserId).Inventory;
+        Assert.Equal(found.Select((entry, slot) => (entry.Type, entry.Amount, (int?)slot)),
+            home.Loadout.Backpack.Items.OrderBy(item => item.Slot).Select(item => (item.Type, item.Quantity, item.Slot)));
+    }
+
+    private InventoryStore Create()
+    {
+        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        store.InitializeLayout(DateTimeOffset.UnixEpoch);
+        return store;
+    }
+
     private static List<string> Slots(InventoryStore store, long branchAsset)
     {
         InventorySnapshot snapshot = store.Snapshot;

@@ -60,6 +60,12 @@ public static class LoadoutDefinitions
     /// <summary>The catalogue items players can carry in a raid, by usable index.</summary>
     public static IReadOnlyList<UsableItem> CarriedItems { get; } = [.. s_carried.Select(asset => UsableItems.ByAssetId[asset]).OrderBy(item => item.UsableIndex)];
 
+    /// <summary>
+    /// The carried items without gameplay of their own (no child slots, no weapon, shield or augment), by usable index:
+    /// any slot, a loot container included, holds them as plain stacks.
+    /// </summary>
+    public static IReadOnlyList<UsableItem> PlainItems { get; } = [.. s_plainItems.OrderBy(item => item.UsableIndex)];
+
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
     public static long FrameAssetId(long? augmentAssetId) => augmentAssetId is null ? LoadoutItems.StandardFrameAssetId
         : AugmentItems.FrameAssetIds.TryGetValue(augmentAssetId.Value, out long frame) ? frame

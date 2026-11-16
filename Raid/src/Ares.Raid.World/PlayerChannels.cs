@@ -474,6 +474,17 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>The raid's containers that do not stand on prop sockets, with their areas.</summary>
     public IReadOnlyList<FreeStandingContainer> LootFreeStanding => _raid.Loot.FreeStanding;
 
+    /// <summary>Containers holding the placeholder duck, by class name.</summary>
+    public IReadOnlyDictionary<string, int> LootPlaceholders => _raid.Loot.Placeholders;
+
+    /// <summary>First openings of the raid's containers with what they held, oldest first.</summary>
+    public IReadOnlyList<string> LootEvents => _raid.LootStates.Events;
+
+    /// <summary>Describes a container of the raid and what it holds now.</summary>
+    /// <param name="index">Container index.</param>
+    /// <returns>One line.</returns>
+    public string DescribeLoot(int index) => _raid.LootStates.Describe(index);
+
     /// <summary>Match id of the raid.</summary>
     public string MatchId => _raid.MatchId;
 
