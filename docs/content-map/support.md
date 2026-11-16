@@ -59,9 +59,15 @@ on the map's props, plus free-standing weapon cases and the placed machine doors
 of them appear, with chances per container category raised in the map's medium- and high-value areas and
 limited per area and per prop, so a raid has a few hundred of them. Players search a container (holding
 interact, with the Raider Tool where the game breaches it), see its contents and take items into their
-own inventory; an opened container stays open for every player. Every container currently holds one
-rubber duck: loot tables are not decoded yet. In the Raid inventory, stacks can also be split and merged
-up to their stack limit. Searching, taking items and splitting are stock-client verified with one player.
+own inventory; an opened container stays open for every player. Each container is filled when the raid
+creates it, usually with two or three stacks drawn from the game's loot tables for its category; rarer
+items are more likely in the medium- and high-value areas, and a container sometimes holds one more
+ammo or healing stack. Weapon cases hold weapon mods and ammo, medical bags hold healing
+items, and the other free-standing containers follow their type. How much loot each area gets and the
+chances for ammo, grenades, mods and blueprints are ARES defaults, so drop rates are provisional.
+Weapons are not placed in containers yet. In the Raid inventory, stacks can also be split and merged up
+to their stack limit. Searching several kinds of containers, taking items, splitting and bringing the
+loot home by extraction are stock-client verified with one player.
 
 Operators can steer running raids from the Host console with `raid players`, `raid teleport`,
 `raid teleport-to-loot` and `raid spawn-loot` (see `help`); each raid's answer appears in the Host log.
@@ -83,6 +89,12 @@ held item away; its throw aims at the crosshair against the map's complex collis
 to where the hook lands and costs gadget power, which recharges over time. These are stock-client
 verified with one player; other players see the throw and pull, which has not been tried with the
 stock client. Durability loss, repair and value remain future work.
+
+Every usable item without attachment slots (materials, recyclables, trinkets, consumables, grenades and
+other throwables, deployables, gadgets, ammo, weapon mods, blueprints and recipes) can be kept in
+Storage, carried in a raid with its weight, taken from loot containers, brought home by extraction and
+granted with `inventory add`. Using them in a raid and fitting mods are not implemented yet, except for
+the items described above. Weapons, shields and augments are limited to the ones described above.
 
 Assorted Seeds, seven basic materials (Metal Parts, Plastic Parts, Rubber Parts, Chemicals, Fabric,
 Sheet Metal and Planks) and thirteen uncommon materials (Wires, Battery, Steel Spring, Duct Tape, Oil,
@@ -129,15 +141,17 @@ Limitations:
 - Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
   its progress.
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
-- Loot containers hold a placeholder rubber duck. Plants and other nature containers, weapon racks
-  (they need the Security Breach skill) and keycard rooms are not supported, and containers are only
-  in Dam.
+- Loot drop rates are provisional and weapons never appear in containers. Plants and other nature
+  containers, ARC wrecks, weapon racks (they need the Security Breach skill) and keycard rooms are not
+  supported, and containers are only in Dam.
 - Broken-elevator repair and other extraction types are not implemented.
-- Other equipment, higher augment tiers, other item types and inventory operations beyond whole-stack moves, drops, pickups, splitting and merging are not implemented yet.
+- Other weapons and equipment, higher augment tiers, using consumables, throwables, deployables and
+  gadgets other than the Snap Hook, fitting weapon mods, and inventory operations beyond whole-stack
+  moves, drops, pickups, splitting and merging are not implemented yet.
 - Only Celeste trades, and only her permanent offers: daily-limited offers, unlock requirements, other
   traders and crafting are not implemented. A full stash refuses recycling instead of overflowing, and
   recycling in raids (field salvaging) is not implemented. Selling gives no experience or quest progress
-  yet, and a weapon sells without mods since mods are not supported.
+  yet, and a weapon sells without mods since mods cannot be fitted yet.
 - Dropped items have no physics, never expire, and a dropped weapon carries no mods; dropping the weapon in hand is not handled.
 - Plain HTTP between the game and ARES-Host; connection trust is not verified.
 - Tested on one PC only (loopback or its own LAN address). Other machines and the internet have not

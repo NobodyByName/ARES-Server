@@ -12,7 +12,7 @@ globalThis.AresContent = {
               "name": "Dam Battlegrounds",
               "technical": "DA_Level_TheDam_02_P",
               "status": "partial",
-              "note": "Stock-client entry, lighting, movement, regular doors, ladders, loot containers, elevator extraction and bringing the loadout home work; combat and container contents remain."
+              "note": "Stock-client entry, lighting, movement, regular doors, ladders, loot containers with rolled contents, elevator extraction and bringing the loadout home work; combat remains and loot drop rates are provisional."
             },
             {
               "name": "Weather & conditions",
@@ -758,12 +758,14 @@ globalThis.AresContent = {
             {
               "name": "ARCFriendifier Gadget V2",
               "technical": "DA_Item_ARCFriendifierGadgetV2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Adrenalin Shot",
               "technical": "DA_Item_AdrenalinShot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Armor Bench 01",
@@ -773,7 +775,8 @@ globalThis.AresContent = {
             {
               "name": "Armorpack",
               "technical": "DA_Item_Armorpack",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Assembly Station 01",
@@ -783,7 +786,8 @@ globalThis.AresContent = {
             {
               "name": "Basic Camera",
               "technical": "DA_Item_BasicCamera",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Basic Melee Weapon",
@@ -793,12 +797,14 @@ globalThis.AresContent = {
             {
               "name": "Basic Sticky Grenade",
               "technical": "DA_Item_BasicStickyGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Camera",
               "technical": "DA_Item_Camera",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Chamber Station Armor Bench 02",
@@ -878,107 +884,128 @@ globalThis.AresContent = {
             {
               "name": "Common Binoculars",
               "technical": "DA_Item_CommonBinoculars",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Agave",
               "technical": "DA_Item_Consumable_Agave",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Agave Juice",
               "technical": "DA_Item_Consumable_AgaveJuice",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Apricot",
               "technical": "DA_Item_Consumable_Apricot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Fruit Mix",
               "technical": "DA_Item_Consumable_FruitMix",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Lemon",
               "technical": "DA_Item_Consumable_Lemon",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Moss",
               "technical": "DA_Item_Consumable_Moss",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Mushroom",
               "technical": "DA_Item_Consumable_Mushroom",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Olives",
               "technical": "DA_Item_Consumable_Olives",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Prickly Pear",
               "technical": "DA_Item_Consumable_PricklyPear",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Resin",
               "technical": "DA_Item_Consumable_Resin",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Consumable Shield Over Time Pack",
               "technical": "DA_Item_Consumable_ShieldOverTimePack",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Crash Pad",
               "technical": "DA_Item_CrashPad",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Defibrillator",
               "technical": "DA_Item_Defibrillator",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Deployable Barricade",
               "technical": "DA_Item_DeployableBarricade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Deployable Jump Mine Explosive",
               "technical": "DA_Item_Deployable_JumpMine_Explosive",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Deployable Remote Flare Trap",
               "technical": "DA_Item_Deployable_RemoteFlareTrap",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Deployable Sound Trap",
               "technical": "DA_Item_Deployable_SoundTrap",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Do TGrenade",
               "technical": "DA_Item_DoTGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Door Blocker",
               "technical": "DA_Item_DoorBlocker",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Emitter Trap Tesla Coil",
               "technical": "DA_Item_EmitterTrap_TeslaCoil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Explosive Bench 01",
@@ -988,97 +1015,116 @@ globalThis.AresContent = {
             {
               "name": "Firecrackers",
               "technical": "DA_Item_Firecrackers",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Gadget Instrument Acoustic Guitar",
               "technical": "DA_Item_Gadget_Instrument_AcousticGuitar",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Gadget Instrument Banjo",
               "technical": "DA_Item_Gadget_Instrument_Banjo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Gadget Instrument Flute",
               "technical": "DA_Item_Gadget_Instrument_Flute",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Gadget Instrument Harmonica",
               "technical": "DA_Item_Gadget_Instrument_Harmonica",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Gadget Instrument Shaker",
               "technical": "DA_Item_Gadget_Instrument_Shaker",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Grappling Hook",
               "technical": "DA_Item_GrapplingHook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "HEGrenade",
               "technical": "DA_Item_HEGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Healing Ho T Improvised",
               "technical": "DA_Item_HealingHoT_Improvised",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Healing Ho T Medium",
               "technical": "DA_Item_HealingHoT_Medium",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Healing Ho T Small",
               "technical": "DA_Item_HealingHoT_Small",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Health Cloud",
               "technical": "DA_Item_HealthCloud",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Health Pack 01",
               "technical": "DA_Item_HealthPack_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Health Spray",
               "technical": "DA_Item_HealthSpray",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Homing Missile",
               "technical": "DA_Item_HomingMissile",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Homing Missile Grenade",
               "technical": "DA_Item_HomingMissileGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Integrated Binoculars",
               "technical": "DA_Item_IntegratedBinoculars",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Integrated Defibrillator",
               "technical": "DA_Item_IntegratedDefibrillator",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Integrated Shield Repair",
               "technical": "DA_Item_IntegratedShieldRepair",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Item Bench 01",
@@ -1098,52 +1144,62 @@ globalThis.AresContent = {
             {
               "name": "Jolt Mine",
               "technical": "DA_Item_JoltMine",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Jump Mine Impulse",
               "technical": "DA_Item_JumpMine_Impulse",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Jump Mine Stamina Do T",
               "technical": "DA_Item_JumpMine_StaminaDoT",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Key Item Raider Hatch Key",
               "technical": "DA_Item_KeyItem_RaiderHatchKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Laser Trap Do TGrenade",
               "technical": "DA_Item_LaserTrap_DoTGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Laser Trap Smoke Grenade",
               "technical": "DA_Item_LaserTrap_SmokeGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Laser Trap Stamina Do T",
               "technical": "DA_Item_LaserTrap_StaminaDoT",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Laser Trap Throwable Decoy",
               "technical": "DA_Item_LaserTrap_ThrowableDecoy",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Metal Detector 01",
               "technical": "DA_Item_MetalDetector_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Metal Detector 02",
               "technical": "DA_Item_MetalDetector_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Outpost Rooms Installed",
@@ -1158,7 +1214,8 @@ globalThis.AresContent = {
             {
               "name": "Powered Descender",
               "technical": "DA_Item_PoweredDescender",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Recycle Station 01",
@@ -1168,7 +1225,8 @@ globalThis.AresContent = {
             {
               "name": "Remote Trap Firework Box",
               "technical": "DA_Item_RemoteTrap_FireworkBox",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Resource Generator 01",
@@ -1198,7 +1256,8 @@ globalThis.AresContent = {
             {
               "name": "Scatter Missile Grenade",
               "technical": "DA_Item_ScatterMissileGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Smelter 01",
@@ -1208,7 +1267,8 @@ globalThis.AresContent = {
             {
               "name": "Smoke Grenade",
               "technical": "DA_Item_SmokeGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Snap Hook",
@@ -1219,7 +1279,8 @@ globalThis.AresContent = {
             {
               "name": "Snowball",
               "technical": "DA_Item_Snowball",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Special Beam Rifle 01",
@@ -1304,97 +1365,116 @@ globalThis.AresContent = {
             {
               "name": "Spray Can Fire",
               "technical": "DA_Item_SprayCan_Fire",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Sticky Remote Grenade",
               "technical": "DA_Item_StickyRemoteGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Stun Grenade",
               "technical": "DA_Item_StunGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Tether Gun",
               "technical": "DA_Item_TetherGun",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Throwable Decoy",
               "technical": "DA_Item_ThrowableDecoy",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Glowstick Blue",
               "technical": "DA_Item_Throwable_Glowstick_Blue",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Glowstick Green",
               "technical": "DA_Item_Throwable_Glowstick_Green",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Glowstick Red",
               "technical": "DA_Item_Throwable_Glowstick_Red",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Glowstick Yellow",
               "technical": "DA_Item_Throwable_Glowstick_Yellow",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Impact Grenade Small",
               "technical": "DA_Item_Throwable_ImpactGrenade_Small",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Shrapnel Grenade",
               "technical": "DA_Item_Throwable_ShrapnelGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Smoke Grenade Small",
               "technical": "DA_Item_Throwable_SmokeGrenade_Small",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Stamina Do TGrenade",
               "technical": "DA_Item_Throwable_StaminaDoTGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Tagging Grenade",
               "technical": "DA_Item_Throwable_TaggingGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Tether Grenade",
               "technical": "DA_Item_Throwable_TetherGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Trailblazer",
               "technical": "DA_Item_Throwable_Trailblazer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Throwable Volcanic Rock",
               "technical": "DA_Item_Throwable_VolcanicRock",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Timed Mine Explosive",
               "technical": "DA_Item_TimedMine_Explosive",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Transmitter",
               "technical": "DA_Item_Transmitter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Unarmed",
@@ -1419,7 +1499,8 @@ globalThis.AresContent = {
             {
               "name": "White Flag",
               "technical": "DA_Item_WhiteFlag",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Zipline",
@@ -1708,641 +1789,758 @@ globalThis.AresContent = {
             {
               "name": "Salvage ARCMemory Card",
               "technical": "DA_Item_Salvage_ARCMemoryCard",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Accordion 01",
               "technical": "DA_Item_Salvage_Accordion_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Advanced ARCPowercell",
               "technical": "DA_Item_Salvage_AdvancedARCPowercell",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Advanced Electrical Components",
               "technical": "DA_Item_Salvage_AdvancedElectricalComponents",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Advanced Gun Parts",
               "technical": "DA_Item_Salvage_AdvancedGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Alarm Clock",
               "technical": "DA_Item_Salvage_AlarmClock",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ancient Fort Security Code",
               "technical": "DA_Item_Salvage_AncientFortSecurityCode",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Anti Septic",
               "technical": "DA_Item_Salvage_AntiSeptic",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Arc Coolant 01",
               "technical": "DA_Item_Salvage_ArcCoolant_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Arc Impure Coolant 01",
               "technical": "DA_Item_Salvage_ArcImpureCoolant_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Archive Desk Lamp",
               "technical": "DA_Item_Salvage_ArchiveDeskLamp",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ascension Fragments",
               "technical": "DA_Item_Salvage_AscensionFragments",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ascension Material1",
               "technical": "DA_Item_Salvage_AscensionMaterial1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ascension Material2",
               "technical": "DA_Item_Salvage_AscensionMaterial2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ascension Material3",
               "technical": "DA_Item_Salvage_AscensionMaterial3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ascension Material4",
               "technical": "DA_Item_Salvage_AscensionMaterial4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Baton 01",
               "technical": "DA_Item_Salvage_Baton_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Battery",
               "technical": "DA_Item_Salvage_Battery",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 250 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 250 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Bicycle Pump 01",
               "technical": "DA_Item_Salvage_BicyclePump_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Blue Gate Utility Key1",
               "technical": "DA_Item_Salvage_BlueGateUtilityKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Blue Gate Utility Key2",
               "technical": "DA_Item_Salvage_BlueGateUtilityKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Blue Gate Utility Key3",
               "technical": "DA_Item_Salvage_BlueGateUtilityKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Blue Gate Utility Key4",
               "technical": "DA_Item_Salvage_BlueGateUtilityKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Broken ARCMechanism",
               "technical": "DA_Item_Salvage_BrokenARCMechanism",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Broken Transmitter",
               "technical": "DA_Item_Salvage_BrokenTransmitter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Bronze Mask Fragment 01",
               "technical": "DA_Item_Salvage_BronzeMaskFragment_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Bronze Statuette 01",
               "technical": "DA_Item_Salvage_BronzeStatuette_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Bureau Desk Lamp",
               "technical": "DA_Item_Salvage_BureauDeskLamp",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Buried City Utility Key1",
               "technical": "DA_Item_Salvage_BuriedCityUtilityKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Buried City Utility Key2",
               "technical": "DA_Item_Salvage_BuriedCityUtilityKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Buried City Utility Key3",
               "technical": "DA_Item_Salvage_BuriedCityUtilityKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Buried City Utility Key4",
               "technical": "DA_Item_Salvage_BuriedCityUtilityKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Camera Lens 01",
               "technical": "DA_Item_Salvage_CameraLens_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Candle Holder",
               "technical": "DA_Item_Salvage_CandleHolder",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Canister",
               "technical": "DA_Item_Salvage_Canister",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Cat Bed 01",
               "technical": "DA_Item_Salvage_CatBed_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Chemicals",
               "technical": "DA_Item_Salvage_Chemicals",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Chonk Part",
               "technical": "DA_Item_Salvage_Chonk_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Collector Key 01",
               "technical": "DA_Item_Salvage_CollectorKey_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Collector Key Component 01",
               "technical": "DA_Item_Salvage_CollectorKeyComponent_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Collector Key Component 02",
               "technical": "DA_Item_Salvage_CollectorKeyComponent_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Collector Key Component 03",
               "technical": "DA_Item_Salvage_CollectorKeyComponent_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Collector1",
               "technical": "DA_Item_Salvage_Collector1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Comet Part",
               "technical": "DA_Item_Salvage_CometPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Comfortable Pillow 01",
               "technical": "DA_Item_Salvage_ComfortablePillow_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Common Ascension Module",
               "technical": "DA_Item_Salvage_CommonAscensionModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Community Event TT1 Bunker Key",
               "technical": "DA_Item_Salvage_Community_Event_TT1_Bunker_Key",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Complex Gun Parts",
               "technical": "DA_Item_Salvage_ComplexGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Coolant",
               "technical": "DA_Item_Salvage_Coolant",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Cooling Coil",
               "technical": "DA_Item_Salvage_CoolingCoil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Cooling Fan",
               "technical": "DA_Item_Salvage_CoolingFan",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Corrupted ARC Part 01",
               "technical": "DA_Item_Salvage_Corrupted_ARC_Part_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Corrupted ARC Part 02",
               "technical": "DA_Item_Salvage_Corrupted_ARC_Part_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Corrupted ARC Part 03",
               "technical": "DA_Item_Salvage_Corrupted_ARC_Part_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Corrupted ARC Part 04",
               "technical": "DA_Item_Salvage_Corrupted_ARC_Part_04",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Corrupted ARC Part 05",
               "technical": "DA_Item_Salvage_Corrupted_ARC_Part_05",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Crumpled Plastic Bottle",
               "technical": "DA_Item_Salvage_CrumpledPlasticBottle",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Dam Controlled Access Zone Key",
               "technical": "DA_Item_Salvage_DamControlledAccessZoneKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Damaged Heat Sink",
               "technical": "DA_Item_Salvage_DamagedHeatSink",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Dart Board 01",
               "technical": "DA_Item_Salvage_DartBoard_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Dead Flower Bouquet 01",
               "technical": "DA_Item_Salvage_DeadFlowerBouquet_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Desk Lamp",
               "technical": "DA_Item_Salvage_DeskLamp",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Diving Goggles 01",
               "technical": "DA_Item_Salvage_DivingGoggles_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Duct Tape",
               "technical": "DA_Item_Salvage_DuctTape",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Fabric. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Electrical Components",
               "technical": "DA_Item_Salvage_ElectricalComponents",
               "status": "partial",
-              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 3 Rubber Parts and 3 Plastic Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Elephant Obelisk",
               "technical": "DA_Item_Salvage_ElephantObelisk",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Epic Ascension Module",
               "technical": "DA_Item_Salvage_EpicAscensionModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Equatorial Sundial",
               "technical": "DA_Item_Salvage_EquatorialSundial",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Event Item Candleberries",
               "technical": "DA_Item_Salvage_Event_Item_Candleberries",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Salvage Exodus Book",
               "technical": "DA_Item_Salvage_ExodusBook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Exodus Prototype",
               "technical": "DA_Item_Salvage_ExodusPrototype",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Expired Security Code",
               "technical": "DA_Item_Salvage_ExpiredSecurityCode",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Explosive Mixture",
               "technical": "DA_Item_Salvage_ExplosiveMixture",
               "status": "partial",
-              "note": "Crude Explosives. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 270 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Crude Explosives. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 270 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Extractor Part",
               "technical": "DA_Item_Salvage_Extractor_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Fabric",
               "technical": "DA_Item_Salvage_Fabric",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It also fits quick-use slots; using it in a raid is not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Fertilizer",
               "technical": "DA_Item_Salvage_Fertilizer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Film Reel 01",
               "technical": "DA_Item_Salvage_FilmReel_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Fine Wristwatch 01",
               "technical": "DA_Item_Salvage_FineWristwatch_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Fireball Part",
               "technical": "DA_Item_Salvage_FireballPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Flashlight Broken 01",
               "technical": "DA_Item_Salvage_FlashlightBroken_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Flow Controller",
               "technical": "DA_Item_Salvage_FlowController",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Football Shoes 01 Green",
               "technical": "DA_Item_Salvage_FootballShoes_01_Green",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Football Shoes 01 Red",
               "technical": "DA_Item_Salvage_FootballShoes_01_Red",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Football Shoes 01 Silver",
               "technical": "DA_Item_Salvage_FootballShoes_01_Silver",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Fossilized Lightning",
               "technical": "DA_Item_Salvage_FossilizedLightning",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frequency Modulation Box",
               "technical": "DA_Item_Salvage_FrequencyModulationBox",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Fried Motherboard",
               "technical": "DA_Item_Salvage_FriedMotherboard",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frigate Memory Module",
               "technical": "DA_Item_Salvage_FrigateMemoryModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frigate1",
               "technical": "DA_Item_Salvage_Frigate1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mat1",
               "technical": "DA_Item_Salvage_FrozenTrailMat1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mat2",
               "technical": "DA_Item_Salvage_FrozenTrailMat2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mat3",
               "technical": "DA_Item_Salvage_FrozenTrailMat3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mechanical1",
               "technical": "DA_Item_Salvage_FrozenTrailMechanical1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mechanical2",
               "technical": "DA_Item_Salvage_FrozenTrailMechanical2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mechanical3",
               "technical": "DA_Item_Salvage_FrozenTrailMechanical3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Mechanical4",
               "technical": "DA_Item_Salvage_FrozenTrailMechanical4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Observatory Key 01",
               "technical": "DA_Item_Salvage_FrozenTrailObservatoryKey_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Rail Yard Key 01",
               "technical": "DA_Item_Salvage_FrozenTrailRailYardKey_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Station Key 01",
               "technical": "DA_Item_Salvage_FrozenTrailStationKey_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Tech1",
               "technical": "DA_Item_Salvage_FrozenTrailTech1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Tech2",
               "technical": "DA_Item_Salvage_FrozenTrailTech2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Tech3",
               "technical": "DA_Item_Salvage_FrozenTrailTech3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Tech4",
               "technical": "DA_Item_Salvage_FrozenTrailTech4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frozen Trail Village Key",
               "technical": "DA_Item_Salvage_FrozenTrailVillageKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Frying Pan",
               "technical": "DA_Item_Salvage_FryingPan",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Geiger Counter",
               "technical": "DA_Item_Salvage_GeigerCounter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Guidance System 01",
               "technical": "DA_Item_Salvage_GuidanceSystem_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Gun Parts",
               "technical": "DA_Item_Salvage_GunParts",
               "status": "partial",
-              "note": "Simple Gun Parts. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 330 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Simple Gun Parts. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 330 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Handcuffs",
               "technical": "DA_Item_Salvage_Handcuffs",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Headphones",
               "technical": "DA_Item_Salvage_Headphones",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Heavy Drone Laser Part",
               "technical": "DA_Item_Salvage_HeavyDroneLaser_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Hornetflamethrower Part",
               "technical": "DA_Item_Salvage_Hornetflamethrower_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Household Cleaner",
               "technical": "DA_Item_Salvage_HouseholdCleaner",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Humidifier 01",
               "technical": "DA_Item_Salvage_Humidifier_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Industrial Battery",
               "technical": "DA_Item_Salvage_IndustrialBattery",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Industrial Charger",
               "technical": "DA_Item_Salvage_IndustrialCharger",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Industrial Magnet",
               "technical": "DA_Item_Salvage_IndustrialMagnet",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ion Sputter",
               "technical": "DA_Item_Salvage_IonSputter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Laboratory Reagents",
               "technical": "DA_Item_Salvage_LaboratoryReagents",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Legendary Ascension Module",
               "technical": "DA_Item_Salvage_LegendaryAscensionModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Light Gun Parts",
               "technical": "DA_Item_Salvage_LightGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Magnet",
               "technical": "DA_Item_Salvage_Magnet",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Magnetic Accelerator",
               "technical": "DA_Item_Salvage_MagneticAccelerator",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Magnetron",
               "technical": "DA_Item_Salvage_Magnetron",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Majolica Tazza 01",
               "technical": "DA_Item_Salvage_MajolicaTazza_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat ARC Core",
               "technical": "DA_Item_Salvage_Mat_ARC_Core",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat ARC Metal",
@@ -2353,1103 +2551,1310 @@ globalThis.AresContent = {
             {
               "name": "Salvage Mat Arc Circuit Board",
               "technical": "DA_Item_Salvage_Mat_ArcCircuitBoard",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Arc Mechanism",
               "technical": "DA_Item_Salvage_Mat_ArcMechanism",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Baron Cloth",
               "technical": "DA_Item_Salvage_Mat_Baron_Cloth",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Baron Ingot",
               "technical": "DA_Item_Salvage_Mat_Baron_Ingot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Baron Oil",
               "technical": "DA_Item_Salvage_Mat_Baron_Oil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Baron Rubber",
               "technical": "DA_Item_Salvage_Mat_Baron_Rubber",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Bison Part",
               "technical": "DA_Item_Salvage_Mat_Bison_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat Burned ARC Circuit Board",
               "technical": "DA_Item_Salvage_Mat_Burned_ARC_CircuitBoard",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damage Rocketeer Part",
               "technical": "DA_Item_Salvage_Mat_Damage_Rocketeer_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damaged ARC Core",
               "technical": "DA_Item_Salvage_Mat_Damaged_ARC_Core",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damaged Bison Part",
               "technical": "DA_Item_Salvage_Mat_Damaged_Bison_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damaged Hornet Part",
               "technical": "DA_Item_Salvage_Mat_Damaged_Hornet_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damaged Snitch Scanner",
               "technical": "DA_Item_Salvage_Mat_Damaged_Snitch_Scanner",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Damaged Wasp Part",
               "technical": "DA_Item_Salvage_Mat_Damaged_Wasp_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Heavy Drone Part",
               "technical": "DA_Item_Salvage_Mat_HeavyDronePart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Heavy Gun Parts",
               "technical": "DA_Item_Salvage_Mat_HeavyGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Hornet Part",
               "technical": "DA_Item_Salvage_Mat_Hornet_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat Intact Baron Cloth",
               "technical": "DA_Item_Salvage_Mat_Intact_Baron_Cloth",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Intact Baron Ingot",
               "technical": "DA_Item_Salvage_Mat_Intact_Baron_Ingot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Intact Baron Oil",
               "technical": "DA_Item_Salvage_Mat_Intact_Baron_Oil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Intact Baron Rubber",
               "technical": "DA_Item_Salvage_Mat_Intact_Baron_Rubber",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Junk 2",
               "technical": "DA_Item_Salvage_Mat_Junk_2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat Junk 3",
               "technical": "DA_Item_Salvage_Mat_Junk_3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; using it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat Roll Bot Damaged Part",
               "technical": "DA_Item_Salvage_Mat_RollBot_Damaged_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Snitch Part",
               "technical": "DA_Item_Salvage_Mat_Snitch_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Mat Tick Damaged Part",
               "technical": "DA_Item_Salvage_Mat_Tick_Damaged_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Tick Part",
               "technical": "DA_Item_Salvage_Mat_Tick_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mat Wasp Part",
               "technical": "DA_Item_Salvage_Mat_Wasp_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Mechanical Components",
               "technical": "DA_Item_Salvage_MechanicalComponents",
               "status": "partial",
-              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 2 Rubber Parts and 3 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 2 Rubber Parts and 3 Metal Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Medical Kit Broken 01",
               "technical": "DA_Item_Salvage_MedicalKitBroken_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Medium Gun Parts",
               "technical": "DA_Item_Salvage_MediumGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Meerkat Part",
               "technical": "DA_Item_Salvage_Meerkat_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Meerkat Part Turret",
               "technical": "DA_Item_Salvage_Meerkat_Part_Turret",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Salvage Metal Brackets",
               "technical": "DA_Item_Salvage_MetalBrackets",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Microscope",
               "technical": "DA_Item_Salvage_Microscope",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mini Centrifuge",
               "technical": "DA_Item_Salvage_MiniCentrifuge",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mod Components",
               "technical": "DA_Item_Salvage_ModComponents",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Monk Part",
               "technical": "DA_Item_Salvage_MonkPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Monolith Part",
               "technical": "DA_Item_Salvage_Monolith_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Motor",
               "technical": "DA_Item_Salvage_Motor",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mountain Compound Utility Key1",
               "technical": "DA_Item_Salvage_MountainCompound_UtilityKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mountain Compound Utility Key3",
               "technical": "DA_Item_Salvage_MountainCompound_UtilityKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mountain Compound Utility Key4",
               "technical": "DA_Item_Salvage_MountainCompound_UtilityKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Mountain Compound Utilitykey2",
               "technical": "DA_Item_Salvage_MountainCompound_Utilitykey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Music Album 01",
               "technical": "DA_Item_Salvage_MusicAlbum_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Music Box 01",
               "technical": "DA_Item_Salvage_MusicBox_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Number Plate",
               "technical": "DA_Item_Salvage_NumberPlate",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Oil",
               "technical": "DA_Item_Salvage_Oil",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 3 Chemicals. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Old Book",
               "technical": "DA_Item_Salvage_OldBook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Paint",
               "technical": "DA_Item_Salvage_Paint",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Painted Box 01",
               "technical": "DA_Item_Salvage_PaintedBox_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Parachute 01",
               "technical": "DA_Item_Salvage_Parachute_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Patrol Car Key",
               "technical": "DA_Item_Salvage_PatrolCarKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Peppermint Part",
               "technical": "DA_Item_Salvage_Peppermint_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Pilgrims Peak Security Code",
               "technical": "DA_Item_Salvage_PilgrimsPeakSecurityCode",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Pinger Part",
               "technical": "DA_Item_Salvage_PingerPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Salvage Planks",
               "technical": "DA_Item_Salvage_Planks",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic",
               "technical": "DA_Item_Salvage_Plastic",
               "status": "partial",
-              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified."
+              "note": "Plastic Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 60 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Plastic Trash",
               "technical": "DA_Item_Salvage_PlasticTrash",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Polluted Air Filter",
               "technical": "DA_Item_Salvage_PollutedAirFilter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Pop Part",
               "technical": "DA_Item_Salvage_PopPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; deploying it in a raid is not implemented."
             },
             {
               "name": "Salvage Portable TV",
               "technical": "DA_Item_Salvage_PortableTV",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Poster Nature 01",
               "technical": "DA_Item_Salvage_PosterNature_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Potted Plant",
               "technical": "DA_Item_Salvage_PottedPlant",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Pottery 01",
               "technical": "DA_Item_Salvage_Pottery_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Power Bank",
               "technical": "DA_Item_Salvage_PowerBank",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Power Cable",
               "technical": "DA_Item_Salvage_PowerCable",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Power Rod",
               "technical": "DA_Item_Salvage_PowerRod",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Processor",
               "technical": "DA_Item_Salvage_Processor",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Projector 01",
               "technical": "DA_Item_Salvage_Projector_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Purification System Blueprint",
               "technical": "DA_Item_Salvage_PurificationSystemBlueprint",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Aivas Patch",
               "technical": "DA_Item_Salvage_Quest_AivasPatch",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Broken Compass",
               "technical": "DA_Item_Salvage_Quest_BrokenCompass",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Celeste Journal",
               "technical": "DA_Item_Salvage_Quest_CelesteJournal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Collector Circuitry",
               "technical": "DA_Item_Salvage_Quest_CollectorCircuitry",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Dodgers Note",
               "technical": "DA_Item_Salvage_Quest_DodgersNote",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest ECMeter",
               "technical": "DA_Item_Salvage_Quest_ECMeter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest ESRAnalyzer",
               "technical": "DA_Item_Salvage_Quest_ESRAnalyzer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Espresso Machine Parts",
               "technical": "DA_Item_Salvage_Quest_EspressoMachineParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest First Wave Camcorder",
               "technical": "DA_Item_Salvage_Quest_FirstWaveCamcorder",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest First Wave Compass",
               "technical": "DA_Item_Salvage_Quest_FirstWaveCompass",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest First Wave Rations",
               "technical": "DA_Item_Salvage_Quest_FirstWaveRations",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Li DARScanner",
               "technical": "DA_Item_Salvage_Quest_LiDARScanner",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Library Book",
               "technical": "DA_Item_Salvage_Quest_LibraryBook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Mementos",
               "technical": "DA_Item_Salvage_Quest_Mementos",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Moisture Probe",
               "technical": "DA_Item_Salvage_Quest_Moisture_Probe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Nomad Tech Item",
               "technical": "DA_Item_Salvage_Quest_NomadTechItem",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Official Shutdown Documentation",
               "technical": "DA_Item_Salvage_Quest_Official_Shutdown_Documentation",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Old Market Card",
               "technical": "DA_Item_Salvage_Quest_OldMarket_Card",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Old Report",
               "technical": "DA_Item_Salvage_Quest_OldReport",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Plant",
               "technical": "DA_Item_Salvage_Quest_Plant",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Precious Cargo",
               "technical": "DA_Item_Salvage_Quest_PreciousCargo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Precision Gimbal",
               "technical": "DA_Item_Salvage_Quest_PrecisionGimbal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Raider Flag",
               "technical": "DA_Item_Salvage_Quest_RaiderFlag",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Rare Books",
               "technical": "DA_Item_Salvage_Quest_RareBooks",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Recording Tape",
               "technical": "DA_Item_Salvage_Quest_RecordingTape",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Scout Patrol Note",
               "technical": "DA_Item_Salvage_Quest_ScoutPatrol_Note",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Secret Meeting Info",
               "technical": "DA_Item_Salvage_Quest_Secret_Meeting_Info",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Seed Packet",
               "technical": "DA_Item_Salvage_Quest_SeedPacket",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Seed Vault Key",
               "technical": "DA_Item_Salvage_Quest_SeedVault_Key",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Terminal Key",
               "technical": "DA_Item_Salvage_Quest_TerminalKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Quest Video Tape",
               "technical": "DA_Item_Salvage_Quest_VideoTape",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Radio",
               "technical": "DA_Item_Salvage_Radio",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Radio Broken 01",
               "technical": "DA_Item_Salvage_RadioBroken_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Radio Relay",
               "technical": "DA_Item_Salvage_RadioRelay",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Raider Journal",
               "technical": "DA_Item_Salvage_RaiderJournal",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Raiders Refuge Security Code",
               "technical": "DA_Item_Salvage_RaidersRefugeSecurityCode",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Railway Lantern",
               "technical": "DA_Item_Salvage_RailwayLantern",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rare Ascension Module",
               "technical": "DA_Item_Salvage_RareAscensionModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Red Coral Jewelry 01",
               "technical": "DA_Item_Salvage_RedCoralJewelry_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Refined Explosives",
               "technical": "DA_Item_Salvage_RefinedExplosives",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Remote Control",
               "technical": "DA_Item_Salvage_RemoteControl",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riot Shield Broken 01",
               "technical": "DA_Item_Salvage_RiotShieldBroken_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Crane House Key",
               "technical": "DA_Item_Salvage_RivenTidesCraneHouseKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key1",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key2",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key3",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key4",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key5",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey5",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key6",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey6",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Hotel Key7",
               "technical": "DA_Item_Salvage_RivenTidesHotelKey7",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Wave Breaker Key1",
               "technical": "DA_Item_Salvage_RivenTidesWaveBreakerKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Riven Tides Wave Breaker Key2",
               "technical": "DA_Item_Salvage_RivenTidesWaveBreakerKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rock Salt 01",
               "technical": "DA_Item_Salvage_RockSalt_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rocket Thruster",
               "technical": "DA_Item_Salvage_RocketThruster",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rollbot Part",
               "technical": "DA_Item_Salvage_Rollbot_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Roots",
               "technical": "DA_Item_Salvage_Roots",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rope",
               "technical": "DA_Item_Salvage_Rope",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rosary 01",
               "technical": "DA_Item_Salvage_Rosary_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rotary Encoder",
               "technical": "DA_Item_Salvage_RotaryEncoder",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rubber",
               "technical": "DA_Item_Salvage_Rubber",
               "status": "partial",
-              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
+              "note": "Rubber Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 50 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Rubber Band 01",
               "technical": "DA_Item_Salvage_RubberBand_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rubber Pad",
               "technical": "DA_Item_Salvage_RubberPad",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Ruined Augment",
               "technical": "DA_Item_Salvage_RuinedAugment",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Runner Part",
               "technical": "DA_Item_Salvage_RunnerPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rusted Bolts",
               "technical": "DA_Item_Salvage_RustedBolts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rusted Gear",
               "technical": "DA_Item_Salvage_RustedGear",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rusted Tools",
               "technical": "DA_Item_Salvage_RustedTools",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Rusted Weapon",
               "technical": "DA_Item_Salvage_RustedWeapon",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Sample Cleaner",
               "technical": "DA_Item_Salvage_SampleCleaner",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Scanner 01",
               "technical": "DA_Item_Salvage_Scanner_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Scrap Metal",
               "technical": "DA_Item_Salvage_ScrapMetal",
               "status": "partial",
-              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified."
+              "note": "Metal Parts. Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). Recycling supported items gives it; it cannot be recycled itself. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 75 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Security Code",
               "technical": "DA_Item_Salvage_SecurityCode",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Seeds",
               "technical": "DA_Item_Salvage_Seeds",
               "status": "partial",
-              "note": "Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Finding seeds in raids is not implemented: loot tables are not decoded. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
+              "note": "Assorted Seeds: stacks of up to 100 in the menu with weight, and the currency of Celeste's permanent offers; buying with them is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers do not hold seeds, and finding them in raids is not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Sensors",
               "technical": "DA_Item_Salvage_Sensors",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Sextant",
               "technical": "DA_Item_Salvage_Sextant",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Sheet Metal",
               "technical": "DA_Item_Salvage_SheetMetal",
               "status": "partial",
-              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
+              "note": "Stacks of up to 50 in the menu with weight; Celeste sells it for Assorted Seeds, which is stock-client verified. Raid carries it like other stackable items (automated coverage only). Dam loot containers can hold it (drop rates are provisional). It cannot be recycled. Crafting and its use in recipes are not implemented. It shows its value and sells from Storage for 100 coins each; selling is stock-client verified."
             },
             {
               "name": "Salvage Shotgun Parts",
               "technical": "DA_Item_Salvage_ShotgunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Signal Amplifier",
               "technical": "DA_Item_Salvage_SignalAmplifier",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Silver Teaspoon Set 01",
               "technical": "DA_Item_Salvage_SilverTeaspoonSet_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Sniper Part",
               "technical": "DA_Item_Salvage_Sniper_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spaceport Utility Key1",
               "technical": "DA_Item_Salvage_SpaceportUtilityKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spaceport Utility Key2",
               "technical": "DA_Item_Salvage_SpaceportUtilityKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spaceport Utility Key3",
               "technical": "DA_Item_Salvage_SpaceportUtilityKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spaceport Utility Key4",
               "technical": "DA_Item_Salvage_SpaceportUtilityKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Speaker Component",
               "technical": "DA_Item_Salvage_SpeakerComponent",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spearmint Part",
               "technical": "DA_Item_Salvage_SpearmintPart",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spectrometer",
               "technical": "DA_Item_Salvage_Spectrometer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spectrum Analyzer",
               "technical": "DA_Item_Salvage_SpectrumAnalyzer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Spring Cushion",
               "technical": "DA_Item_Salvage_SpringCushion",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Statuette 01",
               "technical": "DA_Item_Salvage_Statuette_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Steel Spring",
               "technical": "DA_Item_Salvage_SteelSpring",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 300 coins each. Recycling it from Storage gives 2 Metal Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Synthesized Fuel",
               "technical": "DA_Item_Salvage_SynthesizedFuel",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Syringe",
               "technical": "DA_Item_Salvage_Syringe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Tactical West",
               "technical": "DA_Item_Salvage_TacticalWest",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Tarragon Part",
               "technical": "DA_Item_Salvage_Tarragon_Part",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; throwing it in a raid is not implemented."
             },
             {
               "name": "Salvage Taser Broken 01",
               "technical": "DA_Item_Salvage_TaserBroken_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Tattered Clothes",
               "technical": "DA_Item_Salvage_TatteredClothes",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Telemetry Transceiver",
               "technical": "DA_Item_Salvage_TelemetryTransceiver",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Tellurion 01",
               "technical": "DA_Item_Salvage_Tellurion_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key1",
               "technical": "DA_Item_Salvage_TheDamUtilityKey1",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key2",
               "technical": "DA_Item_Salvage_TheDamUtilityKey2",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key3",
               "technical": "DA_Item_Salvage_TheDamUtilityKey3",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key4",
               "technical": "DA_Item_Salvage_TheDamUtilityKey4",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Thermostat",
               "technical": "DA_Item_Salvage_Thermostat",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Toaster",
               "technical": "DA_Item_Salvage_Toaster",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Torch Ginger",
               "technical": "DA_Item_Salvage_TorchGinger",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Torn Blanket",
               "technical": "DA_Item_Salvage_TornBlanket",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Train Model",
               "technical": "DA_Item_Salvage_TrainModel",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Air Freshener",
               "technical": "DA_Item_Salvage_Trinket_AirFreshener",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Bent Clothes Hanger",
               "technical": "DA_Item_Salvage_Trinket_BentClothesHanger",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Blown Fuses",
               "technical": "DA_Item_Salvage_Trinket_BlownFuses",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model A",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model A 02",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_A_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model B",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model B 02",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_B_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model C",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_C",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model C 02",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_C_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model D",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_D",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model D 02",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_D_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model E",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_E",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Boat Model E 02",
               "technical": "DA_Item_Salvage_Trinket_BoatModel_E_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Breathtaking Snow Globe",
               "technical": "DA_Item_Salvage_Trinket_BreathtakingSnowGlobe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Burntout Candles",
               "technical": "DA_Item_Salvage_Trinket_BurntoutCandles",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Coffee Pot",
               "technical": "DA_Item_Salvage_Trinket_CoffeePot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Deflated Football",
               "technical": "DA_Item_Salvage_Trinket_DeflatedFootball",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Dog Collar",
               "technical": "DA_Item_Salvage_Trinket_DogCollar",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Empty Wine Bottle",
               "technical": "DA_Item_Salvage_Trinket_EmptyWineBottle",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Expired Respirator",
               "technical": "DA_Item_Salvage_Trinket_ExpiredRespirator",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Faded Picture Frame",
               "technical": "DA_Item_Salvage_Trinket_FadedPictureFrame",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Food Wrapper",
               "technical": "DA_Item_Salvage_Trinket_FoodWrapper",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Garlic Press",
               "technical": "DA_Item_Salvage_Trinket_GarlicPress",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Husk Lily",
               "technical": "DA_Item_Salvage_Trinket_HuskLily",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Ice Cream Scooper",
               "technical": "DA_Item_Salvage_Trinket_IceCreamScooper",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Lance Mix Tape",
               "technical": "DA_Item_Salvage_Trinket_LanceMixTape",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Light Bulb",
               "technical": "DA_Item_Salvage_Trinket_LightBulb",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Playing Cards",
               "technical": "DA_Item_Salvage_Trinket_PlayingCards",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Ripped Safety Vest",
               "technical": "DA_Item_Salvage_Trinket_RippedSafetyVest",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Trinket Torn Book",
               "technical": "DA_Item_Salvage_Trinket_TornBook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Turbo Pump 01",
               "technical": "DA_Item_Salvage_TurboPump_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Uncommon Ascension Module",
               "technical": "DA_Item_Salvage_UncommonAscensionModule",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Vase 01",
               "technical": "DA_Item_Salvage_Vase_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Vintage Steering Wheel 01",
               "technical": "DA_Item_Salvage_VintageSteeringWheel_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Voltage Converter",
               "technical": "DA_Item_Salvage_VoltageConverter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Water Filter",
               "technical": "DA_Item_Salvage_WaterFilter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Water Pump",
               "technical": "DA_Item_Salvage_WaterPump",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Wires",
               "technical": "DA_Item_Salvage_Wires",
               "status": "partial",
-              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Rubber Parts. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Stacks of up to 15 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 200 coins each. Recycling it from Storage gives 2 Rubber Parts. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             },
             {
               "name": "Salvage Woven Cloth",
               "technical": "DA_Item_Salvage_WovenCloth",
               "status": "partial",
-              "note": "Durable Cloth. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 6 Fabric. Recycling from Storage is stock-client verified (Wires). Finding it in raids, crafting and its use in recipes are not implemented."
+              "note": "Durable Cloth. Stacks of up to 10 in the menu with weight; Raid carries it like other stackable items (automated coverage only). It shows its value and sells from Storage for 640 coins each. Recycling it from Storage gives 6 Fabric. Recycling from Storage is stock-client verified (Wires). Dam loot containers can hold it (drop rates are provisional). Crafting and its use in recipes are not implemented."
             }
           ]
         },
@@ -3960,7 +4365,8 @@ globalThis.AresContent = {
             {
               "name": "Energy Ammo",
               "technical": "DA_Item_EnergyAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; loading it into a weapon is not implemented."
             },
             {
               "name": "Heavy Ammo",
@@ -3971,22 +4377,26 @@ globalThis.AresContent = {
             {
               "name": "Launcher Ammo",
               "technical": "DA_Item_LauncherAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; loading it into a weapon is not implemented."
             },
             {
               "name": "Light Ammo",
               "technical": "DA_Item_LightAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; loading it into a weapon is not implemented."
             },
             {
               "name": "Medium Ammo",
               "technical": "DA_Item_MediumAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; loading it into a weapon is not implemented."
             },
             {
               "name": "Shotgun Ammo",
               "technical": "DA_Item_ShotgunAmmo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; loading it into a weapon is not implemented."
             }
           ]
         },
@@ -3996,507 +4406,608 @@ globalThis.AresContent = {
             {
               "name": "Outpost Furniture Recipe Alpine Wardrobe 01",
               "technical": "DA_Item_OutpostFurnitureRecipe_AlpineWardrobe_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Bar Stool 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_BarStool_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Bar Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_BarTable_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Bird Cage Project Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_BirdCageProject_Table_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Bird Cage Project Table 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_BirdCageProject_Table_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe CA Lamp Floor 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_CA_LampFloor_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cafeteria Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_CafeteriaTable_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Chambers Bed Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Chambers_BedTable_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Chambers Lamp 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Chambers_Lamp_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Chambers Shelf 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Chambers_Shelf_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Chandelier 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Chandelier_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Chair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_Chair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Chair 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_Chair_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Cupboard Cafe 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_CupboardCafe_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Lamp Ceiling 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_LampCeiling_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Shelf 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_Shelf_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Sofa 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_Sofa_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Cmr Table 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Cmr_Table_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Console Chest 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_ConsoleChest_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Construction Light 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_ConstructionLight_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 01",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 02",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 03",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 04",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_04",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 05",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_05",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Debris Draped 06",
               "technical": "DA_Item_OutpostFurnitureRecipe_DebrisDraped_06",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Floor Lamp 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_FloorLamp_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Glass Ceiling Lamp 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_GlassCeilingLamp_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Chair 01",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_Chair_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Chair 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_Chair_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Lamp Ceiling 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_LampCeiling_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Sofa 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_Sofa_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Sofa 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_Sofa_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Gvt Sofa 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Gvt_Sofa_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe HOR Chair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_HOR_Chair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Hme Stool 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Hme_Stool_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Offerings Console",
               "technical": "DA_Item_OutpostFurnitureRecipe_OfferingsConsole",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Project Winter Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_ProjectWinter_Table_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe RST Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_RST_Table_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Bed 01",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Bed_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Bed 02",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Bed_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Bed 03",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Bed_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Bed 04",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Bed_04",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Shelves 01",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Shelves_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Shelves 02",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Shelves_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Shelves 03",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Shelves_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Raider Den Shelves 04",
               "technical": "DA_Item_OutpostFurnitureRecipe_RaiderDen_Shelves_04",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Armchair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Armchair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Ceiling Lamp 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_CeilingLamp_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Chair 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Chair_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Chair 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Chair_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Drawer 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Drawer_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Drawer Medical 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_DrawerMedical_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Piano 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Piano_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y150 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y150_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y150 A Patterns",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y150_A_Patterns",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y150 A Patterns Geo",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y150_A_Patterns_Geo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y150 A Patterns Green Grometry",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y150_A_Patterns_Green_Grometry",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y150 A Research Company BC",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y150_A_ResearchCompany_BC",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y300 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y300_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y300 A Patterns",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y300_A_Patterns",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y300 A Patterns Geo",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y300_A_Patterns_Geo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y300 A Patterns Green Grometry",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y300_A_Patterns_Green_Grometry",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 01 Y300 A Research Company BC",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_01_Y300_A_ResearchCompany_BC",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Sofa 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Sofa_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Table 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Table_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Table 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Table_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Res Table 03 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Res_Table_03_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Cabinet M 02 X100cm B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_M_02_X100cm_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Cabinet M 02 X200cm B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_M_02_X200cm_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Cabinet S 01 B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_S_01_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Cabinet S 02 A Blue",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Cabinet_S_02_A_Blue",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Ceiling Light 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_CeilingLight_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Chair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Chair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Chair 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Chair_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Rsr Stool 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Rsr_Stool_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe SM Res Closet 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_SM_Res_Closet_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe SM Res Tv Unit 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_SM_Res_TvUnit_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe SM Rsr Cabinet M 02 X100cm A",
               "technical": "DA_Item_OutpostFurnitureRecipe_SM_Rsr_Cabinet_M_02_X100cm_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe SM Rsr Cabinet M 02 X200cm A",
               "technical": "DA_Item_OutpostFurnitureRecipe_SM_Rsr_Cabinet_M_02_X200cm_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe SM Wrh Desk 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_SM_Wrh_Desk_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Sct Chair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Sct_Chair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Shelves 02 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Shelves_02_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Shelves 02 B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Shelves_02_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Sofa 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Sofa_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe South Forest Bush Holly 01 C",
               "technical": "DA_Item_OutpostFurnitureRecipe_South_Forest_Bush_Holly_01_C",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Stash 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Stash_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Stash 01 B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Stash_01_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Stash 01 C",
               "technical": "DA_Item_OutpostFurnitureRecipe_Stash_01_C",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Stash 01 D",
               "technical": "DA_Item_OutpostFurnitureRecipe_Stash_01_D",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Venetian Dresser 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_VenetianDresser_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Wardrobe 01 B",
               "technical": "DA_Item_OutpostFurnitureRecipe_Wardrobe_01_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Wardrobe 01 C",
               "technical": "DA_Item_OutpostFurnitureRecipe_Wardrobe_01_C",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Wardrobe 01 D",
               "technical": "DA_Item_OutpostFurnitureRecipe_Wardrobe_01_D",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Weapon Display 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_WeaponDisplay_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Weapon Display 01 B",
               "technical": "DA_Item_OutpostFurnitureRecipe_WeaponDisplay_01_B",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Weapon Display 01 C",
               "technical": "DA_Item_OutpostFurnitureRecipe_WeaponDisplay_01_C",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Weather Monitor 01 Chair",
               "technical": "DA_Item_OutpostFurnitureRecipe_WeatherMonitor_01_Chair",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Weather Monitor 01 Table",
               "technical": "DA_Item_OutpostFurnitureRecipe_WeatherMonitor_01_Table",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Wrh Chair 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Wrh_Chair_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Outpost Furniture Recipe Wrh Drawers 01 A",
               "technical": "DA_Item_OutpostFurnitureRecipe_Wrh_Drawers_01_A",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             }
           ]
         },
@@ -4506,542 +5017,650 @@ globalThis.AresContent = {
             {
               "name": "Recipe Advanced Camera Recipe",
               "technical": "DA_Item_Recipe_AdvancedCameraRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Assault Rifle Heavy Recipe",
               "technical": "DA_Item_Recipe_AssaultRifleHeavyRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Banjo",
               "technical": "DA_Item_Recipe_Banjo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Battlerifle Light01Recipe",
               "technical": "DA_Item_Recipe_BattlerifleLight01Recipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Blue Glowstick Recipe",
               "technical": "DA_Item_Recipe_BlueGlowstickRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Canto Recipe",
               "technical": "DA_Item_Recipe_CantoRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Charge Rifle Recipe",
               "technical": "DA_Item_Recipe_ChargeRifleRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Collector Key",
               "technical": "DA_Item_Recipe_CollectorKey",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Combat Agument IIIFlanking Recipe",
               "technical": "DA_Item_Recipe_CombatAgumentIIIFlankingRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Combat Agument T3Aggressive Recipe",
               "technical": "DA_Item_Recipe_CombatAgumentT3AggressiveRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Complex Gun Parts Recipe",
               "technical": "DA_Item_Recipe_ComplexGunPartsRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Crash Pad Recipe",
               "technical": "DA_Item_Recipe_CrashPadRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Dolabra Recipe",
               "technical": "DA_Item_Recipe_DolabraRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Extended Barrel02Recipe",
               "technical": "DA_Item_Recipe_ExtendedBarrel02Recipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Fireworks Box Blueprint",
               "technical": "DA_Item_Recipe_FireworksBoxBlueprint",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Gas Mine Recipe",
               "technical": "DA_Item_Recipe_GasMineRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Grappling Hook Recipe",
               "technical": "DA_Item_Recipe_GrapplingHookRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Green Glowstick Recipe",
               "technical": "DA_Item_Recipe_GreenGlowstickRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Impulse Mine Recipe",
               "technical": "DA_Item_Recipe_ImpulseMineRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Banshee",
               "technical": "DA_Item_Recipe_ItemSkin_Banshee",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Bells",
               "technical": "DA_Item_Recipe_ItemSkin_Bells",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Common Blue",
               "technical": "DA_Item_Recipe_ItemSkin_CommonBlue",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Common Red",
               "technical": "DA_Item_Recipe_ItemSkin_CommonRed",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Common Yellow",
               "technical": "DA_Item_Recipe_ItemSkin_CommonYellow",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Corto01",
               "technical": "DA_Item_Recipe_ItemSkin_Corto01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Dust Stroke Camo",
               "technical": "DA_Item_Recipe_ItemSkin_DustStrokeCamo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Mural Tree",
               "technical": "DA_Item_Recipe_ItemSkin_MuralTree",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Organic Island",
               "technical": "DA_Item_Recipe_ItemSkin_OrganicIsland",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Outlander",
               "technical": "DA_Item_Recipe_ItemSkin_Outlander",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Renzo",
               "technical": "DA_Item_Recipe_ItemSkin_Renzo",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Station Master",
               "technical": "DA_Item_Recipe_ItemSkin_StationMaster",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Tortoise01",
               "technical": "DA_Item_Recipe_ItemSkin_Tortoise01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Item Skin Yeti",
               "technical": "DA_Item_Recipe_ItemSkin_Yeti",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Launcher Anti ARCSingle Shot01Recipe",
               "technical": "DA_Item_Recipe_LauncherAntiARCSingleShot01Recipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Lone Wolf Recipe",
               "technical": "DA_Item_Recipe_LoneWolfRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Looting Agument IIIDBNORecipe",
               "technical": "DA_Item_Recipe_LootingAgumentIIIDBNORecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Looting Augment T3Custodian Recipe",
               "technical": "DA_Item_Recipe_LootingAugmentT3CustodianRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Powered Descender Recipe",
               "technical": "DA_Item_Recipe_PoweredDescenderRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Angled Grip 02",
               "technical": "DA_Item_Recipe_Recipe_AngledGrip_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Angled Grip 03",
               "technical": "DA_Item_Recipe_Recipe_AngledGrip_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Anti ARCLauncher",
               "technical": "DA_Item_Recipe_Recipe_AntiARCLauncher",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Anvil",
               "technical": "DA_Item_Recipe_Recipe_Anvil",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Assault Rifle Burst",
               "technical": "DA_Item_Recipe_Recipe_AssaultRifleBurst",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Assault Rifle Low Tier",
               "technical": "DA_Item_Recipe_Recipe_AssaultRifleLowTier",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Barricade Kit",
               "technical": "DA_Item_Recipe_Recipe_BarricadeKit",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Blaze Grenade",
               "technical": "DA_Item_Recipe_Recipe_BlazeGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Bobcat",
               "technical": "DA_Item_Recipe_Recipe_Bobcat",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Bolt Action Medium",
               "technical": "DA_Item_Recipe_Recipe_BoltActionMedium",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Burletta",
               "technical": "DA_Item_Recipe_Recipe_Burletta",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Compensator 02",
               "technical": "DA_Item_Recipe_Recipe_Compensator_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Compensator 03",
               "technical": "DA_Item_Recipe_Recipe_Compensator_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Defib",
               "technical": "DA_Item_Recipe_Recipe_Defib",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Door Blocker",
               "technical": "DA_Item_Recipe_Recipe_DoorBlocker",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Equlizer",
               "technical": "DA_Item_Recipe_Recipe_Equlizer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Barrel",
               "technical": "DA_Item_Recipe_Recipe_ExtendedBarrel",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Light Mag 02",
               "technical": "DA_Item_Recipe_Recipe_ExtendedLightMag_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Light Mag 03",
               "technical": "DA_Item_Recipe_Recipe_ExtendedLightMag_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Medium Mag 02",
               "technical": "DA_Item_Recipe_Recipe_ExtendedMediumMag_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Medium Mag 03",
               "technical": "DA_Item_Recipe_Recipe_ExtendedMediumMag_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Shotgun Mag 02",
               "technical": "DA_Item_Recipe_Recipe_ExtendedShotgunMag_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Extended Shotgun Mag 03",
               "technical": "DA_Item_Recipe_Recipe_ExtendedShotgunMag_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Flare Trap",
               "technical": "DA_Item_Recipe_Recipe_FlareTrap",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Heavy Gun Parts",
               "technical": "DA_Item_Recipe_Recipe_HeavyGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Hi Power Pistol",
               "technical": "DA_Item_Recipe_Recipe_HiPowerPistol",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Il Toro",
               "technical": "DA_Item_Recipe_Recipe_IlToro",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Jolt Mine",
               "technical": "DA_Item_Recipe_Recipe_JoltMine",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Jump Mine",
               "technical": "DA_Item_Recipe_Recipe_JumpMine",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Jupiter",
               "technical": "DA_Item_Recipe_Recipe_Jupiter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Light Gun Parts",
               "technical": "DA_Item_Recipe_Recipe_LightGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Lightweight Stock",
               "technical": "DA_Item_Recipe_Recipe_LightweightStock",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Lure Grenade",
               "technical": "DA_Item_Recipe_Recipe_LureGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Medium Gun Parts",
               "technical": "DA_Item_Recipe_Recipe_MediumGunParts",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Medium LMG",
               "technical": "DA_Item_Recipe_Recipe_MediumLMG",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Muzzle Brake 02",
               "technical": "DA_Item_Recipe_Recipe_MuzzleBrake_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Muzzle Brake 03",
               "technical": "DA_Item_Recipe_Recipe_MuzzleBrake_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Padded Stock",
               "technical": "DA_Item_Recipe_Recipe_PaddedStock",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Shotgun Choke 02",
               "technical": "DA_Item_Recipe_Recipe_ShotgunChoke_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Shotgun Choke 03",
               "technical": "DA_Item_Recipe_Recipe_ShotgunChoke_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Shotgun Silencer",
               "technical": "DA_Item_Recipe_Recipe_ShotgunSilencer",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Showstopper",
               "technical": "DA_Item_Recipe_Recipe_Showstopper",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Silencer 01",
               "technical": "DA_Item_Recipe_Recipe_Silencer_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Silencer 02",
               "technical": "DA_Item_Recipe_Recipe_Silencer_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Snap Hook",
               "technical": "DA_Item_Recipe_Recipe_SnapHook",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Stable Stock 02",
               "technical": "DA_Item_Recipe_Recipe_StableStock_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Stable Stock 03",
               "technical": "DA_Item_Recipe_Recipe_StableStock_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Tagging Grenade",
               "technical": "DA_Item_Recipe_Recipe_TaggingGrenade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Tempest",
               "technical": "DA_Item_Recipe_Recipe_Tempest",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Trigger Nade",
               "technical": "DA_Item_Recipe_Recipe_TriggerNade",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Vertical Grip 02",
               "technical": "DA_Item_Recipe_Recipe_VerticalGrip_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Vertical Grip 03",
               "technical": "DA_Item_Recipe_Recipe_VerticalGrip_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Vita Shot",
               "technical": "DA_Item_Recipe_Recipe_VitaShot",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Vita Spray",
               "technical": "DA_Item_Recipe_Recipe_VitaSpray",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Vulcano",
               "technical": "DA_Item_Recipe_Recipe_Vulcano",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Recipe Wolfpack",
               "technical": "DA_Item_Recipe_Recipe_Wolfpack",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Red Glowstick Recipe",
               "technical": "DA_Item_Recipe_RedGlowstickRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Smoke Grenade Recipe",
               "technical": "DA_Item_Recipe_SmokeGrenadeRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Snubnose01Recipe",
               "technical": "DA_Item_Recipe_Snubnose01Recipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Surge Coil Recipe",
               "technical": "DA_Item_Recipe_SurgeCoilRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Tactical Augment T3Revival Recipe",
               "technical": "DA_Item_Recipe_TacticalAugmentT3RevivalRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Tether Grenade Recipe",
               "technical": "DA_Item_Recipe_TetherGrenadeRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Tether Gun Recipe",
               "technical": "DA_Item_Recipe_TetherGunRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Timed Mine Recipe",
               "technical": "DA_Item_Recipe_TimedMineRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Trail Blazer Recipe",
               "technical": "DA_Item_Recipe_TrailBlazerRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Utility Agument T3Defensive Recipe",
               "technical": "DA_Item_Recipe_UtilityAgumentT3DefensiveRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Utility Agument T3Healing Recipe",
               "technical": "DA_Item_Recipe_UtilityAgumentT3HealingRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Utility Augment T3Smoke Recipe",
               "technical": "DA_Item_Recipe_UtilityAugmentT3SmokeRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe White Flag Recipe",
               "technical": "DA_Item_Recipe_WhiteFlagRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             },
             {
               "name": "Recipe Yellow Glow Stick Recipe",
               "technical": "DA_Item_Recipe_YellowGlowStickRecipe",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; learning or crafting it is not implemented."
             }
           ]
         },
@@ -5051,197 +5670,236 @@ globalThis.AresContent = {
             {
               "name": "Weapon Mod Magazine Light Extended 01",
               "technical": "DA_Item_WeaponMod_MagazineLight_Extended_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Light Extended 02",
               "technical": "DA_Item_WeaponMod_MagazineLight_Extended_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Light Extended 03",
               "technical": "DA_Item_WeaponMod_MagazineLight_Extended_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Medium Extended 01",
               "technical": "DA_Item_WeaponMod_MagazineMedium_Extended_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Medium Extended 02",
               "technical": "DA_Item_WeaponMod_MagazineMedium_Extended_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Medium Extended 03",
               "technical": "DA_Item_WeaponMod_MagazineMedium_Extended_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Shotgun Extended 01",
               "technical": "DA_Item_WeaponMod_MagazineShotgun_Extended_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Shotgun Extended 02",
               "technical": "DA_Item_WeaponMod_MagazineShotgun_Extended_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Magazine Shotgun Extended 03",
               "technical": "DA_Item_WeaponMod_MagazineShotgun_Extended_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Brake 01",
               "technical": "DA_Item_WeaponMod_Muzzle_Brake_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Brake 02",
               "technical": "DA_Item_WeaponMod_Muzzle_Brake_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Brake 03",
               "technical": "DA_Item_WeaponMod_Muzzle_Brake_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Compensator 01",
               "technical": "DA_Item_WeaponMod_Muzzle_Compensator_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Compensator 02",
               "technical": "DA_Item_WeaponMod_Muzzle_Compensator_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Compensator 03",
               "technical": "DA_Item_WeaponMod_Muzzle_Compensator_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Extended Barrel 01",
               "technical": "DA_Item_WeaponMod_Muzzle_ExtendedBarrel_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Extended Barrel 02",
               "technical": "DA_Item_WeaponMod_Muzzle_ExtendedBarrel_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Extended Barrel 03",
               "technical": "DA_Item_WeaponMod_Muzzle_ExtendedBarrel_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Silencer 01",
               "technical": "DA_Item_WeaponMod_Muzzle_Silencer_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Silencer 02",
               "technical": "DA_Item_WeaponMod_Muzzle_Silencer_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Muzzle Silencer 03",
               "technical": "DA_Item_WeaponMod_Muzzle_Silencer_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Shotgun Muzzle Choke 01",
               "technical": "DA_Item_WeaponMod_ShotgunMuzzle_Choke_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Shotgun Muzzle Choke 02",
               "technical": "DA_Item_WeaponMod_ShotgunMuzzle_Choke_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Shotgun Muzzle Choke 03",
               "technical": "DA_Item_WeaponMod_ShotgunMuzzle_Choke_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Shotgun Muzzle Silencer 01",
               "technical": "DA_Item_WeaponMod_ShotgunMuzzle_Silencer_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Active Stabilizer 01",
               "technical": "DA_Item_WeaponMod_Stock_ActiveStabilizer_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Lightweight 01",
               "technical": "DA_Item_WeaponMod_Stock_Lightweight_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Padded 01",
               "technical": "DA_Item_WeaponMod_Stock_Padded_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Stable 01",
               "technical": "DA_Item_WeaponMod_Stock_Stable_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Stable 02",
               "technical": "DA_Item_WeaponMod_Stock_Stable_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Stock Stable 03",
               "technical": "DA_Item_WeaponMod_Stock_Stable_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Tech Projectile Splitter",
               "technical": "DA_Item_WeaponMod_Tech_ProjectileSplitter",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Angled Grip 01",
               "technical": "DA_Item_WeaponMod_UnderBarrel_AngledGrip_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Angled Grip 02",
               "technical": "DA_Item_WeaponMod_UnderBarrel_AngledGrip_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Angled Grip 03",
               "technical": "DA_Item_WeaponMod_UnderBarrel_AngledGrip_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Horizontal Grip 01",
               "technical": "DA_Item_WeaponMod_UnderBarrel_HorizontalGrip_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Vertical Grip 01",
               "technical": "DA_Item_WeaponMod_UnderBarrel_VerticalGrip_01",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Vertical Grip 02",
               "technical": "DA_Item_WeaponMod_UnderBarrel_VerticalGrip_02",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             },
             {
               "name": "Weapon Mod Under Barrel Vertical Grip 03",
               "technical": "DA_Item_WeaponMod_UnderBarrel_VerticalGrip_03",
-              "status": "unassessed"
+              "status": "partial",
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; fitting it to a weapon is not implemented."
             }
           ]
         },
@@ -5345,1039 +6003,1039 @@ globalThis.AresContent = {
               "name": "Torch Ginger",
               "technical": "DA_LootContainer_TorchGinger",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Apricot",
               "technical": "DA_LootContainer_Apricot",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Lemon Tree",
               "technical": "DA_LootContainer_LemonTree",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Olive",
               "technical": "DA_LootContainer_Olive",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Candle Berries",
               "technical": "DA_LootContainer_CandleBerries",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Rover 01",
               "technical": "DA_LootContainer_Rover_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rocketparts 01 A Lid",
               "technical": "DA_LootContainer_Rocketparts_01_A_Lid",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rocketparts 01 B Lid",
               "technical": "DA_LootContainer_Rocketparts_01_B_Lid",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rocketparts 01 C Lid",
               "technical": "DA_LootContainer_Rocketparts_01_C_Lid",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rocketparts 02 Lid 01",
               "technical": "DA_LootContainer_Rocketparts_02_Lid_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rocketparts 02 Lid 02",
               "technical": "DA_LootContainer_Rocketparts_02_Lid_02",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Support Structure Small 01",
               "technical": "DA_LootContainer_SupportStructure_Small_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Air Compressor 01 A",
               "technical": "DA_LootContainer_AirCompressor_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Analog Display 01 A",
               "technical": "DA_LootContainer_AnalogDisplay_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Antenna Set 01 Lid 01 A",
               "technical": "DA_LootContainer_AntennaSet_01_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Bird Nest A",
               "technical": "DA_LootContainer_BirdNest_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Bird Nest B",
               "technical": "DA_LootContainer_BirdNest_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Bird Nest C",
               "technical": "DA_LootContainer_BirdNest_C",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Bus 01 Lid 01",
               "technical": "DA_LootContainer_Bus_01_Lid_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Bus 01 Lid 02",
               "technical": "DA_LootContainer_Bus_01_Lid_02",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Car 01",
               "technical": "DA_LootContainer_Car_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Car 02",
               "technical": "DA_LootContainer_Car_02",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Car 03 A",
               "technical": "DA_LootContainer_Car_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Crate M 01 A",
               "technical": "DA_LootContainer_Crate_M_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Crate Cart 01 A",
               "technical": "DA_LootContainer_CrateCart_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Data Storage Container 01 A",
               "technical": "DA_LootContainer_DataStorageContainer_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Display Time Board 02 A",
               "technical": "DA_LootContainer_DisplayTimeBoard_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Enemy Wreck 02 A",
               "technical": "DA_LootContainer_EnemyWreck_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but ARC wreck containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Fruit Basket 01",
               "technical": "DA_LootContainer_FruitBasket_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Fuel Silo 01",
               "technical": "DA_LootContainer_FuelSilo_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Fuse Box 01 A",
               "technical": "DA_LootContainer_FuseBox_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Highway Addon Antenna 01",
               "technical": "DA_LootContainer_HighwayAddon_Antenna_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Power Generator 01 A",
               "technical": "DA_LootContainer_PowerGenerator_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Road Barrier 03 Lid 01 A",
               "technical": "DA_LootContainer_RoadBarrier_03_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Road Barrier 03 Lid 02 A",
               "technical": "DA_LootContainer_RoadBarrier_03_Lid_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Road Barrier 03 Lid 03 A",
               "technical": "DA_LootContainer_RoadBarrier_03_Lid_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Road Barrier 03 Lid 04 A",
               "technical": "DA_LootContainer_RoadBarrier_03_Lid_04_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Sct Security Camera 01 A",
               "technical": "DA_LootContainer_Sct_SecurityCamera_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Solar Panel Hatch 03 A",
               "technical": "DA_LootContainer_SolarPanelHatch_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Solar Panel Hatch 03 B",
               "technical": "DA_LootContainer_SolarPanelHatch_03_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Sosbooth 01 A",
               "technical": "DA_LootContainer_Sosbooth_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Street Sweeper 01 A",
               "technical": "DA_LootContainer_StreetSweeper_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Truck Utility 01",
               "technical": "DA_LootContainer_TruckUtility_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Vent 03 A",
               "technical": "DA_LootContainer_Vent_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Vent Machine Large 01 A",
               "technical": "DA_LootContainer_VentMachineLarge_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Vent Machine Large 02 A",
               "technical": "DA_LootContainer_VentMachineLarge_02_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Cmr Cash Register 01 Lid 01 A",
               "technical": "DA_LootContainer_Cmr_CashRegister_01_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Cmr Coffee Machine 01 A",
               "technical": "DA_LootContainer_Cmr_CoffeeMachine_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Cmr Cupboard Cafe 01 Drawer 01 A",
               "technical": "DA_LootContainer_Cmr_CupboardCafe_01_Drawer_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Cmr Cupboard Cafe 01 Drawer 02 A",
               "technical": "DA_LootContainer_Cmr_CupboardCafe_01_Drawer_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Cmr Freezer 01 Lid 01 A",
               "technical": "DA_LootContainer_Cmr_Freezer_01_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Cmr Fridge L 01 Lid 01 A",
               "technical": "DA_LootContainer_Cmr_Fridge_L_01_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Information Terminal 01 Lid 01 A",
               "technical": "DA_LootContainer_InformationTerminal_01_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Large Ticket Booth Lid",
               "technical": "DA_LootContainer_LargeTicketBooth_Lid",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Phone Booth Lid",
               "technical": "DA_LootContainer_PhoneBoothLid",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Shrub 03 H",
               "technical": "DA_LootContainer_Shrub_03_H",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Cmr Shelf 03 Drawer C",
               "technical": "DA_LootContainer_Cmr_Shelf_03_Drawer_C",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Stacking Box 01 A",
               "technical": "DA_LootContainer_StackingBox_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Stacking Box Lid 01 A",
               "technical": "DA_LootContainer_StackingBox_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Stacking Box Lid 01 B",
               "technical": "DA_LootContainer_StackingBox_Lid_01_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Stacking Box Lid 01 C",
               "technical": "DA_LootContainer_StackingBox_Lid_01_C",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Trash Bin A 01",
               "technical": "DA_LootContainer_TrashBin_A_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Vending Machine Door",
               "technical": "DA_LootContainer_VendingMachineDoor",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Cmr Wall Add 01 A Lid 01",
               "technical": "DA_LootContainer_Cmr_WallAdd_01_A_Lid_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Cmr Wall Add 01 A Lid 02",
               "technical": "DA_LootContainer_Cmr_WallAdd_01_A_Lid_02",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Cmr Wall Add 03 A Lid 01",
               "technical": "DA_LootContainer_Cmr_WallAdd_03_A_Lid_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Coms Console 02 A",
               "technical": "DA_LootContainer_Coms_Console_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Coms Console 03 A",
               "technical": "DA_LootContainer_Coms_Console_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Coms Servers 01 A",
               "technical": "DA_LootContainer_Coms_Servers_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Coms Servers 02 A",
               "technical": "DA_LootContainer_Coms_Servers_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "CUL Museum Crate 01 A",
               "technical": "DA_LootContainer_CUL_MuseumCrate_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "CUL Museum Crate 02 A",
               "technical": "DA_LootContainer_CUL_MuseumCrate_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Fertilizer",
               "technical": "DA_LootContainer_Fertilizer",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Moss",
               "technical": "DA_LootContainer_Moss",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Antenaa XL 01 Lid 01 A",
               "technical": "DA_LootContainer_Antenaa_XL_01_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Antenaa XL 01 Lid 02 A",
               "technical": "DA_LootContainer_Antenaa_XL_01_Lid_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Gvt Bin Trash 01 A",
               "technical": "DA_LootContainer_Gvt_BinTrash_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Center Bench M 01 A",
               "technical": "DA_LootContainer_Gvt_CenterBench_M_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Computer 01 A",
               "technical": "DA_LootContainer_Gvt_Computer_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Computer 03",
               "technical": "DA_LootContainer_Gvt_Computer_03",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Desk 01",
               "technical": "DA_LootContainer_Gvt_Desk_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Floodlight Tower 01 Lid 01 A",
               "technical": "DA_LootContainer_FloodlightTower_01_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Floodlight Tower 01 Lid 02 A",
               "technical": "DA_LootContainer_FloodlightTower_01_Lid_02_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Generator M 02 Lid 01",
               "technical": "DA_LootContainer_Generator_M_02_Lid_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Generator M 02 A",
               "technical": "DA_LootContainer_Gvt_Generator_M_02_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Machine M 01 A",
               "technical": "DA_LootContainer_Gvt_Machine_M_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Machine M 02 A Large Panel",
               "technical": "DA_LootContainer_Gvt_Machine_M_02_A_LargePanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Machine M 02 A Small Panel",
               "technical": "DA_LootContainer_Gvt_Machine_M_02_A_SmallPanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Machine M 04 A Panel Large",
               "technical": "DA_LootContainer_Gvt_Machine_M_04_A_PanelLarge",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Machine M 04 A Panel Small",
               "technical": "DA_LootContainer_Gvt_Machine_M_04_A_PanelSmall",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Gvt Server 01 x400z250 Door",
               "technical": "DA_LootContainer_Gvt_Server_01_x400z250_Door",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Time Stamp 01 A",
               "technical": "DA_LootContainer_TimeStamp_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Time Stamp 03 A",
               "technical": "DA_LootContainer_TimeStamp_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Android 01 Lid A",
               "technical": "DA_LootContainer_Android_01_Lid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Android 01 Lid B",
               "technical": "DA_LootContainer_Android_01_Lid_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Arc Payload 01",
               "technical": "DA_LootContainer_ArcPayload_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Destroyed Robot 01 Torso Lid A",
               "technical": "DA_LootContainer_Destroyed_Robot_01_TorsoLid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Wasabi Panel",
               "technical": "DA_LootContainer_WasabiPanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Raider Weapon Case 01 Lid A",
               "technical": "DA_LootContainer_Raider_WeaponCase_01_Lid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Cabinet M 01",
               "technical": "DA_LootContainer_Rsr_Cabinet_M_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Cabinet S 01",
               "technical": "DA_LootContainer_Rsr_Cabinet_S_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Cabinet S 02",
               "technical": "DA_LootContainer_Rsr_Cabinet_S_02",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 01",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 02",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_02",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 05",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_05",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Cart Shelf M 01 Drawer 06",
               "technical": "DA_LootContainer_Rsr_CartShelf_M_01_Drawer_06",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Console 03 A",
               "technical": "DA_LootContainer_Console_03_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Electrical Cabinet 01 A",
               "technical": "DA_LootContainer_Rsr_ElectricalCabinet_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Fax Machine 01 A",
               "technical": "DA_LootContainer_FaxMachine_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Lockers 01",
               "technical": "DA_LootContainer_Rsr_Lockers_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Lockers 02 A",
               "technical": "DA_LootContainer_Lockers_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Lockers 02 B",
               "technical": "DA_LootContainer_Lockers_02_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Lockers 03",
               "technical": "DA_LootContainer_Lockers_03",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Machine M 01 A",
               "technical": "DA_LootContainer_Rsr_Machine_M_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Desk Monitor 01 A",
               "technical": "DA_LootContainer_DeskMonitor_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Switch Gear Panel 01 Door Breach A",
               "technical": "DA_LootContainer_SwitchGearPanel_01_DoorBreach_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Switch Gear Panel 01 Extend Lid A",
               "technical": "DA_LootContainer_SwitchGearPanel_01_ExtendLid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Switch Gear Panel 01 Upper Lid A",
               "technical": "DA_LootContainer_SwitchGearPanel_01_UpperLid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Trashcan 01",
               "technical": "DA_LootContainer_Trashcan_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Wrh Wall Add L 01 A Large Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_LargePanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Wall Add L 01 A Main Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_MainPanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Wall Add L 01 A Small Panel",
               "technical": "DA_LootContainer_Wrh_WallAdd_L_01_A_SmallPanel",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Rsr Weapons Rack 01 Door Left A",
               "technical": "DA_LootContainer_Rsr_WeaponsRack_01_DoorLeft_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Rsr Weapons Rack 01 Door Right A",
               "technical": "DA_LootContainer_Rsr_WeaponsRack_01_DoorRight_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Workbench 01 A",
               "technical": "DA_LootContainer_Workbench_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Workbench 02 A",
               "technical": "DA_LootContainer_Workbench_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Alpine Wardrobe Door 01",
               "technical": "DA_LootContainer_AlpineWardrobeDoor_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Res Closet 01 A Lid 01 A",
               "technical": "DA_LootContainer_Res_Closet_01_A_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Closet 02 Lid 01 A",
               "technical": "DA_LootContainer_Res_Closet_02_Lid_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Res Closet 02 Lid 02 A",
               "technical": "DA_LootContainer_Res_Closet_02_Lid_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Console Chest Drawer 01",
               "technical": "DA_LootContainer_ConsoleChestDrawer_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Res Drawer 01 Shelf A",
               "technical": "DA_LootContainer_Res_Drawer_01_Shelf_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Drawer Medical 01 A",
               "technical": "DA_LootContainer_Res_DrawerMedical_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Dumpster Lid 01",
               "technical": "DA_LootContainer_Res_Dumpster_Lid_01",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Res Bench Kitchen 01 175x125 D",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_175x125_D",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Bench Kitchen 01 175x125 Lid 01 C",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_175x125_Lid_01_C",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Bench Kitchen 01 Lid 01 175x125 C",
               "technical": "DA_LootContainer_Res_BenchKitchen_01_Lid_01_175x125_C",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Bench Kitchen 175x125 Lid 01 A",
               "technical": "DA_LootContainer_Res_BenchKitchen_175x125_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Bench Kitchen 175x125 Lid 01 B",
               "technical": "DA_LootContainer_Res_BenchKitchen_175x125_Lid_01_B",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Refrigerator 01 Lid 01 A",
               "technical": "DA_LootContainer_Res_Refrigerator_01_Lid_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 175x100 A",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_175x100_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 175x100 B",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_175x100_B",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 300x100 A",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_300x100_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "SM Res Cupboard Kitchen Lid 01 300x100 B",
               "technical": "DA_LootContainer_SM_Res_CupboardKitchen_Lid_01_300x100_B",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Suitcase 01 Lid A",
               "technical": "DA_LootContainer_Res_Suitcase_01_Lid_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Trash Bin 01 Lid",
               "technical": "DA_LootContainer_Res_TrashBin_01_Lid",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Res Tv Unit 01 A Lid 01",
               "technical": "DA_LootContainer_Res_TvUnit_01_A_Lid_01",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Venetian Drawer 01 A",
               "technical": "DA_LootContainer_VenetianDrawer_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Sct Crate 01 A",
               "technical": "DA_LootContainer_Sct_Crate_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Sct Locker 01 A",
               "technical": "DA_LootContainer_Sct_Locker_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Sct Locker Medical 01 A",
               "technical": "DA_LootContainer_Sct_LockerMedical_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Truck Scanner 01 Lid A",
               "technical": "DA_LootContainer_TruckScanner_01_Lid_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Truck Scanner 01 Lid B",
               "technical": "DA_LootContainer_TruckScanner_01_Lid_B",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Seed Box 01 A",
               "technical": "DA_LootContainer_SeedBox_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Seed Console 01 A",
               "technical": "DA_LootContainer_SeedConsole_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Exodus Train Signals Addon Lid 02 A",
               "technical": "DA_LootContainer_ExodusTrain_Signals_Addon_Lid_02_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             },
             {
               "name": "Wrh Computer 01 A",
               "technical": "DA_LootContainer_Wrh_Computer_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Container L 02 B",
               "technical": "DA_LootContainer_Wrh_Container_L_02_B",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Desk Drawer Large",
               "technical": "DA_LootContainer_Wrh_Desk_DrawerLarge",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Desk Drawer Small",
               "technical": "DA_LootContainer_Wrh_Desk_DrawerSmall",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Drawers 01 A",
               "technical": "DA_LootContainer_Wrh_Drawers_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Machine M 02 Door Left",
               "technical": "DA_LootContainer_Wrh_Machine_M_02_DoorLeft",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Machine M 02 Door Right",
               "technical": "DA_LootContainer_Wrh_Machine_M_02_DoorRight",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Trailer Compressor M 01 A",
               "technical": "DA_LootContainer_Wrh_TrailerCompressor_M_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Trolley Tools 01 A",
               "technical": "DA_LootContainer_Wrh_TrolleyTools_01_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Wall Add M 02 A",
               "technical": "DA_LootContainer_Wrh_WallAdd_M_02_A",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Wall Add S 01 A Panel Large",
               "technical": "DA_LootContainer_Wrh_WallAdd_S_01_A_PanelLarge",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Wrh Wall Add S 01 A Panel Small",
               "technical": "DA_LootContainer_Wrh_WallAdd_S_01_A_PanelSmall",
               "status": "partial",
-              "note": "Spawns in Dam raids and can be searched and emptied; its contents are a placeholder rubber duck until loot tables are implemented."
+              "note": "Spawns in Dam raids and can be searched and emptied. It holds items rolled from the game's loot tables for its category; drop rates are provisional and weapons are not placed in containers yet. Searching, taking items and bringing them home are stock-client verified on several container kinds."
             },
             {
               "name": "Moss Rock",
               "technical": "DA_LootContainer_Moss_Rock",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Agave",
               "technical": "DA_LootContainer_Agave",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Resin",
               "technical": "DA_LootContainer_Resin",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Mushroom Cluster 01 A",
               "technical": "DA_LootContainer_MushroomCluster_01_A",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Appears in Dam, but nature containers are not spawned yet, so it cannot be searched."
             },
             {
               "name": "Volcanic Rock Temp",
               "technical": "DA_LootContainer_VolcanicRock_Temp",
               "status": "pending",
-              "note": "Loot container identified; population, searching and item transfer are not implemented."
+              "note": "Loot container identified; it is not placed in Dam, and other maps are not supported yet."
             }
           ]
         },
