@@ -1,4 +1,4 @@
-namespace Ares.Common.Game.Loot;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>
 /// ARES's default policy for the containers that dynamic loot spawners place. Only the listed classes spawn: when a

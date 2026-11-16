@@ -3,7 +3,7 @@ using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
-namespace Ares.Common.Game.Loot;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>One stack a container holds from its creation.</summary>
 /// <param name="Item">The item.</param>

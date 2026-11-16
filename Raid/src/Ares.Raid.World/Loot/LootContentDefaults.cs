@@ -1,7 +1,7 @@
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
-namespace Ares.Common.Game.Loot;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>How common a loot item is, read from its drop tags; the roll weights a container's next stack by it.</summary>
 public enum LootTier

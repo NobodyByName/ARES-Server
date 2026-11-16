@@ -1,6 +1,6 @@
 using Ares.Structs.Game.World;
 
-namespace Ares.Common.Game.Loot;
+namespace Ares.Raid.World.Loot;
 
 /// <summary>The chance that a loot container socket rolls a container in a raid.</summary>
 /// <param name="Tag">

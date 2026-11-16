@@ -1,10 +1,10 @@
 using Ares.Common.Game.Inventory;
-using Ares.Common.Game.Loot;
+using Ares.Raid.World.Loot;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
-namespace Ares.Common.Tests;
+namespace Ares.Raid.Tests.Loot;
 
 public sealed class LootContentRollsTests
 {
