@@ -150,6 +150,13 @@ public sealed record ItemDescription(
     /// <summary>What selling one item gives, or null when the item cannot be sold.</summary>
     [JsonPropertyName("scrap"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public ItemScrapDescription? Scrap { get; init; }
+
+    /// <summary>
+    /// What recycling one item gives, or null when the item cannot be recycled. The menu offers to recycle an item only
+    /// when the package has rewarded items, and shows each one times the recycled amount.
+    /// </summary>
+    [JsonPropertyName("recycle"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public OfferRewardPackage? Recycle { get; init; }
 }
 
 /// <summary>
