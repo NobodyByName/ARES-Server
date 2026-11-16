@@ -6,18 +6,33 @@ using Quaternion = System.Numerics.Quaternion;
 
 namespace Ares.Common.Maps;
 
-/// <summary>What a placed body blocks.</summary>
+/// <summary>
+/// The collision channels a placed body blocks, one bit per <see cref="CollisionChannel"/> (bit <c>n</c> for channel
+/// <c>n</c>): a bit is set when the body takes part in queries and its response to that channel is block. Any channel
+/// is a valid flag; <see cref="CollisionChannelMask.Of"/> gives a channel's flag.
+/// </summary>
 [Flags]
 public enum PlacementFlags : uint
 {
     /// <summary>Blocks nothing.</summary>
     None = 0,
 
-    /// <summary>Blocks player movement.</summary>
-    BlocksPawn = 1,
+    /// <summary>Blocks player movement: the channel of the player character's movement capsule.</summary>
+    BlocksPawn = 1u << GameCollisionChannels.PlayerPawn,
 
     /// <summary>Blocks the traces used for vaulting and mantling.</summary>
-    BlocksClimbable = 2,
+    BlocksClimbable = 1u << GameCollisionChannels.Climbable,
+}
+
+/// <summary>Converts collision channels to <see cref="PlacementFlags"/>.</summary>
+public static class CollisionChannelMask
+{
+    /// <summary>The flag of one channel.</summary>
+    public static PlacementFlags Of(CollisionChannel channel) =>
+        (uint)channel < 32 ? (PlacementFlags)(1u << (int)channel) : throw new ArgumentOutOfRangeException(nameof(channel));
+
+    /// <summary>Whether <paramref name="flags"/> block <paramref name="channel"/>.</summary>
+    public static bool Blocks(this PlacementFlags flags, CollisionChannel channel) => (flags & Of(channel)) != 0;
 }
 
 /// <summary>
@@ -29,11 +44,11 @@ public enum PlacementFlags : uint
 /// <param name="Translation">World position of the body's origin, in centimetres.</param>
 /// <param name="Rotation">World rotation (unit quaternion).</param>
 /// <param name="Scale">World scale per body axis.</param>
-/// <param name="Flags">What the placement blocks.</param>
+/// <param name="Flags">The channels the placement blocks.</param>
 /// <param name="Bounds">
 /// World bounds relative to <paramref name="Translation"/>, rounded outwards, computed from the body when the map is
-/// built or read. They contain every shape of the body as placed; spheres and capsules are bounded with the largest
-/// absolute scale component.
+/// built or read. They contain every shape of the body as placed, simple and complex; spheres and capsules are bounded
+/// with the largest absolute scale component.
 /// </param>
 public readonly record struct BodyPlacement(
     int BodyIndex,
@@ -51,13 +66,13 @@ public readonly record struct BodyPlacement(
     public PhysicalSurfaceType Surface { get; init; }
 
     /// <summary>
-    /// Surface type of each material slot, which the body's triangle meshes name per triangle; empty for placements
-    /// without triangle meshes.
+    /// Surface type of each material slot, which the body's triangle meshes (simple and complex) name per triangle;
+    /// empty for placements without triangle meshes.
     /// </summary>
     public ImmutableArray<PhysicalSurfaceType> MaterialSurfaces { get; init; } = [];
 
     /// <summary>The surface type of a triangle of the body's triangle mesh <paramref name="mesh"/>.</summary>
-    /// <param name="mesh">The triangle mesh, one of the placed body's.</param>
+    /// <param name="mesh">The triangle mesh, one of the placed body's simple or complex ones.</param>
     /// <param name="triangle">Index of the triangle in the mesh.</param>
     public PhysicalSurfaceType TriangleSurface(TriangleMesh mesh, int triangle)
     {

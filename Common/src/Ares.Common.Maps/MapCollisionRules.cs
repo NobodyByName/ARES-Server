@@ -21,15 +21,25 @@ internal static class MapCollisionRules
     public static string? FindBodyError(CollisionBody body)
     {
         if (IsUnset(body.Name) || body.Boxes.IsDefault || body.Spheres.IsDefault || body.Capsules.IsDefault ||
-            body.ConvexHulls.IsDefault || body.TriangleMeshes.IsDefault)
+            body.ConvexHulls.IsDefault || body.TriangleMeshes.IsDefault || body.ComplexMeshes.IsDefault)
         {
             return "has an unset member";
         }
 
         if (body.Boxes.IsEmpty && body.Spheres.IsEmpty && body.Capsules.IsEmpty && body.ConvexHulls.IsEmpty &&
-            body.TriangleMeshes.IsEmpty)
+            body.TriangleMeshes.IsEmpty && body.ComplexMeshes.IsEmpty)
         {
             return "has no shapes";
+        }
+
+        if (body.TraceFlag is not (CollisionTraceFlag.SimpleAndComplex or CollisionTraceFlag.SimpleAsComplex or CollisionTraceFlag.ComplexAsSimple))
+        {
+            return $"has an invalid trace flag {(byte)body.TraceFlag}";
+        }
+
+        if (body is { UsesSimpleAsComplex: true, ComplexMeshes.IsEmpty: false })
+        {
+            return "has complex meshes it does not use";
         }
 
         if (body.Boxes.Any(box => !IsFinite(box.Center) || !IsUnit(box.Rotation) || !IsFinite(box.HalfExtents) ||
@@ -55,7 +65,7 @@ internal static class MapCollisionRules
             return "has a convex hull that " + hullError;
         }
 
-        string? meshError = body.TriangleMeshes.Select(FindMeshError).FirstOrDefault(error => error is not null);
+        string? meshError = body.TriangleMeshes.Concat(body.ComplexMeshes).Select(FindMeshError).FirstOrDefault(error => error is not null);
         return meshError is null ? null : "has a triangle mesh that " + meshError;
     }
 
@@ -141,11 +151,6 @@ internal static class MapCollisionRules
             return "has an invalid transform";
         }
 
-        if ((placement.Flags & ~(PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable)) != 0)
-        {
-            return $"has unknown flags {(uint)placement.Flags}";
-        }
-
         if (!IsKnown(placement.Surface) || (!placement.MaterialSurfaces.IsDefault && placement.MaterialSurfaces.Any(surface => !IsKnown(surface))))
         {
             return "has an unknown surface type";
@@ -206,7 +211,7 @@ internal static class MapCollisionRules
             bounds.Include(Rotate(rotation, Scaled(vertex, scale)), 0);
         }
 
-        foreach (Vector3 vertex in body.TriangleMeshes.SelectMany(mesh => mesh.Vertices))
+        foreach (Vector3 vertex in body.TriangleMeshes.Concat(body.ComplexMeshes).SelectMany(mesh => mesh.Vertices))
         {
             bounds.Include(Rotate(rotation, Scaled(vertex, scale)), 0);
         }

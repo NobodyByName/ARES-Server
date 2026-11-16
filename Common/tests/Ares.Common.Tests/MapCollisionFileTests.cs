@@ -49,15 +49,16 @@ public sealed class MapCollisionFileTests
                 Assert.Equal(expected.ConvexHulls[hull].Bounds, actual.ConvexHulls[hull].Bounds);
             }
 
-            Assert.Equal(expected.TriangleMeshes.Length, actual.TriangleMeshes.Length);
-            for (int mesh = 0; mesh < expected.TriangleMeshes.Length; mesh++)
-            {
-                Assert.Equal(expected.TriangleMeshes[mesh].Vertices, actual.TriangleMeshes[mesh].Vertices);
-                Assert.Equal(expected.TriangleMeshes[mesh].Indices, actual.TriangleMeshes[mesh].Indices);
-                Assert.Equal(expected.TriangleMeshes[mesh].MaterialIndices, actual.TriangleMeshes[mesh].MaterialIndices);
-                Assert.Equal(expected.TriangleMeshes[mesh].Bounds, actual.TriangleMeshes[mesh].Bounds);
-            }
+            AssertMeshes(expected.TriangleMeshes, actual.TriangleMeshes);
+            Assert.Equal(expected.TraceFlag, actual.TraceFlag);
+            AssertMeshes(expected.ComplexMeshes, actual.ComplexMeshes);
         }
+
+        Assert.Equal(
+            [CollisionTraceFlag.SimpleAndComplex, CollisionTraceFlag.SimpleAndComplex, CollisionTraceFlag.ComplexAsSimple, CollisionTraceFlag.SimpleAsComplex,
+                CollisionTraceFlag.SimpleAndComplex],
+            read.Bodies.Select(body => body.TraceFlag));
+        Assert.Single(read.Bodies[4].ComplexMeshes);
 
         Assert.Equal(map.Placements.Length, read.Placements.Length);
         for (int i = 0; i < map.Placements.Length; i++)
@@ -68,6 +69,8 @@ public sealed class MapCollisionFileTests
 
         Assert.Equal(PhysicalSurfaceType.Concrete, read.Placements[0].Surface);
         Assert.Equal([PhysicalSurfaceType.Metal, PhysicalSurfaceType.Wood], read.Placements[2].MaterialSurfaces);
+        Assert.Equal(ProjectileChannels, read.Placements[4].Flags);
+        Assert.Equal([PhysicalSurfaceType.Wood], read.Placements[4].MaterialSurfaces);
 
         HeightFieldTile tile = Assert.Single(read.HeightFields);
         HeightFieldTile written = map.HeightFields[0];
@@ -153,6 +156,45 @@ public sealed class MapCollisionFileTests
         Assert.Equal(new Vector3(-20, 0, 0), placement.Bounds.Minimum);
         Assert.Equal(new Vector3(0, 10, 5), placement.Bounds.Maximum);
         Assert.Equal(new Vector3D(249980.5, -1000, 30), placement.WorldMinimum);
+    }
+
+    [Fact]
+    public void Bounds_contain_complex_meshes()
+    {
+        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
+        int body = builder.AddBody(ArchBody("/Game/Props/Arch"));
+        builder.AddPlacement(body, cell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One), PlacementFlags.BlocksPawn);
+
+        BodyPlacement placement = Assert.Single(RoundTrip(builder.Build()).Placements);
+
+        // The box reaches 10 high; the complex mesh 200.
+        Assert.Equal(new Vector3(-10, -10, 0), placement.Bounds.Minimum);
+        Assert.Equal(new Vector3(100, 100, 200), placement.Bounds.Maximum);
+    }
+
+    [Fact]
+    public void Unknown_trace_flags_and_complex_meshes_a_body_does_not_use_are_refused()
+    {
+        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        CollisionBody arch = ArchBody("/Game/Props/Arch");
+
+        Assert.Throws<ArgumentException>(() => builder.AddBody(arch with { TraceFlag = CollisionTraceFlag.UseDefault }));
+        Assert.Throws<ArgumentException>(() => builder.AddBody(arch with { TraceFlag = (CollisionTraceFlag)4 }));
+        Assert.Throws<ArgumentException>(() => builder.AddBody(arch with { TraceFlag = CollisionTraceFlag.SimpleAsComplex }));
+        Assert.Throws<ArgumentException>(() => builder.AddBody(arch with { ComplexMeshes = default }));
+        Assert.Equal(0, builder.AddBody(arch with { Boxes = [] }));
+    }
+
+    [Fact]
+    public void Any_channel_is_a_placement_flag()
+    {
+        Assert.Equal(PlacementFlags.BlocksPawn, CollisionChannelMask.Of(GameCollisionChannels.PlayerPawn));
+        Assert.Equal(PlacementFlags.BlocksClimbable, CollisionChannelMask.Of(GameCollisionChannels.Climbable));
+        Assert.Equal((PlacementFlags)0x8000_0000, CollisionChannelMask.Of(CollisionChannel.GameTraceChannel18));
+        Assert.True(ProjectileChannels.Blocks(GameCollisionChannels.AiTraceProjectile));
+        Assert.False(ProjectileChannels.Blocks(GameCollisionChannels.PlayerPawn));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CollisionChannelMask.Of((CollisionChannel)32));
     }
 
     [Fact]
@@ -298,6 +340,21 @@ public sealed class MapCollisionFileTests
         Assert.Contains("sharing", error.Message, StringComparison.Ordinal);
     }
 
+    private static PlacementFlags ProjectileChannels =>
+        CollisionChannelMask.Of(GameCollisionChannels.PlayerTraceProjectile) | CollisionChannelMask.Of(GameCollisionChannels.AiTraceProjectile);
+
+    private static void AssertMeshes(ImmutableArray<TriangleMesh> expected, ImmutableArray<TriangleMesh> actual)
+    {
+        Assert.Equal(expected.Length, actual.Length);
+        for (int mesh = 0; mesh < expected.Length; mesh++)
+        {
+            Assert.Equal(expected[mesh].Vertices, actual[mesh].Vertices);
+            Assert.Equal(expected[mesh].Indices, actual[mesh].Indices);
+            Assert.Equal(expected[mesh].MaterialIndices, actual[mesh].MaterialIndices);
+            Assert.Equal(expected[mesh].Bounds, actual[mesh].Bounds);
+        }
+    }
+
     private static MapCollision BuildSampleMap()
     {
         MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
@@ -305,8 +362,9 @@ public sealed class MapCollisionFileTests
         int layerCell = builder.AddCell("/Game/Maps/Test/Cell_1", ["Coldsnap", "Night"]);
         int box = builder.AddBody(BoxBody("/Game/Props/Crate"));
         int hull = builder.AddBody(HullBody("/Game/Props/Wedge"));
-        int mesh = builder.AddBody(MeshBody("/Game/Props/Ramp"));
-        int sphere = builder.AddBody(SphereBody("/Game/Props/Ball"));
+        int mesh = builder.AddBody(MeshBody("/Game/Props/Ramp") with { TraceFlag = CollisionTraceFlag.ComplexAsSimple });
+        int sphere = builder.AddBody(SphereBody("/Game/Props/Ball") with { TraceFlag = CollisionTraceFlag.SimpleAsComplex });
+        int arch = builder.AddBody(ArchBody("/Game/Props/Arch"));
         Ares.Structs.Core.Geometry.Quaternion yaw = new(0, 0, Math.Sin(0.3), Math.Cos(0.3));
         builder.AddPlacement(box, baseCell, new Transform(yaw, new Vector3D(-123456.789, 98765.4321, -50.25), Vector3D.One), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable,
             PhysicalSurfaceType.Concrete);
@@ -314,6 +372,8 @@ public sealed class MapCollisionFileTests
         builder.AddPlacement(mesh, layerCell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One), PlacementFlags.BlocksClimbable,
             PhysicalSurfaceType.Metal, [PhysicalSurfaceType.Metal, PhysicalSurfaceType.Wood]);
         builder.AddPlacement(sphere, layerCell, new Transform(yaw, new Vector3D(1, 1, 1), new Vector3D(0.5, 0.5, 0.5)), PlacementFlags.None);
+        builder.AddPlacement(arch, baseCell, new Transform(yaw, new Vector3D(5, 6, 7), Vector3D.One), ProjectileChannels, PhysicalSurfaceType.Concrete,
+            [PhysicalSurfaceType.Wood]);
         builder.AddHeightField(new HeightFieldTile(
             baseCell,
             new Vector3D(-50400, 25200, -1000),
@@ -369,6 +429,20 @@ public sealed class MapCollisionFileTests
             [1, 0],
             new BoundingBox(Vector3.Zero, new Vector3(100, 100, 50)));
         return new CollisionBody(name, [], [], [], [], [mesh]);
+    }
+
+    /// <summary>A small box as simple collision and a tall ramp as complex collision.</summary>
+    private static CollisionBody ArchBody(string name)
+    {
+        TriangleMesh complex = new(
+            [new Vector3(0, 0, 0), new Vector3(100, 0, 0), new Vector3(0, 100, 200)],
+            [0, 1, 2],
+            [0],
+            new BoundingBox(Vector3.Zero, new Vector3(100, 100, 200)));
+        return new CollisionBody(name, [new CollisionBox(new Vector3(0, 0, 5), Quaternion.Identity, new Vector3(10, 10, 5))], [], [], [], [])
+        {
+            ComplexMeshes = [complex],
+        };
     }
 
     private static byte[] Serialize(MapCollision map)

@@ -29,12 +29,12 @@ namespace Ares.Common.Maps;
 /// <item><c>BODY</c>: body count; per body its name, then boxes (count; centre, rotation, half extents), spheres
 /// (count; centre, radius), capsules (count; centre, rotation, radius, half length), convex hulls (count; per hull the
 /// vertex count and vertices, the polygon count and per polygon its plane normal, plane distance, first index and index
-/// count as int32, the index count and byte indices, the bounds) and triangle meshes (count; per mesh the vertex count
-/// and vertices, the index count and int32 indices, the material index count, 0 or one per triangle, and uint16 material
-/// indices, the bounds).</item>
-/// <item><c>PLAC</c>: placement count; per placement the body index, cell index, flags (uint32), translation (double
-/// vector), rotation, scale, surface type (byte), material slot count and the slots' surface types (bytes). Placement
-/// bounds are not stored; they are computed from the body when reading.</item>
+/// count as int32, the index count and byte indices, the bounds), simple triangle meshes (count; per mesh the vertex
+/// count and vertices, the index count and int32 indices, the material index count, 0 or one per triangle, and uint16
+/// material indices, the bounds), the trace flag (byte) and complex triangle meshes (count; meshes as before).</item>
+/// <item><c>PLAC</c>: placement count; per placement the body index, cell index, blocked channels (uint32, bit n for
+/// channel n), translation (double vector), rotation, scale, surface type (byte), material slot count and the slots'
+/// surface types (bytes). Placement bounds are not stored; they are computed from the body when reading.</item>
 /// <item><c>HFLD</c>: tile count; per tile the cell index, origin (double vector), X spacing, Y spacing and height scale
 /// (float32), sample counts along X and Y, the int16 heights (X-fastest), the tile's surface type count (at most
 /// <see cref="HeightFieldTile.MaximumSurfaceTypes"/>) and surface types (bytes), then one byte per grid cell (X-fastest):
@@ -48,7 +48,7 @@ namespace Ares.Common.Maps;
 public static class MapCollisionFile
 {
     /// <summary>The format version this code reads and writes.</summary>
-    public const int FormatVersion = 2;
+    public const int FormatVersion = 3;
 
     private const int SurfaceIndexShift = 3;
     private const byte CellFlagMask = (1 << SurfaceIndexShift) - 1;
@@ -212,14 +212,21 @@ public static class MapCollisionFile
                 WriteBounds(writer, hull.Bounds);
             }
 
-            writer.Write(body.TriangleMeshes.Length);
-            foreach (TriangleMesh mesh in body.TriangleMeshes)
-            {
-                WriteArray(writer, mesh.Vertices.AsSpan());
-                WriteArray(writer, mesh.Indices.AsSpan());
-                WriteArray(writer, mesh.MaterialIndices.AsSpan());
-                WriteBounds(writer, mesh.Bounds);
-            }
+            WriteMeshes(writer, body.TriangleMeshes);
+            writer.Write((byte)body.TraceFlag);
+            WriteMeshes(writer, body.ComplexMeshes);
+        }
+    }
+
+    private static void WriteMeshes(BinaryWriter writer, ImmutableArray<TriangleMesh> meshes)
+    {
+        writer.Write(meshes.Length);
+        foreach (TriangleMesh mesh in meshes)
+        {
+            WriteArray(writer, mesh.Vertices.AsSpan());
+            WriteArray(writer, mesh.Indices.AsSpan());
+            WriteArray(writer, mesh.MaterialIndices.AsSpan());
+            WriteBounds(writer, mesh.Bounds);
         }
     }
 
@@ -423,26 +430,20 @@ public static class MapCollisionFile
                     reader.ReadBounds());
             }
 
-            TriangleMesh[] meshes = new TriangleMesh[reader.ReadCount(32)];
-            for (int mesh = 0; mesh < meshes.Length; mesh++)
-            {
-                Vector3[] vertices = reader.ReadArray<Vector3>();
-                int[] indices = reader.ReadArray<int>();
-                ushort[] materials = reader.ReadArray<ushort>();
-                meshes[mesh] = new TriangleMesh(
-                    ImmutableCollectionsMarshal.AsImmutableArray(vertices),
-                    ImmutableCollectionsMarshal.AsImmutableArray(indices),
-                    ImmutableCollectionsMarshal.AsImmutableArray(materials),
-                    reader.ReadBounds());
-            }
-
+            ImmutableArray<TriangleMesh> meshes = ReadMeshes(ref reader);
+            CollisionTraceFlag traceFlag = (CollisionTraceFlag)reader.ReadByte();
+            ImmutableArray<TriangleMesh> complexMeshes = ReadMeshes(ref reader);
             CollisionBody body = new(
                 name,
                 ImmutableCollectionsMarshal.AsImmutableArray(boxes),
                 ImmutableCollectionsMarshal.AsImmutableArray(spheres),
                 ImmutableCollectionsMarshal.AsImmutableArray(capsules),
                 ImmutableCollectionsMarshal.AsImmutableArray(hulls),
-                ImmutableCollectionsMarshal.AsImmutableArray(meshes));
+                meshes)
+            {
+                TraceFlag = traceFlag,
+                ComplexMeshes = complexMeshes,
+            };
             string? error = MapCollisionRules.FindBodyError(body);
             if (error is not null)
             {
@@ -454,6 +455,24 @@ public static class MapCollisionFile
 
         reader.ExpectEnd();
         return ImmutableCollectionsMarshal.AsImmutableArray(bodies);
+    }
+
+    private static ImmutableArray<TriangleMesh> ReadMeshes(ref PayloadReader reader)
+    {
+        TriangleMesh[] meshes = new TriangleMesh[reader.ReadCount(32)];
+        for (int mesh = 0; mesh < meshes.Length; mesh++)
+        {
+            Vector3[] vertices = reader.ReadArray<Vector3>();
+            int[] indices = reader.ReadArray<int>();
+            ushort[] materials = reader.ReadArray<ushort>();
+            meshes[mesh] = new TriangleMesh(
+                ImmutableCollectionsMarshal.AsImmutableArray(vertices),
+                ImmutableCollectionsMarshal.AsImmutableArray(indices),
+                ImmutableCollectionsMarshal.AsImmutableArray(materials),
+                reader.ReadBounds());
+        }
+
+        return ImmutableCollectionsMarshal.AsImmutableArray(meshes);
     }
 
     private static ImmutableArray<BodyPlacement> ReadPlacements(byte[] payload, ImmutableArray<CollisionBody> bodies, int cellCount)
