@@ -101,7 +101,7 @@ public sealed class InputHistory
             ? PendulumCodec.Quaternion(s_actionRotationField, slot.Value)
             : null;
 
-    /// <summary>The pitch of the client's control rotation in a frame it sent (where it aims up or down).</summary>
+    /// <summary>The pitch of the client's control rotation in a frame it sent: where it aims, positive up.</summary>
     /// <param name="frame">Input frame.</param>
     /// <returns>The pitch in radians, or null when the frame is unknown.</returns>
     public double? Pitch(uint frame) =>

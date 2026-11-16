@@ -51,7 +51,7 @@ public static class PendulumRotations
     public static double Pitch(PendulumQuaternion quaternion, PendulumQuaternionField field)
     {
         (double x, double y, double z, double w) = Components(quaternion, field);
-        return Math.Asin(Math.Clamp(2.0 * ((w * y) - (z * x)), -1.0, 1.0));
+        return Math.Asin(Math.Clamp(2.0 * ((z * x) - (w * y)), -1.0, 1.0));
     }
 
     /// <summary>A rotation about the vertical axis only.</summary>
