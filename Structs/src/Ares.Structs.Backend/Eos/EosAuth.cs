@@ -16,6 +16,15 @@ public static class EosEndpoints
 
     /// <summary>Grant type of an application (non-user) token.</summary>
     public const string ClientCredentialsGrant = "client_credentials";
+
+    /// <summary><c>GET</c>: the default SDK configuration; reply <see cref="EosSdkConfiguration"/>.</summary>
+    public const string DefaultSdkConfigurationPath = "/sdk/v1/default";
+
+    /// <summary><c>GET</c>: the game product's SDK configuration; reply <see cref="EosSdkConfiguration"/>.</summary>
+    public const string GameProductSdkConfigurationPath = "/sdk/v1/product/" + GameProductId;
+
+    /// <summary><c>POST</c> form with <see cref="EosTokenRequest"/> fields; reply <see cref="EosTokenResponse"/>.</summary>
+    public const string TokenPath = "/auth/v1/oauth/token";
 }
 
 /// <summary>Form fields of <c>POST /auth/v1/oauth/token</c> that the server uses.</summary>
