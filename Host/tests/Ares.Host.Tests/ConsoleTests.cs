@@ -452,8 +452,7 @@ public sealed class ConsoleTests
     {
         AccountDirectory accounts = new(database.Store, TimeProvider.System);
         PlayerRegistry players = new(database.Store, accounts, null, new JsonEventLog(TextWriter.Null), TimeProvider.System);
-        console.Accounts = accounts;
-        console.Players = players;
+        console.Attach(new HostServices(accounts, players, null));
         return players;
     }
 

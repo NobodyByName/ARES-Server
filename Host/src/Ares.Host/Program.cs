@@ -45,9 +45,8 @@ catch (Exception error) when (error is PersistenceException or InvalidDataExcept
 }
 
 await using WebApplication app = application;
-console.Accounts = app.Services.GetRequiredService<AccountDirectory>();
-console.Players = app.Services.GetRequiredService<PlayerRegistry>();
-console.Raids = app.Services.GetService<RaidFleet>();
+console.Attach(new HostServices(app.Services.GetRequiredService<AccountDirectory>(), app.Services.GetRequiredService<PlayerRegistry>(),
+    app.Services.GetService<RaidFleet>()));
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {
