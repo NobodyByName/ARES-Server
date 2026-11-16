@@ -47,7 +47,7 @@ public static class InventorySnapshots
 
             ReadOnlyCollection<string> slots = Freeze(item.Slots);
             if (!ValidId(item.InstanceId) || item.GameAssetId == 0 || item.Amount <= 0
-                || slots.Count > MaximumItems
+                || slots.Count > MaximumSnapshotItems
                 || !double.IsFinite(item.Durability) || !double.IsFinite(item.MaxDurability)
                 || item.Durability < 0 || item.MaxDurability < item.Durability
                 || !ValidText(item.LockedInRound) || !ValidText(item.ETag) || item.UpdatedAt < 0
