@@ -549,6 +549,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <summary>Client calls received and not handled yet, by name.</summary>
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
+    // The families of world actors on this connection.
+    private IPlayerFamily[] Families => [_doors, _ladders, _pickups, _arcs];
+
     /// <inheritdoc />
     RaidWorld IPlayerChannelsContext.Raid => _raid;
 
@@ -752,11 +755,17 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
-        _doors.Service(this, io.Sender, now);
-        _ladders.Service(this, io.Sender, now);
+        foreach (IPlayerFamily family in (IPlayerFamily[])[_doors, _ladders])
+        {
+            family.Service(this, io.Sender, now);
+        }
+
         ServiceLoot(io.Sender, now);
-        _pickups.Service(this, io.Sender, now);
-        _arcs.Service(this, io.Sender, now);
+        foreach (IPlayerFamily family in (IPlayerFamily[])[_pickups, _arcs])
+        {
+            family.Service(this, io.Sender, now);
+        }
+
         ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
@@ -768,7 +777,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
-        if (_doors.ChannelFailed(channel) || _ladders.ChannelFailed(channel) || _pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
+        if (Array.Exists(Families, family => family.ChannelFailed(channel)))
         {
             return;
         }
@@ -872,7 +881,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 continue;
             }
 
-            if (_pickups.TryHandle(this, request, repeatedLog, now) || _ladders.TryHandle(this, request, repeatedLog, now))
+            // The families take the request in turn until one ends it.
+            if (Array.Exists<IPlayerFamily>([_pickups, _ladders], family => family.TryHandle(this, request, repeatedLog, now)))
             {
                 continue;
             }
@@ -1502,8 +1512,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 return;
             }
 
-            focus = !_doors.Usable(this, _input.Focus) && SearchableLoot(_input.Focus) is null
-                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null && !_pickups.Usable(this, _input.Focus) ? 0 : _input.Focus;
+            focus = !Array.Exists(Families, family => family.Usable(this, _input.Focus)) && SearchableLoot(_input.Focus) is null
+                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
