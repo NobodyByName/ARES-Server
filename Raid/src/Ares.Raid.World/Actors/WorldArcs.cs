@@ -1,4 +1,3 @@
-using System.Globalization;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
@@ -51,7 +50,6 @@ public sealed class WorldArcs
     private readonly Dictionary<ArcClass, ulong> _archetypes = [];
     private readonly ulong[] _attributeSetClasses;
     private readonly List<WorldArc> _arcs = [];
-    private readonly List<string> _events = [];
 
     /// <summary>Creates the raid's empty set of ARCs.</summary>
     /// <param name="replication">Replication context.</param>
@@ -114,9 +112,6 @@ public sealed class WorldArcs
     /// <summary>Every ARC of the raid, also those despawned, by index.</summary>
     public IReadOnlyList<WorldArc> All => _arcs;
 
-    /// <summary>What happened to the ARCs, oldest first, one line each.</summary>
-    public IReadOnlyList<string> Events => _events;
-
     /// <summary>Static id of an ARC's class default, the archetype of its actor.</summary>
     /// <param name="arc">The ARC.</param>
     /// <returns>The id.</returns>
@@ -140,8 +135,6 @@ public sealed class WorldArcs
 
         WorldArc spawned = new(_arcs.Count, arc, FirstGuid + (GuidStride * (ulong)_arcs.Count), location, rotation);
         _arcs.Add(spawned);
-        _events.Add(string.Create(CultureInfo.InvariantCulture,
-            $"spawn #{spawned.Index} {arc.Name} at ({location.X:0},{location.Y:0},{location.Z:0}) guid 0x{spawned.Guid:x}"));
         return spawned;
     }
 
@@ -158,7 +151,6 @@ public sealed class WorldArcs
             }
 
             _arcs[index] = _arcs[index] with { Destroyed = true };
-            _events.Add($"despawn #{index}");
             despawned++;
         }
 

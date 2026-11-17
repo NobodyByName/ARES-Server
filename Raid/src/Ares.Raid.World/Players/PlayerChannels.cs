@@ -261,9 +261,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <returns>One line.</returns>
     public string DescribeLoot(int index) => _raid.LootStates.Describe(index);
 
-    /// <summary>Match id of the raid.</summary>
-    public string MatchId => _raid.MatchId;
-
     /// <summary>Searches started on loot containers.</summary>
     public int LootSearches => _loot.Searches;
 
@@ -312,9 +309,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <summary>ARCs whose channel the client refused, as index@stage.</summary>
     public IReadOnlyList<string> ArcFailures => _arcs.Failures;
-
-    /// <summary>What happened to the raid's ARCs, oldest first.</summary>
-    public IReadOnlyList<string> ArcEvents => _raid.Arcs.Events;
 
     /// <summary>Extraction elevators whose state and buttons this client has.</summary>
     public int ElevatorsReady => _elevators.Ready;
