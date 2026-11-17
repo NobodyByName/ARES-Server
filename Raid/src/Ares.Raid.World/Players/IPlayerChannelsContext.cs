@@ -59,6 +59,12 @@ internal interface IPlayerChannelsContext
     /// <param name="frame">Input frame.</param>
     void InventoryChangedAt(uint frame);
 
+    /// <summary>The character climbs a ladder from an input frame on.</summary>
+    /// <param name="frame">Input frame of the press.</param>
+    /// <param name="ladder">Ladder index.</param>
+    /// <param name="topEntry">Whether the climb starts at the top.</param>
+    void Climb(uint frame, int ladder, bool topEntry);
+
     /// <summary>Logs a press no family acted on when its target is no interaction the server gave the client.</summary>
     /// <param name="request">The request.</param>
     void LogUnhandled(InteractionRequest request);

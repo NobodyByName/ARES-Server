@@ -114,7 +114,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     // Time after a breach succeeds during which no pawn frame is sent, so the client keeps its Succeeded
     // interaction event long enough to play the ending.
     internal const double BreachEndingSeconds = 2.0;
-    private const int MaxLaddersInFlight = 8;
 
     // Loot containers are dormant: a channel opens to send a container's state and closes again, so a few channels
     // serve them all. New deliveries start only while most of them are free; the rest stay free for state changes.
@@ -214,8 +213,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private uint _inventoryVersion = 1;
     private ContainerItem? _shield;
     private double? _mapActorsAllowedAt;
-    private Dictionary<int, (LadderChannel State, ReliableKey? Key)> _ladders = [];
-    private HashSet<int> _failedLadders = [];
     private byte[] _lootKnown = [];
     private ActorChannelPool<LootLink> _lootLinks;
     private Dictionary<ulong, ReliableKey> _lootClassExports = [];
@@ -250,6 +247,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
     private PlayerDoors _doors;
+    private PlayerLadders _ladders;
     private PlayerPickups _pickups;
     private PlayerArcs _arcs;
 
@@ -276,6 +274,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _bindings = [(ChannelLayout.Controller, player.Controller), (ChannelLayout.PlayerState, player.PlayerState), (ChannelLayout.Pawn, player.Pawn)];
         _lootLinks = new ActorChannelPool<LootLink>(raid.Channels.Loot);
         _doors = new PlayerDoors(raid.Channels.Doors);
+        _ladders = new PlayerLadders(raid.Channels.Ladders);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcs = new PlayerArcs(raid.Channels.Arcs);
     }
@@ -303,16 +302,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         Closed,
         Exporting,
         Opening,
-        Open,
-    }
-
-    private enum LadderChannel
-    {
-        Closed,
-        Exporting,
-        Spawning,
-        NamingInteractions,
-        EnablingInteractions,
         Open,
     }
 
@@ -407,10 +396,10 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public IReadOnlyList<string> RejectedInventoryLog => _rejectedInventory;
 
     /// <summary>Ladders whose climbable actor and interactions this client has.</summary>
-    public int LaddersReady => _ladders.Values.Count(ladder => ladder.State == LadderChannel.Open);
+    public int LaddersReady => _ladders.Ready;
 
     /// <summary>Ladders whose delivery started and has not finished.</summary>
-    public int LaddersInProgress => _ladders.Values.Count(ladder => ladder.State is not (LadderChannel.Closed or LadderChannel.Open));
+    public int LaddersInProgress => _ladders.InProgress;
 
     /// <summary>Loot containers whose actor and search interaction this client has.</summary>
     public int LootReady => _lootKnown.Count(known => known != (byte)LootKnowledge.None);
@@ -606,8 +595,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
-        copy._ladders = new Dictionary<int, (LadderChannel, ReliableKey?)>(_ladders);
-        copy._failedLadders = [.. _failedLadders];
         copy._lootKnown = (byte[])_lootKnown.Clone();
         copy._lootLinks = _lootLinks.Copy();
         copy._lootClassExports = new Dictionary<ulong, ReliableKey>(_lootClassExports);
@@ -624,6 +611,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
         copy._doors = _doors.Copy();
+        copy._ladders = _ladders.Copy();
         copy._pickups = _pickups.Copy();
         copy._arcs = _arcs.Copy();
         return copy;
@@ -765,7 +753,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
         _doors.Service(this, io.Sender, now);
-        ServiceLadders(io.Sender, now);
+        _ladders.Service(this, io.Sender, now);
         ServiceLoot(io.Sender, now);
         _pickups.Service(this, io.Sender, now);
         _arcs.Service(this, io.Sender, now);
@@ -780,17 +768,13 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
-        if (_doors.ChannelFailed(channel) || _pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
+        if (_doors.ChannelFailed(channel) || _ladders.ChannelFailed(channel) || _pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
         {
             return;
         }
 
         ChannelLayout layout = _raid.Channels;
-        if (layout.Ladders.IndexOf(channel) is { } ladder)
-        {
-            _failedLadders.Add(ladder);
-        }
-        else if (layout.Loot.Contains(channel))
+        if (layout.Loot.Contains(channel))
         {
             foreach ((int container, LootLink link) in _lootLinks)
             {
@@ -888,17 +872,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 continue;
             }
 
-            if (_pickups.TryHandle(this, request, repeatedLog, now))
+            if (_pickups.TryHandle(this, request, repeatedLog, now) || _ladders.TryHandle(this, request, repeatedLog, now))
             {
                 continue;
-            }
-
-            // The client climbs a ladder it presses, from the bottom or the top; from that frame the character simulation
-            // climbs it.
-            if ((request.Request & PendulumInput.PressRequest) != 0 && !repeatedLog && ClimbableLadder(request.Target) is { } ladder)
-            {
-                string component = DamLadders.InteractionComponents[Enumerable.Range(0, ladder.Interactions.Count).First(index => ladder.Interactions[index] == request.Target)];
-                _movement?.Climb(request.Frame, ladder.Index, component == LadderParameters.TopEntryInteraction);
             }
 
             if (_raid.Extraction.ByButton(request.Target) is { } elevator)
@@ -1860,50 +1836,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     private static string Seconds(double value) => value.ToString("0.000", CultureInfo.InvariantCulture);
 
-    // Gives the client the climbable actor of each ladder in the cells it reports visible: exports the class
-    // default and the placed ladder, spawns the actor attached to it, then names and enables its climb
-    // interactions. The actors stay when their cell unloads, as the game's own ladder actors do.
-    private void ServiceLadders(ReliableSender sender, double now)
-    {
-        if (!MapActorsAllowed(now))
-        {
-            return;
-        }
-
-        int inFlight = _ladders.Values.Count(ladder => ladder.Key is { } key && sender.Pending(key));
-        foreach (Ladder ladder in _raid.Ladders.Ladders)
-        {
-            (LadderChannel state, ReliableKey? key) = _ladders.GetValueOrDefault(ladder.Index, (LadderChannel.Closed, null));
-            if (key is { } waiting && sender.Pending(waiting))
-            {
-                continue;
-            }
-
-            int channel = _raid.Channels.Ladders.Channel(ladder.Index);
-            switch (state)
-            {
-                case LadderChannel.Closed when inFlight < MaxLaddersInFlight && _visibleLevels.Contains(ladder.Cell) && !_failedLadders.Contains(ladder.Index):
-                    (state, key) = (LadderChannel.Exporting, sender.Queue(_raid.Ladders.ExportBunch(ladder)));
-                    inFlight++;
-                    break;
-                case LadderChannel.Exporting:
-                    (state, key) = (LadderChannel.Spawning, sender.Queue(_raid.Ladders.OpenBunch(ladder, channel, sender.NextSequence(channel))));
-                    break;
-                case LadderChannel.Spawning:
-                    (state, key) = (LadderChannel.NamingInteractions, sender.Queue(_raid.Ladders.InteractionExportBunch(ladder)));
-                    break;
-                case LadderChannel.NamingInteractions:
-                    (state, key) = (LadderChannel.EnablingInteractions, sender.Queue(_raid.Ladders.InteractionBunch(ladder, channel)));
-                    break;
-                case LadderChannel.EnablingInteractions:
-                    (state, key) = (LadderChannel.Open, null);
-                    break;
-            }
-
-            _ladders[ladder.Index] = (state, key);
-        }
-    }
-
     // Gives the client the loot containers once map actors are allowed. Containers are dormant: a channel opens
     // for a container that becomes relevant (within the net cull distance; nearest first, a few at a time) to export
     // its class, spawn it at its socket, name its components and send its state, then closes dormant while the
@@ -2187,11 +2119,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         && _elevators.GetValueOrDefault(point.Index).State == ElevatorChannel.Open
         && _raid.ExtractionStates.Get(point.Index) is { State: ExtractionState.Ready, Descent: null } ? (point, point.ButtonIndex(button)) : null;
 
-    // The ladder of a climb interaction the client has.
-    private Ladder? ClimbableLadder(ulong interaction) =>
-        _raid.Ladders.Ladders.FirstOrDefault(candidate => candidate.Interactions.Contains(interaction)) is { } ladder
-        && _ladders.GetValueOrDefault(ladder.Index).State == LadderChannel.Open ? ladder : null;
-
     // Whether an id names an interaction the server gave the client: a door, ladder, loot, elevator button or pickup.
     private bool KnownInteraction(ulong target) =>
         _raid.Doors.ByButton(target) is not null || _raid.Doors.ByBreach(target) is not null || _raid.Loot.ByInteraction(target) is not null
@@ -2457,6 +2384,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <inheritdoc />
     void IPlayerChannelsContext.HoldFrames(double until) => _framesHeldUntil = until;
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.Climb(uint frame, int ladder, bool topEntry) => _movement?.Climb(frame, ladder, topEntry);
 
     /// <inheritdoc />
     void IPlayerChannelsContext.LogUnhandled(InteractionRequest request)
