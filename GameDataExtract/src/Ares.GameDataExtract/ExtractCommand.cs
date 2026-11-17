@@ -7,9 +7,12 @@ using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Extraction;
+using Ares.GameDataExtract.Items;
 using Ares.GameDataExtract.Output;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Profiles;
+using Ares.GameDataExtract.Registry;
+using Ares.GameDataExtract.Scripts;
 using Ares.GameDataExtract.World;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
@@ -20,7 +23,7 @@ namespace Ares.GameDataExtract;
 /// <summary>
 /// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the game data into the output
 /// folder (created when missing, never inside the game folder): the Dam map's collision file and world tables (see
-/// <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
+/// <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, the global item tables (see <see cref="GameTables"/>), then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
 /// earlier one only once complete. Prints what was written and which components could not be decoded.
 /// </summary>
 internal sealed class ExtractCommand
@@ -42,7 +45,7 @@ internal sealed class ExtractCommand
         Usage: ARES-GameDataExtract extract --game <dir> --keys <file> --toc-key <file> --out <dir>
 
         Reads an installed game (never changing its files) and writes the game data ARES loads:
-        manifest.json and the map files under maps/<map>/.
+        manifest.json, the global tables and the map files under maps/<map>/.
         Run it again after every game update.
 
           --game <dir>       Game folder, the one holding {GameBuild.ProjectName}/
@@ -111,7 +114,15 @@ internal sealed class ExtractCommand
     }
 
     /// <summary>Runs the command with the keys already read and returns its exit code.</summary>
-    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error)
+    /// <param name="keys">The archive keys.</param>
+    /// <param name="tocKey">The TOC key.</param>
+    /// <param name="output">Standard output.</param>
+    /// <param name="error">Standard error.</param>
+    /// <param name="itemTables">
+    /// Whether to extract the item tables; tests of the map files leave them out, since they need the game's whole
+    /// item catalogue.
+    /// </param>
+    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error, bool itemTables = true)
     {
         if (IsInside(OutputDirectory, GameDirectory))
         {
@@ -125,6 +136,8 @@ internal sealed class ExtractCommand
             MapCollision map;
             ExtractionSummary summary;
             MapWorldData world;
+            ItemTables? items = null;
+            TimeSpan itemTime = TimeSpan.Zero;
             using (GameArchive archive = GameArchive.Open(GameDirectory, keys, tocKey))
             {
                 CollisionProfiles profiles;
@@ -137,17 +150,34 @@ internal sealed class ExtractCommand
                 IReadOnlyList<string> cells = archive.PackagePathsUnder($"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}");
                 (map, summary) = CollisionExtractor.Extract(packages, profiles, cells);
                 world = MapWorldExtractor.Extract(packages, DamMap.MapPackage, cells, DamDataLayers.All);
+                if (itemTables)
+                {
+                    Stopwatch itemWatch = Stopwatch.StartNew();
+                    items = ExtractItems(packages, keys);
+                    itemTime = itemWatch.Elapsed;
+                }
             }
 
             GameDataWriter writer = new(OutputDirectory);
             string path = writer.WriteFile(GameDataFiles.CollisionPath(map.MapName), stream => MapCollisionFile.Write(stream, map));
             WriteWorld(writer, map.MapName, world);
+            if (items is not null)
+            {
+                WriteItems(writer, items);
+            }
+
             string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers, {world.PlayerStarts.Length:N0} player starts, {world.Ladders.Length:N0} ladders, {world.ZiplineLines.Length:N0} ziplines, {world.ZiplineLaunchers.Length:N0} zipline launchers"));
+            if (items is not null)
+            {
+                output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"Item tables: {items.UsableItems.Length:N0} usable items, {items.ItemValues.Length:N0} item values, {items.WorldItemList.Length:N0} world item classes, {items.Firearms.Length:N0} firearms, {items.Shields.Length:N0} shields, {items.Augments.Length:N0} augments, {items.LoadoutFrames.Length:N0} loadout frames (read in {itemTime.TotalSeconds:F1} s)"));
+            }
+
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), the world tables and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
+                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), the world and item tables and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
             return Success;
         }
         catch (WrongTocKeyException)
@@ -180,6 +210,38 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.LadderLogic(mapName), world.LadderLogic is { } logic ? [logic] : [], json.ArchetypeClass);
         writer.WriteTable(MapTables.ZiplineLines(mapName), world.ZiplineLines, json.ZiplinePlacement);
         writer.WriteTable(MapTables.ZiplineLaunchers(mapName), world.ZiplineLaunchers, json.ActivatableZiplinePlacement);
+    }
+
+    /// <summary>Extracts the item tables; the main pak (the collision config pak) holds the asset registry and the script cache.</summary>
+    private ItemTables ExtractItems(PackageCache packages, ArchiveKeys keys)
+    {
+        AssetRegistry registry;
+        ScriptCache scripts;
+        using (PakFile mainPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
+        {
+            registry = AssetRegistry.Load(mainPak);
+            scripts = ScriptCache.Read(mainPak);
+        }
+
+        return ItemExtractor.Extract(packages, registry, scripts);
+    }
+
+    private static void WriteItems(GameDataWriter writer, ItemTables items)
+    {
+        GameDataJsonContext json = GameDataJsonContext.Default;
+        writer.WriteTable(GameTables.UsableItems, items.UsableItems, json.ItemDefinition);
+        writer.WriteTable(GameTables.ItemValues, items.ItemValues, json.ItemValue);
+        writer.WriteTable(GameTables.WorldItemList, items.WorldItemList, json.String);
+        writer.WriteTable(GameTables.Augments, items.Augments, json.AugmentDefinition);
+        writer.WriteTable(GameTables.LoadoutFrames, items.LoadoutFrames, json.LoadoutFrameDefinition);
+        writer.WriteTable(GameTables.Firearms, items.Firearms, json.FirearmDefinition);
+        writer.WriteTable(GameTables.Shields, items.Shields, json.ShieldDefinition);
+        writer.WriteTable(GameTables.MenuAugments, items.Menu.Augments, json.MenuItem);
+        writer.WriteTable(GameTables.MenuCurrency, items.Menu.Currency, json.MenuItem);
+        writer.WriteTable(GameTables.MenuGadgets, items.Menu.Gadgets, json.MenuItem);
+        writer.WriteTable(GameTables.MenuSalvage, items.Menu.Salvage, json.MenuItem);
+        writer.WriteTable(GameTables.MenuShields, items.Menu.Shields, json.MenuItem);
+        writer.WriteTable(GameTables.MenuWeapons, items.Menu.Weapons, json.MenuItem);
     }
 
     /// <summary>Whether <paramref name="directory"/> is <paramref name="parent"/> or inside it.</summary>

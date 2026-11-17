@@ -208,6 +208,17 @@ public static class ItemAssetSchemas
         new PropertyField("UpgradeLevel", PropertyType.Byte),
     ]);
 
+    /// <summary>
+    /// <c>FWeaponStatModifier</c> (native): how a weapon quality level changes a stat, as a property block of three
+    /// floats (added, added as a multiple, multiplied).
+    /// </summary>
+    public static StructSchema WeaponStatModifier { get; } = new("WeaponStatModifier",
+    [
+        new PropertyField("Add", PropertyType.Float),
+        new PropertyField("AddMultiply", PropertyType.Float),
+        new PropertyField("Multiply", PropertyType.Float),
+    ]);
+
     /// <summary>The item asset chains above by class script path.</summary>
     public static IReadOnlyDictionary<string, StructSchema> ByClassPath { get; } = new Dictionary<string, StructSchema>(StringComparer.Ordinal)
     {

@@ -1,4 +1,6 @@
 using System.Text.Json.Serialization;
+using Ares.Structs.Backend.Progression;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.World;
 
 namespace Ares.Common.GameData;
@@ -28,4 +30,11 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(ArchetypeClass))]
 [JsonSerializable(typeof(ZiplinePlacement))]
 [JsonSerializable(typeof(ActivatableZiplinePlacement))]
+[JsonSerializable(typeof(ItemDefinition))]
+[JsonSerializable(typeof(ItemValue))]
+[JsonSerializable(typeof(MenuItem))]
+[JsonSerializable(typeof(AugmentDefinition))]
+[JsonSerializable(typeof(LoadoutFrameDefinition))]
+[JsonSerializable(typeof(FirearmDefinition))]
+[JsonSerializable(typeof(ShieldDefinition))]
 public sealed partial class GameDataJsonContext : JsonSerializerContext;

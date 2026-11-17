@@ -150,13 +150,14 @@ public sealed class ExtractionTests : IDisposable
         Assert.False(Directory.Exists(Output));
     }
 
+    /// <summary>Runs the command without the item tables, which need the game's whole item catalogue (see <c>ItemReaderTests</c> and the local data checks).</summary>
     private (int Code, string Output, string Error) Run(string output, TocKey? tocKey = null)
     {
         ExtractCommand command = ExtractCommand.Parse(
             ["--game", Game, "--keys", Path.Combine(_directory, "keys.txt"), "--toc-key", Path.Combine(_directory, "toc-key.txt"), "--out", output]);
         StringWriter standardOutput = new();
         StringWriter standardError = new();
-        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError);
+        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError, itemTables: false);
         return (code, standardOutput.ToString(), standardError.ToString());
     }
 

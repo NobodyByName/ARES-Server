@@ -36,6 +36,19 @@ public static class EngineStructs
     /// <summary><c>FGameplayTag</c>: a property block holding <c>TagName</c>.</summary>
     public static StructSchema GameplayTag { get; } = new("GameplayTag", [new PropertyField("TagName", PropertyType.Name)]);
 
+    /// <summary>
+    /// <c>FGameplayTagQuery</c>: a property block holding the stream version, the tag dictionary, the query token stream
+    /// (bytes that index the dictionary) and two descriptions.
+    /// </summary>
+    public static StructSchema GameplayTagQuery { get; } = new("GameplayTagQuery",
+    [
+        new PropertyField("TokenStreamVersion", PropertyType.Int32),
+        new PropertyField("TagDictionary", PropertyType.ArrayOf(PropertyType.StructOf(GameplayTag))),
+        new PropertyField("QueryTokenStream", PropertyType.ArrayOf(PropertyType.Byte)),
+        new PropertyField("UserDescription", PropertyType.String),
+        new PropertyField("AutoDescription", PropertyType.String),
+    ]);
+
     /// <summary><c>FPrimaryAssetType</c>: a property block holding <c>Name</c>.</summary>
     public static StructSchema PrimaryAssetType { get; } = new("PrimaryAssetType", [new PropertyField("Name", PropertyType.Name)]);
 
@@ -66,6 +79,7 @@ public static class EngineStructs
         ["/Script/CoreUObject.Transform"] = Transform,
         ["/Script/GameplayTags.GameplayTagContainer"] = GameplayTagContainer,
         ["/Script/GameplayTags.GameplayTag"] = GameplayTag,
+        ["/Script/GameplayTags.GameplayTagQuery"] = GameplayTagQuery,
         ["/Script/Engine.PointerToUberGraphFrame"] = PointerToUberGraphFrame,
     };
 }
