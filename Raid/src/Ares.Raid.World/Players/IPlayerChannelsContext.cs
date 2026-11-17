@@ -5,8 +5,8 @@ using Ares.Structs.Core.Geometry;
 namespace Ares.Raid.World.Players;
 
 /// <summary>
-/// What a family of world actors (see <see cref="IPlayerFamily"/>) and the pawn frames (see <see cref="PlayerPawnFrames"/>)
-/// see of the rest of a player's channels.
+/// What a family of world actors (see <see cref="IPlayerFamily"/>), the pawn frames (see <see cref="PlayerPawnFrames"/>)
+/// and the departure (see <see cref="PlayerDeparture"/>) see of the rest of a player's channels.
 /// </summary>
 internal interface IPlayerChannelsContext
 {
@@ -112,4 +112,10 @@ internal interface IPlayerChannelsContext
     /// <summary>Logs a press no family acted on when its target is no interaction the server gave the client.</summary>
     /// <param name="request">The request.</param>
     void LogUnhandled(InteractionRequest request);
+
+    /// <summary>Queues a call on the client's player controller.</summary>
+    /// <param name="sender">The connection's sender.</param>
+    /// <param name="function">The client function.</param>
+    /// <param name="parameters">Its parameters.</param>
+    void QueueControllerCall(ReliableSender sender, string function, Dictionary<string, object?> parameters);
 }

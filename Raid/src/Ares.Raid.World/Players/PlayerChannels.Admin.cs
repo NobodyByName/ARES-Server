@@ -99,7 +99,7 @@ public sealed partial class PlayerChannels
             return AdminRefusal.NotPossessed;
         }
 
-        if (_departure is not null)
+        if (_departure.Departed)
         {
             return AdminRefusal.Departed;
         }

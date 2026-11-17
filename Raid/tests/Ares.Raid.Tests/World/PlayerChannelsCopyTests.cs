@@ -91,6 +91,12 @@ public sealed class PlayerChannelsCopyTests
         Assert.All(SharedCollections(frames, framesCopy), name => Assert.Contains(name, s_pawnFramesReplacedWhole));
         Assert.NotNull(Simulation(frames));
         Assert.False(ReferenceEquals(Simulation(frames), Simulation(framesCopy)));
+
+        // The departure is copied: a dropped packet must not start or advance the end of the round.
+        object? departure = Field(channels, "_departure");
+        Assert.NotNull(departure);
+        Assert.False(ReferenceEquals(departure, Field(copy, "_departure")));
+        Assert.Empty(SharedCollections(departure, Field(copy, "_departure")));
     }
 
     private static object? Field(object? owner, string name) =>

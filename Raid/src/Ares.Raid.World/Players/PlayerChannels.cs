@@ -1,18 +1,12 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Ares.Raid.Transport;
-using Ares.Raid.World.Actors;
 using Ares.Raid.World.Movement;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
-using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Inventory;
-using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
-using Ares.Structs.Net.GameplayTags;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -38,32 +32,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private const double LevelStreamingSettleSeconds = 5.0;
     private const double AsyncLoadInterval = 2.0;
     private const int AsyncLoadLimit = 30;
-    private const int TelemetryBitLimit = 256;
     private const double WorldTimeInterval = 1.0;
     private const int AbilityExportsPerBunch = 3;
     private const ulong FirstAbilityGuid = 0x100001;
-    private const ulong PathReference = 1;
-
-    // ARES's own choice, not a game value: how long the server waits after the end-of-round transition for the client
-    // to say it is ready for the end of the round before sending it back to the main menu instead.
-    private const double DepartureFallbackSeconds = 20.0;
-
-    private static readonly HashSet<string> s_startupCalls = new(StringComparer.Ordinal)
-    {
-        FunctionNames.ServerAcknowledgePossession,
-        FunctionNames.ServerUpdateLevelVisibility,
-        FunctionNames.ServerUpdateMultipleLevelsVisibility,
-        FunctionNames.ServerShortTimeout,
-        FunctionNames.ServerNotifyHasReplicatedPlayerState,
-        FunctionNames.ServerNotifyHasReplicatedGameModeInfo,
-        FunctionNames.ServerNotifyHasLoadedInitialLevels,
-        FunctionNames.ServerSetPlayerInitAllAttributeSetsReplicated,
-        FunctionNames.ServerSetPlayerInitClientIsListeningToAttributeSetRegistration,
-        FunctionNames.ServerUpdateLoginResult,
-        FunctionNames.ServerSendClientTelemetryInfo,
-        FunctionNames.ServerSurrender,
-        FunctionNames.ServerRequestSquadPlayersProfiles,
-    };
 
     private readonly RaidWorld _raid;
     private readonly RaidPlayer _member;
@@ -104,15 +75,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private PlayerArcs _arcs;
     private PlayerElevators _elevators;
     private PlayerObserved _observed = new();
-
-    // This player's departure with an elevator (its index and the server world time it left), the export naming the
-    // controller's end-of-round component, and the server world times of each end-of-round step.
-    private (int Elevator, double At)? _departure;
-    private ReliableKey? _endOfRoundExport;
-    private double? _transitionAt;
-    private double? _readyAt;
-    private double? _endAt;
-    private double? _fallbackAt;
+    private PlayerDeparture _departure = new();
 
     /// <summary>Creates the channels of a joined player.</summary>
     /// <param name="raid">The raid.</param>
@@ -136,237 +99,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <summary>Latest client input frame received.</summary>
     public uint? InputFrame { get; private set; }
-
-    /// <summary>Input payloads that could not be decoded (they never reject the packet carrying them).</summary>
-    public int InputDecodeFailures { get; private set; }
-
-    /// <summary>Reason the latest undecoded input payload was rejected, if any.</summary>
-    public string? LastInputDecodeError { get; private set; }
-
-    /// <summary>The newest weapon controls the client sent: what it holds or wants to equip.</summary>
-    public WeaponInput? LatestWeaponInput { get; private set; }
-
-    /// <summary>The object the client focuses in its latest input frame (its prompt shows), or 0.</summary>
-    public ulong InputFocus => _input.Focus;
-
-    /// <summary>The character position the client predicted in its latest input frame, if any.</summary>
-    public Vector3D? InputPosition => InputFrame is { } frame ? _input.Position(frame) : null;
-
-    /// <summary>The heading of the client's control rotation in its latest input frame, in radians, if any.</summary>
-    public double? InputYaw => InputFrame is { } frame ? _input.Yaw(frame) : null;
-
-    /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
-    public int BlackboardFrames => _frames.BlackboardFrames;
-
-    /// <summary>
-    /// The character's time offset in its newest frame (see <see cref="PawnBlackboard.TimeOffsetField"/>), or null
-    /// before its first frame.
-    /// </summary>
-    public long? TimeOffset => _frames.TimeOffset;
-
-    /// <summary>The character's simulated state after the latest simulated input frame, or null before the reset frame.</summary>
-    public CharacterState? SimulatedCharacter => _frames.Movement?.Latest;
-
-    /// <summary>Input frames the character simulation ran without the client's input.</summary>
-    public int MissingInputFrames => _frames.Movement?.MissingFrames ?? 0;
-
-    /// <summary>Simulated frames after which the character continued from the position its client reported.</summary>
-    public int PositionReseeds => _frames.Movement?.Reseeds ?? 0;
-
-    /// <summary>The latest such frame: its number, how far the simulation was off and whether it had the character in the air.</summary>
-    public (uint Frame, double Distance, bool Airborne)? LastPositionReseed => _frames.Movement?.LastReseed;
-
-    /// <summary>Largest distance the simulation was off on such a frame.</summary>
-    public double WorstPositionReseed => _frames.Movement?.WorstReseed ?? 0;
-
-    /// <summary>Door presses applied.</summary>
-    public int DoorPresses => _doors.Presses;
-
-    /// <summary>Door requests ignored (not a press, door not open on this connection, or still moving).</summary>
-    public int IgnoredDoorRequests => _doors.IgnoredRequests;
-
-    /// <summary>Door breaches started.</summary>
-    public int DoorBreaches => _doors.Breaches;
-
-    /// <summary>Door breaches this player stopped by moving.</summary>
-    public int CancelledBreaches => _doors.CancelledBreaches;
-
-    /// <summary>Request values received on breach buttons, with their counts (a hold sends more than a press).</summary>
-    public IReadOnlyDictionary<int, int> BreachRequests => _doors.BreachRequests;
-
-    /// <summary>Whole-stack inventory swaps accepted.</summary>
-    public int InventoryMoves { get; private set; }
-
-    public int ShotsFired => _member.Weapons.ShotsFired;
-    public int ReloadsCompleted => _member.Weapons.ReloadsCompleted;
-
-    /// <summary>Accepted requests to draw a quick-use item.</summary>
-    public int QuickItemRequests => _member.Weapons.QuickItemRequests;
-
-    /// <summary>Snap Hook throws (each costs gadget power).</summary>
-    public int HookThrows => _member.Weapons.HookThrows;
-
-    /// <summary>Times pawn frames started being withheld because a thrown Snap Hook was out.</summary>
-    public int QuickItemHolds => _frames.QuickItemHolds;
-
-    /// <summary>The latest such hold: the first and the last withheld frame tick (none while it lasts).</summary>
-    public (uint From, uint? To)? LastQuickItemHold => _frames.LastQuickItemHold;
-
-    /// <summary>Inventory requests rejected and corrected.</summary>
-    public int RejectedInventoryRequests { get; private set; }
-
-    /// <summary>
-    /// The latest rejected inventory requests, oldest first, as type from->to (container r revision/slot) xamount
-    /// reason@input frame.
-    /// </summary>
-    public IReadOnlyList<string> RejectedInventoryLog => _rejectedInventory;
-
-    /// <summary>Ladders whose climbable actor and interactions this client has.</summary>
-    public int LaddersReady => _ladders.Ready;
-
-    /// <summary>Ladders whose delivery started and has not finished.</summary>
-    public int LaddersInProgress => _ladders.InProgress;
-
-    /// <summary>Loot containers whose actor and search interaction this client has.</summary>
-    public int LootReady => _loot.Ready;
-
-    /// <summary>Whether this client has a loot container (it keeps it while the container is dormant).</summary>
-    /// <param name="container">Container index.</param>
-    /// <returns>True once the container's state reached the client.</returns>
-    public bool HasLoot(int container) => _loot.Has(container);
-
-    /// <summary>Loot channels open now (or on the way): containers being delivered or updated.</summary>
-    public int LootChannelsInUse => _loot.ChannelsInUse;
-
-    /// <summary>Loot channel opens so far: first deliveries and state changes.</summary>
-    public int LootChannelOpens => _loot.ChannelOpens;
-
-    /// <summary>Loot containers whose channel the client closed: they are not delivered again to this player.</summary>
-    public int LootFailed => _loot.Failed;
-
-    /// <summary>
-    /// The first loot containers whose channel the client closed, oldest first, as source:class@stage (the step whose
-    /// bunch the channel was on: Spawning = the open, Naming = the component names, Open = a state).
-    /// </summary>
-    public IReadOnlyList<string> LootFailures => _loot.Failures;
-
-    /// <summary>Loot containers relevant to the player that the client does not have yet.</summary>
-    public int LootWaiting => _loot.Waiting(this);
-
-    /// <summary>First openings of the raid's containers with what they held, oldest first.</summary>
-    public IReadOnlyList<string> LootEvents => _raid.LootStates.Events;
-
-    /// <summary>Describes a container of the raid and what it holds now.</summary>
-    /// <param name="index">Container index.</param>
-    /// <returns>One line.</returns>
-    public string DescribeLoot(int index) => _raid.LootStates.Describe(index);
-
-    /// <summary>Searches started on loot containers.</summary>
-    public int LootSearches => _loot.Searches;
-
-    /// <summary>Searches the player stopped by moving.</summary>
-    public int CancelledSearches => _loot.CancelledSearches;
-
-    /// <summary>Loot containers opened by this player.</summary>
-    public int LootOpens => _loot.Opens;
-
-    /// <summary>Requests received on loot search interactions, oldest first, as request@input frame.</summary>
-    public IReadOnlyList<string> LootRequests => _loot.Requests;
-
-    /// <summary>Items this player dropped into the world.</summary>
-    public int ItemsDropped => _pickups.ItemsDropped;
-
-    /// <summary>Pickup requests of this player that took items.</summary>
-    public int PickupsTaken => _pickups.Taken;
-
-    /// <summary>Pickups whose actor and interaction this client has.</summary>
-    public int PickupsReady => _pickups.Ready;
-
-    /// <summary>Whether this client has a pickup (it keeps it while the pickup is dormant).</summary>
-    /// <param name="pickup">Pickup index.</param>
-    /// <returns>True once the pickup reached the client and until it is destroyed there.</returns>
-    public bool HasPickup(int pickup) => _pickups.Has(pickup);
-
-    /// <summary>Pickup channels open now (or on the way).</summary>
-    public int PickupChannelsInUse => _pickups.ChannelsInUse;
-
-    /// <summary>Requests received on pickup interactions, oldest first, as pickup:request@input frame.</summary>
-    public IReadOnlyList<string> PickupRequests => _pickups.Requests;
-
-    /// <summary>What happened to the raid's pickups, oldest first.</summary>
-    public IReadOnlyList<string> PickupEvents => _raid.Pickups.Events;
-
-    /// <summary>ARCs whose actor and ability system this client has.</summary>
-    public int ArcsReady => _arcs.Ready;
-
-    /// <summary>Whether this client has an ARC.</summary>
-    /// <param name="arc">ARC index.</param>
-    /// <returns>True from the ability system's content until the channel closes.</returns>
-    public bool HasArc(int arc) => _arcs.Has(arc);
-
-    /// <summary>ARC channels open now (or on the way).</summary>
-    public int ArcChannelsInUse => _arcs.ChannelsInUse;
-
-    /// <summary>ARCs whose channel the client refused, as index@stage.</summary>
-    public IReadOnlyList<string> ArcFailures => _arcs.Failures;
-
-    /// <summary>Extraction elevators whose state and buttons this client has.</summary>
-    public int ElevatorsReady => _elevators.Ready;
-
-    /// <summary>
-    /// Elevator states this client has, by elevator index: the state (Called while the call press runs) and the
-    /// server world time it started, with the descend switch held (+switch@press, ~hold@hold start once the hold runs)
-    /// or, once the elevator left, the one that sent it (^switch).
-    /// </summary>
-    public string ElevatorStates => _elevators.States;
-
-    /// <summary>Calls of an elevator by this player.</summary>
-    public int ElevatorCalls => _elevators.Calls;
-
-    /// <summary>Elevator state changes this client got, oldest first, as elevator:state@server time (see <see cref="ElevatorStates"/>).</summary>
-    public IReadOnlyList<string> ElevatorChanges => _elevators.Changes;
-
-    /// <summary>Descend holds started by this player.</summary>
-    public int ElevatorDescents => _elevators.Descents;
-
-    /// <summary>Descend holds this player stopped by moving.</summary>
-    public int CancelledDescents => _elevators.CancelledDescents;
-
-    /// <summary>Descend holds of this player that sent an elevator off.</summary>
-    public int CompletedDescents => _elevators.CompletedDescents;
-
-    /// <summary>
-    /// Players inside each elevator when it last left (its doors closed), as elevator@server time the doors started
-    /// closing:user ids.
-    /// </summary>
-    public string ElevatorDepartures => string.Join(", ", _raid.Extraction.Points
-        .Select(point => (point.Index, Departure: _raid.ExtractionStates.Departure(point.Index)))
-        .Where(entry => entry.Departure is not null)
-        .Select(entry => $"{entry.Index}@{entry.Departure!.At.ToString("0.000", CultureInfo.InvariantCulture)}:{string.Join(' ', entry.Departure.Players)}"));
-
-    /// <summary>
-    /// This player's departure with an elevator, as elevator@server time it left, then each end-of-round step with its
-    /// server time: transition (the client starts its end of round), ready (the client is ready for it), end (the end
-    /// of round sent) or fallback (no ready in time: sent back to the main menu). Empty before a departure.
-    /// </summary>
-    public string Departure => _departure is not { } departure ? string.Empty : string.Join(' ', ((string?[])[
-        $"{departure.Elevator}@{Seconds(departure.At)}",
-        _transitionAt is { } transition ? $"transition@{Seconds(transition)}" : null,
-        _readyAt is { } ready ? $"ready@{Seconds(ready)}" : null,
-        _endAt is { } end ? $"end@{Seconds(end)}" : null,
-        _fallbackAt is { } fallback ? $"fallback@{Seconds(fallback)}" : null,
-    ]).OfType<string>());
-
-    /// <summary>Requests received on elevator buttons, oldest first, as elevator/button request@input frame.</summary>
-    public IReadOnlyList<string> ElevatorRequests => _elevators.Requests;
-
-    /// <summary>
-    /// Presses on no target or on an object the server does not know, oldest first, as target request@input frame.
-    /// </summary>
-    public IReadOnlyList<string> UnknownInteractionRequests => _unknownRequests;
-
-    /// <summary>Client calls received and not handled yet, by name.</summary>
-    public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
     // The families of world actors on this connection, in the order they are serviced.
     private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators, _observed];
@@ -415,6 +147,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._elevators = _elevators.Copy();
         copy._observed = _observed.Copy();
         copy._frames = _frames.Copy();
+        copy._departure = _departure.Copy();
         return copy;
     }
 
@@ -438,98 +171,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     }
 
     /// <inheritdoc />
-    public void Receive(ChannelIo io, ChannelBunch bunch)
-    {
-        ArgumentNullException.ThrowIfNull(io);
-        ArgumentNullException.ThrowIfNull(bunch);
-        ChannelLayout layout = _raid.Channels;
-        if (bunch.Channel == ChannelLayout.Squad || layout.Doors.Contains(bunch.Channel) || layout.Ladders.Contains(bunch.Channel)
-            || layout.Loot.Contains(bunch.Channel) || layout.Elevators.Contains(bunch.Channel)
-            || (layout.ObservedPlayer(bunch.Channel) is { } observed && observed < _raid.Players.Count) || layout.Pickups.Contains(bunch.Channel))
-        {
-            // The client owns no squad, door, ladder, container, elevator, other player or pickup; it only sends channel bookkeeping there.
-            return;
-        }
-
-        if (Array.FindIndex(_bindings, binding => binding.Channel == bunch.Channel) < 0
-            || bunch.Opened || bunch.CloseReason is not null || bunch.PackageExports || bunch.MustBeMapped || bunch.ReplicationPaused)
-        {
-            throw new InvalidPacketException("Unsupported or unowned actor channel traffic");
-        }
-
-        List<(string Function, Dictionary<string, object?> Parameters)> replies = [];
-        foreach (ChannelBunch item in io.Receiver.Receive(bunch))
-        {
-            if (Phase < DeliveryPhase.ActorOpensPending)
-            {
-                throw new InvalidPacketException("Actor traffic before the player actors opened");
-            }
-
-            BitReader reader = new(item.Payload, item.PayloadBits);
-            ulong actor = Array.Find(_bindings, binding => binding.Channel == item.Channel).Guid;
-            if (actor == _player.Controller)
-            {
-                ReceiveControllerCalls(item, reader, replies);
-            }
-            else if (actor == _player.Pawn && Phase == DeliveryPhase.Possessed)
-            {
-                ReceivePawnCalls(item, reader);
-            }
-            else
-            {
-                throw new InvalidPacketException($"Unsupported calls on an owned actor: {string.Join(", ", Calls(Actor(actor).ClassPath, ActorContentBlock.Read(reader)).Take(8))}");
-            }
-        }
-
-        RpcCodec calls = _raid.State.Replication.Calls(_raid.State.Objects(_mapped));
-        foreach ((string function, Dictionary<string, object?> parameters) in replies)
-        {
-            io.Sender.Queue(Bunches.Actor(ChannelLayout.Controller, calls.Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Client)));
-        }
-
-        while (Advance(io.Sender))
-        {
-        }
-    }
-
-    /// <inheritdoc />
-    public bool ObserveDirect(int kind, byte[] payload)
-    {
-        if (kind != PendulumInput.DirectStreamKind)
-        {
-            return false;
-        }
-
-        try
-        {
-            (uint? latest, IReadOnlyList<InteractionRequest> requests, IReadOnlyList<InventoryRequest> inventory) = _input.Read(payload);
-            if (latest is { } frame && (InputFrame is null || frame > InputFrame))
-            {
-                InputFrame = frame;
-            }
-
-            _requests.AddRange(requests);
-            _inventoryRequests.AddRange(inventory);
-            _weaponRequests.AddRange(_input.Weapons);
-            foreach (WeaponInput weapon in _input.Weapons)
-            {
-                if (LatestWeaponInput is not { } current || weapon.Frame > current.Frame)
-                {
-                    LatestWeaponInput = weapon;
-                }
-            }
-        }
-        catch (InvalidPacketException error)
-        {
-            // Never let an undecoded input payload reject the channel traffic it rides with.
-            InputDecodeFailures++;
-            LastInputDecodeError = error.Message;
-        }
-
-        return true;
-    }
-
-    /// <inheritdoc />
     public void Service(ChannelIo io, double now)
     {
         ArgumentNullException.ThrowIfNull(io);
@@ -539,9 +180,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             return;
         }
 
-        if (_departure is not null)
+        if (_departure.Departed)
         {
-            ServiceDeparture(io.Sender, now);
+            _departure.Service(this, _elevators, io.Sender, now);
             return;
         }
 
@@ -558,7 +199,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             family.Service(this, io.Sender, now);
         }
 
-        ServiceDeparture(io.Sender, now);
+        _departure.Service(this, _elevators, io.Sender, now);
     }
 
     /// <inheritdoc />
@@ -588,7 +229,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         double now = _raid.Clock();
         _raid.Pickups.Expire(now);
-        if (_departure is not null)
+        if (_departure.Departed)
         {
             // The player left with an elevator: their input no longer acts or moves in the raid.
             _requests.Clear();
@@ -659,7 +300,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void Closed()
     {
-        if (_surrendered || _departure is not null)
+        if (_surrendered || _departure.Departed)
         {
             // Keep the reservation valid while the reliable return-to-menu reply (or the end of round) drains.
             // Only an accepted surrender or a departure with an elevator, followed by connection removal, takes the
@@ -667,12 +308,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             _member.Leave();
         }
     }
-
-    [GeneratedRegex("^/Game/[A-Za-z_0-9/]+$")]
-    private static partial Regex PackagePattern();
-
-    [GeneratedRegex("^[A-Za-z_0-9]{1,128}$")]
-    private static partial Regex ComponentNamePattern();
 
     private void HandleRequest(InteractionRequest request, double now)
     {
@@ -701,216 +336,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             if (family.TryHandle(this, request, repeated, now))
             {
                 break;
-            }
-        }
-    }
-
-    private void ReceiveControllerCalls(ChannelBunch item, BitReader reader, List<(string, Dictionary<string, object?>)> replies)
-    {
-        RpcCodec calls = _raid.State.Replication.Calls(_raid.State.Objects(_mapped));
-        string controllerClass = PlayerClasses.PlayerController.Class;
-        bool reliable = item.Sequence is not null;
-        while (reader.Remaining > 0)
-        {
-            if (Phase == DeliveryPhase.Possessed && SkipComponentCalls(item, reader, _player.Controller))
-            {
-                continue;
-            }
-
-            foreach ((NetField field, ActorFieldPayload payload) in calls.ReadFields(controllerClass, ActorContentBlock.Read(reader), RpcDirection.Server))
-            {
-                string name = field.Name;
-                if (name is FunctionNames.ServerUpdateCamera or FunctionNames.ServerSetSpectatorLocation)
-                {
-                    // View telemetry: never applied to the server's character or camera.
-                    if (payload.PayloadBits is < 1 or > TelemetryBitLimit)
-                    {
-                        throw new InvalidPacketException("Oversized view telemetry");
-                    }
-
-                    continue;
-                }
-
-                if (!reliable)
-                {
-                    throw new InvalidPacketException($"Reliable call sent unreliably: {name}");
-                }
-
-                if (name == FunctionNames.SendInputDeviceChanged)
-                {
-                    // An optional input-device hint (a presence bit and the device); not used.
-                    bool present = new BitReader(payload.Payload, payload.PayloadBits).ReadBit();
-                    if (payload.PayloadBits != (present ? 3 : 1))
-                    {
-                        throw new InvalidPacketException("Unexpected input-device report");
-                    }
-
-                    continue;
-                }
-
-                if (!s_startupCalls.Contains(name))
-                {
-                    if (Phase != DeliveryPhase.Possessed)
-                    {
-                        throw new InvalidPacketException($"Unsupported controller call: {name}");
-                    }
-
-                    Count($"controller:{name}");
-                    continue;
-                }
-
-                // The other start-up calls are client reports and telemetry: accepted, not stored.
-                Dictionary<string, object?> parameters = calls.ReadParameters(field, payload);
-                switch (name)
-                {
-                    case FunctionNames.ServerRequestSquadPlayersProfiles:
-                        IReadOnlyList<object?> requested = parameters[PropertyNames.TenancyUserIds] as IReadOnlyList<object?> ?? [];
-                        replies.Add((FunctionNames.ClientReceiveSquadPlayersProfiles, ProfileParameters(_member.Profiles.IntersectBy(requested.OfType<TenancyUserId>(), profile => profile.TenancyUserId))));
-                        break;
-                    case FunctionNames.ServerNotifyHasLoadedInitialLevels:
-                        _initialLevelsLoaded = true;
-                        break;
-                    case FunctionNames.ServerAcknowledgePossession:
-                        ReceivePossession(parameters);
-                        break;
-                    case FunctionNames.ServerUpdateLevelVisibility:
-                        ReceiveVisibility([parameters[PropertyNames.LevelVisibility]], replies);
-                        break;
-                    case FunctionNames.ServerUpdateMultipleLevelsVisibility:
-                        ReceiveVisibility(parameters[PropertyNames.LevelVisibilities] as IReadOnlyList<object?> ?? [], replies);
-                        break;
-                    case FunctionNames.ServerSurrender when Phase == DeliveryPhase.Possessed:
-                        // Leaving the raid returns the player to the main menu; no raid result is recorded.
-                        _surrenderToCommit = true;
-                        replies.Add((FunctionNames.ClientReturnToMainMenuWithTextReason, new Dictionary<string, object?> { [PropertyNames.ReturnReason] = "" }));
-                        break;
-                    case FunctionNames.ServerSurrender:
-                        throw new InvalidPacketException("Surrender before possession");
-                }
-            }
-        }
-    }
-
-    private static Dictionary<string, object?> ProfileParameters(IEnumerable<CompactPlayerProfile> profiles) => new()
-    {
-        [PropertyNames.Profiles] = profiles.Cast<object?>().ToArray(),
-    };
-
-    private void ReceiveVisibility(IReadOnlyList<object?> reports, List<(string, Dictionary<string, object?>)> replies)
-    {
-        HashSet<string> visible = new(_visibleLevels, StringComparer.Ordinal);
-        foreach (object? item in reports)
-        {
-            if (item is not LevelVisibility report || !PackagePattern().IsMatch(report.Package) || report.File != report.Package
-                || !RaidWorld.LevelPackages.Contains(report.Package))
-            {
-                throw new InvalidPacketException("Visibility report outside the map");
-            }
-
-            if (report.Transaction.Client)
-            {
-                // The client may show known map packages without server-synchronized streaming.
-                replies.Add((FunctionNames.ClientAckUpdateLevelVisibility, new Dictionary<string, object?>
-                {
-                    [PropertyNames.PackageName] = report.Package,
-                    [PropertyNames.TransactionId] = report.Transaction,
-                    [PropertyNames.ClientAckCanMakeVisible] = true,
-                }));
-            }
-
-            if (report.Visible)
-            {
-                visible.Add(report.Package);
-            }
-            else
-            {
-                visible.Remove(report.Package);
-            }
-        }
-
-        if (!visible.SetEquals(_visibleLevels))
-        {
-            _visibleLevelsChangedAt = _raid.Clock();
-        }
-
-        _visibleLevels = visible;
-    }
-
-    // Calls on the possessed pawn and its components (predicted ability requests, component events) are
-    // decoded and counted, not applied yet.
-    private void ReceivePawnCalls(ChannelBunch item, BitReader reader)
-    {
-        while (reader.Remaining > 0)
-        {
-            if (SkipComponentCalls(item, reader, _player.Pawn))
-            {
-                continue;
-            }
-
-            foreach (string name in Calls(PlayerClasses.Pawn.Class, ActorContentBlock.Read(reader)))
-            {
-                Count(name);
-            }
-        }
-    }
-
-    // Reads the next block when it targets one of the actor's components rather than the actor: calls on the
-    // ability system are decoded and counted; components the server does not simulate yet (named by path,
-    // such as the controller's ping manager) are counted by name. Returns false for the actor's own content.
-    private bool SkipComponentCalls(ChannelBunch item, BitReader reader, ulong outer)
-    {
-        if (At(item, reader.Position + 1).ReadBit())
-        {
-            return false;
-        }
-
-        if (NetGuid.Read(At(item, reader.Position + 2)) == PathReference)
-        {
-            ClientSubobjectReference reference = ClientSubobjectReference.Read(reader);
-            string name = reference.Name.TrimEnd('\0');
-            if (reference.Outer != outer || !ComponentNamePattern().IsMatch(name))
-            {
-                throw new InvalidPacketException("Unsupported client component reference");
-            }
-
-            if (outer == _player.Controller && name == PlayerClasses.SpectatorManagerComponent)
-            {
-                ReceiveSpectatorCalls(reference.Content);
-                return true;
-            }
-
-            Count($"path:{name}");
-            return true;
-        }
-
-        StableSubobjectContent content = StableSubobjectContent.ReadFromClient(reader);
-        if (content.Guid != _player.AbilitySystem || outer != _player.Pawn)
-        {
-            Count($"subobject:{content.Guid}");
-            return true;
-        }
-
-        foreach (string name in Calls(CharacterDefaults.AbilitySystem.Class, content.Content))
-        {
-            Count(name);
-        }
-
-        return true;
-    }
-
-    // Calls on the controller's spectator manager: the client says it is ready for the end of the round once its
-    // end-of-round data is collected. Other calls are counted.
-    private void ReceiveSpectatorCalls(ActorContentBlock content)
-    {
-        foreach (string name in Calls(ClassPaths.PioneerSpectatorManagerComponent, content))
-        {
-            if (name == FunctionNames.ServerReadyToSpectate && _transitionAt is not null)
-            {
-                _readyAt ??= ServerSeconds(_raid.Clock());
-            }
-            else
-            {
-                Count($"spectator:{name}");
             }
         }
     }
@@ -1019,88 +444,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         return (new ObjectExports(records), [.. defaults]);
     }
 
-    // Ends this player's round once an elevator left with them inside (its doors closed): the extraction, the
-    // controller's end-of-round component and its quest progress, the end-of-round data (no experience, no journey),
-    // the transition to the end-of-round screen and the end of the data. The client then collects its data and says
-    // when it is ready; the end of the round follows, and the client returns to the main menu by itself. A client that
-    // never says it is ready is sent back to the main menu.
-    private void ServiceDeparture(ReliableSender sender, double now)
-    {
-        double at = ServerSeconds(now);
-        if (_departure is null)
-        {
-            if (LeftWithElevator(at) is not { } departure)
-            {
-                return;
-            }
-
-            _departure = departure;
-            _elevators.Depart();
-            _member.Depart();
-            QueueControllerCall(sender, FunctionNames.ClientNotifyExtracted, new Dictionary<string, object?>
-            {
-                [PropertyNames.ExtractionType] = new GameplayTag(DamExtraction.ExtractionType),
-            });
-            _endOfRoundExport = sender.Queue(Bunches.Exports(_raid.State.EndOfRoundExports(_player), [_player.EndOfRound]));
-            return;
-        }
-
-        if (_transitionAt is null)
-        {
-            if (_endOfRoundExport is { } export && sender.Pending(export))
-            {
-                return;
-            }
-
-            sender.Queue(Bunches.Actor(ChannelLayout.Controller, _raid.State.EndOfRoundCall(_player, FunctionNames.ClientFinalizeQuestProgress,
-                new Dictionary<string, object?> { [PropertyNames.PlayerWon] = true }).Write));
-            QueueControllerCall(sender, FunctionNames.ReceiveXpData, new Dictionary<string, object?>
-            {
-                [PropertyNames.XpEventLog] = null,
-                [PropertyNames.XpBasedRewardsLog] = null,
-            });
-            QueueControllerCall(sender, FunctionNames.ClientClearReconnectData, []);
-            QueueControllerCall(sender, FunctionNames.ClientStartEndOfRoundTransition, new Dictionary<string, object?> { [PropertyNames.PlayerWon] = true });
-            QueueControllerCall(sender, FunctionNames.ReceiveEndOfRoundJourneySummary, new Dictionary<string, object?> { [PropertyNames.Summary] = null });
-            QueueControllerCall(sender, FunctionNames.EndOfRoundJourneyDataTransferComplete, []);
-            _transitionAt = at;
-            return;
-        }
-
-        if (_endAt is not null || _fallbackAt is not null)
-        {
-            return;
-        }
-
-        if (_readyAt is not null)
-        {
-            QueueControllerCall(sender, FunctionNames.ClientStartEndOfRound, new Dictionary<string, object?> { [PropertyNames.PlayerWon] = true });
-            _endAt = at;
-        }
-        else if (at >= _transitionAt + DepartureFallbackSeconds)
-        {
-            // As after a surrender: an empty return reason.
-            QueueControllerCall(sender, FunctionNames.ClientReturnToMainMenuWithTextReason, new Dictionary<string, object?> { [PropertyNames.ReturnReason] = "" });
-            _fallbackAt = at;
-        }
-    }
-
-    // The elevator that left with this player inside and when it left (its doors closed), once it has.
-    private (int Elevator, double At)? LeftWithElevator(double at)
-    {
-        foreach (ExtractionPoint point in _raid.Extraction.Points)
-        {
-            if (_raid.ExtractionStates.Departure(point.Index) is { } departure && departure.Players.Contains(_member.Id)
-                && at >= departure.At + DamExtraction.DoorsSeconds)
-            {
-                return (point.Index, departure.At + DamExtraction.DoorsSeconds);
-            }
-        }
-
-        return null;
-    }
-
-    private void QueueControllerCall(ReliableSender sender, string function, Dictionary<string, object?> parameters) =>
+    /// <inheritdoc />
+    void IPlayerChannelsContext.QueueControllerCall(ReliableSender sender, string function, Dictionary<string, object?> parameters) =>
         sender.Queue(Bunches.Actor(ChannelLayout.Controller, _raid.State.Replication.Calls(_raid.State.Objects(_mapped))
             .Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Client)));
 
@@ -1179,19 +524,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         }
     }
 
-    private static BitReader At(ChannelBunch item, long position)
-    {
-        BitReader reader = new(item.Payload, item.PayloadBits);
-        reader.ReadBitArray(position);
-        return reader;
-    }
-
-    private IEnumerable<string> Calls(string classPath, ActorContentBlock block) =>
-        _raid.State.Replication.Calls(_raid.State.Objects(_mapped)).ReadFields(classPath, block, RpcDirection.Server).Select(call => call.Field.Name);
-
     private WorldActor Actor(ulong guid) => _raid.State.Actor(guid);
 
     private int ChannelOf(ulong actor) => Array.Find(_bindings, binding => binding.Guid == actor).Channel;
-
-    private void Count(string name) => _ignoredCalls[name] = _ignoredCalls.GetValueOrDefault(name) + 1;
 }
