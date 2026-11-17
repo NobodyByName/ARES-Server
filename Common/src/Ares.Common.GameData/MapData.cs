@@ -4,8 +4,7 @@ using Ares.Structs.Game.World;
 namespace Ares.Common.GameData;
 
 /// <summary>
-/// One map's data, named like its tables (<see cref="MapTables"/>). Generated: the <c>Dam…</c> classes; for example
-/// <c>DamLadders.All</c> is <see cref="Ladders"/> and <c>DamLadders.Logic</c> is <see cref="LadderLogic"/>.
+/// One map's data, named like its tables (<see cref="MapTables"/>).
 /// </summary>
 public sealed class MapData
 {
@@ -57,95 +56,91 @@ public sealed class MapData
         ExtractionPoints = content.ExtractionPoints;
     }
 
-    /// <summary>The map's world name, for example <c>TheDam_02_P</c> (generated: <c>DamMap.WorldName</c>).</summary>
+    /// <summary>The map's world name, for example <c>TheDam_02_P</c>.</summary>
     public string WorldName => World.WorldName;
 
     /// <summary>
-    /// The map's package, the package of its level script class (generated: <c>DamMap.MapPackage</c>), for example
+    /// The map's package, the package of its level script class, for example
     /// <c>/Game/Pioneer/Maps/TheDam_02/TheDam_02_P</c>.
     /// </summary>
     public string MapPackage { get; }
 
     /// <summary>
-    /// The map's persistent world objects (generated: <c>DamMap.PersistentLevelName</c>, <c>LevelScriptActorName</c>,
-    /// <c>LevelScriptClass</c>, <c>WorldDataLayersActorName</c>).
+    /// The map's persistent world objects.
     /// </summary>
     public MapWorldObjects World { get; }
 
-    /// <summary>The map's game mode, game state and location tag (generated: <c>DamMap.GameModeClass</c>, <c>GameState</c>, <c>LocationTag</c>).</summary>
+    /// <summary>The map's game mode, game state and location tag.</summary>
     public MapGameMode GameMode { get; }
 
-    /// <summary>The generated World Partition cell packages, in ordinal order (generated: <c>DamStreamingCells.Packages</c>).</summary>
+    /// <summary>The generated World Partition cell packages, in ordinal order.</summary>
     public ImmutableArray<string> StreamingCells { get; }
 
-    /// <summary>The static meshes that carry loot sockets; <see cref="LootSocket.Mesh"/> indexes them (generated: <c>DamLootSockets.Meshes</c>).</summary>
+    /// <summary>The static meshes that carry loot sockets; <see cref="LootSocket.Mesh"/> indexes them.</summary>
     public ImmutableArray<LootSocketMesh> LootSocketMeshes { get; }
 
-    /// <summary>The loot container sockets (generated: <c>DamLootSockets.All</c>).</summary>
+    /// <summary>The loot container sockets.</summary>
     public ImmutableArray<LootSocket> LootSockets { get; }
 
-    /// <summary>The loot container actors the map places itself (generated: <c>DamPlacedLoot.Containers</c>).</summary>
+    /// <summary>The loot container actors the map places itself.</summary>
     public ImmutableArray<PlacedLootContainer> PlacedLoot { get; }
 
-    /// <summary>The authored player starts of the persistent level (generated: <c>DamPlayerStarts.All</c>).</summary>
+    /// <summary>The authored player starts of the persistent level.</summary>
     public ImmutableArray<PlayerStart> PlayerStarts { get; }
 
-    /// <summary>The capsule of generated group spawn points (generated: <c>DamPlayerStarts.Capsule</c>).</summary>
+    /// <summary>The capsule of generated group spawn points.</summary>
     public PlayerStartCapsule PlayerStartCapsule { get; }
 
-    /// <summary>The climbable ladders (generated: <c>DamLadders.All</c>).</summary>
+    /// <summary>The climbable ladders.</summary>
     public ImmutableArray<LadderPlacement> Ladders { get; }
 
-    /// <summary>The class spawned for each ladder to make it climbable, null without ladders (generated: <c>DamLadders.Logic</c>).</summary>
+    /// <summary>The class spawned for each ladder to make it climbable, null without ladders.</summary>
     public ArchetypeClass? LadderLogic { get; }
 
-    /// <summary>The rideable ziplines (generated: <c>DamZiplines.Lines</c>).</summary>
+    /// <summary>The rideable ziplines.</summary>
     public ImmutableArray<ZiplinePlacement> ZiplineLines { get; }
 
-    /// <summary>The zipline launchers (generated: <c>DamZiplines.Launchers</c>).</summary>
+    /// <summary>The zipline launchers.</summary>
     public ImmutableArray<ActivatableZiplinePlacement> ZiplineLaunchers { get; }
 
     /// <summary>
-    /// What every rideable zipline shares (generated: <c>DamZiplines.ForcedTravelDirectionThresholdHome</c>,
-    /// <c>AttachmentOffset</c>, <c>CharacterMeshLocation</c>, <c>CharacterMeshYaw</c>).
+    /// What every rideable zipline shares.
     /// </summary>
     public ZiplineLineDefaults ZiplineDefaults { get; }
 
-    /// <summary>The points of interest (generated: <c>DamPointsOfInterest.All</c>).</summary>
+    /// <summary>The points of interest.</summary>
     public ImmutableArray<PointOfInterest> PointsOfInterest { get; }
 
-    /// <summary>The loot placement limiters (generated: <c>DamLootLimiters.All</c>).</summary>
+    /// <summary>The loot placement limiters.</summary>
     public ImmutableArray<LootLimiter> LootLimiters { get; }
 
-    /// <summary>The spawners of free-standing loot containers (generated: <c>DamDynamicLoot.Spawners</c>).</summary>
+    /// <summary>The spawners of free-standing loot containers.</summary>
     public ImmutableArray<DynamicLootSpawner> DynamicLootSpawners { get; }
 
-    /// <summary>The groups that pick which dynamic loot spawners run, with their spawners resolved (generated: <c>DamDynamicLoot.Groups</c>).</summary>
+    /// <summary>The groups that pick which dynamic loot spawners run, with their spawners resolved.</summary>
     public ImmutableArray<DynamicLootGroup> DynamicLootGroups { get; }
 
-    /// <summary>The regular doors (generated: <c>DamDoors.All</c>).</summary>
+    /// <summary>The regular doors.</summary>
     public ImmutableArray<DoorPlacement> Doors { get; }
 
-    /// <summary>The round configurations (generated: <c>DamRounds.All</c>).</summary>
+    /// <summary>The round configurations.</summary>
     public ImmutableArray<RoundConfiguration> Rounds { get; }
 
-    /// <summary>The scenarios of the lighting lookup (generated: <c>DamLighting.Scenarios</c>).</summary>
+    /// <summary>The scenarios of the lighting lookup.</summary>
     public ImmutableArray<LightingScenario> LightingScenarios { get; }
 
-    /// <summary>The lighting choices of each round lighting group, in asset order (generated: <c>DamLighting.RoundLightingGroups</c>).</summary>
+    /// <summary>The lighting choices of each round lighting group, in asset order.</summary>
     public IReadOnlyDictionary<string, IReadOnlyList<WeightedLighting>> RoundLightingGroups { get; }
 
     /// <summary>
-    /// What the elevator extraction points share (generated: <c>DamExtraction.ExtractionType</c>, <c>SettingsAsset</c>,
-    /// <c>Settings</c>, <c>ZoneHalfExtent</c>, <c>ZoneLocation</c>, <c>ZoneRotation</c>, <c>NoHoldStartedTime</c>,
-    /// <c>NoExtractionStartedTime</c>, <c>DoorsSeconds</c>).
+    /// What the elevator extraction points share.
     /// </summary>
     public ExtractionElevator ExtractionElevator { get; }
 
-    /// <summary>The buttons of each elevator, in <see cref="ExtractionClasses.Buttons"/> order (generated: <c>DamExtraction.Buttons</c>).</summary>
+    /// <summary>The buttons of each elevator, in <see cref="ExtractionClasses.Buttons"/> order.</summary>
     public ImmutableArray<ExtractionButton> ExtractionButtons { get; }
 
-    /// <summary>The elevators the persistent level places (generated: <c>DamExtraction.All</c>).</summary>
+    /// <summary>The elevators the persistent level places.</summary>
     public ImmutableArray<ExtractionPointPlacement> ExtractionPoints { get; }
 
     private GameDataException Malformed(string problem) =>

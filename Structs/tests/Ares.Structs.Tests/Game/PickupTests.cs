@@ -19,7 +19,7 @@ public sealed class PickupTests
 
     private static PropertyCodec Codec() => new(new ValueCodec(
         Catalog,
-        [KnownEnums.NetRole, KnownEnums.ItemSources, DamDoors.InteractionState],
+        [KnownEnums.NetRole, KnownEnums.ItemSources, DoorClasses.InteractionState],
         new Dictionary<ulong, string>
         {
             [DataAsset] = Pickups.DataAssetClass,

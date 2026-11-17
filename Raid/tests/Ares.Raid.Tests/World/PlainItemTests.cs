@@ -43,7 +43,7 @@ public sealed class PlainItemTests
     {
         ItemDefinition shot = TestGameData.Data.Items.ByTechnicalName["DA_Item_AdrenalinShot"];
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        InventoryItem backpackBranch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        InventoryItem backpackBranch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == TestGameData.Loadout.Branches.Backpack);
         InventoryItem backpack = loadout.Items.Single(item => item.InstanceId == backpackBranch.Slots[0]);
         string target = backpack.Slots[0];
         InventoryItem brought = new(Guid.NewGuid().ToString("D"), shot.AssetId, 4, [], 1, 1, "", "shot", 0);
@@ -120,7 +120,7 @@ public sealed class PlainItemTests
         RaidResults.Validate(new RaidResult(Guid.NewGuid().ToString("D"), 42, 7, RaidOutcomes.Extracted, home));
         Assert.Equal([(CarriedPlaces.Backpack, 0, metal.AssetId, 5L), (CarriedPlaces.Backpack, 1, sensors.AssetId, 1L), (CarriedPlaces.Backpack, 2, ammo.AssetId, 10L)],
             home.Select(item => (item.Place, item.Slot, item.Item.GameAssetId, item.Item.Amount)));
-        Assert.All(home, item => Assert.Equal(StorageItems.InitialMaxDurability, item.Item.Durability));
+        Assert.All(home, item => Assert.Equal(1.0, item.Item.Durability));
     }
 
     private static ushort Index(ItemDefinition item) => checked((ushort)item.UsableIndex);

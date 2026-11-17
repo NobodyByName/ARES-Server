@@ -1,6 +1,5 @@
 using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
-using Ares.Structs.Game;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Loot;
@@ -8,29 +7,23 @@ namespace Ares.Raid.World.Loot;
 /// <summary>The loot containers of a map that do not stand on prop sockets, and which of them a raid may spawn.</summary>
 /// <param name="Groups">Dynamic loot groups: each picks some of its spawners when its round runs.</param>
 /// <param name="Placed">Container actors the map places.</param>
-/// <param name="Observed">Containers the game server places where the map data holds no placement.</param>
 /// <param name="SpawnerClassEnabled">Whether a spawner may place a container of a class (by class path).</param>
 public sealed record FreeStandingLoot(
     IReadOnlyList<DynamicLootGroup> Groups,
     IReadOnlyList<PlacedLootContainer> Placed,
-    IReadOnlyList<ObservedLootContainer> Observed,
     Func<string, bool> SpawnerClassEnabled)
 {
-    /// <summary>
-    /// A map's spawners and placed containers with ARES's default spawner classes; the Dam also gets its observed
-    /// containers (<see cref="DamPlacedLoot.Observed"/>), which the game data does not hold.
-    /// </summary>
+    /// <summary>A map's spawners and placed containers with ARES's default spawner classes.</summary>
     /// <param name="map">The map's data.</param>
     /// <returns>The containers.</returns>
     public static FreeStandingLoot Of(MapData map)
     {
         ArgumentNullException.ThrowIfNull(map);
-        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, map.WorldName == GameNames.Maps.Dam ? DamPlacedLoot.Observed : [],
-            DynamicLootDefaults.Enabled);
+        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, DynamicLootDefaults.Enabled);
     }
 
     /// <summary>No free-standing containers.</summary>
-    public static FreeStandingLoot None { get; } = new([], [], [], _ => false);
+    public static FreeStandingLoot None { get; } = new([], [], _ => false);
 
     /// <summary>Every spawner of the groups, each once, in group order.</summary>
     public IReadOnlyList<DynamicLootSpawner> Spawners => [.. Groups.SelectMany(group => group.Spawners).Distinct()];

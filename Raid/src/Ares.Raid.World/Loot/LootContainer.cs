@@ -16,9 +16,6 @@ public enum LootContainerSource
     /// <summary>A container actor the map places.</summary>
     Placed,
 
-    /// <summary>A place where the game server was seen to spawn one.</summary>
-    Observed,
-
     /// <summary>A container an operator spawned during the raid.</summary>
     Operator,
 }

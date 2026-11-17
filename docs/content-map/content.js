@@ -79,13 +79,13 @@ globalThis.AresContent = {
               "children": [
                 {
                   "name": "Regular doors",
-                  "technical": "DamDoors.All",
+                  "technical": "BreachableDoorActor",
                   "status": "partial",
                   "note": "120 placed regular doors; door buttons work and barricaded doors can be breached (moving cancels the breach). Unlocking, door blockers and multiplayer interactions need assessment."
                 },
                 {
                   "name": "Placed ladders",
-                  "technical": "DamLadders.All",
+                  "technical": "ClimbableLadder",
                   "status": "partial",
                   "note": "43 placed ladders; climbing is stock-client verified. Multiplayer and traversal validation remain."
                 }

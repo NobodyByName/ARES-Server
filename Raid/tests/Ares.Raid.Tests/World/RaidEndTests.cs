@@ -28,7 +28,7 @@ public sealed class RaidEndTests
 
         PlayerRaidEnd result = Assert.IsType<PlayerRaidEnd>(session.Worlds.Result(matchId, 42));
         Assert.Equal(RaidOutcomes.Extracted, result.Outcome);
-        InventoryItem duck = loadout.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        InventoryItem duck = loadout.Items.Single(item => item.GameAssetId == TestGameData.RubberDuck.AssetId);
         CarriedItem carried = Assert.Single(result.Items);
         Assert.Equal((CarriedPlaces.Backpack, 3, duck.InstanceId, 4L), (carried.Place, carried.Slot, carried.Item.InstanceId, carried.Item.Amount));
     }

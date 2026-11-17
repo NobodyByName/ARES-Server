@@ -23,45 +23,44 @@ public sealed class MovementTuning
         TaggedInteractionAnimationContainers = content.TaggedInteractionAnimationContainers;
     }
 
-    /// <summary>The dodge-roll variants, in <see cref="DodgeRollKind"/> order (generated: <c>DodgeRollSequences</c>).</summary>
+    /// <summary>The dodge-roll variants, in <see cref="DodgeRollKind"/> order.</summary>
     public ImmutableArray<DodgeRollSequence> DodgeRolls { get; }
 
-    /// <summary>Vaults with a weapon (generated: <c>VaultDefinitions.Armed</c>).</summary>
+    /// <summary>Vaults with a weapon.</summary>
     public VaultDefinitionSet ArmedVaults { get; }
 
-    /// <summary>Vaults without a weapon (generated: <c>VaultDefinitions.Unarmed</c>).</summary>
+    /// <summary>Vaults without a weapon.</summary>
     public VaultDefinitionSet UnarmedVaults { get; }
 
-    /// <summary>Vaults with a weapon while exhausted (generated: <c>VaultDefinitions.ArmedExhausted</c>).</summary>
+    /// <summary>Vaults with a weapon while exhausted.</summary>
     public VaultDefinitionSet ArmedExhaustedVaults { get; }
 
-    /// <summary>Vaults without a weapon while exhausted (generated: <c>VaultDefinitions.UnarmedExhausted</c>).</summary>
+    /// <summary>Vaults without a weapon while exhausted.</summary>
     public VaultDefinitionSet UnarmedExhaustedVaults { get; }
 
-    /// <summary>Levels of an ordinary heavy landing, lowest fall height first (generated: <c>HeavyLandingAnimations.Heavy</c>).</summary>
+    /// <summary>Levels of an ordinary heavy landing, lowest fall height first.</summary>
     public ImmutableArray<HeavyLandingLevel> HeavyLandingLevels { get; }
 
-    /// <summary>Levels of a heavy landing softened by a recovery roll (generated: <c>HeavyLandingAnimations.Recovery</c>).</summary>
+    /// <summary>Levels of a heavy landing softened by a recovery roll.</summary>
     public ImmutableArray<HeavyLandingLevel> RecoveryLandingLevels { get; }
 
     /// <summary>
-    /// The gameplay tags the character graph tracks, in bit order (generated: <c>GraphStateTags</c> and
-    /// <c>GraphStateUpperTags</c>); <see cref="FindGraphTag"/> gives a tag's bit.
+    /// The gameplay tags the character graph tracks, in bit order; <see cref="FindGraphTag"/> gives a tag's bit.
     /// </summary>
     public ImmutableArray<string> GraphStateTags { get; }
 
-    /// <summary>The snap hook item's class defaults (generated: <c>SnapHookItem</c>).</summary>
+    /// <summary>The snap hook item's class defaults.</summary>
     public SnapHookItemDefaults SnapHookItem { get; }
 
-    /// <summary>The sprint burst alpha curve over elapsed seconds (generated: <c>SprintMovementParameters.BurstCurve</c>).</summary>
+    /// <summary>The sprint burst alpha curve over elapsed seconds.</summary>
     public ImmutableArray<WeightedCurveKey> SprintBurstCurve { get; }
 
-    /// <summary>The interaction animation containers that change character movement (generated: <c>InteractionAnimationContainers.All</c>).</summary>
+    /// <summary>The interaction animation containers that change character movement.</summary>
     public ImmutableArray<InteractionAnimationContainer> InteractionAnimationContainers { get; }
 
     /// <summary>
     /// The character's fallback interaction animation containers, in list order: the first is used when no entry's tags
-    /// match (generated: <c>InteractionAnimationContainers.TagBased</c>).
+    /// match.
     /// </summary>
     public ImmutableArray<TaggedInteractionAnimationContainer> TaggedInteractionAnimationContainers { get; }
 
@@ -76,7 +75,7 @@ public sealed class MovementTuning
         (false, true) => UnarmedExhaustedVaults,
     };
 
-    /// <summary>The dodge roll of a kind (generated: <c>DodgeRollParameters.Sequence</c>).</summary>
+    /// <summary>The dodge roll of a kind.</summary>
     public DodgeRollSequence DodgeRoll(DodgeRollKind kind) => DodgeRolls[(int)kind];
 
     /// <summary>The bit of a graph state tag, or null when the graph does not track it.</summary>
@@ -84,8 +83,7 @@ public sealed class MovementTuning
     public GraphTagBit? FindGraphTag(string tag) => _graphTags.TryGetValue(tag, out GraphTagBit bit) ? bit : null;
 
     /// <summary>
-    /// The interaction animation container with the given object or package path, or null (generated:
-    /// <c>InteractionAnimationContainers.Find</c>).
+    /// The interaction animation container with the given object or package path, or null.
     /// </summary>
     /// <param name="path">Object path, or package path of a data asset named like its package.</param>
     public InteractionAnimationContainer? FindInteractionAnimation(string path) => InteractionAnimationContainers.FirstOrDefault(container =>

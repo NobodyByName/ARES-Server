@@ -103,7 +103,7 @@ public sealed class FreeStandingLootTests
     {
         DynamicLootSpawner[] spawners = [Spawner("Enabled", s_enabled.Value), Spawner("Disabled", s_disabled.Value), Spawner("Unsupported", s_unsupported.Value), Spawner("Layered", s_enabled.Value) with { DataLayer = "DataLayer_Inactive" }, Spawner("Elsewhere", s_enabled.Value)];
         DynamicLootGroup[] groups = [Group("All/0", ["Root"], 4, 4, spawners[..4]), Group("Other/0", ["Root"], 1, 1, spawners[4..], rounds: ["Coldsnap"])];
-        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], [], DynamicLootDefaults.Enabled), LootSpawnRules.EverySocket);
+        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], DynamicLootDefaults.Enabled), LootSpawnRules.EverySocket);
 
         LootSpawnerCounts counts = catalog.Counts.Spawners;
         Assert.Equal(new LootSpawnerCounts(5, 3, 1, 1, 1, 1, 1), counts);
@@ -134,8 +134,6 @@ public sealed class FreeStandingLootTests
         LootCatalog snowy = Catalog(FreeStandingLoot.Of(TestGameData.Dam) with { Groups = [] }, new LootSpawnRules([], [], (_, _) => 1, true), snow);
         Assert.Equal((0, snowpiles), (snowy.Counts.Placed.InactiveLayer, snowy.Counts.Placed.Unsupported));
 
-        // Observed plants wait for their classes.
-        Assert.Equal((DamPlacedLoot.Observed.Count, 0, DamPlacedLoot.Observed.Count), (always.Counts.Observed.Containers, always.Counts.Observed.Spawned, always.Counts.Observed.Unsupported));
     }
 
     [Fact]
@@ -152,7 +150,7 @@ public sealed class FreeStandingLootTests
             Assert.InRange(dynamic.Count(container => container.Class.Container.Class == rack), 5, 6);
             Assert.Equal(counts.Spawners.Spawners, counts.Spawners.Run + counts.Spawners.NotPicked + counts.Spawners.InactiveLayer);
             Assert.Equal(TestGameData.Dam.PlacedLoot.Count(container => container.DataLayer is null), counts.Placed.Spawned);
-            Assert.Equal(counts.Spawned + counts.Spawners.Spawned + counts.Placed.Spawned + counts.Observed.Spawned, catalog.Containers.Count);
+            Assert.Equal(counts.Spawned + counts.Spawners.Spawned + counts.Placed.Spawned, catalog.Containers.Count);
             Assert.Equal(Enumerable.Range(0, catalog.Containers.Count), catalog.Containers.Select(container => container.Index));
             ulong[] ids = [.. catalog.Containers.SelectMany(container => container.Components.Append(container.Guid))];
             Assert.Equal(ids.Length, ids.Distinct().Count());

@@ -6,16 +6,6 @@ public static class ItemRewardPackages
     /// <summary>Durability below which an item still sells as if it had this durability.</summary>
     public const float MinimumSaleDurability = 0.1f;
 
-    /// <summary>
-    /// The items one recycled item gives, as the item description's recycle package, or null when
-    /// <see cref="ItemRecycling.Outputs"/> lists nothing for the item.
-    /// </summary>
-    /// <param name="assetId">Item asset id.</param>
-    /// <returns>The item's recycle package, or null when it cannot be recycled.</returns>
-    public static OfferRewardPackage? Recycle(long assetId) => ItemRecycling.Outputs.TryGetValue(assetId, out IReadOnlyList<ItemAssetAmount>? outputs)
-        ? Recycle(outputs)
-        : null;
-
     /// <summary>The items one recycled item gives, as the item description's recycle package.</summary>
     /// <param name="outputs">The items one recycled item gives, in package order.</param>
     /// <returns>The recycle package.</returns>

@@ -17,6 +17,7 @@ using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.GameDataExtract.World;
 using Ares.Structs.Core;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
@@ -170,9 +171,10 @@ internal sealed class ExtractCommand
                 }
 
                 PackageCache packages = PackageCache.FromArchive(archive);
-                IReadOnlyList<string> cells = archive.PackagePathsUnder($"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}");
-                (map, summary) = CollisionExtractor.Extract(packages, profiles, cells);
-                world = MapWorldExtractor.Extract(packages, DamMap.MapPackage, cells, DamDataLayers.All);
+                string mapPackage = archive.MapPackage(GameNames.Maps.Dam);
+                IReadOnlyList<string> cells = archive.PackagePathsUnder($"{mapPackage}/{RuntimeCellMembers.GeneratedFolder}");
+                (map, summary) = CollisionExtractor.Extract(packages, profiles, mapPackage, cells);
+                world = MapWorldExtractor.Extract(packages, mapPackage, cells, DamDataLayers.All);
                 if (gameAssetTables)
                 {
                     long itemStart = Stopwatch.GetTimestamp();
@@ -184,15 +186,15 @@ internal sealed class ExtractCommand
                 movement = MovementExtractor.Extract(packages, scripts);
                 movementTime = Stopwatch.GetElapsedTime(movementStart);
                 long lootStart = Stopwatch.GetTimestamp();
-                loot = LootDefinitionExtractor.Extract(packages, registry, scripts, [DamMap.MapPackage, .. cells]);
+                loot = LootDefinitionExtractor.Extract(packages, registry, scripts, [mapPackage, .. cells]);
                 lootTime = Stopwatch.GetElapsedTime(lootStart);
                 long lootAreaStart = Stopwatch.GetTimestamp();
-                lootAreas = MapWorldExtractor.ExtractLootAreas(packages, scripts, DamMap.MapPackage, cells, DamDataLayers.All);
+                lootAreas = MapWorldExtractor.ExtractLootAreas(packages, scripts, mapPackage, cells, DamDataLayers.All);
                 lootAreaTime = Stopwatch.GetElapsedTime(lootAreaStart);
                 if (gameAssetTables)
                 {
                     long rulesStart = Stopwatch.GetTimestamp();
-                    rules = MapRulesExtractor.Extract(packages, scripts, DamMap.MapPackage, world.World, cells, RoundConfigurationAssets.Dam);
+                    rules = MapRulesExtractor.Extract(packages, scripts, mapPackage, world.World, cells, RoundConfigurationAssets.Dam);
                     rulesTime = Stopwatch.GetElapsedTime(rulesStart);
                     animations = InteractionAnimationReader.Read(packages, scripts,
                         loot.ContainerClasses.Select(row => row.SearchAnimation).OfType<string>(),

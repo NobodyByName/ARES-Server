@@ -2,7 +2,6 @@ using System.Collections;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Enemies;
@@ -137,7 +136,7 @@ public sealed class ArcTests
     {
         ScriptedPlayer session = new();
         WorldArc first = session.Raid.Arcs.Spawn(Arcs.Wasp, session.Member.Spawn.Location, default)!;
-        ushort duck = checked((ushort)TestGameData.Items.Definitions.UsableIndex(StorageItems.RubberDuckAssetId));
+        ushort duck = checked((ushort)TestGameData.Items.Definitions.UsableIndex(TestGameData.RubberDuck.AssetId));
         WorldPickup pickup = session.Raid.Pickups.Drop(1, 0, new ContainerItem(duck, Guid.NewGuid(), 1, 1), session.Member.Spawn.Location, default, 0);
         Assert.True(first.Guid > pickup.Guid + (6UL * 10_000_000));
         for (int index = 1; index < WorldArcs.MaxArcs; index++)

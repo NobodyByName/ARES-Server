@@ -166,7 +166,6 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                     ["skipped_class_unsupported"] = loot.Spawners.ClassUnsupported,
                 },
                 ["placed"] = Placed(loot.Placed),
-                ["observed"] = Placed(loot.Observed),
                 ["seed"] = raid.Loot.Seed,
                 ["free_standing"] = FreeStanding(raid.Loot.FreeStanding),
                 ["placeholder_classes"] = Placeholders(raid.Loot.Placeholders),

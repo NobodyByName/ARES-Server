@@ -52,16 +52,6 @@ public sealed class BackendJsonTests
     }
 
     [Fact]
-    public void Eos_defaults_contain_every_section()
-    {
-        EosSdkConfiguration configuration = EosSdkDefaults.Configuration;
-
-        Assert.Equal(110, configuration.Client.Count);
-        Assert.Equal(39, configuration.Services.Count);
-        Assert.Equal(new EosInteger(4), configuration.Client["BaseService"]["HttpRetryLimit"]);
-    }
-
-    [Fact]
     public void Empty_changeset_lists_every_change_kind()
     {
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(Changeset.Empty, BackendJson.Options));

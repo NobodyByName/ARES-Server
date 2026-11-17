@@ -17,19 +17,21 @@ ARES works with the unmodified game. Contributions that break these rules are no
   host or a map preview for a real server, and never advertise a game server that is not ready.
 - Do not claim that something is safe from bans without evidence.
 - Do not add game files, extracted assets, memory dumps, packet captures or other raw game data.
-  Decoded game structures and values belong in ARES-Server's Structs component as typed C#.
+  Decoded game formats and protocol belong in ARES-Server's Structs component as typed C#; the game's data
+  tables are read from each operator's installation by ARES-GameDataExtract and never committed.
 
 ## Architecture boundaries
 
 | Component | May depend on | Rules |
 | --- | --- | --- |
-| Structs | nothing; no third-party packages, no ASP.NET or `Microsoft.Extensions` | Decoded game structures and data only, nothing ARES-specific: other community projects use it too. Everything is a C# type (structs, records, classes, enums), never JSON, text or binary blobs. Members whose meaning is not understood yet are named `Unknown…`. Only the supported game build. |
+| Structs | nothing; no third-party packages, no ASP.NET or `Microsoft.Extensions` | Decoded game formats and protocol only (structures, schemas, codecs, wire formats), nothing ARES-specific: other community projects use it too. Everything is a C# type (structs, records, classes, enums), never JSON, text or binary blobs, and no data tables read from the game installation (those are game data, see the README). Members whose meaning is not understood yet are named `Unknown…`. Only the supported game build. |
 | Common | Structs | Logic that Host and Raid both use (identity tokens, the allocation contract, shared game rules and helpers). Code only one of them needs belongs in that component. |
 | Host | Structs, Common | Never references Raid; talks to it only through the allocation contract in Common. Secrets come from files, never from the command line, and are never logged. |
 | Raid | Structs, Common | Never references Host. Each raid owns its state and configuration; no mutable static state. |
 
-Game names, ids and values live in Structs; the other components reference them instead of
-repeating them as literals. The build rejects references outside the "May depend on" column, and
+Game names that code treats specially live in Structs (`GameNames`, resolved against the loaded game data
+at startup); ids and values come from the game data or Structs. The other components reference them instead
+of repeating them as literals. The build rejects references outside the "May depend on" column, and
 each component's `ArchitectureTests` check the compiled assemblies' references.
 
 ## Workflow
@@ -50,6 +52,10 @@ dotnet build
 dotnet test
 dotnet format --verify-no-changes
 ```
+
+Tests that need the real game data run when `ARES_GAMEDATA_DIR` names a folder written by
+ARES-GameDataExtract (see "Game data" in the README); without it they are skipped, and the logic tests run on
+small made-up data.
 
 Code style is defined in `.editorconfig` (dotnet/runtime conventions; explicit types instead of
 `var`) and enforced at build time; warnings are errors. Fix the code instead of suppressing

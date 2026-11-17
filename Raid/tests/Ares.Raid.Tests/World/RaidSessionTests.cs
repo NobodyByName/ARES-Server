@@ -5,7 +5,6 @@ using Ares.Raid.World;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -87,7 +86,7 @@ public sealed class RaidSessionTests
         Assert.False(session.Worlds.AcceptingPlayers(raid.MatchId));
         Assert.Null(session.Worlds.WelcomeFor(new SessionPrincipal(42, raid.MatchId)));
         session.Channels.Closed();
-        Assert.Equal(4, Assert.Single(raid.Players).Loadout.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId).Amount);
+        Assert.Equal(4, Assert.Single(raid.Players).Loadout.Items.Single(item => item.GameAssetId == TestGameData.RubberDuck.AssetId).Amount);
     }
 
     [Fact]

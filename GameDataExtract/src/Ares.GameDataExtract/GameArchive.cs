@@ -162,6 +162,17 @@ internal sealed class GameArchive : IDisposable
         return [.. _paths.Where(path => path.StartsWith(prefix, StringComparison.Ordinal))];
     }
 
+    /// <summary>The package of the map whose world is <paramref name="worldName"/>: the one listed package of that name.</summary>
+    /// <exception cref="InvalidDataException">No listed package, or more than one, has that name.</exception>
+    public string MapPackage(string worldName)
+    {
+        string suffix = "/" + worldName;
+        string[] found = [.. _paths.Where(path => path.EndsWith(suffix, StringComparison.Ordinal))];
+        return found.Length == 1 ? found[0]
+            : throw new InvalidDataException(found.Length == 0 ? $"The game archives hold no map package {worldName}"
+                : $"The game archives hold {found.Length} packages named {worldName}: {string.Join(", ", found)}");
+    }
+
     /// <summary>Reads and parses the header of the package at <paramref name="location"/>.</summary>
     public static ZenPackage ReadPackage(PackageLocation location)
     {

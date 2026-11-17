@@ -31,19 +31,19 @@ public sealed class ItemCatalog
         LoadoutFramesByTechnicalName = GameDataIndex.Unique(LoadoutFrames.Select(frame => (frame.TechnicalName, frame)), "loadout frame", StringComparer.Ordinal);
     }
 
-    /// <summary>Number of items in the catalogue (generated: <c>UsableItems.Count</c>).</summary>
+    /// <summary>Number of items in the catalogue.</summary>
     public int Count => All.Length;
 
-    /// <summary>Every item, by usable index (generated: <c>UsableItems.All</c>).</summary>
+    /// <summary>Every item, by usable index.</summary>
     public ImmutableArray<ItemDefinition> All { get; }
 
-    /// <summary>Items by menu asset id, including every quality level's asset id (generated: <c>UsableItems.ByAssetId</c>).</summary>
+    /// <summary>Items by menu asset id, including every quality level's asset id.</summary>
     public IReadOnlyDictionary<long, ItemDefinition> ByAssetId { get; }
 
-    /// <summary>Items by technical name (generated: <c>UsableItems.ByTechnicalName</c>).</summary>
+    /// <summary>Items by technical name.</summary>
     public IReadOnlyDictionary<string, ItemDefinition> ByTechnicalName { get; }
 
-    /// <summary>Scrap value of each item by asset id, in the value cache's order (generated: <c>ItemValues.ScrapValues</c>).</summary>
+    /// <summary>Scrap value of each item by asset id, in the value cache's order.</summary>
     public IReadOnlyDictionary<long, int> ScrapValues { get; }
 
     /// <summary>Every firearm item class, ordered by class path.</summary>

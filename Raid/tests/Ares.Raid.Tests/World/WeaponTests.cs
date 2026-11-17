@@ -543,8 +543,8 @@ public sealed class WeaponTests
     internal static PlayerLoadout WithWeapons(long? augment = null)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout(augment);
-        loadout = Add(loadout, LoadoutItems.Firearm1SlotAssetId, 0, TestGameData.Items.FerroI.AssetId, 1, .65);
-        return Add(loadout, LoadoutItems.BackpackSlotAssetId, 5, TestGameData.Items.HeavyAmmo.AssetId, 60, 1);
+        loadout = Add(loadout, TestGameData.Loadout.Branches.MainWeapon, 0, TestGameData.Items.FerroI.AssetId, 1, .65);
+        return Add(loadout, TestGameData.Loadout.Branches.Backpack, 5, TestGameData.Items.HeavyAmmo.AssetId, 60, 1);
 
         static PlayerLoadout Add(PlayerLoadout source, long branchAsset, int index, long asset, long amount, double condition)
         {

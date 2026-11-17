@@ -4,6 +4,8 @@ using Ares.Common.Testing;
 using Ares.Raid.World;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Inventory;
+using Ares.Structs.Backend.Progression;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Raid.Tests;
@@ -29,6 +31,12 @@ internal static class TestGameData
             return s_raid.Value;
         }
     }
+
+    /// <summary>The loadout structure of the default ARES content.</summary>
+    public static LoadoutContent Loadout => AresContent.Defaults.Loadout;
+
+    /// <summary>The rubber duck, the plain item the tests carry.</summary>
+    public static ItemDefinition RubberDuck => Data.Items.ByTechnicalName[ItemTechnicalNames.RubberDuck];
 
     /// <summary>The Dam's data.</summary>
     public static MapData Dam => Data.Names.Dam;

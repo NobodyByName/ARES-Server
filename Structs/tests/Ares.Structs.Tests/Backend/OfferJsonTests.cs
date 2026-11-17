@@ -6,10 +6,19 @@ namespace Ares.Structs.Tests.Backend;
 
 public sealed class OfferJsonTests
 {
+    private const long TraderAssetId = 1_000_001;
+    private const long PriceAssetId = 1_000_002;
+    private const long RewardAssetId = 1_000_003;
+
+    private static readonly OfferDescription s_offer = new(42, "Permanent", "Offer", "", TraderAssetId, 0, true, [],
+        new OfferCostPackage([new OfferCostItem(PriceAssetId, 3, 1.0)]), new ItemAmountsOfferCost([new ItemAssetAmount(PriceAssetId, 3)]),
+        new OfferRewardPackage([new OfferRewardedItem(RewardAssetId, 1, 1.0, [], "", 0, HideInUi: false)]), 0, OfferDescription.NoDate,
+        OfferDescription.NoDate, new OfferLimit(0, 0));
+
     [Fact]
     public void An_offer_writes_every_member_the_trade_screen_reads()
     {
-        OfferDescription offer = TraderOffers.Celeste[0];
+        OfferDescription offer = s_offer;
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(offer, BackendJson.Options));
         JsonElement root = document.RootElement;
 
@@ -17,7 +26,7 @@ public sealed class OfferJsonTests
             ["offerId", "offerType", "title", "localizedDescription", "ownerGameAssetId", "durationInSeconds", "isVisible", "requiredItems",
                 "costPackage", "cost", "rewardPackage", "orderIndex", "startDate", "endDate", "limited"],
             root.EnumerateObject().Select(property => property.Name));
-        Assert.Equal(TraderOffers.CelesteAssetId, root.GetProperty("ownerGameAssetId").GetInt64());
+        Assert.Equal(TraderAssetId, root.GetProperty("ownerGameAssetId").GetInt64());
         Assert.Equal(OfferDescription.NoDate, root.GetProperty("endDate").GetInt64());
         JsonElement cost = root.GetProperty("cost");
         Assert.Equal(["discriminant", "itemAmounts"], cost.EnumerateObject().Select(property => property.Name));
@@ -38,24 +47,9 @@ public sealed class OfferJsonTests
     }
 
     [Fact]
-    public void Celestes_permanent_offers_cost_seeds_and_never_expire()
-    {
-        Assert.Equal(7, TraderOffers.Celeste.Count);
-        Assert.All(TraderOffers.Celeste, offer =>
-        {
-            Assert.Equal(TraderOffers.CelesteAssetId, offer.OwnerGameAssetId);
-            Assert.Equal((OfferDescription.NoDate, OfferDescription.NoDate, 0L), (offer.StartDate, offer.EndDate, offer.Limited.MaxAmount));
-            Assert.Empty(offer.RequiredItems);
-            ItemAssetAmount price = Assert.Single(Assert.IsType<ItemAmountsOfferCost>(offer.Cost).ItemAmounts);
-            Assert.Equal(SalvageItems.ItemAssetIds[ItemTechnicalNames.AssortedSeeds], price.GameAssetId);
-        });
-        Assert.Equal(TraderOffers.Celeste.OrderBy(offer => offer.OrderIndex), TraderOffers.Celeste);
-    }
-
-    [Fact]
     public void An_accept_offer_operation_reads_its_offer_times_and_payment()
     {
-        long offerId = TraderOffers.Celeste[0].OfferId;
+        long offerId = s_offer.OfferId;
         string json = $$"""
             {"requestId":"r","operations":[{"discriminator":"acceptOffer","offerId":{{offerId}},"times":2,"payment":[],"paymentByAmounts":[]}]}
             """;

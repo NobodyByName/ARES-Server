@@ -18,22 +18,22 @@ public sealed class MenuItemTables
         Augments = new AugmentMenu(content.MenuAugments, items);
     }
 
-    /// <summary>The currency items (generated: <c>CurrencyItems</c>).</summary>
+    /// <summary>The currency items.</summary>
     public MenuTable Currency { get; }
 
-    /// <summary>The gadget items (generated: <c>GadgetItems</c>).</summary>
+    /// <summary>The gadget items.</summary>
     public MenuTable Gadgets { get; }
 
-    /// <summary>The salvage materials (generated: <c>SalvageItems</c>).</summary>
+    /// <summary>The salvage materials.</summary>
     public SalvageMenu Salvage { get; }
 
-    /// <summary>The shield items (generated: <c>ShieldItems</c>).</summary>
+    /// <summary>The shield items.</summary>
     public MenuTable Shields { get; }
 
-    /// <summary>The firearm and ammunition items and the firearms' mod slots (generated: <c>WeaponItems</c>).</summary>
+    /// <summary>The firearm and ammunition items and the firearms' mod slots.</summary>
     public MenuTable Weapons { get; }
 
-    /// <summary>The tier-1 augments and the inventory structures of their frames (generated: <c>AugmentItems</c>).</summary>
+    /// <summary>The tier-1 augments and the inventory structures of their frames.</summary>
     public AugmentMenu Augments { get; }
 }
 
@@ -50,7 +50,7 @@ public class MenuTable
     /// <summary>The rows, in table order.</summary>
     public ImmutableArray<MenuItem> Items { get; }
 
-    /// <summary>The rows' item definitions, in table order (generated: <c>…Items.Definitions</c>).</summary>
+    /// <summary>The rows' item definitions, in table order.</summary>
     public ImmutableArray<ItemDescription> Definitions { get; }
 
     /// <summary>The asset id of each row by technical name.</summary>
@@ -75,13 +75,13 @@ public sealed class SalvageMenu : MenuTable
         ItemWeights = salvage.ToDictionary(item => item.AssetId, item => item.Weight);
     }
 
-    /// <summary>Asset id of each salvage material by technical name (generated: <c>SalvageItems.ItemAssetIds</c>).</summary>
+    /// <summary>Asset id of each salvage material by technical name.</summary>
     public IReadOnlyDictionary<string, long> ItemAssetIds { get; }
 
-    /// <summary>Usable index of each salvage material by asset id (generated: <c>SalvageItems.UsableIndices</c>).</summary>
+    /// <summary>Usable index of each salvage material by asset id.</summary>
     public IReadOnlyDictionary<long, int> UsableIndices { get; }
 
-    /// <summary>Unit weight of each salvage material by asset id (generated: <c>SalvageItems.ItemWeights</c>).</summary>
+    /// <summary>Unit weight of each salvage material by asset id.</summary>
     public IReadOnlyDictionary<long, double> ItemWeights { get; }
 }
 
@@ -108,24 +108,24 @@ public sealed class AugmentMenu : MenuTable
         BranchAssetIds = Branches(items, augments.Select(entry => entry.Augment));
     }
 
-    /// <summary>Asset id of each augment by technical name (generated: <c>AugmentItems.ItemAssetIds</c>).</summary>
+    /// <summary>Asset id of each augment by technical name.</summary>
     public IReadOnlyDictionary<string, long> ItemAssetIds { get; }
 
-    /// <summary>Usable index of each augment by asset id (generated: <c>AugmentItems.UsableIndices</c>).</summary>
+    /// <summary>Usable index of each augment by asset id.</summary>
     public IReadOnlyDictionary<long, int> UsableIndices { get; }
 
-    /// <summary>Unit weight of each augment carried as an item, by asset id (generated: <c>AugmentItems.ItemWeights</c>).</summary>
+    /// <summary>Unit weight of each augment carried as an item, by asset id.</summary>
     public IReadOnlyDictionary<long, double> ItemWeights { get; }
 
-    /// <summary>Loadout frame selected by each augment, by asset id (generated: <c>AugmentItems.FrameAssetIds</c>).</summary>
+    /// <summary>Loadout frame selected by each augment, by asset id.</summary>
     public IReadOnlyDictionary<long, long> FrameAssetIds { get; }
 
-    /// <summary>Carrying limit selected by each augment, by asset id (generated: <c>AugmentItems.MaxWeights</c>).</summary>
+    /// <summary>Carrying limit selected by each augment, by asset id.</summary>
     public IReadOnlyDictionary<long, double> MaxWeights { get; }
 
     /// <summary>
     /// The branch of the standard loadout frame (<see cref="GameNames.ItemStructures.StandardLoadoutFrame"/>) that matches
-    /// each branch of an augment's frame, by container slot asset id (generated: <c>AugmentItems.BranchAssetIds</c>).
+    /// each branch of an augment's frame, by container slot asset id.
     /// </summary>
     public IReadOnlyDictionary<long, long> BranchAssetIds { get; }
 

@@ -1,71 +1,85 @@
+using Ares.Common.Game.Content;
 using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
+using Ares.Common.Testing;
 using Ares.Structs.Backend.Progression;
+using Ares.Structs.Game;
 
 namespace Ares.Common.Tests;
 
+/// <summary>Real-data tier: the loadout tree of the default ARES content over the loaded game data.</summary>
 public sealed class LoadoutTreeTests
 {
-    private static readonly long[] s_branches = [.. ((StructuralItemSlots)GeneratedItemRules.Definitions.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds];
+    private static readonly LoadoutContent s_loadout = AresContent.Defaults.Loadout;
+    private static readonly Lazy<LoadoutDefinitions> s_definitions = new(() => AresContent.Defaults.ItemDefinitions(RealGameData.Data));
 
-    [Theory]
+    private static LoadoutDefinitions Definitions => s_definitions.Value;
+
+    private static GameDataSet Data => RealGameData.Data;
+
+    private static long RubberDuck => Data.Items.ByTechnicalName[ItemTechnicalNames.RubberDuck].AssetId;
+
+    [RealDataTheory]
     [InlineData(null)]
-    [InlineData(AugmentItems.CombatMk1AssetId)]
-    [InlineData(AugmentItems.LootingMk1AssetId)]
-    [InlineData(AugmentItems.TacticalMk1AssetId)]
-    public void Typed_slots_survive_the_tree_handed_to_a_raid(long? augment)
+    [InlineData(GameNames.Items.CombatMk1)]
+    [InlineData(GameNames.Items.LootingMk1)]
+    [InlineData(GameNames.Items.TacticalMk1)]
+    public void Typed_slots_survive_the_tree_handed_to_a_raid(string? augmentName)
     {
+        long? augment = augmentName is null ? null : Data.Items.ByTechnicalName[augmentName].AssetId;
         LoadoutContents contents = Contents(augment);
-        LoadoutTree tree = LoadoutTree.Build(GeneratedItemRules.Definitions, contents, Structure);
+        LoadoutTree tree = LoadoutTree.Build(Definitions, contents, Structure);
         PlayerLoadout loadout = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, tree.Roots));
 
-        Assert.Equivalent(contents, LoadoutTree.Parse(GeneratedItemRules.Definitions, loadout), strict: true);
+        Assert.Equivalent(contents, LoadoutTree.Parse(Definitions, loadout), strict: true);
         // Every frame stays in the menu tree, but only the selected one is handed to the raid.
-        Assert.Equal(AugmentItems.FrameAssetIds.Count + 1, tree.Items.Count(item => item.GameAssetId == LoadoutItems.StandardFrameAssetId
-            || AugmentItems.FrameAssetIds.Values.Contains(item.GameAssetId)));
-        Assert.Single(loadout.Items, item => item.GameAssetId == contents.FrameAssetId(GeneratedItemRules.Definitions));
+        Assert.Equal(Data.Menu.Augments.FrameAssetIds.Count + 1, tree.Items.Count(item => item.GameAssetId == s_loadout.StandardFrameAssetId
+            || Data.Menu.Augments.FrameAssetIds.Values.Contains(item.GameAssetId)));
+        Assert.Single(loadout.Items, item => item.GameAssetId == contents.FrameAssetId(Definitions));
         // The Ferro carries one empty node per mod slot.
-        InventoryItem ferro = Assert.Single(loadout.Items, item => item.GameAssetId == WeaponItems.FerroIAssetId);
-        Assert.Equal(((StructuralItemSlots)GeneratedItemRules.Definitions.ByAsset[WeaponItems.FerroIAssetId].SlotConfig!).SlotAssetIds,
+        InventoryItem ferro = Assert.Single(loadout.Items, item => item.GameAssetId == Data.Names.FerroI.AssetId);
+        Assert.Equal(((StructuralItemSlots)Definitions.ByAsset[Data.Names.FerroI.AssetId].SlotConfig!).SlotAssetIds,
             ferro.Slots.Select(slot => loadout.Items.Single(item => item.InstanceId == slot).GameAssetId));
-        LoadoutSlot armor = tree.Slots.Values.Single(slot => slot is { Branch: LoadoutItems.ArmorSlotAssetId } && slot.FrameAssetId == contents.FrameAssetId(GeneratedItemRules.Definitions));
-        Assert.Contains(ShieldItems.LightShieldAssetId, armor.AllowedAssetIds);
-        Assert.Single(tree.Slots.Values, slot => slot is { Branch: AugmentItems.AugmentSlotAssetId, FrameAssetId: null });
+        LoadoutSlot armor = tree.Slots.Values.Single(slot => slot.Branch == s_loadout.Branches.Shield && slot.FrameAssetId == contents.FrameAssetId(Definitions));
+        Assert.Contains(Data.Names.LightShield.AssetId, armor.AllowedAssetIds);
+        Assert.Single(tree.Slots.Values, slot => slot.Branch == Data.Names.AugmentSlotAssetId && slot.FrameAssetId is null);
     }
 
-    [Fact]
+    [RealDataFact]
     public void An_empty_handoff_has_no_augment_and_no_branches()
     {
-        LoadoutContents parsed = LoadoutTree.Parse(GeneratedItemRules.Definitions, new PlayerLoadout(1, 0, []));
+        LoadoutContents parsed = LoadoutTree.Parse(Definitions, new PlayerLoadout(1, 0, []));
         Assert.Null(parsed.Augment);
         Assert.Empty(parsed.Branches);
-        Assert.Equal(LoadoutItems.StandardFrameAssetId, parsed.FrameAssetId(GeneratedItemRules.Definitions));
+        Assert.Equal(s_loadout.StandardFrameAssetId, parsed.FrameAssetId(Definitions));
     }
 
-    [Fact]
+    [RealDataFact]
     public void Items_must_fit_their_slots_and_the_tree_must_keep_its_roots()
     {
-        Dictionary<long, IReadOnlyList<InventoryItem?>> misplaced = new() { [LoadoutItems.Firearm1SlotAssetId] = [Item(StorageItems.RubberDuckAssetId, 1)] };
-        Assert.Throws<InvalidDataException>(() => LoadoutTree.Build(GeneratedItemRules.Definitions, new LoadoutContents(null, misplaced), Structure));
+        Dictionary<long, IReadOnlyList<InventoryItem?>> misplaced = new() { [s_loadout.Branches.MainWeapon] = [Item(RubberDuck, 1)] };
+        Assert.Throws<InvalidDataException>(() => LoadoutTree.Build(Definitions, new LoadoutContents(null, misplaced), Structure));
 
-        LoadoutTree tree = LoadoutTree.Build(GeneratedItemRules.Definitions, Contents(null), Structure);
+        LoadoutTree tree = LoadoutTree.Build(Definitions, Contents(null), Structure);
         PlayerLoadout loadout = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, [tree.Roots[0]]));
-        Assert.NotNull(LoadoutTree.Parse(GeneratedItemRules.Definitions, loadout));
+        Assert.NotNull(LoadoutTree.Parse(Definitions, loadout));
         PlayerLoadout augmentOnly = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, [tree.Roots[1]]));
-        Assert.Throws<InvalidDataException>(() => LoadoutTree.Parse(GeneratedItemRules.Definitions, augmentOnly));
+        Assert.Throws<InvalidDataException>(() => LoadoutTree.Parse(Definitions, augmentOnly));
     }
 
     // A loadout filling a slot of every kind: augment, firearm, armor, backpack, quick-use and safe pocket.
     private static LoadoutContents Contents(long? augment)
     {
-        long frame = GeneratedItemRules.Definitions.FrameAssetId(augment);
-        Dictionary<long, IReadOnlyList<InventoryItem?>> branches = s_branches.ToDictionary(branch => branch,
-            IReadOnlyList<InventoryItem?> (branch) => new InventoryItem?[GeneratedItemRules.Definitions.Container(frame, branch).NumberOfSlots]);
-        Place(LoadoutItems.Firearm1SlotAssetId, 0, Item(WeaponItems.FerroIAssetId, 1));
-        Place(LoadoutItems.ArmorSlotAssetId, 0, Item(ShieldItems.LightShieldAssetId, 1));
-        Place(LoadoutItems.BackpackSlotAssetId, 1, Item(WeaponItems.HeavyAmmoAssetId, 40));
-        Place(LoadoutItems.BackpackSlotAssetId, 3, Item(StorageItems.RubberDuckAssetId, 2));
-        Place(LoadoutItems.BeltSlotAssetId, 0, Item(GadgetItems.SnapHookAssetId, 1));
-        Place(LoadoutItems.SafePocketSlotAssetId, 0, Item(StorageItems.RubberDuckAssetId, 1));
+        long frame = Definitions.FrameAssetId(augment);
+        long[] frameBranches = [.. ((StructuralItemSlots)Definitions.ByAsset[s_loadout.StandardFrameAssetId].SlotConfig!).SlotAssetIds];
+        Dictionary<long, IReadOnlyList<InventoryItem?>> branches = frameBranches.ToDictionary(branch => branch,
+            IReadOnlyList<InventoryItem?> (branch) => new InventoryItem?[Definitions.Container(frame, branch).NumberOfSlots]);
+        Place(s_loadout.Branches.MainWeapon, 0, Item(Data.Names.FerroI.AssetId, 1));
+        Place(s_loadout.Branches.Shield, 0, Item(Data.Names.LightShield.AssetId, 1));
+        Place(s_loadout.Branches.Backpack, 1, Item(Data.Names.HeavyAmmo.AssetId, 40));
+        Place(s_loadout.Branches.Backpack, 3, Item(RubberDuck, 2));
+        Place(s_loadout.Branches.QuickUse, 0, Item(Data.Names.SnapHook.AssetId, 1));
+        Place(s_loadout.Branches.SafePockets, 0, Item(RubberDuck, 1));
         return new LoadoutContents(augment is { } equipped ? Item(equipped, 1) : null, branches);
 
         void Place(long branch, int index, InventoryItem item) => ((InventoryItem?[])branches[branch])[index] = item;

@@ -41,13 +41,12 @@ public readonly record struct LootPlacedCounts(int Containers, int Spawned, int 
 /// <param name="SpawnedByLootValue">Containers spawned on sockets, by the loot value of the area around their socket.</param>
 /// <param name="Spawners">The dynamic loot spawners.</param>
 /// <param name="Placed">The containers the map places.</param>
-/// <param name="Observed">The containers seen at places the map data does not hold.</param>
-public readonly record struct LootSpawnCounts(int Sockets, int Spawned, int InactiveLayer, int NoContainerType, int Unsupported, int Classes, int SkippedByRoll, int SkippedByGroupCap, int SkippedByLimiter, IReadOnlyDictionary<PointOfInterestLootValue, int> SpawnedByLootValue, LootSpawnerCounts Spawners, LootPlacedCounts Placed, LootPlacedCounts Observed);
+public readonly record struct LootSpawnCounts(int Sockets, int Spawned, int InactiveLayer, int NoContainerType, int Unsupported, int Classes, int SkippedByRoll, int SkippedByGroupCap, int SkippedByLimiter, IReadOnlyDictionary<PointOfInterestLootValue, int> SpawnedByLootValue, LootSpawnerCounts Spawners, LootPlacedCounts Placed);
 
 /// <summary>
 /// The loot containers of a raid: among the container sockets of the active data layers whose class the server can
 /// serve, those the raid's spawn rolls pick (<see cref="LootSpawnSelection"/>); then the containers the round's dynamic
-/// loot spawners place (<see cref="DynamicLootRuns"/>); then the placed and observed containers whose roll succeeds.
+/// loot spawners place (<see cref="DynamicLootRuns"/>); then the placed containers whose roll succeeds.
 /// Ids continue across the sources. A connection gets each container in four steps: the class default (loadable, as the
 /// containers are not part of the map), the spawned actor at its place, the names of its components, then the state of
 /// its search.
@@ -168,7 +167,6 @@ public sealed class LootCatalog
         FreeStandingLoot free = rules.FreeStanding ?? FreeStandingLoot.None;
         LootSpawnerCounts spawners = Spawners();
         LootPlacedCounts placed = Placed(LootContainerSource.Placed, [.. free.Placed.Select(entry => (entry.Class, entry.Location, (Rotator?)entry.Rotation, entry.DataLayer))]);
-        LootPlacedCounts observed = Placed(LootContainerSource.Observed, [.. free.Observed.Select(entry => (entry.Class, entry.Location, entry.Rotation, (string?)null))]);
 
         // Every servable class may also be spawned during the raid, so each has its export and its world item bit.
         WorldItemClasses worldItemList = gameData.Data.WorldItems;
@@ -192,7 +190,7 @@ public sealed class LootCatalog
         Seed = seed;
         FreeStandingAreas names = new(rules.Areas);
         FreeStanding = [.. containers.Where(container => container.Source != LootContainerSource.Socket).Select(container => names.Describe(container.Class.Container.Class, container.Location))];
-        Counts = new LootSpawnCounts(sockets.Count, onSockets, inactive, untyped, unsupported, containers.Select(container => container.Class).Distinct().Count(), selection.SkippedByRoll, selection.SkippedByGroupCap, selection.SkippedByLimiter, Enum.GetValues<PointOfInterestLootValue>().ToDictionary(value => value, selection.Spawned), spawners, placed, observed);
+        Counts = new LootSpawnCounts(sockets.Count, onSockets, inactive, untyped, unsupported, containers.Select(container => container.Class).Distinct().Count(), selection.SkippedByRoll, selection.SkippedByGroupCap, selection.SkippedByLimiter, Enum.GetValues<PointOfInterestLootValue>().ToDictionary(value => value, selection.Spawned), spawners, placed);
         return;
 
         void Add(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type)

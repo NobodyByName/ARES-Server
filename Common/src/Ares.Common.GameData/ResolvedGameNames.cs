@@ -7,9 +7,8 @@ using Ares.Structs.Game.Movement;
 namespace Ares.Common.GameData;
 
 /// <summary>
-/// <see cref="GameNames"/> resolved against loaded game data: the rows the names stand for, from which the values the
-/// generated constants held follow (for example <c>WeaponItems.FerroIAssetId</c> is <c>FerroI.AssetId</c> and
-/// <c>FerroDefaults.ClipSize</c> is <c>FerroIFirearm.ClipSize</c>).
+/// <see cref="GameNames"/> resolved against loaded game data: the rows the names stand for, from which their values
+/// follow (for example the Ferro I's asset id is <c>FerroI.AssetId</c> and its clip size <c>FerroIFirearm.ClipSize</c>).
 /// </summary>
 public sealed class ResolvedGameNames
 {
@@ -62,75 +61,73 @@ public sealed class ResolvedGameNames
     /// <summary>The Dam (<see cref="GameNames.Maps.Dam"/>).</summary>
     public MapData Dam { get; }
 
-    /// <summary>The empty-handed item (generated: <c>HandItems.Unarmed…</c>).</summary>
+    /// <summary>The empty-handed item.</summary>
     public ItemDefinition Unarmed { get; }
 
-    /// <summary>The Raider Tool (generated: <c>HandItems.RaiderTool…</c>).</summary>
+    /// <summary>The Raider Tool.</summary>
     public ItemDefinition RaiderTool { get; }
 
-    /// <summary>The Ferro I (generated: <c>WeaponItems.FerroI…</c>, <c>FerroDefaults</c> item timings and class).</summary>
+    /// <summary>The Ferro I.</summary>
     public ItemDefinition FerroI { get; }
 
-    /// <summary>The Ferro I's firearm class (generated: <c>FerroDefaults</c> firearm values).</summary>
+    /// <summary>The Ferro I's firearm class.</summary>
     public FirearmDefinition FerroIFirearm { get; }
 
-    /// <summary>Heavy Ammo (generated: <c>WeaponItems.HeavyAmmo…</c>).</summary>
+    /// <summary>Heavy Ammo.</summary>
     public ItemDefinition HeavyAmmo { get; }
 
-    /// <summary>The Snap Hook (generated: <c>GadgetItems.SnapHook…</c>).</summary>
+    /// <summary>The Snap Hook.</summary>
     public ItemDefinition SnapHook { get; }
 
-    /// <summary>The Light Shield (generated: <c>ShieldItems.LightShield…</c>).</summary>
+    /// <summary>The Light Shield.</summary>
     public ItemDefinition LightShield { get; }
 
-    /// <summary>The Light Shield's shield class (generated: <c>ShieldDefaults</c>).</summary>
+    /// <summary>The Light Shield's shield class.</summary>
     public ShieldDefinition LightShieldClass { get; }
 
-    /// <summary>Coins (generated: <c>CurrencyItems.CoinsAssetId</c>).</summary>
+    /// <summary>Coins.</summary>
     public ItemDefinition Coins { get; }
 
-    /// <summary>The Combat Mk. 1 augment (generated: <c>AugmentItems.CombatMk1AssetId</c>).</summary>
+    /// <summary>The Combat Mk. 1 augment.</summary>
     public ItemDefinition CombatMk1 { get; }
 
-    /// <summary>The Looting Mk. 1 augment (generated: <c>AugmentItems.LootingMk1AssetId</c>).</summary>
+    /// <summary>The Looting Mk. 1 augment.</summary>
     public ItemDefinition LootingMk1 { get; }
 
-    /// <summary>The Tactical Mk. 1 augment (generated: <c>AugmentItems.TacticalMk1AssetId</c>).</summary>
+    /// <summary>The Tactical Mk. 1 augment.</summary>
     public ItemDefinition TacticalMk1 { get; }
 
-    /// <summary>Asset id of a firearm's muzzle mod slot (generated: <c>WeaponItems.MuzzleModSlotAssetId</c>).</summary>
+    /// <summary>Asset id of a firearm's muzzle mod slot.</summary>
     public long MuzzleModSlotAssetId { get; }
 
-    /// <summary>Asset id of a firearm's under-barrel mod slot (generated: <c>WeaponItems.UnderBarrelModSlotAssetId</c>).</summary>
+    /// <summary>Asset id of a firearm's under-barrel mod slot.</summary>
     public long UnderBarrelModSlotAssetId { get; }
 
-    /// <summary>Asset id of a firearm's stock mod slot (generated: <c>WeaponItems.StockModSlotAssetId</c>).</summary>
+    /// <summary>Asset id of a firearm's stock mod slot.</summary>
     public long StockModSlotAssetId { get; }
 
-    /// <summary>Asset id of the loadout's augment slot (generated: <c>AugmentItems.AugmentSlotAssetId</c>).</summary>
+    /// <summary>Asset id of the loadout's augment slot.</summary>
     public long AugmentSlotAssetId { get; }
 
-    /// <summary>Asset id of the augment container (generated: <c>AugmentItems.AugmentContainerAssetId</c>).</summary>
+    /// <summary>Asset id of the augment container.</summary>
     public long AugmentContainerAssetId { get; }
 
-    /// <summary>Asset id of the augment container's content slot (generated: <c>AugmentItems.AugmentContentSlotAssetId</c>).</summary>
+    /// <summary>Asset id of the augment container's content slot.</summary>
     public long AugmentContentSlotAssetId { get; }
 
     /// <summary>The loadout frame without an augment.</summary>
     public LoadoutFrameDefinition StandardLoadoutFrame { get; }
 
-    /// <summary>The door breach animation (generated: <c>InteractionAnimationContainers.DoorBreach</c>).</summary>
+    /// <summary>The door breach animation.</summary>
     public InteractionAnimationContainer DoorBreachAnimation { get; }
 
     /// <summary>
-    /// The bits of the graph state tags a server reads or sets (generated: <c>GraphStateTags.X</c> was the mask of a word-0
-    /// tag and <c>GraphStateUpperTags.X</c> of a word-1 tag; a resolved <see cref="GraphTagBit"/> carries its word).
+    /// The bits of the graph state tags a server reads or sets.
     /// </summary>
     public GraphTagBits GraphTags { get; }
 
     /// <summary>
-    /// The groups of graph state tags the character holds together (generated: the <c>GraphStateFlags</c> constants and the
-    /// <c>…Flags</c>/<c>…Tags</c> constants of the movement parameter classes).
+    /// The groups of graph state tags the character holds together.
     /// </summary>
     public GraphStateFlags GraphFlags { get; }
 

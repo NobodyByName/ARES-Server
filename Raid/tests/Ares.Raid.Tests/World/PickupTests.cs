@@ -3,7 +3,6 @@ using Ares.Raid.World.Actors;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -18,7 +17,7 @@ namespace Ares.Raid.Tests.World;
 
 public sealed class PickupTests
 {
-    private static readonly Lazy<ushort> s_duck = new(() => checked((ushort)TestGameData.Items.Definitions.UsableIndex(StorageItems.RubberDuckAssetId)));
+    private static readonly Lazy<ushort> s_duck = new(() => checked((ushort)TestGameData.Items.Definitions.UsableIndex(TestGameData.RubberDuck.AssetId)));
     private static readonly Lazy<int> s_maxDucks = new(() => TestGameData.Items.MaxAmount(s_duck.Value));
 
     [Fact]

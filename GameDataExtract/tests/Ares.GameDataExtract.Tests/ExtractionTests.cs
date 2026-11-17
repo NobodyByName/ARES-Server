@@ -8,6 +8,7 @@ using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
@@ -18,6 +19,7 @@ namespace Ares.GameDataExtract.Tests;
 
 public sealed class ExtractionTests : IDisposable
 {
+    private const string MapPackage = "/Game/Maps/" + GameNames.Maps.Dam;
     private const string BaseCell = "BASE";
     private const string LayeredCell = "LAYERED";
     private const string ScriptPackage = "/Script/Engine";
@@ -53,14 +55,14 @@ public sealed class ExtractionTests : IDisposable
         (int code, string output, string error) = Run(Output);
 
         Assert.True(code == ExtractCommand.Success, error);
-        string collision = GameDataFiles.CollisionPath(DamMap.WorldName);
+        string collision = GameDataFiles.CollisionPath(GameNames.Maps.Dam);
         string[] tables =
         [
-            MapTables.World(DamMap.WorldName), MapTables.StreamingCells(DamMap.WorldName), MapTables.LootSocketMeshes(DamMap.WorldName),
-            MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName), MapTables.PlayerStarts(DamMap.WorldName),
-            MapTables.Ladders(DamMap.WorldName), MapTables.LadderLogic(DamMap.WorldName), MapTables.ZiplineLines(DamMap.WorldName),
-            MapTables.ZiplineLaunchers(DamMap.WorldName), MapTables.PointsOfInterest(DamMap.WorldName), MapTables.LootLimiters(DamMap.WorldName),
-            MapTables.DynamicLootSpawners(DamMap.WorldName), MapTables.DynamicLootGroups(DamMap.WorldName),
+            MapTables.World(GameNames.Maps.Dam), MapTables.StreamingCells(GameNames.Maps.Dam), MapTables.LootSocketMeshes(GameNames.Maps.Dam),
+            MapTables.LootSockets(GameNames.Maps.Dam), MapTables.PlacedLoot(GameNames.Maps.Dam), MapTables.PlayerStarts(GameNames.Maps.Dam),
+            MapTables.Ladders(GameNames.Maps.Dam), MapTables.LadderLogic(GameNames.Maps.Dam), MapTables.ZiplineLines(GameNames.Maps.Dam),
+            MapTables.ZiplineLaunchers(GameNames.Maps.Dam), MapTables.PointsOfInterest(GameNames.Maps.Dam), MapTables.LootLimiters(GameNames.Maps.Dam),
+            MapTables.DynamicLootSpawners(GameNames.Maps.Dam), MapTables.DynamicLootGroups(GameNames.Maps.Dam),
             GameTables.DodgeRolls, GameTables.VaultDefinitions, GameTables.HeavyLandingLevels, GameTables.RecoveryLandingLevels,
             GameTables.GraphStateTags, GameTables.SnapHookItem, GameTables.SprintBurstCurve,
             GameTables.LootContainerTypes, GameTables.LootContainerClasses, GameTables.LootContainerDefaults, GameTables.StaticValueLootTables,
@@ -75,16 +77,16 @@ public sealed class ExtractionTests : IDisposable
         GameDataFileEntry entry = Assert.Single(data.Manifest.Files, file => file.Name == collision);
         Assert.Null(entry.RowCount);
         Assert.Equal(
-            new MapWorldObjects(DamMap.WorldName, "PersistentLevel", "LevelScript_1", $"{DamMap.MapPackage}.{DamMap.WorldName}_C", "WorldDataLayers"),
-            Assert.Single(data.ReadTable(MapTables.World(DamMap.WorldName), GameDataJsonContext.Default.MapWorldObjects)));
-        Assert.Equal([Cell(BaseCell), Cell(LayeredCell)], data.ReadTable(MapTables.StreamingCells(DamMap.WorldName), GameDataJsonContext.Default.String));
-        Assert.Empty(data.ReadTable(MapTables.LootSockets(DamMap.WorldName), GameDataJsonContext.Default.LootSocket));
-        Assert.Empty(data.ReadTable(MapTables.PlacedLoot(DamMap.WorldName), GameDataJsonContext.Default.PlacedLootContainer));
-        Assert.Empty(data.ReadTable(MapTables.PlayerStarts(DamMap.WorldName), GameDataJsonContext.Default.PlayerStart));
-        Assert.Empty(data.ReadTable(MapTables.Ladders(DamMap.WorldName), GameDataJsonContext.Default.LadderPlacement));
-        Assert.Empty(data.ReadTable(MapTables.LadderLogic(DamMap.WorldName), GameDataJsonContext.Default.ArchetypeClass));
-        Assert.Empty(data.ReadTable(MapTables.ZiplineLines(DamMap.WorldName), GameDataJsonContext.Default.ZiplinePlacement));
-        Assert.Empty(data.ReadTable(MapTables.ZiplineLaunchers(DamMap.WorldName), GameDataJsonContext.Default.ActivatableZiplinePlacement));
+            new MapWorldObjects(GameNames.Maps.Dam, "PersistentLevel", "LevelScript_1", $"{MapPackage}.{GameNames.Maps.Dam}_C", "WorldDataLayers"),
+            Assert.Single(data.ReadTable(MapTables.World(GameNames.Maps.Dam), GameDataJsonContext.Default.MapWorldObjects)));
+        Assert.Equal([Cell(BaseCell), Cell(LayeredCell)], data.ReadTable(MapTables.StreamingCells(GameNames.Maps.Dam), GameDataJsonContext.Default.String));
+        Assert.Empty(data.ReadTable(MapTables.LootSockets(GameNames.Maps.Dam), GameDataJsonContext.Default.LootSocket));
+        Assert.Empty(data.ReadTable(MapTables.PlacedLoot(GameNames.Maps.Dam), GameDataJsonContext.Default.PlacedLootContainer));
+        Assert.Empty(data.ReadTable(MapTables.PlayerStarts(GameNames.Maps.Dam), GameDataJsonContext.Default.PlayerStart));
+        Assert.Empty(data.ReadTable(MapTables.Ladders(GameNames.Maps.Dam), GameDataJsonContext.Default.LadderPlacement));
+        Assert.Empty(data.ReadTable(MapTables.LadderLogic(GameNames.Maps.Dam), GameDataJsonContext.Default.ArchetypeClass));
+        Assert.Empty(data.ReadTable(MapTables.ZiplineLines(GameNames.Maps.Dam), GameDataJsonContext.Default.ZiplinePlacement));
+        Assert.Empty(data.ReadTable(MapTables.ZiplineLaunchers(GameNames.Maps.Dam), GameDataJsonContext.Default.ActivatableZiplinePlacement));
         Assert.All(data.ReadTable(GameTables.DodgeRolls, GameDataJsonContext.Default.DodgeRollSequence), roll => Assert.Equal(SyntheticMovementGame.RollDistance, roll.Distance));
         Assert.Equal(new SnapHookItemDefaults(MovementAssets.SnapHookDataAsset, 1800, 60), Assert.Single(data.ReadTable(GameTables.SnapHookItem, GameDataJsonContext.Default.SnapHookItemDefaults)));
         Assert.Equal(SyntheticMovementGame.TagCount, data.ReadTable(GameTables.GraphStateTags, GameDataJsonContext.Default.String).Length);
@@ -95,19 +97,19 @@ public sealed class ExtractionTests : IDisposable
         Assert.Equal(
             SyntheticLootScripts.Tweakables.ContainerContentsWeights,
             Assert.Single(data.ReadTable(GameTables.StaticLootSpawnTweakables, GameDataJsonContext.Default.LootSpawnTweakables)).ContainerContentsWeights);
-        Assert.Empty(data.ReadTable(MapTables.PointsOfInterest(DamMap.WorldName), GameDataJsonContext.Default.PointOfInterest));
-        Assert.Empty(data.ReadTable(MapTables.LootLimiters(DamMap.WorldName), GameDataJsonContext.Default.LootLimiter));
-        Assert.Empty(data.ReadTable(MapTables.DynamicLootSpawners(DamMap.WorldName), GameDataJsonContext.Default.DynamicLootSpawner));
-        Assert.Empty(data.ReadTable(MapTables.DynamicLootGroups(DamMap.WorldName), GameDataJsonContext.Default.DynamicLootGroupEntry));
+        Assert.Empty(data.ReadTable(MapTables.PointsOfInterest(GameNames.Maps.Dam), GameDataJsonContext.Default.PointOfInterest));
+        Assert.Empty(data.ReadTable(MapTables.LootLimiters(GameNames.Maps.Dam), GameDataJsonContext.Default.LootLimiter));
+        Assert.Empty(data.ReadTable(MapTables.DynamicLootSpawners(GameNames.Maps.Dam), GameDataJsonContext.Default.DynamicLootSpawner));
+        Assert.Empty(data.ReadTable(MapTables.DynamicLootGroups(GameNames.Maps.Dam), GameDataJsonContext.Default.DynamicLootGroupEntry));
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {
             map = MapCollisionFile.Read(stream);
         }
 
-        Assert.Equal(DamMap.WorldName, map.MapName);
+        Assert.Equal(GameNames.Maps.Dam, map.MapName);
         Assert.Equal(GameBuild.SteamBuildId, map.GameBuildId);
-        Assert.Equal([DamMap.MapPackage, Cell(BaseCell), Cell(LayeredCell)], map.Cells.Select(cell => cell.PackageName));
+        Assert.Equal([MapPackage, Cell(BaseCell), Cell(LayeredCell)], map.Cells.Select(cell => cell.PackageName));
         Assert.True(map.Cells[0].IsBaseMap);
         Assert.True(map.Cells[1].IsBaseMap);
         Assert.Equal([DamDataLayers.All[0].Name], map.Cells[2].DataLayers);
@@ -205,7 +207,7 @@ public sealed class ExtractionTests : IDisposable
         return cache.Write();
     }
 
-    private static string Cell(string name) => $"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}/{name}";
+    private static string Cell(string name) => $"{MapPackage}/{RuntimeCellMembers.GeneratedFolder}/{name}";
 
     /// <summary>
     /// A game folder with the collision config pak and one container: the map's persistent level listing a base-map cell
@@ -235,7 +237,7 @@ public sealed class ExtractionTests : IDisposable
         SyntheticArchives.WriteContainer(paks, "pakchunk1",
         [
             new SyntheticChunk(new IoChunkId(0, 0, IoChunkType.ScriptObjects), scriptObjects),
-            PackageChunk(DamMap.MapPackage, Level(), ".umap"),
+            PackageChunk(MapPackage, Level(), ".umap"),
             PackageChunk(Cell(BaseCell), BaseCellPackage(landscapeHeight), ".umap"),
             PackageChunk(Cell(LayeredCell), SyntheticArchives.Package(Cell(LayeredCell), [("Info", PackageObjectIndex.Null, s_actor, 0, [])]), ".umap"),
             PackageChunk(BodyLibraryTests.MeshPackage, BodyLibraryTests.MeshPackageBytes(), ".uasset"),
@@ -266,13 +268,13 @@ public sealed class ExtractionTests : IDisposable
             .. PropertyBlocks.Name(8),
             .. BitConverter.GetBytes(99),
         ];
-        return SyntheticArchives.Package(DamMap.MapPackage,
+        return SyntheticArchives.Package(MapPackage,
         [
             (BaseCell, PackageObjectIndex.Null, s_runtimeCell, 0, PropertyBlocks.Header()),
             (LayeredCell, PackageObjectIndex.Null, s_runtimeCell, 0, layered),
-            (DamMap.WorldName, PackageObjectIndex.Null, s_world, 0, []),
+            (GameNames.Maps.Dam, PackageObjectIndex.Null, s_world, 0, []),
             ("PersistentLevel", PackageObjectIndex.FromExport(2), s_level, 0, []),
-            (DamMap.WorldName + "_C", PackageObjectIndex.Null, s_blueprintClass, 0, []),
+            (GameNames.Maps.Dam + "_C", PackageObjectIndex.Null, s_blueprintClass, 0, []),
             ("LevelScript_1", PackageObjectIndex.FromExport(3), PackageObjectIndex.FromExport(4), 0, []),
             ("WorldDataLayers", PackageObjectIndex.FromExport(3), s_worldDataLayers, 0, []),
         ],

@@ -8,7 +8,7 @@ namespace Ares.Raid.Tests.World;
 /// <summary>Pins the per-item answers the raid gives for every item: held class, mod container, loadout slots, ammunition and quick use.</summary>
 public sealed class ItemTraitsTests
 {
-    private static readonly long[] s_branches = [LoadoutItems.BackpackSlotAssetId, LoadoutItems.Firearm1SlotAssetId, LoadoutItems.ArmorSlotAssetId];
+    private static readonly long[] s_branches = [TestGameData.Loadout.Branches.Backpack, TestGameData.Loadout.Branches.MainWeapon, TestGameData.Loadout.Branches.Shield];
 
     [Fact]
     public void Held_item_classes_are_the_firearm_hand_items_and_snap_hook()
@@ -131,7 +131,7 @@ public sealed class ItemTraitsTests
     private static PlayerLoadout Placed(long asset)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        long branchAsset = s_branches.First(branch => ((SingleItemSlot)TestGameData.Items.Definitions.ByAsset[TestGameData.Items.Definitions.Container(LoadoutItems.StandardFrameAssetId, branch)
+        long branchAsset = s_branches.First(branch => ((SingleItemSlot)TestGameData.Items.Definitions.ByAsset[TestGameData.Items.Definitions.Container(TestGameData.Loadout.StandardFrameAssetId, branch)
             .SlotAssetId].SlotConfig!).AllowedSlotAssetIds.Contains(asset));
         InventoryItem branchNode = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branchNode.Slots[0]);

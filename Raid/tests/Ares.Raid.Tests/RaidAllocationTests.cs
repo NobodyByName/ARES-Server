@@ -280,7 +280,7 @@ public sealed class RaidAllocationTests
         InventoryItem[] items = [.. loadout.Items];
         PlayerLoadout[] loadouts = [loadout with { Items = items }];
         worlds.Prepare(Ticket, [42], loadouts);
-        int duck = Array.FindIndex(items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        int duck = Array.FindIndex(items, item => item.GameAssetId == TestGameData.RubberDuck.AssetId);
         items[duck] = items[duck] with { Amount = 5 };
 
         Assert.Equal(4, Assert.Single(worlds.Current!.Players).Loadout.Items[duck].Amount);

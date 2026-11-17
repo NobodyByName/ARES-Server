@@ -24,9 +24,3 @@ public sealed record PlacedLootContainer(
     Rotator Rotation,
     Vector3D Scale,
     string? DataLayer);
-
-/// <summary>A container the game server spawned at a place the map data does not hold.</summary>
-/// <param name="Class">Container class path (<c>/Game/.../BP_X.BP_X_C</c>).</param>
-/// <param name="Location">World location.</param>
-/// <param name="Rotation">World rotation in degrees, or null when it is not known.</param>
-public sealed record ObservedLootContainer(string Class, Vector3D Location, Rotator? Rotation);

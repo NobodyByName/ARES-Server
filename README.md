@@ -23,7 +23,7 @@ knowledge needed: I host, you install
 | --- | --- |
 | [Host](Host/) | ARES-Host: backend for sign-in, the main menu, parties and matchmaking; starts a Raid server for each raid. |
 | [Raid](Raid/) | ARES-Raid: independent game-session server that runs the raid. |
-| [Structs](Structs/) | Standalone library of decoded ARC Raiders structures, wire formats and game data for community projects. |
+| [Structs](Structs/) | Standalone library of decoded ARC Raiders structures, wire formats and protocol for community projects. |
 | [Common](Common/) | Shared server logic used by Host and Raid, and the map file format. |
 | [GameDataExtract](GameDataExtract/) | ARES-GameDataExtract: operator tool that extracts the [game data](#game-data) from an installed game. |
 
@@ -58,9 +58,10 @@ private and out of Git.
 
 ## Game data
 
-ARES-Raid needs the map's collision (ground, walls, buildings and other solid objects) to move players
-correctly. ARES does not include it: like the map extractors of other server emulators, ARES-GameDataExtract
-reads it from the operator's own game installation and writes ARES's map files. The files are derived
+Host and Raid need the game's data: the item catalogue, loot tables, movement tuning, each map's world tables
+(loot sockets, doors, ladders, ziplines, player starts, extraction points…) and its collision (ground, walls,
+buildings and other solid objects). ARES does not include it: like the map extractors of other server emulators,
+ARES-GameDataExtract reads it from the operator's own game installation and writes ARES's game data files. The files are derived
 from the game: keep them on your own servers and never distribute them.
 
 **When to run it:** at first setup and again after every game update. Each file is stamped with the
@@ -95,27 +96,23 @@ dotnet run --project GameDataExtract/src/Ares.GameDataExtract -- extract \
 | `--out <dir>` | Folder for the game data; created when missing; must not be inside the game folder. |
 | `--help`, `--version` | Show the usage, or the ARES version and supported game build. |
 
-All four options are required. The run takes up to a minute and about 2 GB of memory. It writes each
-supported map's files under `maps/<map>/` in the output folder (currently for `TheDam_02_P`: the
-collision `TheDam_02_P.collision`, about 115 MB, and the JSON world tables `world.json`,
-`streaming-cells.json`, `loot-socket-meshes.json`, `loot-sockets.json` (about 6 MB) and
-`placed-loot.json`), the global movement tables at the top of the output folder (`dodge-rolls.json`,
-`vault-definitions.json`, `heavy-landing-levels.json`, `recovery-landing-levels.json`,
-`graph-state-tags.json`, `snap-hook-item.json` and `sprint-burst-curve.json`; the servers do not read
-the tables yet), then `manifest.json`, which records the game
-build, the ARES version and the SHA-256 of every file. Each file replaces an earlier one only once it
-is complete. It prints what it wrote. Exit code 0 means
-success, 1 that the game's files could not be read, and 2 invalid options or inputs: a missing folder
-or file, keys for another game build, or a TOC key that does not decrypt the game's archive index.
-The keys are never printed.
+All four options are required. The run takes up to a minute and about 2 GB of memory. It writes the global
+tables at the top of the output folder (items, menu item tables, item values, loot container types and classes, loot
+tables, movement tables; JSON, one file per table), each supported map's files under `maps/<map>/` (currently
+`TheDam_02_P`: the collision `TheDam_02_P.collision`, about 115 MB, and its JSON world tables, about 7 MB), then
+`manifest.json`, which records the game build, the ARES version and the SHA-256 of every file. Each file replaces an
+earlier one only once it is complete. It prints what it wrote. Exit code 0 means success, 1 that the game's files
+could not be read, and 2 invalid options or inputs: a missing folder or file, keys for another game build, or a TOC
+key that does not decrypt the game's archive index. The keys are never printed.
 
 **Point Host at it:** set `game-data-dir` in `ares-host.conf` to the output folder (relative paths are
 relative to the configuration file) and restart Host. It is required: Host loads the game data when it
 starts and refuses to start (exit code 2, with the reason on standard error) when the setting is empty,
-the folder or its `manifest.json` is missing, it was extracted from another game build, a file changed
-after extraction, or a game item ARES needs is missing. Host passes the folder to every Raid it starts,
-and each Raid loads it the same way when it starts, so raids started after a new extraction use the
-new data.
+the folder or its `manifest.json` is missing, it was extracted from another game build, a file is missing,
+malformed or changed after extraction, or a game name ARES needs (an item, a map, a gameplay tag…) is missing.
+Extract again after updating ARES too, with the ARES-GameDataExtract of the same version. Host passes the folder
+to every Raid it starts, and each Raid loads it the same way when it starts, so raids started after a new extraction
+use the new data.
 
 **Servers without the game:** the server that runs Host and Raid does not need the game. Run
 ARES-GameDataExtract on any machine with the supported game build installed, copy the output folder to the

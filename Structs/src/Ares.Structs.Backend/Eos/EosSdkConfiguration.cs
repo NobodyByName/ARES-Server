@@ -6,7 +6,7 @@ namespace Ares.Structs.Backend.Eos;
 
 /// <summary>
 /// Remote EOS SDK configuration (<c>GET /sdk/v1/default</c> and the product route): client
-/// tuning sections and service base URLs. See <see cref="EosSdkDefaults"/> for the values.
+/// tuning sections and service base URLs.
 /// </summary>
 public sealed record EosSdkConfiguration(
     [property: JsonPropertyName("client")] IReadOnlyDictionary<string, IReadOnlyDictionary<string, EosConfigValue>> Client,

@@ -48,7 +48,7 @@ public sealed class InventoryTests
         long augment = TestGameData.AssetId(augmentName)!.Value;
         long? spare = TestGameData.AssetId(spareName);
         PlayerLoadout loadout = StandardLoadout(augment, spare);
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == StorageItems.RubberDuckAssetId ? item with { Amount = ducks } : item)] };
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.RubberDuck.AssetId ? item with { Amount = ducks } : item)] };
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         Dictionary<string, object?> attributes = CharacterAttributes(session);
@@ -101,7 +101,7 @@ public sealed class InventoryTests
         StableSubobjectContent content = StableSubobjectContent.Read(new BitReader(delivery.Payload, delivery.PayloadBits));
         PropertyCodec codec = new(new ValueCodec(GameReplication.Catalog, []));
         Dictionary<string, object?> handles = codec.Decode(new PropertyLayout(GameReplication.Catalog, ClassPaths.InventoryComponent), content.Content);
-        Assert.Equal(LoadoutItems.StandardFrameAssetId, handles[PropertyNames.EquippedLoadoutFrameItemAssetId]);
+        Assert.Equal(TestGameData.Loadout.StandardFrameAssetId, handles[PropertyNames.EquippedLoadoutFrameItemAssetId]);
         Assert.Equal(session.Member.Inventory.Backpack, handles[$"{PropertyNames.Backpack}.{PropertyNames.Id}"]);
         Assert.Equal((ushort)0, handles[$"{PropertyNames.Backpack}.{PropertyNames.Revision}"]);
         Assert.Equal(session.Member.Inventory.Loadout, handles[$"{PropertyNames.Loadout}.{PropertyNames.Id}"]);
@@ -140,7 +140,7 @@ public sealed class InventoryTests
     {
         PlayerLoadout loadout = StandardLoadout();
         InventoryItem[] items = [.. loadout.Items];
-        int duck = Array.FindIndex(items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        int duck = Array.FindIndex(items, item => item.GameAssetId == TestGameData.RubberDuck.AssetId);
         items[duck] = items[duck] with { GameAssetId = 42 };
         DamWorlds worlds = new(TestGameData.Raid, () => 0, "Lighting.GreyMorning", () => 0);
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare("inventory", [42], [loadout with { Items = items }]));
@@ -282,13 +282,13 @@ public sealed class InventoryTests
         Swap(container, slot, container, slot) with { Type = amount == 0 ? InventoryCommandType.DropItem : InventoryCommandType.DropPartialItem, Amount = amount };
 
     private static ContainerItem LootDuck(int amount) =>
-        new(checked((ushort)TestGameData.Items.Definitions.UsableIndex(StorageItems.RubberDuckAssetId)), Guid.NewGuid(), amount, 1);
+        new(checked((ushort)TestGameData.Items.Definitions.UsableIndex(TestGameData.RubberDuck.AssetId)), Guid.NewGuid(), amount, 1);
 
     [Fact]
     public void Ducks_taken_from_several_containers_stack_on_the_carried_duck_up_to_the_maximum_stack()
     {
         RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
-        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[TestGameData.RubberDuck.AssetId].MaxAmount);
         ContainerItem first = LootDuck(1);
         int loot = inventory.OpenWorldContainer([first, null], TestGameData.Items.UnitWeights);
         Assert.True(inventory.Apply(Swap(loot, 0, inventory.Backpack, 0)));
@@ -309,7 +309,7 @@ public sealed class InventoryTests
         Assert.False(inventory.Apply(Split(loot, 0, inventory.Loadout, InventoryBlackboard.ArmorSlot, 2), out rejection));
         Assert.Equal("slot not allowed", rejection);
         Assert.Equal(2, inventory.LootItems[0]!.Amount);
-        Assert.Equal(maximum * StorageItems.RubberDuckWeight, inventory.Weight, 6);
+        Assert.Equal(maximum * TestGameData.RubberDuck.Weight, inventory.Weight, 6);
     }
 
     [Fact]
@@ -377,7 +377,7 @@ public sealed class InventoryTests
     public void Picking_up_tops_up_existing_stacks_then_uses_the_first_empty_backpack_slot()
     {
         RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
-        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[TestGameData.RubberDuck.AssetId].MaxAmount);
         ContainerItem carried = LootDuck(maximum - 2);
         Assert.Equal(carried.Amount, inventory.PickUp(carried));
         uint version = inventory.Version;
@@ -401,7 +401,7 @@ public sealed class InventoryTests
     public void Picking_up_with_a_full_backpack_takes_only_what_tops_up_stacks()
     {
         RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
-        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[StorageItems.RubberDuckAssetId].MaxAmount);
+        int maximum = checked((int)TestGameData.Items.Definitions.ByAsset[TestGameData.RubberDuck.AssetId].MaxAmount);
         int slots = inventory.Containers[inventory.Backpack].Items.Count;
         for (int slot = 0; slot < slots; slot++)
         {
@@ -499,7 +499,7 @@ public sealed class InventoryTests
     public void An_extraction_carries_the_whole_loadout_with_brought_identities_and_new_loot()
     {
         PlayerLoadout loadout = WeaponTests.WithWeapons(TestGameData.Data.Names.CombatMk1.AssetId);
-        InventoryItem armorBranch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == LoadoutItems.ArmorSlotAssetId);
+        InventoryItem armorBranch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == TestGameData.Loadout.Branches.Shield);
         string armorSlot = loadout.Items.Single(item => item.InstanceId == armorBranch.Slots[0]).Slots[0];
         InventoryItem shield = new(Guid.NewGuid().ToString("D"), TestGameData.Data.Names.LightShield.AssetId, 1, [], 50, 100, "", "shield", 0);
         loadout = loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == armorSlot ? item with { Slots = [shield.InstanceId] } : item), shield] };
@@ -518,7 +518,7 @@ public sealed class InventoryTests
             (CarriedPlaces.Augment, 0, augment),
             (CarriedPlaces.Shield, 0, shield),
             (CarriedPlaces.MainWeapon, 0, gun with { Slots = [] }),
-            (CarriedPlaces.Backpack, 0, new InventoryItem(loot.Id.ToString("D"), StorageItems.RubberDuckAssetId, 1, [], 1, 1, "", "", 0)),
+            (CarriedPlaces.Backpack, 0, new InventoryItem(loot.Id.ToString("D"), TestGameData.RubberDuck.AssetId, 1, [], 1, 1, "", "", 0)),
             (CarriedPlaces.Backpack, 3, duck),
             (CarriedPlaces.Backpack, 5, ammo with { Slots = [] }),
         ], carried.Select(item => (item.Place, item.Slot, item.Item with { Slots = [] })));
@@ -587,7 +587,7 @@ public sealed class InventoryTests
         Assert.Equal(2, inventory.PickUp(ducks));
         CarriedItem carried = Assert.Single(CarriedHome(inventory, RaidOutcomes.Extracted));
         Assert.Equal((CarriedPlaces.Backpack, 0), (carried.Place, carried.Slot));
-        Assert.Equal(new InventoryItem(ducks.Id.ToString("D"), StorageItems.RubberDuckAssetId, 2, carried.Item.Slots, 1, 1, "", "", 0), carried.Item);
+        Assert.Equal(new InventoryItem(ducks.Id.ToString("D"), TestGameData.RubberDuck.AssetId, 2, carried.Item.Slots, 1, 1, "", "", 0), carried.Item);
         Assert.Empty(carried.Item.Slots);
         Assert.Empty(CarriedHome(inventory, RaidOutcomes.Lost));
         Assert.Throws<ArgumentException>(() => inventory.CarriedHome("UNKNOWN"));
@@ -691,12 +691,12 @@ public sealed class InventoryTests
         IReadOnlyDictionary<long, ItemDescription> definitions = TestGameData.Items.Definitions.ByAsset;
         List<InventoryItem> items = [];
         Queue<int> sequence = new(Enumerable.Range(1, InventorySnapshots.MaximumItems));
-        Create(LoadoutItems.FrameSlotAssetId);
-        InventoryItem backpackBranch = items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        Create(TestGameData.Loadout.FrameSlotAssetId);
+        InventoryItem backpackBranch = items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == TestGameData.Loadout.Branches.Backpack);
         InventoryItem backpack = items.Single(item => item.InstanceId == backpackBranch.Slots[0]);
         int slot = items.FindIndex(item => item.InstanceId == backpack.Slots[3]);
         items[slot] = items[slot] with { Slots = [s_duckId.ToString("D")] };
-        items.Add(new InventoryItem(s_duckId.ToString("D"), StorageItems.RubberDuckAssetId, 4, [], 50, 100, "", "v1", 0));
+        items.Add(new InventoryItem(s_duckId.ToString("D"), TestGameData.RubberDuck.AssetId, 4, [], 50, 100, "", "v1", 0));
         if (augmentAssetId is { } augment)
         {
             Create(TestGameData.Data.Names.AugmentSlotAssetId);
@@ -723,7 +723,7 @@ public sealed class InventoryTests
             string id = sequence.Dequeue().ToString("x8", CultureInfo.InvariantCulture) + "-0000-0000-0000-000000000000";
             IReadOnlyList<string> children = definitions[asset].SlotConfig switch
             {
-                SingleItemSlot { DefaultSlotAssetId: not 0 } single => [Create(asset == LoadoutItems.FrameSlotAssetId ? TestGameData.Items.Definitions.FrameAssetId(augmentAssetId) : single.DefaultSlotAssetId)],
+                SingleItemSlot { DefaultSlotAssetId: not 0 } single => [Create(asset == TestGameData.Loadout.FrameSlotAssetId ? TestGameData.Items.Definitions.FrameAssetId(augmentAssetId) : single.DefaultSlotAssetId)],
                 StructuralItemSlots structure => [.. structure.SlotAssetIds.Select(Create)],
                 ItemSlotArray array => [.. Enumerable.Range(0, (int)array.NumberOfSlots).Select(_ => Create(array.SlotAssetId))],
                 _ => [],

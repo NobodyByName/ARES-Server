@@ -14,12 +14,4 @@ public readonly record struct SprintMovementParameters(double BaseSpeed, double 
 
     /// <summary>Upper burst speed relative to the sustained sprint speed.</summary>
     public const double BurstSpeedMultiplier = 2;
-
-    /// <summary>Authored sprint burst alpha over elapsed seconds.</summary>
-    public static IReadOnlyList<WeightedCurveKey> BurstCurve { get; } =
-    [
-        new(0.0f, 0.0f, 0.0f, 0.356407613f, 0.0f, 0.356407613f),
-        new(1.10711062f, 1.20000005f, -0.0f, 0.613431454f, 0.0f, 0.597878456f),
-        new(3.5f, 0.99999994f, 1.75466184e-07f, 1.35877228f, 1.75466184e-07f, 1.35877228f),
-    ];
 }

@@ -4,7 +4,7 @@ namespace Ares.Common.GameData;
 
 /// <summary>
 /// The game's world item class list. The game state flags classes for the client to load by their index in it
-/// (<c>PossibleWorldItemClassIndexBitFields</c>). Generated: <c>WorldItemList</c>.
+/// (<c>PossibleWorldItemClassIndexBitFields</c>).
 /// </summary>
 public sealed class WorldItemClasses
 {
