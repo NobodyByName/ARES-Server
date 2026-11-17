@@ -258,6 +258,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
     private PlayerPickups _pickups;
+    private PlayerArcs _arcs;
 
     // This player's departure with an elevator (its index and the server world time it left), the export naming the
     // controller's end-of-round component, and the server world times of each end-of-round step.
@@ -282,7 +283,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _bindings = [(ChannelLayout.Controller, player.Controller), (ChannelLayout.PlayerState, player.PlayerState), (ChannelLayout.Pawn, player.Pawn)];
         _lootLinks = new ActorChannelPool<LootLink>(raid.Channels.Loot);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
-        _arcLinks = new ActorChannelPool<ArcLink>(raid.Channels.Arcs);
+        _arcs = new PlayerArcs(raid.Channels.Arcs);
     }
 
     private enum DoorChannel
@@ -499,6 +500,23 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <summary>What happened to the raid's pickups, oldest first.</summary>
     public IReadOnlyList<string> PickupEvents => _raid.Pickups.Events;
 
+    /// <summary>ARCs whose actor and ability system this client has.</summary>
+    public int ArcsReady => _arcs.Ready;
+
+    /// <summary>Whether this client has an ARC.</summary>
+    /// <param name="arc">ARC index.</param>
+    /// <returns>True from the ability system's content until the channel closes.</returns>
+    public bool HasArc(int arc) => _arcs.Has(arc);
+
+    /// <summary>ARC channels open now (or on the way).</summary>
+    public int ArcChannelsInUse => _arcs.ChannelsInUse;
+
+    /// <summary>ARCs whose channel the client refused, as index@stage.</summary>
+    public IReadOnlyList<string> ArcFailures => _arcs.Failures;
+
+    /// <summary>What happened to the raid's ARCs, oldest first.</summary>
+    public IReadOnlyList<string> ArcEvents => _raid.Arcs.Events;
+
     /// <summary>Extraction elevators whose state and buttons this client has.</summary>
     public int ElevatorsReady => _elevators.Values.Count(elevator => elevator.State == ElevatorChannel.Open);
 
@@ -626,7 +644,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
         copy._pickups = _pickups.Copy();
-        CopyArcs(copy);
+        copy._arcs = _arcs.Copy();
         return copy;
     }
 
@@ -769,7 +787,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         ServiceLadders(io.Sender, now);
         ServiceLoot(io.Sender, now);
         _pickups.Service(this, io.Sender, now);
-        ServiceArcs(io.Sender, now);
+        _arcs.Service(this, io.Sender, now);
         ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
@@ -781,7 +799,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
-        if (_pickups.ChannelFailed(channel))
+        if (_pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
         {
             return;
         }
@@ -815,10 +833,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         else if (layout.ObservedPlayer(channel) is { } observed && observed < _raid.Players.Count)
         {
             _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
-        }
-        else if (layout.Arcs.Contains(channel))
-        {
-            ArcChannelFailed(channel);
         }
     }
 
