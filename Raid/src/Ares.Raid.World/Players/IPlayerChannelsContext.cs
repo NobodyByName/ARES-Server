@@ -57,6 +57,13 @@ internal interface IPlayerChannelsContext
     void HoldFrames(double until);
 
     /// <summary>
+    /// Extends the time before which no pawn frame is sent, so the client keeps its interaction's ending long enough to
+    /// play it (keeps a later hold).
+    /// </summary>
+    /// <param name="until">Raid clock.</param>
+    void ExtendFrameHold(double until);
+
+    /// <summary>
     /// The character's pawn frames show an interaction the server runs for it (a container search, a descend hold),
     /// times in raid world seconds (replaces an earlier one).
     /// </summary>

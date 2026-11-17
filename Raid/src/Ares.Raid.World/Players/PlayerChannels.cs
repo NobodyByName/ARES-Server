@@ -211,15 +211,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private ReliableKey? _interactorExport;
     private bool _interactorExported;
     private Dictionary<long, ObservedPlayer> _observed = [];
-    private Dictionary<int, (ElevatorChannel State, ReliableKey[] Keys)> _elevators = [];
-    private Dictionary<int, ExtractionPointState> _elevatorStates = [];
-    private HashSet<int> _failedElevators = [];
-    private BoundedLog _elevatorRequests = new(InteractionRequestLog);
-    private BoundedLog _elevatorChanges = new(InteractionRequestLog);
-
-    // This player's descend hold: the elevator, the switch (index in the elevator's buttons), the input frame of the
-    // press and its server world time.
-    private (ExtractionPoint Point, int Button, uint Frame, double PressedAt)? _descent;
     private BoundedLog _unknownRequests = new(InteractionRequestLog);
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
@@ -228,6 +219,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private PlayerLoot _loot;
     private PlayerPickups _pickups;
     private PlayerArcs _arcs;
+    private PlayerElevators _elevators;
 
     // This player's departure with an elevator (its index and the server world time it left), the export naming the
     // controller's end-of-round component, and the server world times of each end-of-round step.
@@ -255,6 +247,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _loot = new PlayerLoot(raid.Channels.Loot);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcs = new PlayerArcs(raid.Channels.Arcs);
+        _elevators = new PlayerElevators(raid.Channels.Elevators);
     }
 
     private enum ObservedStage
@@ -265,14 +258,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         Linking,
         Visible,
         Gone,
-    }
-
-    private enum ElevatorChannel
-    {
-        Closed,
-        Exporting,
-        Opening,
-        Open,
     }
 
     /// <summary>Where the actor delivery stands.</summary>
@@ -461,29 +446,29 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public IReadOnlyList<string> ArcEvents => _raid.Arcs.Events;
 
     /// <summary>Extraction elevators whose state and buttons this client has.</summary>
-    public int ElevatorsReady => _elevators.Values.Count(elevator => elevator.State == ElevatorChannel.Open);
+    public int ElevatorsReady => _elevators.Ready;
 
     /// <summary>
     /// Elevator states this client has, by elevator index: the state (Called while the call press runs) and the
     /// server world time it started, with the descend switch held (+switch@press, ~hold@hold start once the hold runs)
     /// or, once the elevator left, the one that sent it (^switch).
     /// </summary>
-    public string ElevatorStates => string.Join(' ', _elevatorStates.OrderBy(entry => entry.Key).Select(entry => Describe(entry.Key, entry.Value)));
+    public string ElevatorStates => _elevators.States;
 
     /// <summary>Calls of an elevator by this player.</summary>
-    public int ElevatorCalls { get; private set; }
+    public int ElevatorCalls => _elevators.Calls;
 
     /// <summary>Elevator state changes this client got, oldest first, as elevator:state@server time (see <see cref="ElevatorStates"/>).</summary>
-    public IReadOnlyList<string> ElevatorChanges => _elevatorChanges;
+    public IReadOnlyList<string> ElevatorChanges => _elevators.Changes;
 
     /// <summary>Descend holds started by this player.</summary>
-    public int ElevatorDescents { get; private set; }
+    public int ElevatorDescents => _elevators.Descents;
 
     /// <summary>Descend holds this player stopped by moving.</summary>
-    public int CancelledDescents { get; private set; }
+    public int CancelledDescents => _elevators.CancelledDescents;
 
     /// <summary>Descend holds of this player that sent an elevator off.</summary>
-    public int CompletedDescents { get; private set; }
+    public int CompletedDescents => _elevators.CompletedDescents;
 
     /// <summary>
     /// Players inside each elevator when it last left (its doors closed), as elevator@server time the doors started
@@ -508,7 +493,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     ]).OfType<string>());
 
     /// <summary>Requests received on elevator buttons, oldest first, as elevator/button request@input frame.</summary>
-    public IReadOnlyList<string> ElevatorRequests => _elevatorRequests;
+    public IReadOnlyList<string> ElevatorRequests => _elevators.Requests;
 
     /// <summary>
     /// Presses on no target or on an object the server does not know, oldest first, as target request@input frame.
@@ -519,7 +504,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
     // The families of world actors on this connection.
-    private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs];
+    private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators];
 
     /// <inheritdoc />
     RaidWorld IPlayerChannelsContext.Raid => _raid;
@@ -576,11 +561,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
         copy._observed = new Dictionary<long, ObservedPlayer>(_observed);
-        copy._elevators = new Dictionary<int, (ElevatorChannel, ReliableKey[])>(_elevators);
-        copy._elevatorStates = new Dictionary<int, ExtractionPointState>(_elevatorStates);
-        copy._failedElevators = [.. _failedElevators];
-        copy._elevatorRequests = _elevatorRequests.Copy();
-        copy._elevatorChanges = _elevatorChanges.Copy();
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
         copy._doors = _doors.Copy();
@@ -588,6 +568,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._loot = _loot.Copy();
         copy._pickups = _pickups.Copy();
         copy._arcs = _arcs.Copy();
+        copy._elevators = _elevators.Copy();
         return copy;
     }
 
@@ -731,7 +712,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             family.Service(this, io.Sender, now);
         }
 
-        ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
     }
@@ -747,12 +727,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             return;
         }
 
-        ChannelLayout layout = _raid.Channels;
-        if (layout.Elevators.IndexOf(channel) is { } elevator)
-        {
-            _failedElevators.Add(elevator);
-        }
-        else if (layout.ObservedPlayer(channel) is { } observed && observed < _raid.Players.Count)
+        if (_raid.Channels.ObservedPlayer(channel) is { } observed && observed < _raid.Players.Count)
         {
             _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
         }
@@ -806,35 +781,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             }
 
             // The families take the request in turn until one ends it.
-            if (Array.Exists<IPlayerFamily>([_loot, _pickups, _ladders], family => family.TryHandle(this, request, repeatedLog, now)))
+            if (Array.Exists<IPlayerFamily>([_loot, _pickups, _ladders, _elevators], family => family.TryHandle(this, request, repeatedLog, now)))
             {
-                continue;
-            }
-
-            if (_raid.Extraction.ByButton(request.Target) is { } elevator)
-            {
-                if (!repeatedLog)
-                {
-                    _elevatorRequests.Add($"{elevator.Point.Name}/{elevator.Button.Component} {request.Request}@{request.Frame}");
-                }
-
-                // A press on a closed elevator's call button calls it. The client runs the press itself (the button
-                // is focused and usable in its pawn frames); no frame may reset it until its ending has played.
-                // A press on a descend switch of a ready elevator starts its hold, which the client runs the same way
-                // (lining up, then holding); the server ends it.
-                if ((request.Request & PendulumInput.PressRequest) != 0 && CallableElevator(request.Target) is { } called
-                    && _raid.ExtractionStates.Call(called.Index, _member.Id, ServerSeconds(now)))
-                {
-                    ElevatorCalls++;
-                    _framesHeldUntil = Math.Max(_framesHeldUntil, now + ExtractionStates.CallSeconds + BreachEndingSeconds);
-                }
-                else if ((request.Request & PendulumInput.PressRequest) != 0 && _descent is null && DescendableElevator(request.Target) is { } descend
-                    && _raid.ExtractionStates.Descend(descend.Point.Index, descend.Button, _member.Id, ServerSeconds(now)))
-                {
-                    ElevatorDescents++;
-                    _descent = (descend.Point, descend.Button, request.Frame, ServerSeconds(now));
-                }
-
                 continue;
             }
 
@@ -844,7 +792,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         _requests.Clear();
         _doors.CancelBreachOnMovement(this, now);
-        CancelDescentOnMovement();
+        _elevators.CancelDescentOnMovement(this);
         if (Phase == DeliveryPhase.Possessed)
         {
             foreach ((uint frame, InventoryCommand command) in _inventoryRequests)
@@ -1436,8 +1384,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 return;
             }
 
-            focus = !Array.Exists(Families, family => family.Usable(this, _input.Focus))
-                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null ? 0 : _input.Focus;
+            focus = Array.Exists(Families, family => family.Usable(this, _input.Focus)) ? _input.Focus : 0;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
@@ -1497,7 +1444,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     // Pawn frames carry no interaction state, so the client's own one (requested, holding, succeeded) is reset by
     // each frame; none are sent while this player breaches and just after it succeeds.
-    private bool InteractionFramesHeld(double now) => _doors.Breaching || _loot.Searching || _descent is not null || now < _framesHeldUntil;
+    private bool InteractionFramesHeld(double now) => _doors.Breaching || _loot.Searching || _elevators.Descending || now < _framesHeldUntil;
 
     // Asks the client to finish loading the levels around it, while streaming still changes and before the
     // character simulation starts; the client decides what it loads.
@@ -1564,100 +1511,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         return (new ObjectExports(records), [.. defaults]);
     }
 
-    // Gives the client each extraction elevator: exports its buttons by path, then opens its channel with the
-    // raid's elevator state and the button states. The channel stays open and gets every later change.
-    private void ServiceElevators(ReliableSender sender, double now)
-    {
-        _raid.ExtractionStates.Advance(ServerSeconds(now), _raid.PlayersInside);
-        ServiceDescent(sender, now);
-        if (!MapActorsAllowed(now))
-        {
-            return;
-        }
-
-        foreach (ExtractionPoint point in _raid.Extraction.Points)
-        {
-            (ElevatorChannel state, ReliableKey[] keys) = _elevators.GetValueOrDefault(point.Index, (ElevatorChannel.Closed, []));
-            if (Array.Exists(keys, sender.Pending))
-            {
-                continue;
-            }
-
-            int channel = _raid.Channels.Elevators.Channel(point.Index);
-            ExtractionPointState value = _raid.ExtractionStates.Get(point.Index);
-            switch (state)
-            {
-                case ElevatorChannel.Closed when !_failedElevators.Contains(point.Index):
-                    (state, keys) = (ElevatorChannel.Exporting, [.. _raid.Extraction.ExportBunches(point).Select(sender.Queue)]);
-                    break;
-                case ElevatorChannel.Exporting:
-                    (state, keys) = (ElevatorChannel.Opening, [sender.Queue(_raid.Extraction.OpenBunch(point, channel, sender.NextSequence(channel), value,
-                        ServerSeconds(now)))]);
-                    _elevatorStates[point.Index] = value;
-                    LogElevatorChange(point.Index, value);
-                    break;
-                case ElevatorChannel.Opening:
-                    (state, keys) = (ElevatorChannel.Open, []);
-                    break;
-                case ElevatorChannel.Open when value != _elevatorStates[point.Index]:
-                    keys = _raid.Extraction.UpdateBunch(point, channel, _elevatorStates[point.Index], value) is { } update ? [sender.Queue(update)] : [];
-                    _elevatorStates[point.Index] = value;
-                    LogElevatorChange(point.Index, value);
-                    break;
-            }
-
-            _elevators[point.Index] = (state, keys);
-        }
-    }
-
-    // Ends this player's descend hold once the elevator moved on. When the hold sent the elevator off, the character's
-    // interactor gets the succeeded hold (the switch's animation set) and the end of the interaction, and no pawn frame
-    // is sent until its ending has played; otherwise (the elevator left on its own) the hold just stops.
-    private void ServiceDescent(ReliableSender sender, double now)
-    {
-        if (_descent is not { } descent)
-        {
-            return;
-        }
-
-        ExtractionPointState state = _raid.ExtractionStates.Get(descent.Point.Index);
-        if (state.Descent?.Player == _member.Id)
-        {
-            return;
-        }
-
-        if (state.Departed is { } departed && departed.Player == _member.Id && departed.PressedAt.Equals(descent.PressedAt))
-        {
-            if (!_interactorExported)
-            {
-                return;
-            }
-
-            ulong button = descent.Point.Buttons[descent.Button];
-            _interaction = new PawnInteraction(button, LastInteractionEvent.Succeeded, departed.PressedAt, departed.PressedAt, departed.HoldStartsAt,
-                ++_interactionCount, Animation: _raid.Extraction.Animation(descent.Button));
-            sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.InteractorCall(_player, FunctionNames.ClientEndInteractionSuccessfullyImplementation, button,
-                DamExtraction.Buttons[descent.Button].Class).Write));
-            CompletedDescents++;
-        }
-
-        _descent = null;
-        _framesHeldUntil = Math.Max(_framesHeldUntil, now + BreachEndingSeconds);
-    }
-
-    // A descend hold is a hold that movement input cancels, like a breach (the client stops it on its side and sends
-    // no request): the server watches the player's movement axes after the press frame.
-    private void CancelDescentOnMovement()
-    {
-        if (_descent is not { } descent || !MovedSince(descent.Frame) || !_raid.ExtractionStates.CancelDescent(descent.Point.Index, _member.Id))
-        {
-            return;
-        }
-
-        CancelledDescents++;
-        _descent = null;
-    }
-
     // Ends this player's round once an elevator left with them inside (its doors closed): the extraction, the
     // controller's end-of-round component and its quest progress, the end-of-round data (no experience, no journey),
     // the transition to the end-of-round screen and the end of the data. The client then collects its data and says
@@ -1674,7 +1527,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             }
 
             _departure = departure;
-            _descent = null;
+            _elevators.Depart();
             _member.Depart();
             QueueControllerCall(sender, FunctionNames.ClientNotifyExtracted, new Dictionary<string, object?>
             {
@@ -1743,32 +1596,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         sender.Queue(Bunches.Actor(ChannelLayout.Controller, _raid.State.Replication.Calls(_raid.State.Objects(_mapped))
             .Call(PlayerClasses.PlayerController.Class, function, parameters, RpcDirection.Client)));
 
-    private void LogElevatorChange(int index, ExtractionPointState state)
-    {
-        string entry = Describe(index, state);
-        if (_elevatorChanges.Count == 0 || _elevatorChanges[^1] != entry)
-        {
-            _elevatorChanges.Add(entry);
-        }
-    }
-
-    private static string Describe(int index, ExtractionPointState state)
-    {
-        string text = $"{index}:{(state.CalledAt is null ? state.State.ToString() : "Called")}" + (state.ChangedAt is { } at ? $"@{Seconds(at)}" : string.Empty);
-        if (state.Descent is { } descent)
-        {
-            text += $"+{DamExtraction.Buttons[descent.Button].Component}@{Seconds(descent.PressedAt)}"
-                + (descent.Holding ? $"~hold@{Seconds(descent.HoldStartsAt)}" : string.Empty);
-        }
-        else if (state.Departed is { } departed && state.State != ExtractionState.Ready)
-        {
-            text += $"^{DamExtraction.Buttons[departed.Button].Component}";
-        }
-
-        return text;
-    }
-
-    private static string Seconds(double value) => value.ToString("0.000", CultureInfo.InvariantCulture);
+    internal static string Seconds(double value) => value.ToString("0.000", CultureInfo.InvariantCulture);
 
     // Whether the player gave movement input after an input frame.
     private bool MovedSince(uint frame)
@@ -1797,20 +1625,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     }
 
     private static string Slot(ItemContainerSlot slot) => $"{slot.Parent.Id}r{slot.Parent.Revision}/{slot.Index}";
-
-    // The elevator of a call button this player may press: possessed, the elevator on this connection, closed and
-    // not called yet.
-    private ExtractionPoint? CallableElevator(ulong button) =>
-        Phase == DeliveryPhase.Possessed && _raid.Extraction.ByButton(button) is ({ } point, { Role: ExtractionButtonRole.Summon })
-        && _elevators.GetValueOrDefault(point.Index).State == ElevatorChannel.Open
-        && _raid.ExtractionStates.Get(point.Index) is { State: ExtractionState.Closed, CalledAt: null } ? point : null;
-
-    // The elevator and switch of a descend switch this player may press: possessed, the elevator on this connection,
-    // ready and nobody holding a switch.
-    private (ExtractionPoint Point, int Button)? DescendableElevator(ulong button) =>
-        Phase == DeliveryPhase.Possessed && _raid.Extraction.ByButton(button) is ({ } point, { Role: ExtractionButtonRole.Descend })
-        && _elevators.GetValueOrDefault(point.Index).State == ElevatorChannel.Open
-        && _raid.ExtractionStates.Get(point.Index) is { State: ExtractionState.Ready, Descent: null } ? (point, point.ButtonIndex(button)) : null;
 
     // Whether an id names an interaction the server gave the client: a door, ladder, loot, elevator button or pickup.
     private bool KnownInteraction(ulong target) =>
@@ -2101,6 +1915,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <inheritdoc />
     uint IPlayerChannelsContext.NextInteractionSequence() => ++_interactionCount;
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.ExtendFrameHold(double until) => _framesHeldUntil = Math.Max(_framesHeldUntil, until);
 
     /// <inheritdoc />
     void IPlayerChannelsContext.Climb(uint frame, int ladder, bool topEntry) => _movement?.Climb(frame, ladder, topEntry);
