@@ -4,7 +4,7 @@
     <RootNamespace>Ares.GameDataExtract</RootNamespace>
     <OutputType>Exe</OutputType>
     <AssemblyName>ARES-GameDataExtract</AssemblyName>
-    <Description>ARES-GameDataExtract reads an installed ARC Raiders game and writes the map files ARES-Raid loads.</Description>
+    <Description>ARES-GameDataExtract reads an installed ARC Raiders game and writes the game data ARES loads.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />
     <ProjectReference Include="../../../Common/src/Ares.Common/Ares.Common.csproj" />
+    <ProjectReference Include="../../../Common/src/Ares.Common.GameData/Ares.Common.GameData.csproj" />
     <ProjectReference Include="../../../Common/src/Ares.Common.Maps/Ares.Common.Maps.csproj" />
   </ItemGroup>
 

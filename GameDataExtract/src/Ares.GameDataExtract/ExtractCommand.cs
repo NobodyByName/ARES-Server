@@ -1,10 +1,13 @@
 using System.Diagnostics;
 using System.Globalization;
+using Ares.Common;
 using Ares.Common.Archives;
 using Ares.Common.CommandLine;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Extraction;
+using Ares.GameDataExtract.Output;
 using Ares.GameDataExtract.Profiles;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
@@ -12,9 +15,10 @@ using Ares.Structs.Game.Collision;
 namespace Ares.GameDataExtract;
 
 /// <summary>
-/// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the Dam map's collision file into the
-/// output folder (created when missing, never inside the game folder), replacing an earlier file only once the new one
-/// is complete. Prints what was written and which components could not be decoded.
+/// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the game data into the output
+/// folder (created when missing, never inside the game folder): the Dam map's collision file under
+/// <c>maps/&lt;map&gt;/</c>, then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
+/// earlier one only once complete. Prints what was written and which components could not be decoded.
 /// </summary>
 internal sealed class ExtractCommand
 {
@@ -34,22 +38,20 @@ internal sealed class ExtractCommand
     public static readonly string Usage = $"""
         Usage: ARES-GameDataExtract extract --game <dir> --keys <file> --toc-key <file> --out <dir>
 
-        Reads an installed game (never changing its files) and writes the map files ARES-Raid loads.
+        Reads an installed game (never changing its files) and writes the game data ARES loads:
+        manifest.json and the map files under maps/<map>/.
         Run it again after every game update.
 
           --game <dir>       Game folder, the one holding {GameBuild.ProjectName}/
           --keys <file>      Archive keys file (the same file as ARES-Host's archive-keys-file)
           --toc-key <file>   TOC key file: the key of the game's .utoc files as 64 hex digits
                              (optional 0x prefix; whitespace and # comments are ignored)
-          --out <dir>        Folder for the map files (created when missing; not inside the game folder)
+          --out <dir>        Folder for the game data (created when missing; not inside the game folder)
           --help             Show this help
           --version          Show the ARES and game build versions
 
         Exit codes: {Success} success, {ReadError} the game's files could not be read, {UsageError} invalid usage or inputs.
         """;
-
-    private const string TemporaryExtension = ".tmp";
-    private const int WriteBufferSize = 1 << 20;
 
     private static readonly HashSet<string> s_flags = ["help"];
 
@@ -130,10 +132,12 @@ internal sealed class ExtractCommand
                 (map, summary) = CollisionExtractor.Extract(archive, profiles);
             }
 
-            string path = Write(map);
+            GameDataWriter writer = new(OutputDirectory);
+            string path = writer.WriteFile(GameDataFiles.CollisionPath(map.MapName), stream => MapCollisionFile.Write(stream, map));
+            string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB) in {watch.Elapsed.TotalSeconds:F1} s"));
+                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB) and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
             return Success;
         }
         catch (WrongTocKeyException)
@@ -148,7 +152,7 @@ internal sealed class ExtractCommand
         }
         catch (Exception failure) when (failure is InvalidDataException or IOException or UnauthorizedAccessException)
         {
-            error.WriteLine($"ARES-GameDataExtract: error: cannot read the game's archives or write the map files: {failure.Message}");
+            error.WriteLine($"ARES-GameDataExtract: error: cannot read the game's archives or write the game data: {failure.Message}");
             return ReadError;
         }
     }
@@ -158,30 +162,6 @@ internal sealed class ExtractCommand
     {
         string relative = Path.GetRelativePath(parent, directory);
         return relative == "." || (relative != ".." && !relative.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal) && !Path.IsPathRooted(relative));
-    }
-
-    /// <summary>Writes the map's collision file into the output folder through a temporary file and returns its path.</summary>
-    private string Write(MapCollision map)
-    {
-        Directory.CreateDirectory(OutputDirectory);
-        string path = Path.Combine(OutputDirectory, GameDataFiles.CollisionFileName(map.MapName));
-        string temporary = path + TemporaryExtension;
-        try
-        {
-            using (FileStream stream = new(temporary, FileMode.Create, FileAccess.Write, FileShare.None, WriteBufferSize))
-            {
-                MapCollisionFile.Write(stream, map);
-            }
-
-            File.Move(temporary, path, overwrite: true);
-        }
-        catch
-        {
-            File.Delete(temporary);
-            throw;
-        }
-
-        return path;
     }
 
     private static string Required(CommandLineArguments arguments, string name)

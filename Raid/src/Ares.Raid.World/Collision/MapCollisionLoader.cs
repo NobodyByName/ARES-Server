@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 
 namespace Ares.Raid.World.Collision;
@@ -10,7 +11,7 @@ public static class MapCollisionLoader
     /// missing or unusable, so problems are returned instead of thrown.
     /// </summary>
     /// <param name="directory">The configured game data directory, or null when none is configured.</param>
-    /// <param name="mapName">The map's world name; the file name is derived from it.</param>
+    /// <param name="mapName">The map's world name; the file's path (<see cref="GameDataFiles.CollisionPath"/>) is derived from it.</param>
     /// <param name="problem">Why no collision was loaded, or null when it was.</param>
     /// <returns>The map's collision, or null.</returns>
     public static MapCollision? Load(string? directory, string mapName, out string? problem)
@@ -28,7 +29,7 @@ public static class MapCollisionLoader
             return null;
         }
 
-        string path = Path.Combine(fullDirectory, GameDataFiles.CollisionFileName(mapName));
+        string path = Path.Combine(fullDirectory, GameDataFiles.CollisionPath(mapName));
         if (!File.Exists(path))
         {
             problem = $"Map collision file not found: {path}; raids run without map collision. Write it with ARES-GameDataExtract.";

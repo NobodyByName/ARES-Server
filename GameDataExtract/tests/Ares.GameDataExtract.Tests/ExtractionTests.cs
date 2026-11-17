@@ -1,5 +1,7 @@
 using System.Numerics;
 using System.Text;
+using Ares.Common;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Packages;
@@ -36,17 +38,25 @@ public sealed class ExtractionTests : IDisposable
     private string Output => Path.Combine(_directory, "gamedata");
 
     [Fact]
-    public void Extraction_writes_a_collision_file_that_reads_back()
+    public void Extraction_writes_a_collision_file_and_a_manifest_that_read_back()
     {
         WriteGame();
 
         (int code, string output, string error) = Run(Output);
 
         Assert.True(code == ExtractCommand.Success, error);
-        string path = Path.Combine(Output, GameDataFiles.CollisionFileName(DamMap.WorldName));
-        Assert.Equal([Path.GetFileName(path)], Directory.GetFiles(Output).Select(Path.GetFileName));
+        string collision = GameDataFiles.CollisionPath(DamMap.WorldName);
+        Assert.Equal(
+            [GameDataFiles.ManifestFileName, collision],
+            Directory.GetFiles(Output, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(Output, file).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal));
+        GameDataDirectory data = GameDataDirectory.Open(Output);
+        Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
+        Assert.Equal(AresVersion.Current, data.Manifest.ExtractorVersion);
+        GameDataFileEntry entry = Assert.Single(data.Manifest.Files);
+        Assert.Equal(collision, entry.Name);
+        Assert.Null(entry.RowCount);
         MapCollision map;
-        using (FileStream stream = File.OpenRead(path))
+        using (FileStream stream = data.OpenFile(collision))
         {
             map = MapCollisionFile.Read(stream);
         }

@@ -1,4 +1,5 @@
 using System.Numerics;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core;
@@ -31,7 +32,7 @@ public sealed class MapCollisionLoaderTests : IDisposable
     public void A_missing_file_is_reported_with_its_path()
     {
         Assert.Null(MapCollisionLoader.Load(_directory, MapName, out string? problem));
-        Assert.Contains(Path.Combine(_directory, GameDataFiles.CollisionFileName(MapName)), problem, StringComparison.Ordinal);
+        Assert.Contains(Path.Combine(_directory, GameDataFiles.CollisionPath(MapName)), problem, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -57,7 +58,9 @@ public sealed class MapCollisionLoaderTests : IDisposable
         MapCollisionBuilder builder = Builder(gameBuildId);
         int cell = builder.AddCell("/Game/Cell", []);
         builder.AddPlacement(builder.AddBody(Body("box", boxes: [Box(new Vector3(10, 10, 10))])), cell, At(0, 0, 0), PlacementFlags.BlocksPawn);
-        using FileStream stream = File.Create(Path.Combine(_directory, GameDataFiles.CollisionFileName(MapName)));
+        string path = Path.Combine(_directory, GameDataFiles.CollisionPath(MapName));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using FileStream stream = File.Create(path);
         MapCollisionFile.Write(stream, builder.Build());
     }
 }
