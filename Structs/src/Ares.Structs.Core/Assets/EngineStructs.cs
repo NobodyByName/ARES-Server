@@ -60,6 +60,13 @@ public static class EngineStructs
         new PropertyField("Scale3D", PropertyType.StructOf(Vector)),
     ]);
 
+    /// <summary><c>FInt32Interval</c>: a property block holding <c>Min</c> and <c>Max</c>.</summary>
+    public static StructSchema Int32Interval { get; } = new("Int32Interval",
+    [
+        new PropertyField("Min", PropertyType.Int32),
+        new PropertyField("Max", PropertyType.Int32),
+    ]);
+
     /// <summary><c>FPointerToUberGraphFrame</c>, a Blueprint's event graph frame: a property block with no members.</summary>
     public static StructSchema PointerToUberGraphFrame { get; } = new("PointerToUberGraphFrame", []);
 
@@ -77,9 +84,10 @@ public static class EngineStructs
         ["/Script/CoreUObject.SoftClassPath"] = SoftClassPath,
         ["/Script/CoreUObject.PrimaryAssetType"] = PrimaryAssetType,
         ["/Script/CoreUObject.Transform"] = Transform,
+        ["/Script/CoreUObject.Int32Interval"] = Int32Interval,
         ["/Script/GameplayTags.GameplayTagContainer"] = GameplayTagContainer,
-        ["/Script/GameplayTags.GameplayTag"] = GameplayTag,
         ["/Script/GameplayTags.GameplayTagQuery"] = GameplayTagQuery,
+        ["/Script/GameplayTags.GameplayTag"] = GameplayTag,
         ["/Script/Engine.PointerToUberGraphFrame"] = PointerToUberGraphFrame,
     };
 }

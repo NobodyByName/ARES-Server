@@ -5,9 +5,11 @@ using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Packages;
+using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
+using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 using Vector3D = Ares.Structs.Core.Geometry.Vector3D;
@@ -44,7 +46,7 @@ public sealed class ExtractionTests : IDisposable
     private string Output => Path.Combine(_directory, "gamedata");
 
     [Fact]
-    public void Extraction_writes_a_collision_file_world_and_movement_tables_and_a_manifest_that_read_back()
+    public void Extraction_writes_a_collision_file_world_movement_and_loot_tables_and_a_manifest_that_read_back()
     {
         WriteGame();
 
@@ -60,6 +62,8 @@ public sealed class ExtractionTests : IDisposable
             MapTables.ZiplineLaunchers(DamMap.WorldName),
             GameTables.DodgeRolls, GameTables.VaultDefinitions, GameTables.HeavyLandingLevels, GameTables.RecoveryLandingLevels,
             GameTables.GraphStateTags, GameTables.SnapHookItem, GameTables.SprintBurstCurve,
+            GameTables.LootContainerTypes, GameTables.LootContainerClasses, GameTables.LootContainerDefaults, GameTables.StaticValueLootTables,
+            GameTables.SkillLootTables, GameTables.StaticLootSpawnTweakables,
         ];
         Assert.Equal(
             tables.Append(collision).Append(GameDataFiles.ManifestFileName).Order(StringComparer.Ordinal),
@@ -83,6 +87,13 @@ public sealed class ExtractionTests : IDisposable
         Assert.All(data.ReadTable(GameTables.DodgeRolls, GameDataJsonContext.Default.DodgeRollSequence), roll => Assert.Equal(SyntheticMovementGame.RollDistance, roll.Distance));
         Assert.Equal(new SnapHookItemDefaults(MovementAssets.SnapHookDataAsset, 1800, 60), Assert.Single(data.ReadTable(GameTables.SnapHookItem, GameDataJsonContext.Default.SnapHookItemDefaults)));
         Assert.Equal(SyntheticMovementGame.TagCount, data.ReadTable(GameTables.GraphStateTags, GameDataJsonContext.Default.String).Length);
+        Assert.Empty(data.ReadTable(GameTables.LootContainerClasses, GameDataJsonContext.Default.LootContainerClass));
+        LootContainerDefaults defaults = Assert.Single(data.ReadTable(GameTables.LootContainerDefaults, GameDataJsonContext.Default.LootContainerDefaults));
+        Assert.Equal(SyntheticLootScripts.CullDistance, defaults.NetCullDistance);
+        Assert.Equal(SyntheticLootScripts.TargetStacks, defaults.TargetStacks);
+        Assert.Equal(
+            SyntheticLootScripts.Tweakables.ContainerContentsWeights,
+            Assert.Single(data.ReadTable(GameTables.StaticLootSpawnTweakables, GameDataJsonContext.Default.LootSpawnTweakables)).ContainerContentsWeights);
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {
@@ -119,6 +130,7 @@ public sealed class ExtractionTests : IDisposable
         Assert.Contains("Placements: 2 of 2 bodies", output, StringComparison.Ordinal);
         Assert.Contains("Landscape tiles: 1", output, StringComparison.Ordinal);
         Assert.Contains("Movement tables: ", output, StringComparison.Ordinal);
+        Assert.Contains("Loot tables: ", output, StringComparison.Ordinal);
         Assert.DoesNotContain("Item tables: ", output, StringComparison.Ordinal);
     }
 
@@ -173,13 +185,21 @@ public sealed class ExtractionTests : IDisposable
         return (code, standardOutput.ToString(), standardError.ToString());
     }
 
+    /// <summary>The script cache of the synthetic game: the loot scripts (see <see cref="SyntheticLootScripts"/>) and the movement classes and structs.</summary>
+    private static byte[] ScriptCache()
+    {
+        SyntheticScriptCache cache = SyntheticLootScripts.Cache();
+        SyntheticMovementGame.AddScripts(cache);
+        return cache.Write();
+    }
+
     private static string Cell(string name) => $"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}/{name}";
 
     /// <summary>
     /// A game folder with the collision config pak and one container: the map's persistent level listing a base-map cell
     /// and a layered cell, the base cell (a landscape proxy at <paramref name="landscapeHeight"/>, a static mesh component that uses its mesh's default
-    /// collision and a blocking box component), the layered cell (no collision), the mesh, and the movement assets with the
-    /// script cache (see <see cref="SyntheticMovementGame"/>).
+    /// collision and a blocking box component), the layered cell (no collision), the mesh, and the movement assets (see
+    /// <see cref="SyntheticMovementGame"/>), an empty asset registry and the loot and movement script cache.
     /// </summary>
     private void WriteGame(double landscapeHeight = 300)
     {
@@ -189,7 +209,8 @@ public sealed class ExtractionTests : IDisposable
         [
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[0], Encoding.UTF8.GetBytes(CollisionProfilesTests.Base)),
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[1], Encoding.UTF8.GetBytes(CollisionProfilesTests.Default)),
-            new SyntheticPakEntry(ScriptCacheReader.CachePath, SyntheticMovementGame.ScriptCache()),
+            new SyntheticPakEntry(AssetRegistry.PakPath, SyntheticLootScripts.EmptyRegistry()),
+            new SyntheticPakEntry(ScriptCacheReader.CachePath, ScriptCache()),
         ]);
 
         byte[] scriptObjects = SyntheticArchives.ScriptObjects(

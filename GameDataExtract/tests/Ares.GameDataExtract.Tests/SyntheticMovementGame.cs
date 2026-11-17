@@ -26,10 +26,9 @@ internal static class SyntheticMovementGame
 
     private static readonly PackageObjectIndex s_firstImport = new((ulong)PackageObjectKind.PackageImport << 62);
 
-    /// <summary>A precompiled script cache with the movement classes and structs.</summary>
-    public static byte[] ScriptCache()
+    /// <summary>Adds the movement classes and structs to a precompiled script cache.</summary>
+    public static void AddScripts(SyntheticScriptCache cache)
     {
-        SyntheticScriptCache cache = new();
         uint[] constructor = Code(
             Op("SetV8", 2, Quad(RollDistance)), Op("LoadThisR", 0, 11), Op("WRTV8", 2),
             Op("SetV8", 2, Quad(1.0)), Op("LoadThisR", 8, 11), Op("WRTV8", 2),
@@ -45,7 +44,6 @@ internal static class SyntheticMovementGame
         cache.Classes.Add(Class("UVaultDefinitionsDataAsset", [.. MovementAssetSchemas.VaultDefinitionsDataAsset.Members.Select(member => member ?? new("AllAnimSequences", PropertyType.Object))]));
         cache.Classes.Add(Class("USnaphookItem",
             [.. Enumerable.Range(0, MovementAssetSchemas.SnaphookItemChain.ChainLength).Select(i => MovementAssetSchemas.SnaphookItemChain.At(i).Field ?? new($"Unknown{i}", PropertyType.Int32))]));
-        return cache.Write();
     }
 
     /// <summary>The movement packages by path.</summary>

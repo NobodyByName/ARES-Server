@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 
@@ -8,13 +9,14 @@ namespace Ares.Common.GameData;
 
 /// <summary>
 /// Source-generated JSON metadata of the game data files: camelCase members, every constructor parameter without a
-/// default required, nullable annotations enforced, unknown members rejected, nulls omitted when writing, and members
-/// computed from the others (properties without a setter) left out. Table row types are listed here with their own
-/// <see cref="JsonSerializableAttribute"/>; they stay free of JSON attributes.
+/// default required, nullable annotations enforced, unknown members rejected, nulls written (so a nullable member
+/// without a default, which is required, reads back), and members computed from the others (properties without a
+/// setter) left out. Table row types are listed here with their own <see cref="JsonSerializableAttribute"/>; they stay
+/// free of JSON attributes.
 /// </summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
     IgnoreReadOnlyProperties = true,
     NumberHandling = JsonNumberHandling.Strict,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
@@ -43,4 +45,10 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(HeavyLandingLevel))]
 [JsonSerializable(typeof(SnapHookItemDefaults))]
 [JsonSerializable(typeof(WeightedCurveKey))]
+[JsonSerializable(typeof(LootContainerType))]
+[JsonSerializable(typeof(LootContainerClass))]
+[JsonSerializable(typeof(LootContainerDefaults))]
+[JsonSerializable(typeof(StaticValueLootTable))]
+[JsonSerializable(typeof(SkillLootTable))]
+[JsonSerializable(typeof(LootSpawnTweakables))]
 public sealed partial class GameDataJsonContext : JsonSerializerContext;

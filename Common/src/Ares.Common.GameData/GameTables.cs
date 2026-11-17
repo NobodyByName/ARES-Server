@@ -1,5 +1,6 @@
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Common.GameData;
@@ -84,4 +85,25 @@ public static class GameTables
 
     /// <summary>The sprint burst alpha curve over elapsed seconds (<see cref="WeightedCurveKey"/>), in key order.</summary>
     public const string SprintBurstCurve = "sprint-burst-curve.json";
+
+    /// <summary>The loot container types the game registers (<see cref="LootContainerType"/>), ordered by tag (ordinal).</summary>
+    public const string LootContainerTypes = "loot-container-types.json";
+
+    /// <summary>
+    /// The loot container classes the container types and the maps name (<see cref="LootContainerClass"/>), ordered by
+    /// class path (ordinal). It lists every class that decodes, also those a server does not serve.
+    /// </summary>
+    public const string LootContainerClasses = "loot-container-classes.json";
+
+    /// <summary>The defaults every loot container class shares (<see cref="LootContainerDefaults"/>), one row.</summary>
+    public const string LootContainerDefaults = "loot-container-defaults.json";
+
+    /// <summary>The value loot tables (<see cref="StaticValueLootTable"/>), ordered by package (ordinal).</summary>
+    public const string StaticValueLootTables = "static-value-loot-tables.json";
+
+    /// <summary>The skill loot tables (<see cref="SkillLootTable"/>), ordered by package (ordinal).</summary>
+    public const string SkillLootTables = "skill-loot-tables.json";
+
+    /// <summary>The static loot spawn manager's tweakables (<see cref="LootSpawnTweakables"/>), one row.</summary>
+    public const string StaticLootSpawnTweakables = "static-loot-spawn-tweakables.json";
 }
