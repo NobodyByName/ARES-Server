@@ -1,5 +1,6 @@
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Movement;
 
 namespace Ares.Common.GameData;
 
@@ -56,4 +57,31 @@ public static class GameTables
 
     /// <summary>Menu definitions (<see cref="MenuItem"/>) of the firearm and ammunition items, then the firearms' mod slots in slot order.</summary>
     public const string MenuWeapons = "menu-weapons.json";
+
+    /// <summary>The dodge-roll variants (<see cref="DodgeRollSequence"/>), in <see cref="DodgeRollKind"/> order.</summary>
+    public const string DodgeRolls = "dodge-rolls.json";
+
+    /// <summary>
+    /// The vault definition sets (<see cref="VaultDefinitionSet"/>), in the order of <see cref="MovementAssets.VaultPackages"/>:
+    /// armed, unarmed, armed exhausted, unarmed exhausted.
+    /// </summary>
+    public const string VaultDefinitions = "vault-definitions.json";
+
+    /// <summary>The levels of an ordinary heavy landing (<see cref="HeavyLandingLevel"/>), lowest fall height first.</summary>
+    public const string HeavyLandingLevels = "heavy-landing-levels.json";
+
+    /// <summary>The levels of a heavy landing softened by a recovery roll (<see cref="HeavyLandingLevel"/>), lowest fall height first.</summary>
+    public const string RecoveryLandingLevels = "recovery-landing-levels.json";
+
+    /// <summary>
+    /// The gameplay tags the character graph tracks (strings), in bit order: tag <c>k</c> is bit <c>k % 64</c> of tag
+    /// word <c>k / 64</c> (see <see cref="MovementAssets.GraphTagWordBits"/>).
+    /// </summary>
+    public const string GraphStateTags = "graph-state-tags.json";
+
+    /// <summary>The snap hook item's class defaults (<see cref="SnapHookItemDefaults"/>), one row.</summary>
+    public const string SnapHookItem = "snap-hook-item.json";
+
+    /// <summary>The sprint burst alpha curve over elapsed seconds (<see cref="WeightedCurveKey"/>), in key order.</summary>
+    public const string SprintBurstCurve = "sprint-burst-curve.json";
 }

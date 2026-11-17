@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 
 namespace Ares.Common.GameData;
@@ -37,4 +38,9 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(LoadoutFrameDefinition))]
 [JsonSerializable(typeof(FirearmDefinition))]
 [JsonSerializable(typeof(ShieldDefinition))]
+[JsonSerializable(typeof(DodgeRollSequence))]
+[JsonSerializable(typeof(VaultDefinitionSet))]
+[JsonSerializable(typeof(HeavyLandingLevel))]
+[JsonSerializable(typeof(SnapHookItemDefaults))]
+[JsonSerializable(typeof(WeightedCurveKey))]
 public sealed partial class GameDataJsonContext : JsonSerializerContext;

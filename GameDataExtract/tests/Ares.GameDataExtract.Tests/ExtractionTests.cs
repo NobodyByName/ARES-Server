@@ -5,8 +5,10 @@ using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Packages;
+using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 using Vector3D = Ares.Structs.Core.Geometry.Vector3D;
 
@@ -42,7 +44,7 @@ public sealed class ExtractionTests : IDisposable
     private string Output => Path.Combine(_directory, "gamedata");
 
     [Fact]
-    public void Extraction_writes_a_collision_file_world_tables_and_a_manifest_that_read_back()
+    public void Extraction_writes_a_collision_file_world_and_movement_tables_and_a_manifest_that_read_back()
     {
         WriteGame();
 
@@ -56,9 +58,11 @@ public sealed class ExtractionTests : IDisposable
             MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName), MapTables.PlayerStarts(DamMap.WorldName),
             MapTables.Ladders(DamMap.WorldName), MapTables.LadderLogic(DamMap.WorldName), MapTables.ZiplineLines(DamMap.WorldName),
             MapTables.ZiplineLaunchers(DamMap.WorldName),
+            GameTables.DodgeRolls, GameTables.VaultDefinitions, GameTables.HeavyLandingLevels, GameTables.RecoveryLandingLevels,
+            GameTables.GraphStateTags, GameTables.SnapHookItem, GameTables.SprintBurstCurve,
         ];
         Assert.Equal(
-            [GameDataFiles.ManifestFileName, .. tables.Append(collision).Order(StringComparer.Ordinal)],
+            tables.Append(collision).Append(GameDataFiles.ManifestFileName).Order(StringComparer.Ordinal),
             Directory.GetFiles(Output, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(Output, file).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal));
         GameDataDirectory data = GameDataDirectory.Open(Output);
         Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
@@ -76,6 +80,9 @@ public sealed class ExtractionTests : IDisposable
         Assert.Empty(data.ReadTable(MapTables.LadderLogic(DamMap.WorldName), GameDataJsonContext.Default.ArchetypeClass));
         Assert.Empty(data.ReadTable(MapTables.ZiplineLines(DamMap.WorldName), GameDataJsonContext.Default.ZiplinePlacement));
         Assert.Empty(data.ReadTable(MapTables.ZiplineLaunchers(DamMap.WorldName), GameDataJsonContext.Default.ActivatableZiplinePlacement));
+        Assert.All(data.ReadTable(GameTables.DodgeRolls, GameDataJsonContext.Default.DodgeRollSequence), roll => Assert.Equal(SyntheticMovementGame.RollDistance, roll.Distance));
+        Assert.Equal(new SnapHookItemDefaults(MovementAssets.SnapHookDataAsset, 1800, 60), Assert.Single(data.ReadTable(GameTables.SnapHookItem, GameDataJsonContext.Default.SnapHookItemDefaults)));
+        Assert.Equal(SyntheticMovementGame.TagCount, data.ReadTable(GameTables.GraphStateTags, GameDataJsonContext.Default.String).Length);
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {
@@ -111,6 +118,8 @@ public sealed class ExtractionTests : IDisposable
 
         Assert.Contains("Placements: 2 of 2 bodies", output, StringComparison.Ordinal);
         Assert.Contains("Landscape tiles: 1", output, StringComparison.Ordinal);
+        Assert.Contains("Movement tables: ", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Item tables: ", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -150,7 +159,10 @@ public sealed class ExtractionTests : IDisposable
         Assert.False(Directory.Exists(Output));
     }
 
-    /// <summary>Runs the command without the item tables, which need the game's whole item catalogue (see <c>ItemReaderTests</c> and the local data checks).</summary>
+    /// <summary>
+    /// Runs the command without the item tables, which need the game's whole item catalogue (see <c>ItemReaderTests</c>
+    /// and the local data checks); the movement tables are always extracted, from <see cref="SyntheticMovementGame"/>.
+    /// </summary>
     private (int Code, string Output, string Error) Run(string output, TocKey? tocKey = null)
     {
         ExtractCommand command = ExtractCommand.Parse(
@@ -166,7 +178,8 @@ public sealed class ExtractionTests : IDisposable
     /// <summary>
     /// A game folder with the collision config pak and one container: the map's persistent level listing a base-map cell
     /// and a layered cell, the base cell (a landscape proxy at <paramref name="landscapeHeight"/>, a static mesh component that uses its mesh's default
-    /// collision and a blocking box component), the layered cell (no collision) and the mesh.
+    /// collision and a blocking box component), the layered cell (no collision), the mesh, and the movement assets with the
+    /// script cache (see <see cref="SyntheticMovementGame"/>).
     /// </summary>
     private void WriteGame(double landscapeHeight = 300)
     {
@@ -176,6 +189,7 @@ public sealed class ExtractionTests : IDisposable
         [
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[0], Encoding.UTF8.GetBytes(CollisionProfilesTests.Base)),
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[1], Encoding.UTF8.GetBytes(CollisionProfilesTests.Default)),
+            new SyntheticPakEntry(ScriptCacheReader.CachePath, SyntheticMovementGame.ScriptCache()),
         ]);
 
         byte[] scriptObjects = SyntheticArchives.ScriptObjects(
@@ -192,6 +206,7 @@ public sealed class ExtractionTests : IDisposable
             PackageChunk(Cell(BaseCell), BaseCellPackage(landscapeHeight), ".umap"),
             PackageChunk(Cell(LayeredCell), SyntheticArchives.Package(Cell(LayeredCell), [("Info", PackageObjectIndex.Null, s_actor, 0, [])]), ".umap"),
             PackageChunk(BodyLibraryTests.MeshPackage, BodyLibraryTests.MeshPackageBytes(), ".uasset"),
+            .. SyntheticMovementGame.Packages().Select(package => PackageChunk(package.Path, package.Data, ".uasset")),
         ]);
     }
 

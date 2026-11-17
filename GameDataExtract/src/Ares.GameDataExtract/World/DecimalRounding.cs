@@ -30,31 +30,8 @@ internal static class DecimalRounding
             return 0.0;
         }
 
-        // value = ±mantissa · 2^exponent, exactly.
-        long bits = BitConverter.DoubleToInt64Bits(value);
-        int biased = (int)((bits >> MantissaBits) & 0x7FF);
-        long mantissa = bits & MantissaMask;
-        if (biased == 0)
-        {
-            biased = 1;
-        }
-        else
-        {
-            mantissa |= 1L << MantissaBits;
-        }
-
-        int exponent = biased - ExponentBias;
-        BigInteger numerator = mantissa * BigInteger.Pow(10, digits);
-        BigInteger denominator = BigInteger.One;
-        if (exponent > 0)
-        {
-            numerator <<= exponent;
-        }
-        else
-        {
-            denominator <<= -exponent;
-        }
-
+        (BigInteger magnitude, BigInteger denominator) = Exact(value);
+        BigInteger numerator = magnitude * BigInteger.Pow(10, digits);
         BigInteger quotient = BigInteger.DivRem(numerator, denominator, out BigInteger remainder);
         int half = (remainder * 2).CompareTo(denominator);
         if (half > 0 || (half == 0 && !quotient.IsEven))
@@ -68,7 +45,38 @@ internal static class DecimalRounding
         }
 
         double rounded = double.Parse(string.Create(CultureInfo.InvariantCulture, $"{quotient}e-{digits}"), NumberStyles.Float, CultureInfo.InvariantCulture);
-        return bits < 0 ? -rounded : rounded;
+        return double.IsNegative(value) ? -rounded : rounded;
+    }
+
+    /// <summary>|<paramref name="value"/>| as an exact fraction <c>numerator / denominator</c> (the denominator a power of two).</summary>
+    internal static (BigInteger Numerator, BigInteger Denominator) Exact(double value)
+    {
+        // |value| = mantissa · 2^exponent, exactly.
+        long bits = BitConverter.DoubleToInt64Bits(value);
+        int biased = (int)((bits >> MantissaBits) & 0x7FF);
+        long mantissa = bits & MantissaMask;
+        if (biased == 0)
+        {
+            biased = 1;
+        }
+        else
+        {
+            mantissa |= 1L << MantissaBits;
+        }
+
+        int exponent = biased - ExponentBias;
+        BigInteger numerator = mantissa;
+        BigInteger denominator = BigInteger.One;
+        if (exponent > 0)
+        {
+            numerator <<= exponent;
+        }
+        else
+        {
+            denominator <<= -exponent;
+        }
+
+        return (numerator, denominator);
     }
 
     /// <summary>Each component of <paramref name="value"/> rounded to <paramref name="digits"/> decimal places.</summary>

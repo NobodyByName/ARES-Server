@@ -8,6 +8,7 @@ using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Extraction;
 using Ares.GameDataExtract.Items;
+using Ares.GameDataExtract.Movement;
 using Ares.GameDataExtract.Output;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Profiles;
@@ -23,7 +24,8 @@ namespace Ares.GameDataExtract;
 /// <summary>
 /// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the game data into the output
 /// folder (created when missing, never inside the game folder): the Dam map's collision file and world tables (see
-/// <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, the global item tables (see <see cref="GameTables"/>), then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
+/// <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, the global item and movement tables (see <see cref="GameTables"/>),
+/// then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
 /// earlier one only once complete. Prints what was written and which components could not be decoded.
 /// </summary>
 internal sealed class ExtractCommand
@@ -138,24 +140,45 @@ internal sealed class ExtractCommand
             MapWorldData world;
             ItemTables? items = null;
             TimeSpan itemTime = TimeSpan.Zero;
+            MovementData movement;
+            TimeSpan movementTime;
+            TimeSpan scriptTime;
             using (GameArchive archive = GameArchive.Open(GameDirectory, keys, tocKey))
             {
                 CollisionProfiles profiles;
+                ScriptCache scripts;
+                AssetRegistry? registry = null;
+
+                // The collision config pak is the main pak: it also holds the script cache (read once, for the item
+                // and movement tables) and the asset registry.
                 using (PakFile configPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
                 {
                     profiles = CollisionProfiles.Load(configPak);
+                    long scriptStart = Stopwatch.GetTimestamp();
+                    scripts = ScriptCache.Read(configPak);
+                    scriptTime = Stopwatch.GetElapsedTime(scriptStart);
+                    if (itemTables)
+                    {
+                        long registryStart = Stopwatch.GetTimestamp();
+                        registry = AssetRegistry.Load(configPak);
+                        itemTime = Stopwatch.GetElapsedTime(registryStart);
+                    }
                 }
 
                 PackageCache packages = PackageCache.FromArchive(archive);
                 IReadOnlyList<string> cells = archive.PackagePathsUnder($"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}");
                 (map, summary) = CollisionExtractor.Extract(packages, profiles, cells);
                 world = MapWorldExtractor.Extract(packages, DamMap.MapPackage, cells, DamDataLayers.All);
-                if (itemTables)
+                if (registry is not null)
                 {
-                    Stopwatch itemWatch = Stopwatch.StartNew();
-                    items = ExtractItems(packages, keys);
-                    itemTime = itemWatch.Elapsed;
+                    long itemStart = Stopwatch.GetTimestamp();
+                    items = ItemExtractor.Extract(packages, registry, scripts);
+                    itemTime += Stopwatch.GetElapsedTime(itemStart);
                 }
+
+                long movementStart = Stopwatch.GetTimestamp();
+                movement = MovementExtractor.Extract(packages, scripts);
+                movementTime = Stopwatch.GetElapsedTime(movementStart);
             }
 
             GameDataWriter writer = new(OutputDirectory);
@@ -166,6 +189,7 @@ internal sealed class ExtractCommand
                 WriteItems(writer, items);
             }
 
+            WriteMovement(writer, movement);
             string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
@@ -177,7 +201,10 @@ internal sealed class ExtractCommand
             }
 
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), the world and item tables and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
+                $"Movement tables: {movement.DodgeRolls.Count} dodge rolls, {movement.VaultDefinitions.Count} vault definition sets, {movement.HeavyLanding.Heavy.Count + movement.HeavyLanding.Recovery.Count} landing levels, {movement.GraphStateTags.Count} graph tags, {movement.SprintBurstCurve.Count} sprint curve keys (read in {movementTime.TotalSeconds:F1} s)"));
+            string tables = items is not null ? "the world, item and movement tables" : "the world and movement tables";
+            output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), {tables} and {manifest} in {watch.Elapsed.TotalSeconds:F1} s (script cache read once in {scriptTime.TotalSeconds:F1} s)"));
             return Success;
         }
         catch (WrongTocKeyException)
@@ -212,20 +239,6 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.ZiplineLaunchers(mapName), world.ZiplineLaunchers, json.ActivatableZiplinePlacement);
     }
 
-    /// <summary>Extracts the item tables; the main pak (the collision config pak) holds the asset registry and the script cache.</summary>
-    private ItemTables ExtractItems(PackageCache packages, ArchiveKeys keys)
-    {
-        AssetRegistry registry;
-        ScriptCache scripts;
-        using (PakFile mainPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
-        {
-            registry = AssetRegistry.Load(mainPak);
-            scripts = ScriptCache.Read(mainPak);
-        }
-
-        return ItemExtractor.Extract(packages, registry, scripts);
-    }
-
     private static void WriteItems(GameDataWriter writer, ItemTables items)
     {
         GameDataJsonContext json = GameDataJsonContext.Default;
@@ -242,6 +255,18 @@ internal sealed class ExtractCommand
         writer.WriteTable(GameTables.MenuSalvage, items.Menu.Salvage, json.MenuItem);
         writer.WriteTable(GameTables.MenuShields, items.Menu.Shields, json.MenuItem);
         writer.WriteTable(GameTables.MenuWeapons, items.Menu.Weapons, json.MenuItem);
+    }
+
+    private static void WriteMovement(GameDataWriter writer, MovementData movement)
+    {
+        GameDataJsonContext json = GameDataJsonContext.Default;
+        writer.WriteTable(GameTables.DodgeRolls, movement.DodgeRolls, json.DodgeRollSequence);
+        writer.WriteTable(GameTables.VaultDefinitions, movement.VaultDefinitions, json.VaultDefinitionSet);
+        writer.WriteTable(GameTables.HeavyLandingLevels, movement.HeavyLanding.Heavy, json.HeavyLandingLevel);
+        writer.WriteTable(GameTables.RecoveryLandingLevels, movement.HeavyLanding.Recovery, json.HeavyLandingLevel);
+        writer.WriteTable(GameTables.GraphStateTags, movement.GraphStateTags, json.String);
+        writer.WriteTable(GameTables.SnapHookItem, [movement.SnapHook], json.SnapHookItemDefaults);
+        writer.WriteTable(GameTables.SprintBurstCurve, movement.SprintBurstCurve, json.WeightedCurveKey);
     }
 
     /// <summary>Whether <paramref name="directory"/> is <paramref name="parent"/> or inside it.</summary>
