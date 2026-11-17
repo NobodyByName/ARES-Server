@@ -15,32 +15,48 @@ internal sealed class InventoryProjection
     private InventoryProjection(long userId, PlayerInventory inventory, bool allowOverflow = false)
     {
         Inventory = Validate(inventory, allowOverflow);
-        long selectedFrame = InventoryCatalog.FrameAssetId(inventory.Loadout);
         List<InventoryItem> items = [];
-        List<string> roots = [];
-        Dictionary<long, string> frames = [];
         if (inventory.Stash.ContainerAssetId != 0)
         {
             BuildNode(StorageItems.StashSlotAssetId, "stash", new InventoryPosition(InventoryArea.Stash, 0));
         }
 
         // The stock menu looks up the next frame and migrates items locally before committing
-        // operations. Keep every supported frame present, with independent permanent slot IDs.
-        foreach (long frame in AugmentItems.FrameAssetIds.Values.Prepend(LoadoutItems.StandardFrameAssetId))
+        // operations. The tree keeps every supported frame present, with independent permanent slot IDs.
+        LoadoutContents contents = new(InventoryCatalog.Items(inventory, InventoryArea.Augment).SingleOrDefault() is { } augment ? Item(augment) : null,
+            ((StructuralItemSlots)InventoryCatalog.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds.ToDictionary(branch => branch,
+                branch => InventoryCatalog.Branch(branch) is { } location ? Contents(location.Area) : []));
+        LoadoutTree tree = LoadoutTree.Build(contents, Structure);
+        items.AddRange(tree.Items);
+        foreach ((string id, LoadoutSlot slot) in tree.Slots)
         {
-            string path = frame == LoadoutItems.StandardFrameAssetId ? "carried/container" : "frames/" + frame.ToString(CultureInfo.InvariantCulture);
-            frames.Add(frame, BuildNode(frame, path, null, frame));
+            // Slots without a position stay empty: the default melee structure.
+            InventoryPosition? position = slot.Branch == AugmentItems.AugmentSlotAssetId ? new InventoryPosition(InventoryArea.Augment, slot.Index)
+                : InventoryCatalog.Branch(slot.Branch) is { } location ? location with { Index = location.Index + slot.Index, FrameAssetId = slot.FrameAssetId }
+                : null;
+            if (position is null)
+            {
+                continue;
+            }
+
+            _positions.Add(id, position);
+            _allowed.Add(id, slot.AllowedAssetIds);
         }
 
-        roots.Add(BuildNode(LoadoutItems.FrameSlotAssetId, "carried", null));
-        roots.Add(BuildNode(AugmentItems.AugmentSlotAssetId, "augment", new InventoryPosition(InventoryArea.Augment, 0)));
-        items.AddRange(inventory.Wallet.Select(owned => new InventoryItem(owned.InstanceId, InventoryCatalog.AssetId(owned.Type), owned.Quantity, [],
-            owned.Durability, owned.MaxDurability, "", owned.ETag, owned.UpdatedAt)));
-
-        Snapshot = InventorySnapshots.Copy(new InventorySnapshot(userId, inventory.Revision, items.AsReadOnly(), roots.AsReadOnly()));
+        items.AddRange(inventory.Wallet.Select(Item));
+        Snapshot = InventorySnapshots.Copy(new InventorySnapshot(userId, inventory.Revision, items.AsReadOnly(), tree.Roots));
         return;
 
-        string BuildNode(long asset, string path, InventoryPosition? position, long? frameAssetId = null)
+        // The owned items of a loadout area by slot index; a single-item area has one slot.
+        IReadOnlyList<InventoryItem?> Contents(InventoryArea area)
+        {
+            IReadOnlyList<OwnedItem> owned = InventoryCatalog.Items(inventory, area);
+            return [.. Enumerable.Range(0, InventoryCatalog.LoadoutCapacity(inventory.Loadout, area)).Select(index =>
+                (InventoryCatalog.UsesSlots(area) ? owned.SingleOrDefault(stored => stored.Slot == index) : owned.SingleOrDefault()) is { } item ? Item(item) : null)];
+        }
+
+        // The stash slot, its owned container tier and the stored items.
+        string BuildNode(long asset, string path, InventoryPosition? position)
         {
             ItemDescription definition = InventoryCatalog.ByAsset[asset];
             string id = StructuralId(userId, path);
@@ -49,15 +65,8 @@ internal sealed class InventoryProjection
             {
                 case SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } single:
                     // The stash slot holds the owned container tier; its structural id stays the same across upgrades.
-                    children.Add(asset == LoadoutItems.FrameSlotAssetId ? frames[selectedFrame]
-                        : BuildNode(asset == StorageItems.StashSlotAssetId ? inventory.Stash.ContainerAssetId : single.DefaultSlotAssetId,
-                            path + "/container", position, frameAssetId));
-                    break;
-                case StructuralItemSlots structural:
-                    children.AddRange(structural.SlotAssetIds.Select(branch =>
-                        BuildNode(branch, path + "/" + LoadoutDefinitions.StandardBranch(branch).ToString(CultureInfo.InvariantCulture),
-                            InventoryCatalog.Branch(branch) is { } location ? location with { FrameAssetId = frameAssetId } : null, frameAssetId)));
-
+                    children.Add(BuildNode(asset == StorageItems.StashSlotAssetId ? inventory.Stash.ContainerAssetId : single.DefaultSlotAssetId,
+                        path + "/container", position));
                     break;
                 case ItemSlotArray array:
                     int count = checked((int)array.NumberOfSlots);
@@ -65,25 +74,21 @@ internal sealed class InventoryProjection
                     {
                         InventoryPosition? next = position is null ? null
                             : position with { Index = position.Index + index };
-                        children.Add(BuildNode(array.SlotAssetId, path + "/" + index.ToString(CultureInfo.InvariantCulture), next, frameAssetId));
+                        children.Add(BuildNode(array.SlotAssetId, path + "/" + index.ToString(CultureInfo.InvariantCulture), next));
                     }
 
                     break;
                 case SingleItemSlot { IsRequired: false } single:
                     if (position is null)
                     {
-                        // Slots without a position stay empty: the default melee structure and weapon mod slots.
+                        // Slots without a position stay empty: weapon mod slots.
                         break;
                     }
 
                     _positions.Add(id, position);
                     _allowed.Add(id, single.AllowedSlotAssetIds);
-                    IReadOnlyList<OwnedItem> contents = frameAssetId is null || frameAssetId == selectedFrame
-                        ? InventoryCatalog.Items(inventory, position.Area) : [];
-                    OwnedItem? owned = position.Area == InventoryArea.Stash
-                        ? contents.OrderBy(item => item.Type, StringComparer.Ordinal).ThenBy(item => item.InstanceId, StringComparer.Ordinal).ElementAtOrDefault(position.Index)
-                        : InventoryCatalog.UsesSlots(position.Area) ? contents.SingleOrDefault(item => item.Slot == position.Index)
-                        : contents.SingleOrDefault();
+                    OwnedItem? owned = InventoryCatalog.Items(inventory, position.Area)
+                        .OrderBy(item => item.Type, StringComparer.Ordinal).ThenBy(item => item.InstanceId, StringComparer.Ordinal).ElementAtOrDefault(position.Index);
                     if (owned is not null)
                     {
                         long itemAsset = InventoryCatalog.AssetId(owned.Type);
@@ -97,8 +102,7 @@ internal sealed class InventoryProjection
                             ? [.. weaponSlots.SlotAssetIds.Select((slot, index) =>
                                 BuildNode(slot, "items/" + owned.InstanceId + "/" + index.ToString(CultureInfo.InvariantCulture), null))]
                             : [];
-                        items.Add(new InventoryItem(owned.InstanceId, itemAsset, owned.Quantity, modSlots.AsReadOnly(), owned.Durability, owned.MaxDurability,
-                            "", owned.ETag, owned.UpdatedAt));
+                        items.Add(Item(owned) with { Slots = modSlots.AsReadOnly() });
                         children.Add(owned.InstanceId);
                     }
 
@@ -107,9 +111,15 @@ internal sealed class InventoryProjection
                     throw new InvalidDataException("Unsupported inventory structure");
             }
 
+            InventoryItem node = Structure(asset, path, children.AsReadOnly());
+            items.Add(node);
+            return node.InstanceId;
+        }
+
+        InventoryItem Structure(long asset, string path, IReadOnlyList<string> children)
+        {
             string etag = "ares-structure-" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('|', children))));
-            items.Add(new InventoryItem(id, asset, 1, children.AsReadOnly(), StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "", etag, 0));
-            return id;
+            return new InventoryItem(StructuralId(userId, path), asset, 1, children, StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "", etag, 0);
         }
     }
 
@@ -191,6 +201,9 @@ internal sealed class InventoryProjection
 
         return inventory;
     }
+
+    private static InventoryItem Item(OwnedItem owned) => new(owned.InstanceId, InventoryCatalog.AssetId(owned.Type), owned.Quantity, [],
+        owned.Durability, owned.MaxDurability, "", owned.ETag, owned.UpdatedAt);
 
     private static string StructuralId(long userId, string path)
     {

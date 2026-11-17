@@ -1,3 +1,4 @@
+using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
@@ -11,12 +12,6 @@ namespace Ares.Raid.World.Inventory;
 /// </summary>
 public sealed class RaidWeapons(RaidInventory inventory)
 {
-    /// <summary>Quick-use items a character can draw from the belt, by usable-item index: put-away and draw durations.</summary>
-    private static readonly Dictionary<int, (double Unequip, double Equip)> s_quickItems = new()
-    {
-        [GadgetItems.SnapHookUsableIndex] = (GadgetItems.SnapHookUnequipSeconds, GadgetItems.SnapHookEquipSeconds),
-    };
-
     // A hook that comes back within its flight (out and back) hit nothing or was called back, and gives its power back.
     private static readonly uint s_flightFrames = Frames(SnapHookParameters.ExtendSeconds + SnapHookParameters.PullbackSeconds);
     private static readonly uint s_rechargePauseFrames = Frames(QuickItemProtocol.PowerRechargePauseSeconds);
@@ -169,7 +164,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
                     || Hand(InventoryBlackboard.UnarmedSlot)?.Id == wanted:
                     Request(wanted, frame);
                     break;
-                case { } quick when Belt(quick) is { } carried && s_quickItems.ContainsKey(carried.AssetIndex):
+                case { } quick when IsQuick(quick):
                     QuickItemRequests++;
                     Request(quick, frame);
                     break;
@@ -485,7 +480,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
         {
             Guid offhand = now.Offhand ?? DefaultUnarmed();
             Guid target = IsQuick(wanted) ? offhand : wanted;
-            Leg restore = new(start, now.Current, new Held(offhand), new Held(target), Units(s_quickItems[node.Asset].Unequip), Units(ReEquipSeconds(offhand)),
+            Leg restore = new(start, now.Current, new Held(offhand), new Held(target), Units(QuickUse(node.Asset).UnequipSeconds), Units(ReEquipSeconds(offhand)),
                 now.Offhand, null, target);
             legs.Add(restore);
             if (IsQuick(wanted))
@@ -521,13 +516,13 @@ public sealed class RaidWeapons(RaidInventory inventory)
     /// <summary>One leg from a firearm or hand item to the wanted item; a quick-use item gets a new node.</summary>
     private Leg Draw(Guid from, Guid wanted, uint start)
     {
-        if (Belt(wanted) is not { } quick || !s_quickItems.TryGetValue(quick.AssetIndex, out (double Unequip, double Equip) times))
+        if (Belt(wanted) is not { } quick || ItemTraitsTable.Of(quick.AssetIndex).QuickUse is not { } times)
         {
             return new Leg(start, new Held(from), new Held(wanted), new Held(wanted), Units(Times(from).Unequip), Units(Times(wanted).Equip), null, null, from);
         }
 
         Held drawn = new(wanted, Allocate(wanted, quick.AssetIndex, start));
-        return new Leg(start, new Held(from), drawn, drawn, Units(UnequipToItemsSeconds(from)), Units(times.Equip), from, from, from);
+        return new Leg(start, new Held(from), drawn, drawn, Units(UnequipToItemsSeconds(from)), Units(times.EquipSeconds), from, from, from);
     }
 
     /// <summary>
@@ -734,7 +729,10 @@ public sealed class RaidWeapons(RaidInventory inventory)
         ? HandItems.ReEquipFromItemSeconds
         : FerroDefaults.ReEquipFromItemSeconds;
 
-    private bool IsQuick(Guid item) => Belt(item) is { } carried && s_quickItems.ContainsKey(carried.AssetIndex);
+    /// <summary>Whether the item is a quick-use item in the belt.</summary>
+    private bool IsQuick(Guid item) => Belt(item) is { } carried && ItemTraitsTable.Of(carried.AssetIndex).QuickUse is not null;
+
+    private static QuickUseTimes QuickUse(int asset) => ItemTraitsTable.Of(asset).QuickUse ?? throw new InvalidOperationException("Not a quick-use item");
 
     private Guid DefaultItem() => Active(Equipped(), null)?.Id ?? DefaultUnarmed();
 

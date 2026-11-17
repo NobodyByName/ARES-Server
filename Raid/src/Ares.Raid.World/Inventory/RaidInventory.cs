@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Ares.Common.Game.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
@@ -16,6 +17,15 @@ public sealed class RaidInventory
     private readonly Dictionary<Guid, InventoryItem> _brought = [];
     private readonly ContainerItem? _augment;
 
+    // Each loadout slot filled from an equipment branch.
+    private static readonly (int Slot, long Branch)[] s_loadoutBranches =
+    [
+        (InventoryBlackboard.Firearm1Slot, LoadoutItems.Firearm1SlotAssetId),
+        (InventoryBlackboard.Firearm2Slot, LoadoutItems.Firearm2SlotAssetId),
+        (InventoryBlackboard.ArmorSlot, LoadoutItems.ArmorSlotAssetId),
+        (InventoryBlackboard.MeleeSlot, LoadoutItems.MeleeSlotAssetId),
+    ];
+
     // Maximum stack size of each supported item; items without one, such as hand items, never stack.
     private static readonly Dictionary<ushort, int> s_maxAmounts = LoadoutDefinitions.All
         .Where(item => LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId))
@@ -31,79 +41,30 @@ public sealed class RaidInventory
     public RaidInventory(PlayerLoadout loadout)
     {
         ArgumentNullException.ThrowIfNull(loadout);
-        Dictionary<string, InventoryItem> items = loadout.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
         IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.ByAsset;
-        HashSet<string> visited = new(StringComparer.Ordinal);
-        Dictionary<long, IReadOnlyList<ContainerItem?>> branches = [];
-        if (items.Count > 0)
+        LoadoutContents parsed;
+        try
         {
-            HashSet<string> children = [.. items.Values.SelectMany(item => item.Slots)];
-            InventoryItem[] roots = [.. items.Values.Where(item => !children.Contains(item.InstanceId))];
-            if (roots.Count(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId) != 1
-                || roots.Count(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId) > 1
-                || roots.Any(item => item.GameAssetId is not (LoadoutItems.FrameSlotAssetId or AugmentItems.AugmentSlotAssetId)))
-            {
-                throw new WorldPreparationException("Raid inventory requires a player frame and optional augment structure");
-            }
-
-            InventoryItem root = roots.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId);
-            InventoryItem? augmentRoot = roots.SingleOrDefault(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId);
-            if (augmentRoot is not null)
-            {
-                InventoryItem container = Child(augmentRoot, AugmentItems.AugmentContainerAssetId);
-                if (container.Slots is not [{ } slotId])
-                {
-                    throw new WorldPreparationException("Invalid augment container");
-                }
-
-                InventoryItem slot = items[slotId];
-                _augment = ReadSlot(slot, AugmentItems.AugmentContentSlotAssetId);
-                if (slot.Slots is [{ } augmentId])
-                {
-                    AugmentAssetId = items[augmentId].GameAssetId;
-                    if (!AugmentItems.FrameAssetIds.ContainsKey(AugmentAssetId.Value))
-                    {
-                        throw new WorldPreparationException("Unsupported equipped augment");
-                    }
-                }
-            }
-
-            FrameAssetId = LoadoutDefinitions.FrameAssetId(AugmentAssetId);
-            InventoryItem frame = Child(root, FrameAssetId);
-            if (definitions[frame.GameAssetId].SlotConfig is not StructuralItemSlots frameSlots || frame.Slots.Count != frameSlots.SlotAssetIds.Count)
-            {
-                throw new WorldPreparationException("Invalid player frame branches");
-            }
-
-            foreach ((string id, long asset) in frame.Slots.Zip(frameSlots.SlotAssetIds))
-            {
-                InventoryItem branch = items[id];
-                if (branch.GameAssetId != asset || definitions[asset].SlotConfig is not SingleItemSlot configuration)
-                {
-                    throw new WorldPreparationException("Invalid player frame branch");
-                }
-
-                InventoryItem container = Child(branch, configuration.DefaultSlotAssetId);
-                if (definitions[container.GameAssetId].SlotConfig is not ItemSlotArray slots || container.Slots.Count != slots.NumberOfSlots)
-                {
-                    throw new WorldPreparationException("Invalid player container size");
-                }
-
-                branches[LoadoutDefinitions.StandardBranch(asset)] = Array.AsReadOnly<ContainerItem?>([.. container.Slots.Select(slot => ReadSlot(items[slot], slots.SlotAssetId))]);
-            }
-
-            if (visited.Count != items.Count)
-            {
-                throw new WorldPreparationException("Player loadout contains unsupported items");
-            }
+            parsed = LoadoutTree.Parse(loadout);
         }
+        catch (InvalidDataException error)
+        {
+            throw new WorldPreparationException(error.Message);
+        }
+
+        AugmentAssetId = parsed.Augment?.GameAssetId;
+        FrameAssetId = parsed.FrameAssetId;
+        _augment = parsed.Augment is { } augment ? Carry(augment) : null;
+        Dictionary<long, ReadOnlyCollection<ContainerItem?>> branches = parsed.Branches.ToDictionary(branch => branch.Key,
+            branch => Array.AsReadOnly<ContainerItem?>([.. branch.Value.Select(item => item is null ? null : Carry(item))]));
 
         List<ItemContainerState> containers = [];
         ContainerItem?[] equipped = new ContainerItem?[InventoryBlackboard.LoadoutSlotCount];
-        equipped[InventoryBlackboard.Firearm1Slot] = Branch(LoadoutItems.Firearm1SlotAssetId).Single();
-        equipped[InventoryBlackboard.Firearm2Slot] = Branch(LoadoutItems.Firearm2SlotAssetId).Single();
-        equipped[InventoryBlackboard.ArmorSlot] = Branch(LoadoutItems.ArmorSlotAssetId).Single();
-        equipped[InventoryBlackboard.MeleeSlot] = Branch(LoadoutItems.MeleeSlotAssetId).Single();
+        foreach ((int slot, long branch) in s_loadoutBranches)
+        {
+            equipped[slot] = Branch(branch).Single();
+        }
+
         // Every raider also holds the Raider Tool and empty hands. The client draws them by item (keys 3 and 7),
         // so both exist as raid-only items in their loadout slots; they cannot be moved and add no weight.
         equipped[InventoryBlackboard.MeleeSlot] ??= new ContainerItem(HandItems.RaiderToolUsableIndex, Guid.NewGuid(), 1, 1);
@@ -111,9 +72,11 @@ public sealed class RaidInventory
         _unitWeights.TryAdd(HandItems.RaiderToolUsableIndex, 0);
         _unitWeights.TryAdd(HandItems.UnarmedUsableIndex, 0);
         Add(nameof(Loadout), equipped);
-        _allowedSlots.Add((Loadout, InventoryBlackboard.Firearm1Slot), [WeaponItems.FerroIUsableIndex]);
-        _allowedSlots.Add((Loadout, InventoryBlackboard.Firearm2Slot), [WeaponItems.FerroIUsableIndex]);
-        _allowedSlots.Add((Loadout, InventoryBlackboard.ArmorSlot), [ShieldItems.LightShieldUsableIndex]);
+        foreach ((int slot, long branch) in s_loadoutBranches)
+        {
+            Allow(Loadout, slot, branch);
+        }
+
         Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId), LoadoutItems.BackpackSlotAssetId);
         Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId), LoadoutItems.BeltSlotAssetId);
         Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId), LoadoutItems.SafePocketSlotAssetId);
@@ -126,7 +89,7 @@ public sealed class RaidInventory
             ContainerItem?[] contents = [.. containers[container].Items];
             for (int slot = 0; slot < contents.Length; slot++)
             {
-                if (contents[slot] is not { } item || ModSlotCount(item.AssetIndex) is not { } modSlots)
+                if (contents[slot] is not { } item || ItemTraitsTable.Of(item.AssetIndex).ModSlotCount is not { } modSlots)
                 {
                     continue;
                 }
@@ -145,9 +108,10 @@ public sealed class RaidInventory
             foreach (int slot in (int[])[InventoryBlackboard.Firearm1Slot, InventoryBlackboard.Firearm2Slot])
             {
                 // With fewer rounds than the magazine holds, the gun takes them all.
-                if (Containers[Loadout].Items[slot] is { AssetIndex: WeaponItems.FerroIUsableIndex, AmmoInClip: 0 } gun && HeavyAmmo > 0)
+                if (Containers[Loadout].Items[slot] is { AmmoInClip: 0 } gun && ItemTraitsTable.Of(gun.AssetIndex).Ammunition is { } ammo
+                    && Rounds(ammo) > 0)
                 {
-                    SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, HeavyAmmo), consumeReserve: true);
+                    SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, Rounds(ammo)), consumeReserve: true);
                 }
             }
 
@@ -173,22 +137,24 @@ public sealed class RaidInventory
             int handle = containers.Count;
             _handles.Add(name, handle);
             containers.Add(new ItemContainerState(handle, Array.AsReadOnly<ContainerItem?>([.. contents])));
-            if (branchAsset is not { } asset || definitions[LoadoutDefinitions.Container(FrameAssetId, asset).SlotAssetId].SlotConfig is not SingleItemSlot slot)
+            for (int index = 0; branchAsset is { } asset && index < contents.Count; index++)
             {
-                return;
+                Allow(handle, index, asset);
             }
+        }
 
-            HashSet<int> allowed = [.. slot.AllowedSlotAssetIds
-                .Where(LoadoutDefinitions.SupportsCarriedItem).Select(LoadoutDefinitions.UsableIndex)];
-            for (int index = 0; index < contents.Count; index++)
+        // A slot holds the carried items its equipment branch's content slots allow.
+        void Allow(int handle, int index, long branchAsset)
+        {
+            if (definitions[LoadoutDefinitions.Container(FrameAssetId, branchAsset).SlotAssetId].SlotConfig is SingleItemSlot slot)
             {
-                _allowedSlots.Add((handle, index), allowed);
+                _allowedSlots.Add((handle, index), [.. slot.AllowedSlotAssetIds.Where(LoadoutDefinitions.SupportsCarriedItem).Select(LoadoutDefinitions.UsableIndex)]);
             }
         }
 
         IReadOnlyList<ContainerItem?> Branch(long asset)
         {
-            if (branches.TryGetValue(asset, out IReadOnlyList<ContainerItem?>? contents))
+            if (branches.TryGetValue(asset, out ReadOnlyCollection<ContainerItem?>? contents))
             {
                 return contents;
             }
@@ -197,38 +163,10 @@ public sealed class RaidInventory
             return Array.AsReadOnly(new ContainerItem?[checked((int)slots.NumberOfSlots)]);
         }
 
-        InventoryItem Child(InventoryItem parent, long asset)
+        // A brought item keeps its identity; its record is kept for reporting it home.
+        ContainerItem Carry(InventoryItem item)
         {
-            visited.Add(parent.InstanceId);
-            if (parent.Amount != 1 || parent.Slots is not [{ } childId] || items[childId].GameAssetId != asset || items[childId].Amount != 1)
-            {
-                throw new WorldPreparationException("Invalid player loadout structure");
-            }
-
-            InventoryItem child = items[childId];
-            visited.Add(childId);
-            return child;
-        }
-
-        ContainerItem? ReadSlot(InventoryItem slot, long asset)
-        {
-            visited.Add(slot.InstanceId);
-            if (slot.GameAssetId != asset || slot.Amount != 1 || slot.Slots.Count > 1)
-            {
-                throw new WorldPreparationException("Invalid player inventory slot");
-            }
-
-            if (slot.Slots.Count == 0)
-            {
-                return null;
-            }
-
-            InventoryItem item = items[slot.Slots[0]];
-            visited.Add(item.InstanceId);
-            if (!LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId) || !EmptyModSlots(item)
-                || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
-                || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId)
-                || !Guid.TryParse(item.InstanceId, out Guid guid) || !_brought.TryAdd(guid, item))
+            if (!Guid.TryParse(item.InstanceId, out Guid guid) || !_brought.TryAdd(guid, item))
             {
                 throw new WorldPreparationException("Unsupported carried inventory item");
             }
@@ -237,35 +175,13 @@ public sealed class RaidInventory
             _unitWeights[usableIndex] = LoadoutDefinitions.ItemWeight(item.GameAssetId);
             return new ContainerItem(usableIndex, guid, checked((int)item.Amount), DurabilityFraction(item));
         }
-
-        // A weapon carries one empty node per mod slot; mods themselves are not supported yet.
-        bool EmptyModSlots(InventoryItem item)
-        {
-            IReadOnlyList<long> expected = definitions[item.GameAssetId].SlotConfig is StructuralItemSlots modSlots ? modSlots.SlotAssetIds : [];
-            if (item.Slots.Count != expected.Count)
-            {
-                return false;
-            }
-
-            foreach ((string id, long asset) in item.Slots.Zip(expected))
-            {
-                if (items[id] is not { Amount: 1, Slots.Count: 0 } modSlot || modSlot.GameAssetId != asset)
-                {
-                    return false;
-                }
-
-                visited.Add(id);
-            }
-
-            return true;
-        }
     }
 
     /// <summary>The equipped augment, or null for the standard frame.</summary>
     public long? AugmentAssetId { get; }
 
     /// <summary>The inventory frame selected by the equipped augment.</summary>
-    public long FrameAssetId { get; } = LoadoutItems.StandardFrameAssetId;
+    public long FrameAssetId { get; }
 
     /// <summary>The carrying-weight limit selected by the equipped augment.</summary>
     public double MaxWeight => LoadoutDefinitions.MaximumWeight(AugmentAssetId);
@@ -275,10 +191,9 @@ public sealed class RaidInventory
         .Sum(item => (_unitWeights[item.AssetIndex] * item.Amount) + (item.AmmoInClip * WeaponItems.HeavyAmmoWeight));
 
     /// <summary>Heavy Ammo available in carried containers, excluding rounds already chambered.</summary>
-    public int HeavyAmmo => Carried.SelectMany(container => container.Items).OfType<ContainerItem>()
-        .Where(item => item.AssetIndex == WeaponItems.HeavyAmmoUsableIndex).Sum(item => item.Amount);
+    public int HeavyAmmo => Rounds(WeaponItems.HeavyAmmoUsableIndex);
 
-    /// <summary>Changes a Ferro chamber, optionally loading the added rounds from carried Heavy Ammo atomically.</summary>
+    /// <summary>Changes a Ferro chamber, optionally loading the added rounds from carried ammunition of the gun atomically.</summary>
     /// <remarks>Loading takes from the first carried stacks and fails when they hold too few rounds.</remarks>
     public bool SetChamber(Guid id, int amount, bool consumeReserve = false)
     {
@@ -287,38 +202,20 @@ public sealed class RaidInventory
             return false;
         }
 
-        (int Container, int Slot)? gun = null;
-        List<(int Container, int Slot)> ammo = [];
-        for (int container = 0; container < Containers.Count; container++)
-        {
-            // Only carried items load or are loaded: not those of an open world container.
-            if (container == OpenLoot)
-            {
-                continue;
-            }
-
-            for (int slot = 0; slot < Containers[container].Items.Count; slot++)
-            {
-                ContainerItem? item = Containers[container].Items[slot];
-                if (item is { AssetIndex: WeaponItems.FerroIUsableIndex } && item.Id == id)
-                {
-                    gun = (container, slot);
-                }
-
-                if (item is { AssetIndex: WeaponItems.HeavyAmmoUsableIndex, Amount: > 0 })
-                {
-                    ammo.Add((container, slot));
-                }
-            }
-        }
-
-        if (gun is not { } target || Containers[target.Container].Items[target.Slot]!.AmmoInClip == amount)
+        // Only carried items load or are loaded: not those of an open world container.
+        (int Container, int Slot)[] carried = [.. Enumerable.Range(0, Containers.Count).Where(container => container != OpenLoot)
+            .SelectMany(container => Enumerable.Range(0, Containers[container].Items.Count), (container, slot) => (Container: container, Slot: slot))];
+        int found = Array.FindIndex(carried, position => Item(position)?.Id == id);
+        if (found < 0 || Item(carried[found]) is not { } gun || ItemTraitsTable.Of(gun.AssetIndex).Ammunition is not { } ammunition
+            || gun.AmmoInClip == amount)
         {
             return false;
         }
 
-        int needed = consumeReserve ? amount - Containers[target.Container].Items[target.Slot]!.AmmoInClip : 0;
-        if (consumeReserve && (needed <= 0 || needed > HeavyAmmo))
+        (int Container, int Slot) target = carried[found];
+        (int Container, int Slot)[] ammo = [.. carried.Where(position => Item(position) is { Amount: > 0 } item && item.AssetIndex == ammunition)];
+        int needed = consumeReserve ? amount - gun.AmmoInClip : 0;
+        if (consumeReserve && (needed <= 0 || needed > Rounds(ammunition)))
         {
             return false;
         }
@@ -342,6 +239,8 @@ public sealed class RaidInventory
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
         return true;
+
+        ContainerItem? Item((int Container, int Slot) position) => Containers[position.Container].Items[position.Slot];
 
         void Replace((int Container, int Slot) position, ContainerItem? item)
         {
@@ -602,10 +501,13 @@ public sealed class RaidInventory
         void Carry(string place, int slot, ContainerItem item)
         {
             carried.Add(new CarriedItem(place, slot, Record(item)));
-            if (extracted && item.AmmoInClip > 0 && AmmoOf(item.AssetIndex) is { } ammo)
+            if (!extracted || item.AmmoInClip <= 0 || ItemTraitsTable.Of(item.AssetIndex).Ammunition is not { } ammo)
             {
-                unloaded[ammo] = unloaded.GetValueOrDefault(ammo) + item.AmmoInClip;
+                return;
             }
+
+            ushort index = checked((ushort)ammo);
+            unloaded[index] = unloaded.GetValueOrDefault(index) + item.AmmoInClip;
         }
     }
 
@@ -615,6 +517,10 @@ public sealed class RaidInventory
     public static int MaxAmount(ushort assetIndex) => s_maxAmounts.GetValueOrDefault(assetIndex);
 
     private IEnumerable<ItemContainerState> Carried => Containers.Where(container => container.Id != OpenLoot);
+
+    // Rounds of an ammunition item available in carried containers, excluding rounds already chambered.
+    private int Rounds(int ammunition) => Carried.SelectMany(container => container.Items).OfType<ContainerItem>()
+        .Where(item => item.AssetIndex == ammunition).Sum(item => item.Amount);
 
     private string? Swap(InventoryCommand command)
     {
@@ -806,21 +712,7 @@ public sealed class RaidInventory
         return rounds;
     }
 
-    // The ammunition a weapon loads, or null for items without rounds.
-    private static ushort? AmmoOf(ushort assetIndex) => assetIndex switch
-    {
-        WeaponItems.FerroIUsableIndex => WeaponItems.HeavyAmmoUsableIndex,
-        _ => null,
-    };
-
     private static double DurabilityFraction(InventoryItem item) => item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability;
-
-    private static int? ModSlotCount(ushort assetIndex) => assetIndex switch
-    {
-        WeaponItems.FerroIUsableIndex => FerroDefaults.ModSlotCount,
-        ShieldItems.LightShieldUsableIndex => ShieldDefaults.ModSlotCount,
-        _ => null,
-    };
 
     private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
         && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;

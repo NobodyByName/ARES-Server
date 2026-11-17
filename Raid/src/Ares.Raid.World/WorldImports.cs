@@ -1,6 +1,5 @@
-using Ares.Structs.Backend.Progression;
+using Ares.Common.Game.Inventory;
 using Ares.Structs.Game.Characters;
-using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
@@ -21,13 +20,8 @@ public sealed class WorldImports
     private readonly List<(GlobalActor Actor, ulong Guid)> _globalActors = [];
 
     /// <summary>Gameplay classes of the items a character can hold, by usable-item index.</summary>
-    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = new Dictionary<ushort, string>
-    {
-        [WeaponItems.FerroIUsableIndex] = FerroDefaults.ItemClass,
-        [HandItems.RaiderToolUsableIndex] = HandItems.RaiderToolItemClass,
-        [HandItems.UnarmedUsableIndex] = HandItems.UnarmedItemClass,
-        [GadgetItems.SnapHookUsableIndex] = GadgetItems.SnapHookItemClass,
-    };
+    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = ItemTraitsTable.All
+        .Where(traits => traits.HeldClass is not null).ToDictionary(traits => checked((ushort)traits.UsableIndex), traits => traits.HeldClass!);
 
     /// <summary>Builds the exports.</summary>
     /// <param name="catalog">Replication schemas.</param>
