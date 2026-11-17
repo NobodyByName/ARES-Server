@@ -51,5 +51,23 @@ public sealed class PlayerChannelsCopyTests
                 .Select(field => field.Name),
         ];
         Assert.Empty(shared);
+
+        // The world's own collections (bounded logs, actor channel pools) must copy what they hold as well.
+        string[] sharedInside =
+        [
+            .. collections
+                .Where(field => field.FieldType.Assembly == typeof(PlayerChannels).Assembly)
+                .SelectMany(field => SharedCollections(field.GetValue(channels), field.GetValue(copy)).Select(inner => $"{field.Name}.{inner}")),
+        ];
+        Assert.Contains(collections, field => field.FieldType.Assembly == typeof(PlayerChannels).Assembly);
+        Assert.Empty(sharedInside);
     }
+
+    private static IEnumerable<string> SharedCollections(object? original, object? copy) =>
+        original is null || copy is null
+            ? []
+            : original.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(field => field.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(field.FieldType))
+                .Where(field => field.GetValue(original) is { } value && ReferenceEquals(value, field.GetValue(copy)))
+                .Select(field => field.Name);
 }

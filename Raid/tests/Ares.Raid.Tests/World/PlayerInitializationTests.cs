@@ -1,7 +1,7 @@
 using Ares.Raid.Transport;
-using Ares.Raid.World;
 using Ares.Raid.World.Movement;
 using Ares.Raid.World.Players;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
@@ -22,7 +22,7 @@ public sealed class PlayerInitializationTests
         ScriptedPlayer session = new();
         session.Flush("start");
         ChannelBunch hud = Assert.Single(session.Sent, bunch => IsHudAssignment(session, bunch));
-        ChannelBunch gameState = Assert.Single(session.Sent, bunch => bunch is { Opened: true, Channel: RaidWorld.GameStateChannel });
+        ChannelBunch gameState = Assert.Single(session.Sent, bunch => bunch is { Opened: true, Channel: ChannelLayout.GameState });
         ChannelBunch playerState = Assert.Single(session.Sent, bunch => bunch is { Opened: true, Channel: 3 });
         Assert.True(session.Sent.IndexOf(hud) < session.Sent.IndexOf(gameState));
         Assert.True(session.Sent.IndexOf(playerState) < session.Sent.IndexOf(gameState));
@@ -41,7 +41,7 @@ public sealed class PlayerInitializationTests
             IReadOnlyList<ReliableKey> keys = session.Io.Sender.Select(100, 8000);
             Assert.NotEmpty(keys);
             IReadOnlyList<ChannelBunch> bunches = session.Io.Sender.Bunches(keys);
-            Assert.DoesNotContain(bunches, bunch => bunch is { Opened: true, Channel: RaidWorld.GameStateChannel });
+            Assert.DoesNotContain(bunches, bunch => bunch is { Opened: true, Channel: ChannelLayout.GameState });
             session.Io.Sender.Sent(packet, keys, 100);
             ChannelBunch? hud = bunches.SingleOrDefault(bunch => IsHudAssignment(session, bunch));
             if (hud is null)

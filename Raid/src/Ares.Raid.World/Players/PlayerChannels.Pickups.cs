@@ -18,29 +18,15 @@ namespace Ares.Raid.World.Players;
 /// </summary>
 public sealed partial class PlayerChannels
 {
-    /// <summary>Channels that carry pickups for this client; a pickup holds one only while it is delivered or changes.</summary>
-    private const int PickupChannels = 32;
-
-    private Dictionary<int, PickupLink> _pickupLinks = [];
+    // The channels that carry pickups for this client; a pickup holds one only while it is delivered or changes.
+    private ActorChannelPool<PickupLink> _pickupLinks;
 
     // The pickups this client has (also while dormant) with the revision it has of each.
     private Dictionary<int, int> _pickupKnown = [];
     private Dictionary<ulong, ReliableKey> _pickupExports = [];
     private HashSet<int> _failedPickups = [];
     private double _pickupRelevantAt;
-    private List<string> _pickupRequests = [];
-
-    // Where a pickup's channel stands: a pickup the client does not have yet is exported, spawned and named first;
-    // an open channel sends the pickup's changes until the client has the latest, then closes dormant; a channel
-    // closes for good when the pickup is destroyed.
-    private enum PickupStage
-    {
-        Exporting,
-        Spawning,
-        Naming,
-        Open,
-        Closing,
-    }
+    private BoundedLog _pickupRequests = new(InteractionRequestLog);
 
     /// <summary>Items this player dropped into the world.</summary>
     public int ItemsDropped { get; private set; }
@@ -65,20 +51,14 @@ public sealed partial class PlayerChannels
     /// <summary>What happened to the raid's pickups, oldest first.</summary>
     public IReadOnlyList<string> PickupEvents => _raid.Pickups.Events;
 
-    // The first pickup channel: after every player's observed channels, for as many players as the raid holds.
-    private int FirstPickupChannel => FirstObservedChannel + (2 * _raid.MaxPlayers);
-
     private void CopyPickups(PlayerChannels copy)
     {
-        copy._pickupLinks = new Dictionary<int, PickupLink>(_pickupLinks);
+        copy._pickupLinks = _pickupLinks.Copy();
         copy._pickupKnown = new Dictionary<int, int>(_pickupKnown);
         copy._pickupExports = new Dictionary<ulong, ReliableKey>(_pickupExports);
         copy._failedPickups = [.. _failedPickups];
-        copy._pickupRequests = [.. _pickupRequests];
+        copy._pickupRequests = _pickupRequests.Copy();
     }
-
-    private int? PickupIndex(int channel) =>
-        channel - FirstPickupChannel is var index and >= 0 and < PickupChannels ? index : null;
 
     private void PickupChannelFailed(int channel)
     {
@@ -128,7 +108,7 @@ public sealed partial class PlayerChannels
             return;
         }
 
-        LogRequest(_pickupRequests, $"{pickup.Index}:{request.Request}@{request.Frame}");
+        _pickupRequests.Add($"{pickup.Index}:{request.Request}@{request.Frame}");
         if ((request.Request & PendulumInput.PressRequest) == 0
             || _raid.Pickups.PickUp(pickup.Index, _member.Id, _member.Inventory, _player.Pawn, now) <= 0)
         {
@@ -150,18 +130,18 @@ public sealed partial class PlayerChannels
             return;
         }
 
-        ServicePickupLinks(sender);
+        _pickupLinks.Advance(sender, new PickupSteps(this));
 
         // A dormant pickup that changed opens again with its whole state; one destroyed is opened and closed for good.
         foreach ((int index, int revision) in _pickupKnown.ToArray())
         {
             WorldPickup pickup = _raid.Pickups.All[index];
-            if (_pickupLinks.ContainsKey(index) || (!pickup.Destroyed && pickup.Revision == revision))
+            if (_pickupLinks.Contains(index) || (!pickup.Destroyed && pickup.Revision == revision))
             {
                 continue;
             }
 
-            if (FreePickupChannel() is not { } channel)
+            if (_pickupLinks.FreeChannel() is not { } channel)
             {
                 break;
             }
@@ -169,12 +149,12 @@ public sealed partial class PlayerChannels
             if (pickup.Destroyed)
             {
                 _pickupKnown.Remove(index);
-                _pickupLinks[index] = new PickupLink(PickupStage.Closing, channel, sender.Queue(WorldPickups.DestroyBunch(pickup, channel)), revision);
+                _pickupLinks.Set(index, new PickupLink(ActorChannelStage.Closing, channel, sender.Queue(WorldPickups.DestroyBunch(pickup, channel)), revision));
                 continue;
             }
 
             sender.Queue(_raid.Pickups.OpenBunch(pickup, channel, sender.NextSequence(channel)));
-            _pickupLinks[index] = new PickupLink(PickupStage.Open, channel, sender.Queue(_raid.Pickups.InteractionBunch(pickup, channel)), pickup.Revision);
+            _pickupLinks.Set(index, new PickupLink(ActorChannelStage.Open, channel, sender.Queue(_raid.Pickups.InteractionBunch(pickup, channel)), pickup.Revision));
             _pickupKnown[index] = pickup.Revision;
         }
 
@@ -192,8 +172,8 @@ public sealed partial class PlayerChannels
                 break;
             }
 
-            if (_pickupKnown.ContainsKey(pickup.Index) || _pickupLinks.ContainsKey(pickup.Index) || _failedPickups.Contains(pickup.Index)
-                || FreePickupChannel() is not { } channel)
+            if (_pickupKnown.ContainsKey(pickup.Index) || _pickupLinks.Contains(pickup.Index) || _failedPickups.Contains(pickup.Index)
+                || _pickupLinks.FreeChannel() is not { } channel)
             {
                 continue;
             }
@@ -209,94 +189,86 @@ public sealed partial class PlayerChannels
                 }
             }
 
-            _pickupLinks[pickup.Index] = new PickupLink(PickupStage.Exporting, channel, null, pickup.Revision);
+            _pickupLinks.Set(pickup.Index, new PickupLink(ActorChannelStage.Exporting, channel, null, pickup.Revision));
             started++;
         }
 
-        ServicePickupLinks(sender);
-    }
-
-    // Moves each pickup channel on by the steps whose bunches the client has.
-    private void ServicePickupLinks(ReliableSender sender)
-    {
-        foreach ((int index, PickupLink current) in _pickupLinks.ToArray())
-        {
-            PickupLink link = current;
-            WorldPickup pickup = _raid.Pickups.All[index];
-            bool waiting = link.Stage == PickupStage.Exporting
-                ? PickupRoots(pickup).Any(root => sender.Pending(_pickupExports[root]))
-                : link.Key is { } key && sender.Pending(key);
-            if (waiting && link.Stage != PickupStage.Open)
-            {
-                continue;
-            }
-
-            switch (link.Stage)
-            {
-                case PickupStage.Exporting when pickup.PickedUpBy is not null || pickup.Destroyed:
-                    // Taken before its channel opened: this client never gets it.
-                    _pickupLinks.Remove(index);
-                    continue;
-                case PickupStage.Exporting:
-                    link = link with
-                    {
-                        Stage = PickupStage.Spawning,
-                        Key = sender.Queue(_raid.Pickups.OpenBunch(pickup, link.Channel, sender.NextSequence(link.Channel))),
-                        Sent = pickup.Revision,
-                    };
-                    break;
-                case PickupStage.Spawning:
-                    link = link with { Stage = PickupStage.Naming, Key = sender.Queue(WorldPickups.ComponentExportBunch(pickup)) };
-                    break;
-                case PickupStage.Naming:
-                    link = link with { Stage = PickupStage.Open, Key = sender.Queue(_raid.Pickups.InteractionBunch(pickup, link.Channel)) };
-                    _pickupKnown[index] = link.Sent;
-                    break;
-                case PickupStage.Open when pickup.Destroyed:
-                    _pickupKnown.Remove(index);
-                    link = link with { Stage = PickupStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, Bunches.Destroyed)) };
-                    break;
-                case PickupStage.Open when pickup.Revision != link.Sent:
-                    link = link with { Key = sender.Queue(_raid.Pickups.UpdateBunch(pickup, link.Channel)), Sent = pickup.Revision };
-                    _pickupKnown[index] = pickup.Revision;
-                    break;
-                case PickupStage.Open when !waiting:
-                    // Nothing left to send: the pickup goes dormant.
-                    link = link with { Stage = PickupStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, Bunches.Dormancy)) };
-                    break;
-                case PickupStage.Open:
-                    break;
-                case PickupStage.Closing:
-                    _pickupLinks.Remove(index);
-                    if (_failedPickups.Contains(index))
-                    {
-                        _pickupKnown.Remove(index);
-                    }
-
-                    continue;
-            }
-
-            _pickupLinks[index] = link;
-        }
+        _pickupLinks.Advance(sender, new PickupSteps(this));
     }
 
     // The static objects a pickup's spawn needs: the class default and the item's data asset.
     private ulong[] PickupRoots(WorldPickup pickup) => [_raid.Pickups.Archetype, pickup.DataAsset];
 
-    // A pickup channel no pickup uses.
-    private int? FreePickupChannel()
+    // A pickup's channel on this connection: its stage, the bunch it waits for and the pickup revision it sent.
+    private readonly record struct PickupLink(ActorChannelStage Stage, int Channel, ReliableKey? Key, int Sent) : IActorChannelLink;
+
+    // What a pickup's channel sends: a pickup the client does not have yet is exported, spawned and named first; an
+    // open channel sends the pickup's changes until the client has the latest, then closes dormant; a channel closes
+    // for good when the pickup is destroyed.
+    private readonly struct PickupSteps(PlayerChannels channels) : IActorChannelSteps<PickupLink>
     {
-        for (int channel = FirstPickupChannel; channel < FirstPickupChannel + PickupChannels; channel++)
+        public bool Waits(ReliableSender sender, int index, PickupLink link)
         {
-            if (_pickupLinks.Values.All(link => link.Channel != channel))
+            if (link.Stage != ActorChannelStage.Exporting)
             {
-                return channel;
+                return link.Key is { } key && sender.Pending(key);
             }
+
+            Dictionary<ulong, ReliableKey> exports = channels._pickupExports;
+            return channels.PickupRoots(channels._raid.Pickups.All[index]).Any(root => sender.Pending(exports[root]));
         }
 
-        return null;
-    }
+        // Taken before its channel opened: this client never gets it.
+        public bool Abandons(int index, PickupLink link) =>
+            link.Stage == ActorChannelStage.Exporting && channels._raid.Pickups.All[index] is { PickedUpBy: not null } or { Destroyed: true };
 
-    // A pickup's channel on this connection: its stage, the bunch it waits for and the pickup revision it sent.
-    private readonly record struct PickupLink(PickupStage Stage, int Channel, ReliableKey? Key, int Sent);
+        public PickupLink Spawn(ReliableSender sender, int index, PickupLink link)
+        {
+            WorldPickup pickup = channels._raid.Pickups.All[index];
+            return link with
+            {
+                Stage = ActorChannelStage.Spawning,
+                Key = sender.Queue(channels._raid.Pickups.OpenBunch(pickup, link.Channel, sender.NextSequence(link.Channel))),
+                Sent = pickup.Revision,
+            };
+        }
+
+        public PickupLink Name(ReliableSender sender, int index, PickupLink link) =>
+            link with { Stage = ActorChannelStage.Naming, Key = sender.Queue(WorldPickups.ComponentExportBunch(channels._raid.Pickups.All[index])) };
+
+        public PickupLink Fill(ReliableSender sender, int index, PickupLink link)
+        {
+            link = link with { Stage = ActorChannelStage.Open, Key = sender.Queue(channels._raid.Pickups.InteractionBunch(channels._raid.Pickups.All[index], link.Channel)) };
+            channels._pickupKnown[index] = link.Sent;
+            return link;
+        }
+
+        public PickupLink Update(ReliableSender sender, int index, PickupLink link, bool waiting)
+        {
+            WorldPickup pickup = channels._raid.Pickups.All[index];
+            if (pickup.Destroyed)
+            {
+                channels._pickupKnown.Remove(index);
+                return link with { Stage = ActorChannelStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, Bunches.Destroyed)) };
+            }
+
+            if (pickup.Revision != link.Sent)
+            {
+                link = link with { Key = sender.Queue(channels._raid.Pickups.UpdateBunch(pickup, link.Channel)), Sent = pickup.Revision };
+                channels._pickupKnown[index] = pickup.Revision;
+                return link;
+            }
+
+            // Nothing left to send: the pickup goes dormant.
+            return waiting ? link : link with { Stage = ActorChannelStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, Bunches.Dormancy)) };
+        }
+
+        public void Closed(int index, PickupLink link)
+        {
+            if (channels._failedPickups.Contains(index))
+            {
+                channels._pickupKnown.Remove(index);
+            }
+        }
+    }
 }

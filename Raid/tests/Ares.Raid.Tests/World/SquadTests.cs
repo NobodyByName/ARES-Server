@@ -1,5 +1,5 @@
-using Ares.Raid.World;
 using Ares.Raid.World.Players;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Replication;
@@ -35,7 +35,7 @@ public sealed class SquadTests
         Assert.Equal([player.SquadMember], Assert.IsType<IReadOnlyList<object?>>(squad[PropertyNames.Members], exactMatch: false));
         Assert.Equal($"{player.Principal.MatchId}-0", squad[PropertyNames.SquadId]);
         Assert.Equal(false, squad[PropertyNames.IsGeneratedSquad]);
-        ChannelBunch roster = Assert.Single(session.Sent, bunch => bunch is { Channel: RaidWorld.GameStateChannel, Opened: false });
+        ChannelBunch roster = Assert.Single(session.Sent, bunch => bunch is { Channel: ChannelLayout.GameState, Opened: false });
         Dictionary<string, object?> rosterValues = Decode(codec, session.Raid.State.GameState.ClassPath, roster);
         Assert.Equal([player.Squad], Assert.IsType<IReadOnlyList<object?>>(rosterValues[PropertyNames.AllSquads], exactMatch: false));
         Assert.Equal([player.PlayerState], Assert.IsType<IReadOnlyList<object?>>(rosterValues[PropertyNames.PlayerStates], exactMatch: false));

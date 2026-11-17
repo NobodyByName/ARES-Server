@@ -1,6 +1,5 @@
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
-using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
@@ -184,10 +183,10 @@ public sealed class LootTests
         Assert.False(session.Channels.HasLoot(cabinet.Index));
 
         // Every loot channel opened by a spawn and closed dormant, inside the loot channel range.
-        List<ChannelBunch> opens = [.. session.Sent.Where(bunch => bunch.Opened && bunch.Channel >= first && bunch.Channel < first + PlayerChannels.LootChannels)];
+        List<ChannelBunch> opens = [.. session.Sent.Where(bunch => bunch.Opened && bunch.Channel >= first && bunch.Channel < first + ChannelLayout.LootChannels)];
         Assert.Equal(relevant, opens.Count);
         Assert.Equal(relevant, session.Sent.Count(bunch => bunch.CloseReason == Bunches.Dormancy));
-        Assert.DoesNotContain(session.Sent, bunch => bunch.CloseReason is { } reason && reason != Bunches.Dormancy && bunch.Channel >= first && bunch.Channel < first + PlayerChannels.LootChannels);
+        Assert.DoesNotContain(session.Sent, bunch => bunch.CloseReason is { } reason && reason != Bunches.Dormancy && bunch.Channel >= first && bunch.Channel < first + ChannelLayout.LootChannels);
         List<ulong> spawned = [.. opens.Select(SpawnedGuid)];
         Assert.Equal(spawned.Count, spawned.Distinct().Count());
 
@@ -503,7 +502,7 @@ public sealed class LootTests
 
     // Whether a bunch opens a loot channel for the container.
     private static bool OpensLoot(ScriptedPlayer session, ChannelBunch bunch, LootContainer container) =>
-        bunch.Opened && bunch.Channel >= FirstLootChannel(session) && bunch.Channel < FirstLootChannel(session) + PlayerChannels.LootChannels
+        bunch.Opened && bunch.Channel >= FirstLootChannel(session) && bunch.Channel < FirstLootChannel(session) + ChannelLayout.LootChannels
         && SpawnedGuid(bunch) == container.Guid;
 
     // The actor a channel's opening bunch spawns.

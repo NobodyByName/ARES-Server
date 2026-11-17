@@ -134,7 +134,7 @@ public sealed class DepartureTests
         (_, at) = second.Settle(30, at);
 
         // The second player sees the first one once the map actors may be sent.
-        int stateChannel = 64 + first.Raid.Doors.Doors.Count + first.Raid.Ladders.Ladders.Count + PlayerChannels.LootChannels
+        int stateChannel = 64 + first.Raid.Doors.Doors.Count + first.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels
             + first.Raid.Extraction.Points.Count;
         at += 20;
         for (int step = 0; step < 5; step++)

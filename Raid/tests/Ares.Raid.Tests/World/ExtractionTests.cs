@@ -1,5 +1,5 @@
 using Ares.Raid.World.Actors;
-using Ares.Raid.World.Players;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Pendulum;
@@ -102,7 +102,7 @@ public sealed class ExtractionTests
             session.Service(at);
         }
 
-        int first = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + PlayerChannels.LootChannels;
+        int first = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels;
         int count = session.Raid.Extraction.Points.Count;
         Assert.Equal(DamExtraction.All.Count, session.Channels.ElevatorsReady);
         Assert.Equal(Enumerable.Range(first, count), session.Sent.Where(bunch => bunch is { Opened: true } && bunch.Channel >= first && bunch.Channel < first + count)
@@ -243,7 +243,7 @@ public sealed class ExtractionTests
 
         ExtractionPoint point = session.Raid.Extraction.Points[0];
         ulong summon = point.Buttons[s_summon];
-        int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + PlayerChannels.LootChannels + point.Index;
+        int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels + point.Index;
         double pressed = session.Raid.WorldSeconds(123.5);
         session.Sent.Clear();
         session.Input(30, 33, summon, focus: summon);
@@ -520,7 +520,7 @@ public sealed class ExtractionTests
         ExtractionPoint point = session.Raid.Extraction.Points[0];
         int a = IndexOf(ExtractionButtonRole.Descend);
         ulong descend = point.Buttons[a];
-        int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + PlayerChannels.LootChannels + point.Index;
+        int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels + point.Index;
         double ready = 123.5 + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds;
         Assert.True(session.Raid.ExtractionStates.Call(point.Index, 43, session.Raid.WorldSeconds(123.5)));
         session.Service(ready + 0.1);

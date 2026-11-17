@@ -10,32 +10,19 @@ namespace Ares.Raid.World.Players;
 /// </summary>
 public sealed partial class PlayerChannels
 {
-    /// <summary>Channels that carry ARCs for this client; an ARC holds one while the client has it.</summary>
-    private const int ArcChannels = 16;
-
-    private Dictionary<int, ArcLink> _arcLinks = [];
+    // The channels that carry ARCs for this client; an ARC holds one while the client has it.
+    private ActorChannelPool<ArcLink> _arcLinks;
     private Dictionary<ulong, ReliableKey> _arcExports = [];
-    private Dictionary<int, ArcStage> _failedArcs = [];
+    private Dictionary<int, ActorChannelStage> _failedArcs = [];
     private double _arcRelevantAt;
 
-    // Where an ARC's channel stands: the classes are exported, the actor spawned with its attribute sets, its ability
-    // system named, then filled in; the channel then stays open until the ARC is despawned or no longer relevant.
-    private enum ArcStage
-    {
-        Exporting,
-        Spawning,
-        Naming,
-        Open,
-        Closing,
-    }
-
     /// <summary>ARCs whose actor and ability system this client has.</summary>
-    public int ArcsReady => _arcLinks.Values.Count(link => link.Stage == ArcStage.Open);
+    public int ArcsReady => _arcLinks.Count(entry => entry.Value.Stage == ActorChannelStage.Open);
 
     /// <summary>Whether this client has an ARC.</summary>
     /// <param name="arc">ARC index.</param>
     /// <returns>True from the ability system's content until the channel closes.</returns>
-    public bool HasArc(int arc) => _arcLinks.TryGetValue(arc, out ArcLink link) && link.Stage == ArcStage.Open;
+    public bool HasArc(int arc) => _arcLinks.TryGet(arc, out ArcLink link) && link.Stage == ActorChannelStage.Open;
 
     /// <summary>ARC channels open now (or on the way).</summary>
     public int ArcChannelsInUse => _arcLinks.Count;
@@ -46,18 +33,12 @@ public sealed partial class PlayerChannels
     /// <summary>What happened to the raid's ARCs, oldest first.</summary>
     public IReadOnlyList<string> ArcEvents => _raid.Arcs.Events;
 
-    // The first ARC channel: after the pickup channels.
-    private int FirstArcChannel => FirstPickupChannel + PickupChannels;
-
     private void CopyArcs(PlayerChannels copy)
     {
-        copy._arcLinks = new Dictionary<int, ArcLink>(_arcLinks);
+        copy._arcLinks = _arcLinks.Copy();
         copy._arcExports = new Dictionary<ulong, ReliableKey>(_arcExports);
-        copy._failedArcs = new Dictionary<int, ArcStage>(_failedArcs);
+        copy._failedArcs = new Dictionary<int, ActorChannelStage>(_failedArcs);
     }
-
-    private int? ArcIndex(int channel) =>
-        channel - FirstArcChannel is var index and >= 0 and < ArcChannels ? index : null;
 
     private void ArcChannelFailed(int channel)
     {
@@ -77,7 +58,7 @@ public sealed partial class PlayerChannels
             return;
         }
 
-        ServiceArcLinks(sender);
+        _arcLinks.Advance(sender, new ArcSteps(this));
         if (now < _arcRelevantAt)
         {
             return;
@@ -86,8 +67,8 @@ public sealed partial class PlayerChannels
         _arcRelevantAt = now + LootRelevanceInterval;
         foreach (WorldArc arc in _raid.Arcs.All)
         {
-            if (_arcLinks.ContainsKey(arc.Index) || _failedArcs.ContainsKey(arc.Index) || !WorldArcs.Relevant(arc, LootPosition)
-                || FreeArcChannel() is not { } channel)
+            if (_arcLinks.Contains(arc.Index) || _failedArcs.ContainsKey(arc.Index) || !WorldArcs.Relevant(arc, LootPosition)
+                || _arcLinks.FreeChannel() is not { } channel)
             {
                 continue;
             }
@@ -103,74 +84,58 @@ public sealed partial class PlayerChannels
                 }
             }
 
-            _arcLinks[arc.Index] = new ArcLink(ArcStage.Exporting, channel, null);
+            _arcLinks.Set(arc.Index, new ArcLink(ActorChannelStage.Exporting, channel, null));
         }
 
-        ServiceArcLinks(sender);
-    }
-
-    // Moves each ARC channel on by the steps whose bunches the client has.
-    private void ServiceArcLinks(ReliableSender sender)
-    {
-        foreach ((int index, ArcLink current) in _arcLinks.ToArray())
-        {
-            ArcLink link = current;
-            WorldArc arc = _raid.Arcs.All[index];
-            bool waiting = link.Stage == ArcStage.Exporting
-                ? _raid.Arcs.Roots(arc).Any(root => sender.Pending(_arcExports[root]))
-                : link.Key is { } key && sender.Pending(key);
-            if (waiting)
-            {
-                continue;
-            }
-
-            bool relevant = WorldArcs.Relevant(arc, LootPosition);
-            if (_failedArcs.ContainsKey(index) || (link.Stage == ArcStage.Exporting && !relevant))
-            {
-                // The client refused the channel, or the ARC went away before it opened: nothing more goes to it.
-                _arcLinks.Remove(index);
-                continue;
-            }
-
-            switch (link.Stage)
-            {
-                case ArcStage.Exporting:
-                    link = link with { Stage = ArcStage.Spawning, Key = sender.Queue(_raid.Arcs.OpenBunch(arc, link.Channel, sender.NextSequence(link.Channel))) };
-                    break;
-                case ArcStage.Spawning:
-                    link = link with { Stage = ArcStage.Naming, Key = sender.Queue(WorldArcs.ComponentExportBunch(arc)) };
-                    break;
-                case ArcStage.Naming:
-                    link = link with { Stage = ArcStage.Open, Key = sender.Queue(_raid.Arcs.AbilitySystemBunch(arc, link.Channel)) };
-                    break;
-                case ArcStage.Open when !relevant:
-                    link = link with { Stage = ArcStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, arc.Destroyed ? Bunches.Destroyed : Bunches.Relevancy)) };
-                    break;
-                case ArcStage.Open:
-                    break;
-                case ArcStage.Closing:
-                    _arcLinks.Remove(index);
-                    continue;
-            }
-
-            _arcLinks[index] = link;
-        }
-    }
-
-    // An ARC channel no ARC uses.
-    private int? FreeArcChannel()
-    {
-        for (int channel = FirstArcChannel; channel < FirstArcChannel + ArcChannels; channel++)
-        {
-            if (_arcLinks.Values.All(link => link.Channel != channel))
-            {
-                return channel;
-            }
-        }
-
-        return null;
+        _arcLinks.Advance(sender, new ArcSteps(this));
     }
 
     // An ARC's channel on this connection: its stage and the bunch it waits for.
-    private readonly record struct ArcLink(ArcStage Stage, int Channel, ReliableKey? Key);
+    private readonly record struct ArcLink(ActorChannelStage Stage, int Channel, ReliableKey? Key) : IActorChannelLink;
+
+    // What an ARC's channel sends: the classes are exported, the actor spawned with its attribute sets, its ability
+    // system named, then filled in; the channel then stays open until the ARC is despawned or no longer relevant.
+    private readonly struct ArcSteps(PlayerChannels channels) : IActorChannelSteps<ArcLink>
+    {
+        public bool Waits(ReliableSender sender, int index, ArcLink link)
+        {
+            if (link.Stage != ActorChannelStage.Exporting)
+            {
+                return link.Key is { } key && sender.Pending(key);
+            }
+
+            Dictionary<ulong, ReliableKey> exports = channels._arcExports;
+            return channels._raid.Arcs.Roots(channels._raid.Arcs.All[index]).Any(root => sender.Pending(exports[root]));
+        }
+
+        // The client refused the channel, or the ARC went away before it opened: nothing more goes to it.
+        public bool Abandons(int index, ArcLink link) =>
+            channels._failedArcs.ContainsKey(index)
+            || (link.Stage == ActorChannelStage.Exporting && !WorldArcs.Relevant(channels._raid.Arcs.All[index], channels.LootPosition));
+
+        public ArcLink Spawn(ReliableSender sender, int index, ArcLink link) =>
+            link with { Stage = ActorChannelStage.Spawning, Key = sender.Queue(channels._raid.Arcs.OpenBunch(channels._raid.Arcs.All[index], link.Channel, sender.NextSequence(link.Channel))) };
+
+        public ArcLink Name(ReliableSender sender, int index, ArcLink link) =>
+            link with { Stage = ActorChannelStage.Naming, Key = sender.Queue(WorldArcs.ComponentExportBunch(channels._raid.Arcs.All[index])) };
+
+        public ArcLink Fill(ReliableSender sender, int index, ArcLink link) =>
+            link with { Stage = ActorChannelStage.Open, Key = sender.Queue(channels._raid.Arcs.AbilitySystemBunch(channels._raid.Arcs.All[index], link.Channel)) };
+
+        // The channel stays open while the ARC is relevant; a channel waiting for the client is left as it is.
+        public ArcLink Update(ReliableSender sender, int index, ArcLink link, bool waiting)
+        {
+            WorldArc arc = channels._raid.Arcs.All[index];
+            if (waiting || WorldArcs.Relevant(arc, channels.LootPosition))
+            {
+                return link;
+            }
+
+            return link with { Stage = ActorChannelStage.Closing, Key = sender.Queue(Bunches.Close(link.Channel, arc.Destroyed ? Bunches.Destroyed : Bunches.Relevancy)) };
+        }
+
+        public void Closed(int index, ArcLink link)
+        {
+        }
+    }
 }

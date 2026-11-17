@@ -233,10 +233,10 @@ public sealed partial class PlayerChannels
                 _member.Inventory.Blackboard, _member.Weapons.Variables(latest, _weaponReferencesMapped ? _player.HeldItems : null), TimeOffsetAt(latest, now),
                 emptySlots: _member.Weapons.EmptyItemSlots(latest));
             uint delivery = checked((uint)BlackboardFrames);
-            List<ReliableKey> keys = [sender.Queue(Bunches.Actor(PawnChannel, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
+            List<ReliableKey> keys = [sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
             if (_shield != _member.Inventory.Shield)
             {
-                keys.Add(sender.Queue(Bunches.Actor(PawnChannel, _raid.State.ShieldContent(_player, _member.Inventory).Write)));
+                keys.Add(sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.ShieldContent(_player, _member.Inventory).Write)));
                 _shield = _member.Inventory.Shield;
             }
 

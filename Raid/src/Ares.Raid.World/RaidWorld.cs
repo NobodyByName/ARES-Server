@@ -19,18 +19,6 @@ public sealed class RaidWorld
     private readonly IReadOnlyList<PlayerStart> _starts;
     private readonly List<RaidPlayer> _players = [];
 
-    /// <summary>Channel of the level script actor.</summary>
-    private const int LevelScriptChannel = 4;
-
-    /// <summary>Channel of the game state.</summary>
-    public const int GameStateChannel = 5;
-
-    /// <summary>Channel of the world data layers actor.</summary>
-    private const int DataLayersChannel = 7;
-
-    /// <summary>First channel of the global actors.</summary>
-    private const int FirstGlobalChannel = 8;
-
     internal RaidWorld(DamWorlds worlds, string matchId, int seed, string lighting)
     {
         MatchId = matchId;
@@ -59,9 +47,10 @@ public sealed class RaidWorld
         Pickups = new WorldPickups(replication, State, lootEnd + 2);
         Arcs = new WorldArcs(replication, Imports);
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
+        Channels = new ChannelLayout(Imports.GlobalActors.Count, Doors.Doors.Count, Ladders.Ladders.Count, Extraction.Points.Count, MaxPlayers);
         StaticActors =
         [
-            new StaticWorldActor(LevelScriptChannel, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
+            new StaticWorldActor(ChannelLayout.LevelScript, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
             {
                 [PropertyNames.Role] = (ulong)NetRole.Authority,
                 [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
@@ -72,12 +61,12 @@ public sealed class RaidWorld
             // The game spawns these on both sides with stable names; replicating them gives the client its
             // usual simulated-proxy roles over them.
             .. Imports.GlobalActors.Select((actor, index) => new StaticWorldActor(
-                FirstGlobalChannel + index,
+                Channels.Globals.Channel(index),
                 actor.Guid,
                 actor.Actor.Class,
                 [replication.Encode(actor.Actor.Class, new Dictionary<string, object?> { [PropertyNames.Role] = (ulong)NetRole.Authority, [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy })])),
         ];
-        SpawnedActors = [State.GameStateActor(GameStateChannel, Loot.WorldItemClassBits)];
+        SpawnedActors = [State.GameStateActor(ChannelLayout.GameState, Loot.WorldItemClassBits)];
     }
 
     /// <summary>Match id of the reservation.</summary>
@@ -173,7 +162,10 @@ public sealed class RaidWorld
     public WorldArcs Arcs { get; }
 
     /// <summary>Most players the raid can hold: one per spawn point of its player start.</summary>
-    public int MaxPlayers => _starts[Seed % _starts.Count].SpawnPoints.Count;
+    private int MaxPlayers => _starts[Seed % _starts.Count].SpawnPoints.Count;
+
+    /// <summary>Which actor channel carries what for the raid's connections.</summary>
+    public ChannelLayout Channels { get; }
 
     /// <summary>Server actors of this raid.</summary>
     public WorldState State { get; }
@@ -258,7 +250,7 @@ public sealed class RaidWorld
     {
         object?[] active = [.. activeNames.Select(object? (name) => new NetworkName(name, 0))];
         object?[] loaded = [.. loadedNames.Select(object? (name) => new NetworkName(name, 0))];
-        return new StaticWorldActor(DataLayersChannel, guid, DamMap.WorldDataLayersClass, [replication.Encode(DamMap.WorldDataLayersClass, new Dictionary<string, object?>
+        return new StaticWorldActor(ChannelLayout.DataLayers, guid, DamMap.WorldDataLayersClass, [replication.Encode(DamMap.WorldDataLayersClass, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
