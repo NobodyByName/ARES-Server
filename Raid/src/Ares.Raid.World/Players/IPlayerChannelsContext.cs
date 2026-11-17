@@ -4,7 +4,10 @@ using Ares.Structs.Core.Geometry;
 
 namespace Ares.Raid.World.Players;
 
-/// <summary>What a family of world actors (see <see cref="IPlayerFamily"/>) sees of the rest of a player's channels.</summary>
+/// <summary>
+/// What a family of world actors (see <see cref="IPlayerFamily"/>) and the pawn frames (see <see cref="PlayerPawnFrames"/>)
+/// see of the rest of a player's channels.
+/// </summary>
 internal interface IPlayerChannelsContext
 {
     /// <summary>The raid.</summary>
@@ -97,6 +100,14 @@ internal interface IPlayerChannelsContext
     /// <param name="ladder">Ladder index.</param>
     /// <param name="topEntry">Whether the climb starts at the top.</param>
     void Climb(uint frame, int ladder, bool topEntry);
+
+    /// <summary>Whether a family lets the client use an interaction target it focuses: pawn frames keep it as their focus.</summary>
+    /// <param name="target">The focused object.</param>
+    /// <returns>True when some family's target is usable now.</returns>
+    bool FocusUsable(ulong target);
+
+    /// <summary>Whether a family runs an interaction for the character: a breach, a container search or a descend hold.</summary>
+    bool InteractionRunning { get; }
 
     /// <summary>Logs a press no family acted on when its target is no interaction the server gave the client.</summary>
     /// <param name="request">The request.</param>

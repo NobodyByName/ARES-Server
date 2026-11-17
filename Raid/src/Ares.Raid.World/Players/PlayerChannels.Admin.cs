@@ -2,12 +2,10 @@ using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
-using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Players;
@@ -111,7 +109,7 @@ public sealed partial class PlayerChannels
             return AdminRefusal.TeleportPending;
         }
 
-        if (InteractionFramesHeld(_raid.Clock()) || _loot.ContainerOpen)
+        if (_frames.InteractionFramesHeld(this, _raid.Clock()) || _loot.ContainerOpen)
         {
             return AdminRefusal.Busy;
         }
@@ -217,35 +215,18 @@ public sealed partial class PlayerChannels
         if (teleport.Frame == 0)
         {
             // The character's own setup frames (its first frame and held-item links) go first.
-            if (_blackboardFrame == 0 || (_player.HeldItems.Count > 0 && !_weaponReferencesMapped))
+            if (_frames.Frame == 0 || (_player.HeldItems.Count > 0 && !_frames.ItemsLinked))
             {
                 return false;
             }
 
-            if (InputFrame is not { } latest || latest <= _blackboardFrame || latest > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending)
+            if (InputFrame is not { } latest || latest <= _frames.Frame || latest > PawnBlackboardFrames.LastTick || _frames.Pending(sender)
                 || _member.Weapons.HoldsFrames(latest))
             {
                 return true;
             }
 
-            CharacterState rest = new(latest, teleport.Position, _movement?.Latest.Flashlight ?? false) { Yaw = teleport.Yaw };
-            IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(latest, new PawnMotion(teleport.Position, default, teleport.Yaw, rest), 0,
-                _member.Inventory.Blackboard, _member.Weapons.Variables(latest, _weaponReferencesMapped ? _player.HeldItems : null), TimeOffsetAt(latest, now),
-                emptySlots: _member.Weapons.EmptyItemSlots(latest));
-            uint delivery = checked((uint)BlackboardFrames);
-            List<ReliableKey> keys = [sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
-            if (_shield != _member.Inventory.Shield)
-            {
-                keys.Add(sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.ShieldContent(_player, _member.Inventory).Write)));
-                _shield = _member.Inventory.Shield;
-            }
-
-            _blackboardKeys = [.. keys];
-            (_blackboardFrame, _blackboardState, _blackboardFocus) = (latest, state, 0);
-            _inventoryVersion = _member.Inventory.Version;
-            _weaponVersion = _member.Weapons.Version;
-            _populatedInventorySent = true;
-            BlackboardFrames++;
+            _frames.SendRest(this, sender, latest, teleport.Position, teleport.Yaw, now);
             Teleports++;
             _teleport = teleport with { Frame = latest, SentAt = now };
             return true;
@@ -261,7 +242,7 @@ public sealed partial class PlayerChannels
         // The first tick that read a report from there runs again as the restart's first.
         if (InputFrame is { } arrived && arrived > teleport.Frame + 1 && Arrived(arrived) && Arrived(arrived - 1) && _input.Position(arrived - 1) is { } there)
         {
-            if (_movement is { } movement)
+            if (_frames.Movement is { } movement)
             {
                 movement.Restart(Math.Max(teleport.Frame, arrived - 3), there, teleport.Yaw);
                 while (movement.Frame + 1 < arrived)

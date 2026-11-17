@@ -17,13 +17,12 @@ public sealed class PlayerChannelsCopyTests
         "_bindings",
         "_keys",
         "_inputAckKeys",
-        "_blackboardKeys",
-        "_blackboardState",
         "_abilityKeys",
         "_abilityDefaults",
-        "_weaponCreationKeys",
-        "_weaponReferenceKeys",
     ];
+
+    // The pawn frames' collections, all replaced as a whole.
+    private static readonly string[] s_pawnFramesReplacedWhole = ["_blackboardKeys", "_blackboardState", "_weaponCreationKeys", "_weaponReferenceKeys"];
 
     // The families of world actors on a connection.
     private static readonly string[] s_families = ["_doors", "_ladders", "_loot", "_pickups", "_arcs", "_elevators", "_observed"];
@@ -82,7 +81,23 @@ public sealed class PlayerChannelsCopyTests
                     .Select(nested => $"{field.Name}.{inner.Name}.{nested}"))),
         ];
         Assert.Empty(sharedInFamilies);
+
+        // The pawn frames are copied, with their character simulation.
+        object? frames = Field(channels, "_frames");
+        object? framesCopy = Field(copy, "_frames");
+        Assert.NotNull(frames);
+        Assert.False(ReferenceEquals(frames, framesCopy));
+        Assert.All(s_pawnFramesReplacedWhole, name => Assert.Contains(FieldsOf(frames), field => field.Name == name));
+        Assert.All(SharedCollections(frames, framesCopy), name => Assert.Contains(name, s_pawnFramesReplacedWhole));
+        Assert.NotNull(Simulation(frames));
+        Assert.False(ReferenceEquals(Simulation(frames), Simulation(framesCopy)));
     }
+
+    private static object? Field(object? owner, string name) =>
+        owner?.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(owner);
+
+    // The pawn frames' character simulation.
+    private static object? Simulation(object? frames) => frames?.GetType().GetProperty("Movement")?.GetValue(frames);
 
     private static IEnumerable<string> SharedCollections(object? original, object? copy) =>
         original is null || copy is null

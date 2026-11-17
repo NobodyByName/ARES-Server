@@ -117,8 +117,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     internal const double LootRelevanceInterval = 0.25;
     internal const int InteractionRequestLog = 40;
 
-    // Map actors sent before the character simulation settles crashed the client.
-    private const double MapActorStartDelay = 15.0;
     private const double LevelStreamingSettleSeconds = 5.0;
     private const double AsyncLoadInterval = 2.0;
     private const int AsyncLoadLimit = 30;
@@ -170,11 +168,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private ReliableKey[] _inputAckKeys = [];
     private bool _correctionExported;
     private uint? _inputAckSent;
-    private ReliableKey[] _blackboardKeys = [];
-    private uint _blackboardFrame;
-    private PlayerMovement? _movement;
-    private IReadOnlyDictionary<int, PendulumSlot> _blackboardState = new Dictionary<int, PendulumSlot>();
-    private ulong _blackboardFocus;
     private double? _asyncLoadAt;
     private int _asyncLoads;
     private ReliableKey[] _abilityKeys = [];
@@ -184,28 +177,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private double? _worldTimeSentAt;
 
     private List<InteractionRequest> _requests = [];
-    private double _framesHeldUntil;
     private List<InventoryRequest> _inventoryRequests = [];
     private List<WeaponInput> _weaponRequests = [];
-    private uint _weaponVersion;
-    private bool _populatedInventorySent;
-    private bool _weaponCreationSent;
-    private bool _weaponItemsCreated;
-    private ReliableKey[] _weaponCreationKeys = [];
-    private bool _weaponReferencesSent;
-    private bool _weaponReferencesMapped;
-    private ReliableKey[] _weaponReferenceKeys = [];
-    private uint _inventoryFrame;
-    private uint _inventoryVersion = 1;
-    private ContainerItem? _shield;
-    private double? _mapActorsAllowedAt;
-
-    // The interaction the server runs for the character (a container search, a descend hold), times in raid world
-    // seconds.
-    private PawnInteraction? _interaction;
-    private uint _interactionCount;
-    private ReliableKey? _interactorExport;
-    private bool _interactorExported;
+    private PlayerPawnFrames _frames = new();
     private BoundedLog _unknownRequests = new(InteractionRequestLog);
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
@@ -271,28 +245,28 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public double? InputYaw => InputFrame is { } frame ? _input.Yaw(frame) : null;
 
     /// <summary>Pawn blackboard frames sent (the first frame and focus updates).</summary>
-    public int BlackboardFrames { get; private set; }
+    public int BlackboardFrames => _frames.BlackboardFrames;
 
     /// <summary>
     /// The character's time offset in its newest frame (see <see cref="PawnBlackboard.TimeOffsetField"/>), or null
     /// before its first frame.
     /// </summary>
-    public long? TimeOffset { get; private set; }
+    public long? TimeOffset => _frames.TimeOffset;
 
     /// <summary>The character's simulated state after the latest simulated input frame, or null before the reset frame.</summary>
-    public CharacterState? SimulatedCharacter => _movement?.Latest;
+    public CharacterState? SimulatedCharacter => _frames.Movement?.Latest;
 
     /// <summary>Input frames the character simulation ran without the client's input.</summary>
-    public int MissingInputFrames => _movement?.MissingFrames ?? 0;
+    public int MissingInputFrames => _frames.Movement?.MissingFrames ?? 0;
 
     /// <summary>Simulated frames after which the character continued from the position its client reported.</summary>
-    public int PositionReseeds => _movement?.Reseeds ?? 0;
+    public int PositionReseeds => _frames.Movement?.Reseeds ?? 0;
 
     /// <summary>The latest such frame: its number, how far the simulation was off and whether it had the character in the air.</summary>
-    public (uint Frame, double Distance, bool Airborne)? LastPositionReseed => _movement?.LastReseed;
+    public (uint Frame, double Distance, bool Airborne)? LastPositionReseed => _frames.Movement?.LastReseed;
 
     /// <summary>Largest distance the simulation was off on such a frame.</summary>
-    public double WorstPositionReseed => _movement?.WorstReseed ?? 0;
+    public double WorstPositionReseed => _frames.Movement?.WorstReseed ?? 0;
 
     /// <summary>Door presses applied.</summary>
     public int DoorPresses => _doors.Presses;
@@ -322,10 +296,10 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public int HookThrows => _member.Weapons.HookThrows;
 
     /// <summary>Times pawn frames started being withheld because a thrown Snap Hook was out.</summary>
-    public int QuickItemHolds { get; private set; }
+    public int QuickItemHolds => _frames.QuickItemHolds;
 
     /// <summary>The latest such hold: the first and the last withheld frame tick (none while it lasts).</summary>
-    public (uint From, uint? To)? LastQuickItemHold { get; private set; }
+    public (uint From, uint? To)? LastQuickItemHold => _frames.LastQuickItemHold;
 
     /// <summary>Inventory requests rejected and corrected.</summary>
     public int RejectedInventoryRequests { get; private set; }
@@ -508,7 +482,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     Vector3D IPlayerChannelsContext.RelevancePosition => RelevancePosition;
 
     /// <inheritdoc />
-    bool IPlayerChannelsContext.InteractorExported => _interactorExported;
+    bool IPlayerChannelsContext.InteractorExported => _frames.InteractorExported;
 
     // Where the player is for relevance: an operator teleport's destination, else the latest reported position, else
     // the spawn.
@@ -545,7 +519,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._visibleLevels = new HashSet<string>(_visibleLevels, StringComparer.Ordinal);
         copy._ignoredCalls = new Dictionary<string, int>(_ignoredCalls, StringComparer.Ordinal);
         copy._input = _input.Copy();
-        copy._movement = _movement?.Copy();
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
@@ -558,6 +531,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._arcs = _arcs.Copy();
         copy._elevators = _elevators.Copy();
         copy._observed = _observed.Copy();
+        copy._frames = _frames.Copy();
         return copy;
     }
 
@@ -691,7 +665,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         ServiceInputAcknowledgement(io.Sender);
         if (!ServiceTeleport(io.Sender, now))
         {
-            ServiceBlackboard(io.Sender, now);
+            _frames.Service(this, _input, io.Sender, now);
         }
 
         ServiceStreaming(io.Sender, now);
@@ -763,22 +737,22 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                     _rejectedInventory.Add($"{command.Type} {Slot(command.From)}->{Slot(command.To)} x{command.Amount} {rejection}@{frame}");
                 }
 
-                _inventoryFrame = Math.Max(_inventoryFrame, frame);
+                _frames.InventoryChangedAt(frame);
             }
         }
 
         _inventoryRequests.Clear();
-        if (Phase == DeliveryPhase.Possessed && _blackboardFrame != 0 && InputFrame is { } latest)
+        if (Phase == DeliveryPhase.Possessed && _frames.Frame != 0 && InputFrame is { } latest)
         {
             // Late input frames revise the ticks they reach, even when no newer frame arrived. Each newly simulated frame
             // moves with the weapon its own input left in the character's hands.
-            _movement?.Revise(_input);
+            _frames.Movement?.Revise(_input);
             Queue<WeaponInput> weapons = new(_weaponRequests.Where(input => input.Frame < latest).OrderBy(input => input.Frame));
-            while (_movement is { } movement && movement.Frame + 1 < latest)
+            while (_frames.Movement is { } movement && movement.Frame + 1 < latest)
             {
                 while (weapons.TryPeek(out WeaponInput input) && input.Frame <= movement.Frame + 1)
                 {
-                    _member.Weapons.Apply(weapons.Dequeue(), _weaponReferencesMapped ? _player.HeldItems : null);
+                    _member.Weapons.Apply(weapons.Dequeue(), _frames.ItemsLinked ? _player.HeldItems : null);
                 }
 
                 movement.Advance(_input, _member.Weapons.Armed, _member.Weapons.HeldItem);
@@ -786,7 +760,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
             foreach (WeaponInput input in weapons)
             {
-                _member.Weapons.Apply(input, _weaponReferencesMapped ? _player.HeldItems : null);
+                _member.Weapons.Apply(input, _frames.ItemsLinked ? _player.HeldItems : null);
             }
 
             _weaponRequests.RemoveAll(input => input.Frame < latest);
@@ -796,7 +770,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             _weaponRequests.Clear();
         }
 
-        PublishMotion(now);
+        _frames.PublishMotion(this, _input, now);
     }
 
     /// <inheritdoc />
@@ -898,7 +872,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 // Starting the character earlier lets its spawn animation finish behind the loading screen.
                 WorldActor pawn = Actor(_player.Pawn);
                 ActorSpawn pawnSpawn = new(pawn.Guid, _raid.Imports.Archetypes[pawn.ClassPath], 0, pawn.Location, pawn.Rotation);
-                _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, [SpawnFrame()]).ToBunch(ChannelLayout.Pawn, sender.NextSequence(ChannelLayout.Pawn), []))];
+                _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, [_frames.SpawnFrame(this)]).ToBunch(ChannelLayout.Pawn, sender.NextSequence(ChannelLayout.Pawn), []))];
                 Phase = DeliveryPhase.PawnOpenPending;
                 return true;
             case DeliveryPhase.PawnOpenPending when delivered:
@@ -928,7 +902,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                     sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.InventoryContent(_player, _member.Inventory).Write)),
                     sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.ShieldContent(_player, _member.Inventory).Write)),
                 ];
-                _shield = _member.Inventory.Shield;
+                _frames.ShieldSent(_member.Inventory.Shield);
                 Phase = DeliveryPhase.InventoryContentPending;
                 return true;
             case DeliveryPhase.InventoryContentPending when delivered:
@@ -973,22 +947,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             default:
                 return false;
         }
-    }
-
-    // The client's character simulation turns the character to the facing of the state it starts from, so the
-    // character opens with the spawn state. The first frame built from the client's input then follows as an
-    // ordinary update.
-    private ActorContentBlock SpawnFrame()
-    {
-        WorldActor pawn = Actor(_player.Pawn);
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
-            new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, _member.Inventory.InitialBlackboard,
-            _member.Weapons.Variables(PawnBlackboardFrames.FirstTick), TimeOffsetAt(PawnBlackboardFrames.FirstTick, _raid.Clock()));
-        uint delivery = checked((uint)BlackboardFrames);
-        ActorContentBlock frame = _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState);
-        _blackboardState = state;
-        BlackboardFrames++;
-        return frame;
     }
 
     private void HandleRequest(InteractionRequest request, double now)
@@ -1292,151 +1250,11 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _worldTimeSentAt = now;
     }
 
-    // The first frame starts the client's character simulation at the spawn after the client confirmed its
-    // initial levels loaded and possession completed, with the slot-1 gun already in hand (a raid never starts
-    // unarmed; its item link follows once the item exists). The client applies each later
-    // frame as its full character state, so later frames carry the movement the client itself predicted
-    // (accepted as is): input frame N reports the position before tick N, so a frame describes the tick before
-    // the latest input. They are sent when the usable focused button changes: the client's interaction (and
-    // its animation) only starts once the server says it may use the button.
-    private void ServiceBlackboard(ReliableSender sender, double now)
-    {
-        if (InputFrame is not { } latest || latest is < PawnBlackboardFrames.FirstTick or > PawnBlackboardFrames.LastTick || _blackboardKeys.Any(sender.Pending))
-        {
-            return;
-        }
-
-        // Item initialization caches its inventory owner even when FindSlotOf fails. Registering
-        // before populated containers arrive leaves the item permanently assigned to an invalid slot.
-        if (_populatedInventorySent && _player.HeldItems.Count > 0 && !_weaponReferencesMapped)
-        {
-            if (!_weaponCreationSent)
-            {
-                _weaponCreationKeys = [.. _raid.State.WeaponItemCreation(_player, _member.Inventory)
-                    .Select(item => sender.Queue(Bunches.Actor(ChannelLayout.Pawn, item.Write)))];
-                _weaponCreationSent = true;
-                return;
-            }
-
-            if (!_weaponItemsCreated)
-            {
-                if (_weaponCreationKeys.Any(sender.Pending))
-                {
-                    return;
-                }
-
-                _weaponItemsCreated = true;
-            }
-
-            if (!_weaponReferencesSent)
-            {
-                _weaponReferenceKeys = [sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.WeaponItemReferences(_player).Write))];
-                _weaponReferencesSent = true;
-                return;
-            }
-
-            if (_weaponReferenceKeys.Any(sender.Pending))
-            {
-                return;
-            }
-
-            _weaponReferencesMapped = true;
-            _weaponVersion = uint.MaxValue;
-        }
-
-        IReadOnlyDictionary<Guid, ulong>? weaponObjects = _weaponReferencesMapped ? _player.HeldItems : null;
-        IReadOnlyDictionary<int, PendulumSlot> state;
-        uint frame = latest;
-        ulong focus = 0;
-        bool initializingContainers = _blackboardFrame == 0;
-        if (_blackboardFrame == 0)
-        {
-            WorldActor pawn = Actor(_player.Pawn);
-            double yaw = pawn.Rotation.Yaw * Math.PI / 180;
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
-                _member.Inventory.InitialBlackboard, _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now),
-                emptySlots: _member.Weapons.EmptyItemSlots(frame));
-            _movement = new PlayerMovement(frame, pawn.Location, yaw, _raid.Collision);
-        }
-        else
-        {
-            if (InteractionFramesHeld(now))
-            {
-                return;
-            }
-
-            if (QuickItemHeld(latest - 1))
-            {
-                return;
-            }
-
-            focus = Array.Exists(Families, family => family.Usable(this, _input.Focus)) ? _input.Focus : 0;
-            frame = latest - 1;
-            bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
-            bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
-            if ((!inventoryChanged && !weaponsChanged && focus == _blackboardFocus) || frame <= _blackboardFrame || frame < _inventoryFrame
-                || _input.Position(latest) is not { } position || _input.Position(frame) is not { } before || _input.Yaw(frame) is not { } yaw
-                || _movement?.State(frame) is not { } character || character.Stance == CharacterStance.Slide || character.SlideExitTicks > 0
-                || character.Roll is not null || character.Vaulting || character.Unsettled || character.SnapHook.Busy)
-            {
-                // A frame lacks the state of the client's own slide, roll, vault, landing and Snap Hook nodes: it would end a
-                // slide, a roll, a vault, a landing recovery or a hook's flight and pull, and drop a jumping or falling character
-                // to the ground. Wait until the character is back in ordinary ground movement.
-                return;
-            }
-
-            // The character's interactor shows the server-run interaction (an open container is still its search).
-            state = PawnBlackboardFrames.State(frame, Motion(character, position, before, yaw, _input.ActionRotation(frame)), focus, _member.Inventory.Blackboard,
-                _member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(frame, now),
-                _interaction is { } interaction ? OnCharacterClock(interaction) : null, _member.Weapons.EmptyItemSlots(frame));
-        }
-
-        // Delivery numbers address the client's snapshot ring; the graph inside carries the input tick.
-        uint delivery = checked((uint)BlackboardFrames);
-        List<ReliableKey> keys = [sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.BlackboardFrame(delivery, delivery + 1, state, _blackboardState)))];
-        if (_shield != _member.Inventory.Shield)
-        {
-            keys.Add(sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.ShieldContent(_player, _member.Inventory).Write)));
-            _shield = _member.Inventory.Shield;
-        }
-
-        _blackboardKeys = [.. keys];
-        (_blackboardFrame, _blackboardState, _blackboardFocus) = (frame, state, focus);
-        _inventoryVersion = initializingContainers ? 1 : _member.Inventory.Version;
-        _weaponVersion = _member.Weapons.Version;
-        _populatedInventorySent = !initializingContainers;
-        BlackboardFrames++;
-    }
-
-    // While a thrown Snap Hook is out (its flight and pull, until the client may use it again) the client keeps its own
-    // character state: a frame would end them. Raid keeps following its movement reports.
-    // Inventory and focus changes go out with the first frame after the hold.
-    private bool QuickItemHeld(uint frame)
-    {
-        bool held = _member.Weapons.HoldsFrames(frame);
-        switch (held)
-        {
-            case true when LastQuickItemHold is not { To: null }:
-                QuickItemHolds++;
-                LastQuickItemHold = (frame, null);
-                break;
-            case false when LastQuickItemHold is { To: null } hold:
-                LastQuickItemHold = (hold.From, frame - 1);
-                break;
-        }
-
-        return held;
-    }
-
-    // Pawn frames carry no interaction state, so the client's own one (requested, holding, succeeded) is reset by
-    // each frame; none are sent while this player breaches and just after it succeeds.
-    private bool InteractionFramesHeld(double now) => _doors.Breaching || _loot.Searching || _elevators.Descending || now < _framesHeldUntil;
-
     // Asks the client to finish loading the levels around it, while streaming still changes and before the
     // character simulation starts; the client decides what it loads.
     private void ServiceStreaming(ReliableSender sender, double now)
     {
-        if (_blackboardFrame != 0 || _asyncLoads >= AsyncLoadLimit
+        if (_frames.Frame != 0 || _asyncLoads >= AsyncLoadLimit
             || (_asyncLoadAt is { } last && (now - last < AsyncLoadInterval || (_visibleLevelsChangedAt is { } changed && now - changed >= LevelStreamingSettleSeconds))))
         {
             return;
@@ -1598,18 +1416,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         return false;
     }
 
-    // A server-run interaction with its times moved from world time to the character's clock.
-    private PawnInteraction OnCharacterClock(PawnInteraction interaction)
-    {
-        double offset = (double)(TimeOffset ?? 0) / PawnBlackboard.TimePerSecond;
-        return interaction with
-        {
-            RequestedAt = interaction.RequestedAt - offset,
-            AlignedAt = interaction.AlignedAt - offset,
-            StartedAt = interaction.StartedAt - offset,
-        };
-    }
-
     private static string Slot(ItemContainerSlot slot) => $"{slot.Parent.Id}r{slot.Parent.Revision}/{slot.Index}";
 
     // Whether an id names an interaction the server gave the client: a door, ladder, loot, elevator button or pickup.
@@ -1618,58 +1424,11 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         || _raid.Extraction.ByButton(target) is not null || _raid.Ladders.Ladders.Any(ladder => ladder.Interactions.Contains(target))
         || _raid.Pickups.ByTarget(target) is not null;
 
-    // Gives other players this character's movement: the input tick before the newest input, at the position the
-    // client reported, with the simulated velocity, stance and locomotion (as the character's own frames carry it),
-    // the held weapons and the aim pitch. Other clients have no item objects of this player, so the weapons go
-    // without item links: the client draws an equipped gun or gadget from its item type. Other clients only show the
-    // character, so its movement goes out through a Snap Hook's throw and pull too, while this player's own frames are
-    // held: the Snap Hook's node carries the hook (other clients draw it and its cable from it), and the move target and
-    // pull node the pulled pose.
-    private void PublishMotion(double now)
-    {
-        if (Phase != DeliveryPhase.Possessed || _blackboardFrame == 0 || InputFrame is not { } latest || latest <= PawnBlackboardFrames.FirstTick)
-        {
-            return;
-        }
-
-        uint tick = latest - 1;
-        if ((_member.Motion is { } published && published.Tick >= tick) || !_member.Weapons.Describable(tick) || _input.Position(latest) is not { } position
-            || _input.Position(tick) is not { } before || _input.Yaw(tick) is not { } yaw || _movement?.State(tick) is not { } character
-            || _input.Pitch(tick) is not { } pitch)
-        {
-            return;
-        }
-
-        IReadOnlyList<PendulumVariable> weapons = _member.Weapons.ObservedVariables(tick, character.SnapHook);
-        _member.Publish(new PlayerMotion(tick, Motion(character, position, before, yaw, _input.ActionRotation(tick)),
-            [.. weapons, .. character.SnapHook.ObservedNodes(tick, weapons)], pitch, TimeOffsetAt(tick, now)));
-    }
-
-    // A tick's movement for a frame: the simulated body when the simulation moves it, otherwise the position the
-    // client reported after the tick with the height change it shows.
-    private static PawnMotion Motion(CharacterState character, Vector3D reported, Vector3D before, double yaw, PendulumQuaternion? actionRotation) =>
-        character.Body is null
-            ? new PawnMotion(reported, character.Velocity with { Z = (reported.Z - before.Z) / PawnBlackboard.TickSeconds }, yaw, character, actionRotation)
-            : new PawnMotion(character.Position, character.Velocity, yaw, character, actionRotation);
-
-    // The character's time offset: a tick's simulation time plus the offset is the raid's world time, which is
-    // also the server time on this raid's packets. The client's ticks drift against the raid's clock; like the
-    // game, the offset follows in whole steps, so it stays put while the drift is under one step.
-    private long TimeOffsetAt(uint tick, double now)
-    {
-        long ideal = (long)Math.Round(_raid.WorldSeconds(now) * PawnBlackboard.TimePerSecond) - ((long)tick * PawnBlackboard.TimePerTick);
-        long offset = TimeOffset is { } current
-            ? current + (PawnBlackboard.TimeOffsetStep * ((ideal - current) / PawnBlackboard.TimeOffsetStep))
-            : ideal - (ideal % PawnBlackboard.TimePerTick);
-        TimeOffset = offset;
-        return offset;
-    }
+    /// <inheritdoc />
+    void IPlayerChannelsContext.InventoryChangedAt(uint frame) => _frames.InventoryChangedAt(frame);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.InventoryChangedAt(uint frame) => _inventoryFrame = Math.Max(_inventoryFrame, frame);
-
-    /// <inheritdoc />
-    bool IPlayerChannelsContext.MapActorsAllowed(double now) => MapActorsAllowed(now);
+    bool IPlayerChannelsContext.MapActorsAllowed(double now) => _frames.MapActorsAllowed(now);
 
     /// <inheritdoc />
     bool IPlayerChannelsContext.LevelVisible(string level) => _visibleLevels.Contains(level);
@@ -1681,41 +1440,31 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     void IPlayerChannelsContext.MapObjects(IEnumerable<ulong> objects) => _mapped.UnionWith(objects);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.HoldFrames(double until) => _framesHeldUntil = until;
+    void IPlayerChannelsContext.HoldFrames(double until) => _frames.HoldFrames(until);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.ExportInteractor(ReliableSender sender)
-    {
-        if (_interactorExported)
-        {
-            return;
-        }
-
-        if (_interactorExport is null)
-        {
-            _interactorExport = sender.Queue(Bunches.Exports(_raid.State.InteractorExports(_player), [_player.Interactor]));
-        }
-        else if (!sender.Pending(_interactorExport.Value))
-        {
-            _interactorExported = true;
-        }
-    }
+    void IPlayerChannelsContext.ExportInteractor(ReliableSender sender) => _frames.ExportInteractor(this, sender);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.RunInteraction(PawnInteraction interaction) => _interaction = interaction;
+    void IPlayerChannelsContext.RunInteraction(PawnInteraction interaction) => _frames.RunInteraction(interaction);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.SucceedInteraction() =>
-        _interaction = _interaction is { } ended ? ended with { Event = LastInteractionEvent.Succeeded } : null;
+    void IPlayerChannelsContext.SucceedInteraction() => _frames.SucceedInteraction();
 
     /// <inheritdoc />
-    uint IPlayerChannelsContext.NextInteractionSequence() => ++_interactionCount;
+    uint IPlayerChannelsContext.NextInteractionSequence() => _frames.NextInteractionSequence();
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.ExtendFrameHold(double until) => _framesHeldUntil = Math.Max(_framesHeldUntil, until);
+    void IPlayerChannelsContext.ExtendFrameHold(double until) => _frames.ExtendFrameHold(until);
 
     /// <inheritdoc />
-    void IPlayerChannelsContext.Climb(uint frame, int ladder, bool topEntry) => _movement?.Climb(frame, ladder, topEntry);
+    void IPlayerChannelsContext.Climb(uint frame, int ladder, bool topEntry) => _frames.Movement?.Climb(frame, ladder, topEntry);
+
+    /// <inheritdoc />
+    bool IPlayerChannelsContext.FocusUsable(ulong target) => Array.Exists(Families, family => family.Usable(this, target));
+
+    /// <inheritdoc />
+    bool IPlayerChannelsContext.InteractionRunning => _doors.Breaching || _loot.Searching || _elevators.Descending;
 
     /// <inheritdoc />
     void IPlayerChannelsContext.LogUnhandled(InteractionRequest request)
@@ -1724,18 +1473,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         {
             _unknownRequests.Add($"0x{request.Target:x} {request.Request}@{request.Frame}");
         }
-    }
-
-    // Doors and ladders wait until the character simulation has started and settled.
-    private bool MapActorsAllowed(double now)
-    {
-        if (_blackboardFrame == 0)
-        {
-            return false;
-        }
-
-        _mapActorsAllowedAt ??= now + MapActorStartDelay;
-        return now >= _mapActorsAllowedAt;
     }
 
     private static BitReader At(ChannelBunch item, long position)
