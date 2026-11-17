@@ -1,3 +1,4 @@
+using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 
 namespace Ares.Raid.World.Players;
@@ -14,6 +15,12 @@ internal interface IPlayerChannelsContext
     /// <summary>The player's actors.</summary>
     WorldPlayer Player { get; }
 
+    /// <summary>Where the actor delivery stands.</summary>
+    DeliveryPhase Phase { get; }
+
+    /// <summary>Latest client input frame received.</summary>
+    uint? InputFrame { get; }
+
     /// <summary>The character position the client predicted in its latest input frame, if any.</summary>
     Vector3D? InputPosition { get; }
 
@@ -26,12 +33,33 @@ internal interface IPlayerChannelsContext
     /// </summary>
     Vector3D RelevancePosition { get; }
 
+    /// <summary>Whether the client reports a level visible.</summary>
+    /// <param name="level">Level (cell) name.</param>
+    /// <returns>True while it does.</returns>
+    bool LevelVisible(string level);
+
     /// <summary>Whether map actors may be sent: the character simulation has started and settled.</summary>
     /// <param name="now">Raid clock.</param>
     /// <returns>True once they may.</returns>
     bool MapActorsAllowed(double now);
 
+    /// <summary>Whether the player gave movement input after an input frame.</summary>
+    /// <param name="frame">Input frame.</param>
+    /// <returns>True when a later frame moves.</returns>
+    bool MovedSince(uint frame);
+
+    /// <summary>
+    /// Sends no pawn frame before a time, so the client keeps its interaction's ending long enough to play it (replaces
+    /// an earlier hold).
+    /// </summary>
+    /// <param name="until">Raid clock.</param>
+    void HoldFrames(double until);
+
     /// <summary>A request of an input frame changed the inventory: no pawn frame before that frame goes out.</summary>
     /// <param name="frame">Input frame.</param>
     void InventoryChangedAt(uint frame);
+
+    /// <summary>Logs a press no family acted on when its target is no interaction the server gave the client.</summary>
+    /// <param name="request">The request.</param>
+    void LogUnhandled(InteractionRequest request);
 }

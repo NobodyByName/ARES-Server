@@ -111,11 +111,9 @@ public enum DeliveryPhase
 /// </summary>
 public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsContext
 {
-    private const int MaxDoorsInFlight = 8;
-
     // Time after a breach succeeds during which no pawn frame is sent, so the client keeps its Succeeded
     // interaction event long enough to play the ending.
-    private const double BreachEndingSeconds = 2.0;
+    internal const double BreachEndingSeconds = 2.0;
     private const int MaxLaddersInFlight = 8;
 
     // Loot containers are dormant: a channel opens to send a container's state and closes again, so a few channels
@@ -200,13 +198,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private ReliableKey? _worldTimeKey;
     private double? _worldTimeSentAt;
 
-    private Dictionary<int, (DoorChannel State, ReliableKey? Key)> _doors = [];
-    private Dictionary<int, int> _doorRevisions = [];
-    private Dictionary<int, ReliableKey> _doorUpdates = [];
-    private HashSet<int> _failedDoors = [];
     private List<InteractionRequest> _requests = [];
-    private Dictionary<int, int> _breachRequests = [];
-    private (int Door, uint Checked)? _breach;
     private double _framesHeldUntil;
     private List<InventoryRequest> _inventoryRequests = [];
     private List<WeaponInput> _weaponRequests = [];
@@ -257,6 +249,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private BoundedLog _unknownRequests = new(InteractionRequestLog);
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
+    private PlayerDoors _doors;
     private PlayerPickups _pickups;
     private PlayerArcs _arcs;
 
@@ -282,17 +275,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _login = login ?? throw new ArgumentNullException(nameof(login));
         _bindings = [(ChannelLayout.Controller, player.Controller), (ChannelLayout.PlayerState, player.PlayerState), (ChannelLayout.Pawn, player.Pawn)];
         _lootLinks = new ActorChannelPool<LootLink>(raid.Channels.Loot);
+        _doors = new PlayerDoors(raid.Channels.Doors);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcs = new PlayerArcs(raid.Channels.Arcs);
-    }
-
-    private enum DoorChannel
-    {
-        Closed,
-        Exporting,
-        Opening,
-        Open,
-        Closing,
     }
 
     private enum ObservedStage
@@ -380,19 +365,19 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public double WorstPositionReseed => _movement?.WorstReseed ?? 0;
 
     /// <summary>Door presses applied.</summary>
-    public int DoorPresses { get; private set; }
+    public int DoorPresses => _doors.Presses;
 
     /// <summary>Door requests ignored (not a press, door not open on this connection, or still moving).</summary>
-    public int IgnoredDoorRequests { get; private set; }
+    public int IgnoredDoorRequests => _doors.IgnoredRequests;
 
     /// <summary>Door breaches started.</summary>
-    public int DoorBreaches { get; private set; }
+    public int DoorBreaches => _doors.Breaches;
 
     /// <summary>Door breaches this player stopped by moving.</summary>
-    public int CancelledBreaches { get; private set; }
+    public int CancelledBreaches => _doors.CancelledBreaches;
 
     /// <summary>Request values received on breach buttons, with their counts (a hold sends more than a press).</summary>
-    public IReadOnlyDictionary<int, int> BreachRequests => _breachRequests;
+    public IReadOnlyDictionary<int, int> BreachRequests => _doors.BreachRequests;
 
     /// <summary>Whole-stack inventory swaps accepted.</summary>
     public int InventoryMoves { get; private set; }
@@ -618,11 +603,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._ignoredCalls = new Dictionary<string, int>(_ignoredCalls, StringComparer.Ordinal);
         copy._input = _input.Copy();
         copy._movement = _movement?.Copy();
-        copy._doors = new Dictionary<int, (DoorChannel, ReliableKey?)>(_doors);
-        copy._doorRevisions = new Dictionary<int, int>(_doorRevisions);
-        copy._doorUpdates = new Dictionary<int, ReliableKey>(_doorUpdates);
-        copy._failedDoors = [.. _failedDoors];
-        copy._breachRequests = new Dictionary<int, int>(_breachRequests);
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
@@ -643,6 +623,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._elevatorChanges = _elevatorChanges.Copy();
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
+        copy._doors = _doors.Copy();
         copy._pickups = _pickups.Copy();
         copy._arcs = _arcs.Copy();
         return copy;
@@ -783,7 +764,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         ServiceStreaming(io.Sender, now);
         ServiceAbilities(io.Sender);
-        ServiceDoors(io.Sender, now);
+        _doors.Service(this, io.Sender, now);
         ServiceLadders(io.Sender, now);
         ServiceLoot(io.Sender, now);
         _pickups.Service(this, io.Sender, now);
@@ -799,17 +780,13 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
-        if (_pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
+        if (_doors.ChannelFailed(channel) || _pickups.ChannelFailed(channel) || _arcs.ChannelFailed(channel))
         {
             return;
         }
 
         ChannelLayout layout = _raid.Channels;
-        if (layout.Doors.IndexOf(channel) is { } index)
-        {
-            _failedDoors.Add(index);
-        }
-        else if (layout.Ladders.IndexOf(channel) is { } ladder)
+        if (layout.Ladders.IndexOf(channel) is { } ladder)
         {
             _failedLadders.Add(ladder);
         }
@@ -951,38 +928,12 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 continue;
             }
 
-            if (_raid.Doors.ByBreach(request.Target) is not null)
-            {
-                _breachRequests[request.Request] = _breachRequests.GetValueOrDefault(request.Request) + 1;
-            }
-
-            // The request is a set of flags; a press has the press flag, with the take-out-raider-tool flag when
-            // the breach is pressed with the tool holstered. Other flags are not decoded yet.
-            if ((request.Request & PendulumInput.PressRequest) == 0)
-            {
-                IgnoredDoorRequests++;
-            }
-            else if (UsableDoor(request.Target) is { } door && _raid.DoorStates.Press(door.Index, now))
-            {
-                DoorPresses++;
-            }
-            else if (BreachableDoor(request.Target) is { } barricaded && _raid.DoorStates.StartBreach(barricaded.Index, now))
-            {
-                DoorBreaches++;
-                _breach = (barricaded.Index, request.Frame);
-            }
-            else
-            {
-                IgnoredDoorRequests++;
-                if (!repeatedLog && !KnownInteraction(request.Target))
-                {
-                    _unknownRequests.Add($"0x{request.Target:x} {request.Request}@{request.Frame}");
-                }
-            }
+            // The doors take whatever the families before them left.
+            _doors.TryHandle(this, request, repeatedLog, now);
         }
 
         _requests.Clear();
-        CancelBreachOnMovement(now);
+        _doors.CancelBreachOnMovement(this, now);
         CancelDescentOnMovement();
         if (Phase == DeliveryPhase.Possessed)
         {
@@ -1575,7 +1526,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
                 return;
             }
 
-            focus = UsableDoor(_input.Focus) is null && BreachableDoor(_input.Focus) is null && SearchableLoot(_input.Focus) is null
+            focus = !_doors.Usable(this, _input.Focus) && SearchableLoot(_input.Focus) is null
                 && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null && !_pickups.Usable(this, _input.Focus) ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
@@ -1634,55 +1585,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         return held;
     }
 
-    // The door of a button the client may use: possessed, door replicated on this connection, cell visible,
-    // and the door not barricaded, locked or without power.
-    private Door? UsableDoor(ulong button) =>
-        _raid.Doors.ByButton(button) is { } door && Replicated(door) && _raid.DoorStates.Usable(door.Index) ? door : null;
-
     // Pawn frames carry no interaction state, so the client's own one (requested, holding, succeeded) is reset by
     // each frame; none are sent while this player breaches and just after it succeeds.
-    private bool InteractionFramesHeld(double now) => _breach is not null || _search is not null || _descent is not null || now < _framesHeldUntil;
-
-    // The breach is a hold that movement input cancels (the client stops it on its side). The client sends no
-    // request when it does, so the server watches the breaching player's movement axes after the start frame.
-    private void CancelBreachOnMovement(double now)
-    {
-        if (_breach is not { } breach)
-        {
-            return;
-        }
-
-        if (!_raid.DoorStates.Breaching(breach.Door))
-        {
-            _breach = null;
-            _framesHeldUntil = now + BreachEndingSeconds;
-            return;
-        }
-
-        uint latest = InputFrame ?? breach.Checked;
-        for (uint frame = breach.Checked + 1; frame <= latest; frame++)
-        {
-            if (_input.Movement(frame) is null or { Forward: 0, Right: 0 })
-            {
-                continue;
-            }
-
-            _raid.DoorStates.CancelBreach(breach.Door);
-            CancelledBreaches++;
-            _breach = null;
-            return;
-        }
-
-        _breach = breach with { Checked = Math.Max(breach.Checked, latest) };
-    }
-
-    // The door of a breach button the client may use: replicated as above and still barricaded.
-    private Door? BreachableDoor(ulong button) =>
-        _raid.Doors.ByBreach(button) is { } door && Replicated(door) && _raid.DoorStates.Breachable(door.Index) ? door : null;
-
-    private bool Replicated(Door door) =>
-        Phase == DeliveryPhase.Possessed && !_failedDoors.Contains(door.Index)
-        && _doors.GetValueOrDefault(door.Index).State == DoorChannel.Open && _visibleLevels.Contains(door.Cell);
+    private bool InteractionFramesHeld(double now) => _doors.Breaching || _search is not null || _descent is not null || now < _framesHeldUntil;
 
     // Asks the client to finish loading the levels around it, while streaming still changes and before the
     // character simulation starts; the client decides what it loads.
@@ -1747,63 +1652,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         }
 
         return (new ObjectExports(records), [.. defaults]);
-    }
-
-    // Replicates the doors of the cells the client reports visible: exports each door's path, opens its
-    // channel with usable buttons, sends state changes, and closes the channel when the cell unloads.
-    private void ServiceDoors(ReliableSender sender, double now)
-    {
-        if (!MapActorsAllowed(now))
-        {
-            return;
-        }
-
-        _raid.DoorStates.Advance(now);
-        int inFlight = _doors.Values.Count(door => door.Key is { } key && sender.Pending(key));
-        foreach (Door door in _raid.Doors.Doors)
-        {
-            (DoorChannel state, ReliableKey? key) = _doors.GetValueOrDefault(door.Index, (DoorChannel.Closed, null));
-            if (key is { } waiting && sender.Pending(waiting))
-            {
-                continue;
-            }
-
-            int channel = _raid.Channels.Doors.Channel(door.Index);
-            (DoorState value, int revision, _) = _raid.DoorStates.Get(door.Index);
-            switch (state)
-            {
-                case DoorChannel.Exporting:
-                    (state, key) = (DoorChannel.Opening, sender.Queue(_raid.Doors.OpenBunch(door, channel, sender.NextSequence(channel), _raid.DoorStates.Buttons(door.Index), value)));
-                    _doorRevisions[door.Index] = revision;
-                    break;
-                case DoorChannel.Opening:
-                    (state, key) = (DoorChannel.Open, null);
-                    break;
-                case DoorChannel.Closing:
-                    (state, key) = (DoorChannel.Closed, null);
-                    break;
-            }
-
-            bool wanted = _visibleLevels.Contains(door.Cell) && !_failedDoors.Contains(door.Index);
-            switch (state)
-            {
-                case DoorChannel.Closed when wanted && inFlight < MaxDoorsInFlight:
-                    (state, key) = (DoorChannel.Exporting, sender.Queue(_raid.Doors.ExportBunch(door)));
-                    inFlight++;
-                    break;
-                case DoorChannel.Open when !wanted:
-                    (state, key) = (DoorChannel.Closing, sender.Queue(Bunches.Close(channel, Bunches.LevelUnloaded)));
-                    _doorUpdates.Remove(door.Index);
-                    break;
-                case DoorChannel.Open when revision != _doorRevisions.GetValueOrDefault(door.Index)
-                    && (!_doorUpdates.TryGetValue(door.Index, out ReliableKey update) || !sender.Pending(update)):
-                    _doorUpdates[door.Index] = sender.Queue(_raid.Doors.UpdateBunch(door, channel, value, _raid.DoorStates.Buttons(door.Index)));
-                    _doorRevisions[door.Index] = revision;
-                    break;
-            }
-
-            _doors[door.Index] = (state, key);
-        }
     }
 
     // Gives the client each extraction elevator: exports its buttons by path, then opens its channel with the
@@ -2600,6 +2448,24 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <inheritdoc />
     bool IPlayerChannelsContext.MapActorsAllowed(double now) => MapActorsAllowed(now);
+
+    /// <inheritdoc />
+    bool IPlayerChannelsContext.LevelVisible(string level) => _visibleLevels.Contains(level);
+
+    /// <inheritdoc />
+    bool IPlayerChannelsContext.MovedSince(uint frame) => MovedSince(frame);
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.HoldFrames(double until) => _framesHeldUntil = until;
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.LogUnhandled(InteractionRequest request)
+    {
+        if (!KnownInteraction(request.Target))
+        {
+            _unknownRequests.Add($"0x{request.Target:x} {request.Request}@{request.Frame}");
+        }
+    }
 
     // Doors and ladders wait until the character simulation has started and settled.
     private bool MapActorsAllowed(double now)
