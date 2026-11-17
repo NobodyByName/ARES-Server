@@ -36,6 +36,25 @@ internal sealed class PlacedActorValues
     /// <summary>A one-byte value (a bool or a byte enum).</summary>
     public byte Byte() => _package.ReadByte(Advance(1));
 
+    /// <summary>A 32-bit integer.</summary>
+    public int Int32() => _package.ReadInt32(Advance(sizeof(int)));
+
+    /// <summary>A name, spelled as stored.</summary>
+    public string Name() => _package.ReadName(Advance(NameSize));
+
+    /// <summary>The raw words of a name: its name map index and number.</summary>
+    public (uint Index, uint Number) NameWords()
+    {
+        int at = Advance(NameSize);
+        return (_package.ReadUInt32(at), _package.ReadUInt32(at + sizeof(uint)));
+    }
+
+    /// <summary>Moves past <paramref name="size"/> bytes.</summary>
+    public void Skip(int size) => Advance(size);
+
+    /// <summary>Bytes left before the export's end.</summary>
+    public int Remaining => _end - Offset;
+
     /// <summary>A double, with a zero given as positive zero.</summary>
     public double Double() => _package.ReadDouble(Advance(sizeof(double))) + 0.0;
 

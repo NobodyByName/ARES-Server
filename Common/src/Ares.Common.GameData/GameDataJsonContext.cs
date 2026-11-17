@@ -51,4 +51,8 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(StaticValueLootTable))]
 [JsonSerializable(typeof(SkillLootTable))]
 [JsonSerializable(typeof(LootSpawnTweakables))]
+[JsonSerializable(typeof(PointOfInterest))]
+[JsonSerializable(typeof(LootLimiter))]
+[JsonSerializable(typeof(DynamicLootSpawner))]
+[JsonSerializable(typeof(DynamicLootGroupEntry))]
 public sealed partial class GameDataJsonContext : JsonSerializerContext;

@@ -46,7 +46,7 @@ public sealed class ExtractionTests : IDisposable
     private string Output => Path.Combine(_directory, "gamedata");
 
     [Fact]
-    public void Extraction_writes_a_collision_file_world_movement_and_loot_tables_and_a_manifest_that_read_back()
+    public void Extraction_writes_a_collision_file_world_movement_loot_and_loot_area_tables_and_a_manifest_that_read_back()
     {
         WriteGame();
 
@@ -59,7 +59,8 @@ public sealed class ExtractionTests : IDisposable
             MapTables.World(DamMap.WorldName), MapTables.StreamingCells(DamMap.WorldName), MapTables.LootSocketMeshes(DamMap.WorldName),
             MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName), MapTables.PlayerStarts(DamMap.WorldName),
             MapTables.Ladders(DamMap.WorldName), MapTables.LadderLogic(DamMap.WorldName), MapTables.ZiplineLines(DamMap.WorldName),
-            MapTables.ZiplineLaunchers(DamMap.WorldName),
+            MapTables.ZiplineLaunchers(DamMap.WorldName), MapTables.PointsOfInterest(DamMap.WorldName), MapTables.LootLimiters(DamMap.WorldName),
+            MapTables.DynamicLootSpawners(DamMap.WorldName), MapTables.DynamicLootGroups(DamMap.WorldName),
             GameTables.DodgeRolls, GameTables.VaultDefinitions, GameTables.HeavyLandingLevels, GameTables.RecoveryLandingLevels,
             GameTables.GraphStateTags, GameTables.SnapHookItem, GameTables.SprintBurstCurve,
             GameTables.LootContainerTypes, GameTables.LootContainerClasses, GameTables.LootContainerDefaults, GameTables.StaticValueLootTables,
@@ -94,6 +95,10 @@ public sealed class ExtractionTests : IDisposable
         Assert.Equal(
             SyntheticLootScripts.Tweakables.ContainerContentsWeights,
             Assert.Single(data.ReadTable(GameTables.StaticLootSpawnTweakables, GameDataJsonContext.Default.LootSpawnTweakables)).ContainerContentsWeights);
+        Assert.Empty(data.ReadTable(MapTables.PointsOfInterest(DamMap.WorldName), GameDataJsonContext.Default.PointOfInterest));
+        Assert.Empty(data.ReadTable(MapTables.LootLimiters(DamMap.WorldName), GameDataJsonContext.Default.LootLimiter));
+        Assert.Empty(data.ReadTable(MapTables.DynamicLootSpawners(DamMap.WorldName), GameDataJsonContext.Default.DynamicLootSpawner));
+        Assert.Empty(data.ReadTable(MapTables.DynamicLootGroups(DamMap.WorldName), GameDataJsonContext.Default.DynamicLootGroupEntry));
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {
@@ -131,6 +136,7 @@ public sealed class ExtractionTests : IDisposable
         Assert.Contains("Landscape tiles: 1", output, StringComparison.Ordinal);
         Assert.Contains("Movement tables: ", output, StringComparison.Ordinal);
         Assert.Contains("Loot tables: ", output, StringComparison.Ordinal);
+        Assert.Contains("Loot area tables: ", output, StringComparison.Ordinal);
         Assert.DoesNotContain("Item tables: ", output, StringComparison.Ordinal);
     }
 
@@ -185,11 +191,15 @@ public sealed class ExtractionTests : IDisposable
         return (code, standardOutput.ToString(), standardError.ToString());
     }
 
-    /// <summary>The script cache of the synthetic game: the loot scripts (see <see cref="SyntheticLootScripts"/>) and the movement classes and structs.</summary>
+    /// <summary>
+    /// The script cache of the synthetic game: the loot scripts (see <see cref="SyntheticLootScripts"/>), the movement
+    /// classes and structs, and the loot area classes (see <see cref="SyntheticLootAreaScripts"/>).
+    /// </summary>
     private static byte[] ScriptCache()
     {
         SyntheticScriptCache cache = SyntheticLootScripts.Cache();
         SyntheticMovementGame.AddScripts(cache);
+        SyntheticLootAreaScripts.AddScripts(cache);
         return cache.Write();
     }
 
@@ -199,7 +209,7 @@ public sealed class ExtractionTests : IDisposable
     /// A game folder with the collision config pak and one container: the map's persistent level listing a base-map cell
     /// and a layered cell, the base cell (a landscape proxy at <paramref name="landscapeHeight"/>, a static mesh component that uses its mesh's default
     /// collision and a blocking box component), the layered cell (no collision), the mesh, and the movement assets (see
-    /// <see cref="SyntheticMovementGame"/>), an empty asset registry and the loot and movement script cache.
+    /// <see cref="SyntheticMovementGame"/>), an empty asset registry and the loot, movement and loot area script cache.
     /// </summary>
     private void WriteGame(double landscapeHeight = 300)
     {

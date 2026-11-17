@@ -91,7 +91,7 @@ public sealed class GameDataWriterTests : IDisposable
         Assert.EndsWith("]\n", text, StringComparison.Ordinal);
         Assert.Contains("\"path\": \"/Game/Crates/Ärztekoffer <'&'>\"", text, StringComparison.Ordinal);
         Assert.Contains("\"weight\": 12345678.9,", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("null", text, StringComparison.Ordinal);
+        Assert.Contains("\"note\": null", text, StringComparison.Ordinal);
         Assert.Contains("\n  \"files\": [\n    {\n      \"name\": \"crates.json\",\n      \"sha256\": \"", File.ReadAllText(Path.Combine(output, GameDataFiles.ManifestFileName)), StringComparison.Ordinal);
     }
 
@@ -106,6 +106,21 @@ public sealed class GameDataWriterTests : IDisposable
 
         Assert.False(File.Exists(Path.Combine(output, GameDataFiles.ManifestFileName)));
         Assert.Empty(Directory.GetFiles(output, "*.tmp", SearchOption.AllDirectories));
+    }
+
+    [Fact]
+    public void Null_members_are_written_as_null_and_read_back()
+    {
+        string output = Path.Combine(_directory, "out");
+        GameDataWriter writer = new(output);
+        Shelf[] shelves = [new("A", null, 2), new("B", "Tools", 3)];
+
+        writer.WriteTable(Table, shelves, WriterTestContext.Default.Shelf);
+        writer.WriteManifest(GameBuild.SteamBuildId, "2026110201");
+
+        Assert.Contains("\"label\": null", File.ReadAllText(Path.Combine(output, Table)), StringComparison.Ordinal);
+        Assert.Contains("\"note\": null", File.ReadAllText(Path.Combine(output, Table)), StringComparison.Ordinal);
+        Assert.Equal(shelves, GameDataDirectory.Open(output).ReadTable(Table, WriterTestContext.Default.Shelf));
     }
 
     [Theory]
@@ -132,11 +147,16 @@ public sealed class GameDataWriterTests : IDisposable
 /// <summary>A made-up table row.</summary>
 public sealed record Crate(string Path, double Weight, ImmutableArray<string> Tags, string? Note = null);
 
+/// <summary>A made-up table row with a nullable member the reader requires (no default) and an optional one.</summary>
+public sealed record Shelf(string Name, string? Label, int Count, string? Note = null);
+
+/// <summary>The made-up rows' metadata, with the null handling of <c>GameDataJsonContext</c> (nulls written).</summary>
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
-    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    DefaultIgnoreCondition = JsonIgnoreCondition.Never,
     UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     RespectNullableAnnotations = true,
     RespectRequiredConstructorParameters = true)]
 [JsonSerializable(typeof(Crate))]
+[JsonSerializable(typeof(Shelf))]
 internal sealed partial class WriterTestContext : JsonSerializerContext;

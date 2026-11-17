@@ -60,4 +60,29 @@ public static class MapTables
     /// </summary>
     /// <param name="mapName">The map's world name.</param>
     public static string ZiplineLaunchers(string mapName) => GameDataFiles.MapFile(mapName, "zipline-launchers.json");
+
+    /// <summary>
+    /// The map's points of interest (<see cref="PointOfInterest"/>): its named areas with the loot value the map shows,
+    /// ordered by actor name (ordinal).
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string PointsOfInterest(string mapName) => GameDataFiles.MapFile(mapName, "points-of-interest.json");
+
+    /// <summary>The map's loot placement limiters (<see cref="LootLimiter"/>), ordered by cell and actor name (ordinal).</summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string LootLimiters(string mapName) => GameDataFiles.MapFile(mapName, "loot-limiters.json");
+
+    /// <summary>
+    /// The map's spawners of free-standing loot containers (<see cref="DynamicLootSpawner"/>), ordered by cell and actor
+    /// name (ordinal); <see cref="DynamicLootGroupEntry.Spawners"/> indexes this table.
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string DynamicLootSpawners(string mapName) => GameDataFiles.MapFile(mapName, "dynamic-loot-spawners.json");
+
+    /// <summary>
+    /// The groups that pick which of the map's dynamic loot spawners run (<see cref="DynamicLootGroupEntry"/>), ordered by
+    /// activity container.
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string DynamicLootGroups(string mapName) => GameDataFiles.MapFile(mapName, "dynamic-loot-groups.json");
 }

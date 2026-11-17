@@ -16,7 +16,9 @@ namespace Ares.GameDataExtract.Output;
 /// JSON is UTF-8 without a byte order mark, indented by two spaces, with <c>\n</c> newlines and a final newline.
 /// <see cref="Utf8JsonWriter"/> formats numbers culture-invariantly, floating-point values in their shortest
 /// round-trip form. Rows are written in the order given and members in declaration order, so tables must come in a
-/// stable order and row types must not hold unordered collections. The manifest lists the files ordered by name.
+/// stable order and row types must not hold unordered collections. Null members are written as <c>null</c>
+/// (<see cref="GameDataJsonContext"/> never leaves a member out), so a nullable constructor parameter without a default
+/// (such as <c>PointOfInterest.Name</c>), which the reader requires, reads back. The manifest lists the files ordered by name.
 /// </para>
 /// <para>
 /// Each file is written to a temporary file and moved into place once complete. The first write removes an earlier

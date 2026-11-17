@@ -35,7 +35,7 @@ internal sealed record MapWorldData(
 /// objects, the cell list, the loot container sockets, the placed loot containers, the player starts, the ladders and the
 /// ziplines.
 /// </summary>
-internal static class MapWorldExtractor
+internal static partial class MapWorldExtractor
 {
     /// <summary>Extracts the world tables of map package <paramref name="mapPackage"/>.</summary>
     /// <param name="packages">The game's packages.</param>

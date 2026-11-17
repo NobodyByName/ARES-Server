@@ -64,3 +64,14 @@ public static class PlacedActorNativeData
     /// <summary>Bytes after the label.</summary>
     public const int TailSize = 32;
 }
+
+/// <summary>
+/// Members of the native <c>AActor</c> part of a placed actor's unversioned property chain. The chain lists the actor
+/// class's script members first (derived class first) and the native <c>AActor</c> members after them, so the indices
+/// here are relative to the end of the script members.
+/// </summary>
+public static class ActorMembers
+{
+    /// <summary><c>RootComponent</c>: object reference (4 bytes).</summary>
+    public const int RootComponent = 58;
+}

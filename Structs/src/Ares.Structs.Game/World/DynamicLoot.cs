@@ -66,3 +66,32 @@ public sealed record DynamicLootGroup(
     int Max,
     IReadOnlyList<DynamicLootSpawner> Spawners,
     IReadOnlyList<DynamicLootSelection> ParentSelections);
+
+/// <summary>
+/// A <see cref="DynamicLootGroup"/> as a table row stores it: its spawners by index into the map's spawner table
+/// (<see cref="DamDynamicLoot.Spawners"/> for the Dam), so that a spawner several groups share stays one object.
+/// </summary>
+/// <param name="Id">Activity node and position of the group within it.</param>
+/// <param name="Path">Titles of the activity nodes from the root down to the group's node.</param>
+/// <param name="Rounds">Round configurations in which the group is active.</param>
+/// <param name="Min">Fewest spawners activated.</param>
+/// <param name="Max">Most spawners activated.</param>
+/// <param name="Spawners">Indices of the group's spawners in the spawner table, ascending.</param>
+/// <param name="ParentSelections">Partial choices of subnodes above the group that decide whether it is active at all.</param>
+public sealed record DynamicLootGroupEntry(
+    string Id,
+    IReadOnlyList<string> Path,
+    IReadOnlyList<string> Rounds,
+    int Min,
+    int Max,
+    IReadOnlyList<int> Spawners,
+    IReadOnlyList<DynamicLootSelection> ParentSelections)
+{
+    /// <summary>The group with its spawners taken from <paramref name="spawners"/>, the table <see cref="Spawners"/> indexes.</summary>
+    /// <exception cref="ArgumentOutOfRangeException">An index is outside <paramref name="spawners"/>.</exception>
+    public DynamicLootGroup Resolve(IReadOnlyList<DynamicLootSpawner> spawners)
+    {
+        ArgumentNullException.ThrowIfNull(spawners);
+        return new DynamicLootGroup(Id, Path, Rounds, Min, Max, [.. Spawners.Select(index => spawners[index])], ParentSelections);
+    }
+}
