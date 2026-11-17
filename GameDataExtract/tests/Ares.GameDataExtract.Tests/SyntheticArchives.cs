@@ -121,7 +121,7 @@ internal static class SyntheticArchives
     }
 
     /// <summary>A name batch holding <paramref name="names"/>.</summary>
-    private static byte[] NameBatch(IReadOnlyList<string> names)
+    public static byte[] NameBatch(IReadOnlyList<string> names)
     {
         MemoryStream stream = new();
         stream.Write(BitConverter.GetBytes(names.Count));
@@ -168,13 +168,14 @@ internal static class SyntheticArchives
 
     /// <summary>
     /// A cooked package chunk. Each export has a name, outer, class, public export hash and serialized bytes, and the
-    /// template <paramref name="templates"/> gives it (none when not given); the package imports from
+    /// template <paramref name="templates"/> and the super struct <paramref name="supers"/> give it (none when not given); the package imports from
     /// <paramref name="importedPackages"/> with the given public export hashes. The name map holds the package path, the
     /// export names, then <paramref name="extraNames"/>.
     /// </summary>
     public static byte[] Package(string packagePath, IReadOnlyList<(string Name, PackageObjectIndex Outer, PackageObjectIndex Class, ulong PublicHash, byte[] Payload)> exports,
         IReadOnlyList<string>? importedPackages = null, IReadOnlyList<ulong>? importedHashes = null, IReadOnlyList<PackageObjectIndex>? imports = null,
-        IReadOnlyList<string>? extraNames = null, IReadOnlyDictionary<int, PackageObjectIndex>? templates = null)
+        IReadOnlyList<string>? extraNames = null, IReadOnlyDictionary<int, PackageObjectIndex>? templates = null,
+        IReadOnlyDictionary<int, PackageObjectIndex>? supers = null)
     {
         List<string> names = [packagePath, .. exports.Select(export => export.Name), .. extraNames ?? []];
         byte[] nameMap = NameBatch(names);
@@ -218,7 +219,7 @@ internal static class SyntheticArchives
             stream.Write(BitConverter.GetBytes(0));
             stream.Write(BitConverter.GetBytes(outer.Value));
             stream.Write(BitConverter.GetBytes(cls.Value));
-            stream.Write(BitConverter.GetBytes(PackageObjectIndex.Null.Value));
+            stream.Write(BitConverter.GetBytes((supers?.GetValueOrDefault(i, PackageObjectIndex.Null) ?? PackageObjectIndex.Null).Value));
             stream.Write(BitConverter.GetBytes((templates?.GetValueOrDefault(i, PackageObjectIndex.Null) ?? PackageObjectIndex.Null).Value));
             stream.Write(BitConverter.GetBytes(publicHash));
             stream.Write(new byte[8]);

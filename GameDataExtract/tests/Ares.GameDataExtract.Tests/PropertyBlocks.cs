@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Ares.GameDataExtract.Tests;
 
 /// <summary>Builds unversioned property blocks for synthetic exports.</summary>
@@ -39,6 +41,20 @@ internal static class PropertyBlocks
         }
 
         return [.. bytes];
+    }
+
+    /// <summary>One header fragment: members skipped, members listed, whether they have zero-mask bits, whether it is the last.</summary>
+    public static byte[] Fragment(int skip, int count, bool zeroes = false, bool last = false)
+    {
+        int value = skip | (zeroes ? 0x80 : 0) | (last ? 0x100 : 0) | (count << 9);
+        return [(byte)value, (byte)(value >> 8)];
+    }
+
+    /// <summary>A length-prefixed UTF-8 string with its terminating zero.</summary>
+    public static byte[] String(string text)
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(text);
+        return [.. BitConverter.GetBytes(bytes.Length + 1), .. bytes, 0];
     }
 
     /// <summary>Three doubles.</summary>
