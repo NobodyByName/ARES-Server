@@ -121,6 +121,33 @@ public sealed class TransformMathTests
         Assert.Throws<InvalidDataException>(() => TransformMath.FromMatrix(matrix));
     }
 
+    [Theory]
+    [InlineData(10, 20, 30)]
+    [InlineData(-45, 170, -120)]
+    [InlineData(89, -90, 5)]
+    public void A_quaternion_turns_back_into_its_rotator(double pitch, double yaw, double roll)
+    {
+        Rotator rotator = TransformMath.ToRotator(TransformMath.ToQuaternion(new Rotator(pitch, yaw, roll)));
+
+        Assert.Equal(pitch, rotator.Pitch, 1e-6);
+        Assert.Equal(yaw, rotator.Yaw, 1e-6);
+        Assert.Equal(roll, rotator.Roll, 1e-6);
+    }
+
+    [Fact]
+    public void At_the_poles_the_rotator_keeps_the_rotation()
+    {
+        Quaternion q = TransformMath.ToQuaternion(new Rotator(90, 30, 0));
+
+        Rotator rotator = TransformMath.ToRotator(q);
+
+        Assert.Equal(90, rotator.Pitch);
+        Quaternion back = TransformMath.ToQuaternion(rotator);
+        AssertClose(TransformMath.Rotate(q, new Vector3D(1, 2, 3)), TransformMath.Rotate(back, new Vector3D(1, 2, 3)));
+        Assert.Equal(-170, TransformMath.NormalizeAxis(190));
+        Assert.Equal(180, TransformMath.NormalizeAxis(-180));
+    }
+
     private static void AssertClose(Vector3D expected, Vector3D actual)
     {
         Assert.Equal(expected.X, actual.X, Tolerance);

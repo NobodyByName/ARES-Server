@@ -24,6 +24,10 @@ public sealed class ExtractionTests : IDisposable
     private static readonly PackageObjectIndex s_actor = PackageObjectIndex.FromScriptPath("/Script/Engine.Actor");
     private static readonly PackageObjectIndex s_staticMeshComponent = PackageObjectIndex.FromScriptPath(StaticMeshComponentMembers.ClassPath);
     private static readonly PackageObjectIndex s_boxComponent = PackageObjectIndex.FromScriptPath(BoxComponentMembers.ClassPath);
+    private static readonly PackageObjectIndex s_world = PackageObjectIndex.FromScriptPath(MapWorldClasses.World);
+    private static readonly PackageObjectIndex s_level = PackageObjectIndex.FromScriptPath(MapWorldClasses.Level);
+    private static readonly PackageObjectIndex s_worldDataLayers = PackageObjectIndex.FromScriptPath(MapWorldClasses.WorldDataLayers);
+    private static readonly PackageObjectIndex s_blueprintClass = PackageObjectIndex.FromScriptPath("/Script/Engine.BlueprintGeneratedClass");
     private static readonly PackageObjectIndex s_firstImport = new((ulong)PackageObjectKind.PackageImport << 62);
 
     private readonly string _directory = Directory.CreateTempSubdirectory("ares-gamedata-").FullName;
@@ -38,7 +42,7 @@ public sealed class ExtractionTests : IDisposable
     private string Output => Path.Combine(_directory, "gamedata");
 
     [Fact]
-    public void Extraction_writes_a_collision_file_and_a_manifest_that_read_back()
+    public void Extraction_writes_a_collision_file_world_tables_and_a_manifest_that_read_back()
     {
         WriteGame();
 
@@ -46,15 +50,25 @@ public sealed class ExtractionTests : IDisposable
 
         Assert.True(code == ExtractCommand.Success, error);
         string collision = GameDataFiles.CollisionPath(DamMap.WorldName);
+        string[] tables =
+        [
+            MapTables.World(DamMap.WorldName), MapTables.StreamingCells(DamMap.WorldName), MapTables.LootSocketMeshes(DamMap.WorldName),
+            MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName),
+        ];
         Assert.Equal(
-            [GameDataFiles.ManifestFileName, collision],
+            [GameDataFiles.ManifestFileName, .. tables.Append(collision).Order(StringComparer.Ordinal)],
             Directory.GetFiles(Output, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(Output, file).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal));
         GameDataDirectory data = GameDataDirectory.Open(Output);
         Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
         Assert.Equal(AresVersion.Current, data.Manifest.ExtractorVersion);
-        GameDataFileEntry entry = Assert.Single(data.Manifest.Files);
-        Assert.Equal(collision, entry.Name);
+        GameDataFileEntry entry = Assert.Single(data.Manifest.Files, file => file.Name == collision);
         Assert.Null(entry.RowCount);
+        Assert.Equal(
+            new MapWorldObjects(DamMap.WorldName, "PersistentLevel", "LevelScript_1", $"{DamMap.MapPackage}.{DamMap.WorldName}_C", "WorldDataLayers"),
+            Assert.Single(data.ReadTable(MapTables.World(DamMap.WorldName), GameDataJsonContext.Default.MapWorldObjects)));
+        Assert.Equal([Cell(BaseCell), Cell(LayeredCell)], data.ReadTable(MapTables.StreamingCells(DamMap.WorldName), GameDataJsonContext.Default.String));
+        Assert.Empty(data.ReadTable(MapTables.LootSockets(DamMap.WorldName), GameDataJsonContext.Default.LootSocket));
+        Assert.Empty(data.ReadTable(MapTables.PlacedLoot(DamMap.WorldName), GameDataJsonContext.Default.PlacedLootContainer));
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {
@@ -179,7 +193,10 @@ public sealed class ExtractionTests : IDisposable
         return new SyntheticChunk(new IoChunkId(PackageId.FromPath(packagePath), 0, IoChunkType.ExportBundleData), data, file);
     }
 
-    /// <summary>The persistent level: a runtime cell without data layers and one in the first Dam data layer (name index 3).</summary>
+    /// <summary>
+    /// The map package: a runtime cell without data layers and one in the first Dam data layer (name index 8), then the
+    /// world, its persistent level, the level script class and the level's level script and world data layers actors.
+    /// </summary>
     private static byte[] Level()
     {
         byte[] layered =
@@ -190,13 +207,18 @@ public sealed class ExtractionTests : IDisposable
             .. PropertyBlocks.Header(DataLayerNamesMembers.Unknown0, DataLayerNamesMembers.Names),
             1,
             .. BitConverter.GetBytes(1),
-            .. PropertyBlocks.Name(3),
+            .. PropertyBlocks.Name(8),
             .. BitConverter.GetBytes(99),
         ];
         return SyntheticArchives.Package(DamMap.MapPackage,
         [
             (BaseCell, PackageObjectIndex.Null, s_runtimeCell, 0, PropertyBlocks.Header()),
             (LayeredCell, PackageObjectIndex.Null, s_runtimeCell, 0, layered),
+            (DamMap.WorldName, PackageObjectIndex.Null, s_world, 0, []),
+            ("PersistentLevel", PackageObjectIndex.FromExport(2), s_level, 0, []),
+            (DamMap.WorldName + "_C", PackageObjectIndex.Null, s_blueprintClass, 0, []),
+            ("LevelScript_1", PackageObjectIndex.FromExport(3), PackageObjectIndex.FromExport(4), 0, []),
+            ("WorldDataLayers", PackageObjectIndex.FromExport(3), s_worldDataLayers, 0, []),
         ],
         extraNames: [DamDataLayers.All[0].Name]);
     }

@@ -95,8 +95,10 @@ dotnet run --project GameDataExtract/src/Ares.GameDataExtract -- extract \
 | `--help`, `--version` | Show the usage, or the ARES version and supported game build. |
 
 All four options are required. The run takes up to a minute and about 2 GB of memory. It writes each
-supported map's files under `maps/<map>/` in the output folder (currently
-`maps/TheDam_02_P/TheDam_02_P.collision`, about 115 MB), then `manifest.json`, which records the game
+supported map's files under `maps/<map>/` in the output folder (currently for `TheDam_02_P`: the
+collision `TheDam_02_P.collision`, about 115 MB, and the JSON world tables `world.json`,
+`streaming-cells.json`, `loot-socket-meshes.json`, `loot-sockets.json` (about 6 MB) and
+`placed-loot.json`; the servers do not read the tables yet), then `manifest.json`, which records the game
 build, the ARES version and the SHA-256 of every file. Each file replaces an earlier one only once it
 is complete. It prints what it wrote. Exit code 0 means
 success, 1 that the game's files could not be read, and 2 invalid options or inputs: a missing folder

@@ -30,6 +30,7 @@ internal readonly record struct TransformMatrix(Vector3D AxisX, Vector3D AxisY, 
 internal static class TransformMath
 {
     private const double DegreesToRadians = Math.PI / 180.0;
+    private const double RadiansToDegrees = 180.0 / Math.PI;
 
     /// <summary>The quaternion of a rotator (<c>FRotator::Quaternion</c>).</summary>
     public static Quaternion ToQuaternion(Rotator rotator)
@@ -48,6 +49,38 @@ internal static class TransformMath
             (-cr * sp * cy) - (sr * cp * sy),
             (cr * cp * sy) - (sr * sp * cy),
             (cr * cp * cy) + (sr * sp * sy));
+    }
+
+    /// <summary>
+    /// The rotator of a unit quaternion (<c>FQuat::Rotator</c>): pitch, yaw and roll in degrees; near the poles (pitch ±90)
+    /// the roll is taken from the yaw and normalized to (−180, 180].
+    /// </summary>
+    public static Rotator ToRotator(Quaternion q)
+    {
+        const double SingularityThreshold = 0.4999995;
+        double singularity = (q.Z * q.X) - (q.W * q.Y);
+        double yaw = Math.Atan2(2 * ((q.W * q.Z) + (q.X * q.Y)), 1 - (2 * ((q.Y * q.Y) + (q.Z * q.Z)))) * RadiansToDegrees;
+        if (singularity < -SingularityThreshold)
+        {
+            return new Rotator(-90.0, yaw, NormalizeAxis(-yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees))));
+        }
+
+        if (singularity > SingularityThreshold)
+        {
+            return new Rotator(90.0, yaw, NormalizeAxis(yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees))));
+        }
+
+        return new Rotator(
+            Math.Asin(2 * singularity) * RadiansToDegrees,
+            yaw,
+            Math.Atan2(-2 * ((q.W * q.X) + (q.Y * q.Z)), 1 - (2 * ((q.X * q.X) + (q.Y * q.Y)))) * RadiansToDegrees);
+    }
+
+    /// <summary>An angle in degrees normalized to (−180, 180] (<c>FRotator::NormalizeAxis</c>).</summary>
+    public static double NormalizeAxis(double degrees)
+    {
+        double angle = degrees % 360.0;
+        return angle > 180 ? angle - 360 : angle <= -180 ? angle + 360 : angle;
     }
 
     /// <summary>The transform of a relative location, rotation and scale.</summary>

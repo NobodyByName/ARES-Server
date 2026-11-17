@@ -8,16 +8,19 @@ using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Extraction;
 using Ares.GameDataExtract.Output;
+using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Profiles;
+using Ares.GameDataExtract.World;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
+using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract;
 
 /// <summary>
 /// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the game data into the output
-/// folder (created when missing, never inside the game folder): the Dam map's collision file under
-/// <c>maps/&lt;map&gt;/</c>, then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
+/// folder (created when missing, never inside the game folder): the Dam map's collision file and world tables (see
+/// <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
 /// earlier one only once complete. Prints what was written and which components could not be decoded.
 /// </summary>
 internal sealed class ExtractCommand
@@ -121,6 +124,7 @@ internal sealed class ExtractCommand
         {
             MapCollision map;
             ExtractionSummary summary;
+            MapWorldData world;
             using (GameArchive archive = GameArchive.Open(GameDirectory, keys, tocKey))
             {
                 CollisionProfiles profiles;
@@ -129,15 +133,21 @@ internal sealed class ExtractCommand
                     profiles = CollisionProfiles.Load(configPak);
                 }
 
-                (map, summary) = CollisionExtractor.Extract(archive, profiles);
+                PackageCache packages = PackageCache.FromArchive(archive);
+                IReadOnlyList<string> cells = archive.PackagePathsUnder($"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}");
+                (map, summary) = CollisionExtractor.Extract(packages, profiles, cells);
+                world = MapWorldExtractor.Extract(packages, DamMap.MapPackage, cells, DamDataLayers.All);
             }
 
             GameDataWriter writer = new(OutputDirectory);
             string path = writer.WriteFile(GameDataFiles.CollisionPath(map.MapName), stream => MapCollisionFile.Write(stream, map));
+            WriteWorld(writer, map.MapName, world);
             string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB) and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
+                $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers"));
+            output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), the world tables and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
             return Success;
         }
         catch (WrongTocKeyException)
@@ -155,6 +165,16 @@ internal sealed class ExtractCommand
             error.WriteLine($"ARES-GameDataExtract: error: cannot read the game's archives or write the game data: {failure.Message}");
             return ReadError;
         }
+    }
+
+    private static void WriteWorld(GameDataWriter writer, string mapName, MapWorldData world)
+    {
+        GameDataJsonContext json = GameDataJsonContext.Default;
+        writer.WriteTable(MapTables.World(mapName), [world.World], json.MapWorldObjects);
+        writer.WriteTable(MapTables.StreamingCells(mapName), world.StreamingCells, json.String);
+        writer.WriteTable(MapTables.LootSocketMeshes(mapName), world.LootSocketMeshes, json.LootSocketMesh);
+        writer.WriteTable(MapTables.LootSockets(mapName), world.LootSockets, json.LootSocket);
+        writer.WriteTable(MapTables.PlacedLoot(mapName), world.PlacedLoot, json.PlacedLootContainer);
     }
 
     /// <summary>Whether <paramref name="directory"/> is <paramref name="parent"/> or inside it.</summary>

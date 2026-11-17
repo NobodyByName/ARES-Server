@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Ares.Structs.Game.World;
 
 namespace Ares.Common.GameData;
 
@@ -16,4 +17,9 @@ namespace Ares.Common.GameData;
     RespectNullableAnnotations = true,
     RespectRequiredConstructorParameters = true)]
 [JsonSerializable(typeof(GameDataManifest))]
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(MapWorldObjects))]
+[JsonSerializable(typeof(LootSocketMesh))]
+[JsonSerializable(typeof(LootSocket))]
+[JsonSerializable(typeof(PlacedLootContainer))]
 public sealed partial class GameDataJsonContext : JsonSerializerContext;

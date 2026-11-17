@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Ares.GameDataExtract.Packages;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
@@ -104,22 +105,12 @@ internal sealed class SceneResolver
             return null;
         }
 
-        foreach (ZenExport export in mesh.Package.ChildrenOf(mesh.Export.Index))
-        {
-            if (export.Class != s_socket && export.Class != s_tagSocket)
-            {
-                continue;
-            }
-
-            (string? socketName, Transform transform) = ReadSocket(mesh.Package, export);
-            if (string.Equals(socketName, name, StringComparison.OrdinalIgnoreCase))
-            {
-                return transform;
-            }
-        }
-
-        return null;
+        return ReadSockets(mesh).FirstOrDefault(socket => string.Equals(socket.Name, name, StringComparison.OrdinalIgnoreCase))?.Transform;
     }
+
+    /// <summary>The sockets of static mesh <paramref name="mesh"/> (its socket subobjects), in export order.</summary>
+    /// <exception cref="InvalidDataException">A socket does not decode.</exception>
+    public static IReadOnlyList<MeshSocket> Sockets(ExportRef mesh) => [.. ReadSockets(mesh)];
 
     private Transform WorldTransform(CookedPackage package, ZenExport export, int depth)
     {
@@ -203,8 +194,16 @@ internal sealed class SceneResolver
                 own.AbsoluteScale ?? inherited.Absolute.Scale));
     }
 
-    /// <summary>Name and relative transform of a mesh socket export.</summary>
-    private static (string? Name, Transform Transform) ReadSocket(CookedPackage package, ZenExport export)
+    /// <summary>The sockets of a static mesh, read as they are enumerated.</summary>
+    private static IEnumerable<MeshSocket> ReadSockets(ExportRef mesh)
+    {
+        return mesh.Package.ChildrenOf(mesh.Export.Index)
+            .Where(export => export.Class == s_socket || export.Class == s_tagSocket)
+            .Select(export => ReadSocket(mesh.Package, export));
+    }
+
+    /// <summary>Name, gameplay tags and relative transform of a mesh socket export.</summary>
+    private static MeshSocket ReadSocket(CookedPackage package, ZenExport export)
     {
         int first = export.Class == s_tagSocket ? 1 : 0;
         UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(export));
@@ -213,6 +212,7 @@ internal sealed class SceneResolver
         Vector3D location = default;
         Rotator rotation = default;
         Vector3D scale = Vector3D.One;
+        ImmutableArray<string> tags = [];
         foreach (UnversionedMember member in header.Members)
         {
             int index = member.Index - first;
@@ -226,6 +226,8 @@ internal sealed class SceneResolver
                         throw new InvalidDataException($"Socket {package.Header.ExportPath(export.Index)} has {count} tags");
                     }
 
+                    int tagsStart = at + sizeof(uint);
+                    tags = [.. Enumerable.Range(0, (int)count).Select(tag => package.ReadName(tagsStart + (tag * SceneComponentMembers.NameSize)))];
                     at += sizeof(uint) + (int)(count * SceneComponentMembers.NameSize);
                 }
 
@@ -264,7 +266,7 @@ internal sealed class SceneResolver
         }
 
         return CookedPackage.EndOf(export) - at == StaticMeshSocketMembers.NativeDataSize
-            ? (name, TransformMath.FromParts(location, rotation, scale))
+            ? new MeshSocket(name, tags, TransformMath.FromParts(location, rotation, scale))
             : throw new InvalidDataException($"Socket {package.Header.ExportPath(export.Index)} does not end where expected");
     }
 
@@ -281,3 +283,9 @@ internal sealed class SceneResolver
         public static MergedScene Defaults { get; } = new(default, default, Vector3D.One, null, null, null, default);
     }
 }
+
+/// <summary>A socket of a static mesh.</summary>
+/// <param name="Name">Socket name, or <see langword="null"/> when the socket stores none.</param>
+/// <param name="Tags">The socket's gameplay tags (empty for a socket without tags), spelled as stored.</param>
+/// <param name="Transform">Transform relative to the mesh.</param>
+internal sealed record MeshSocket(string? Name, ImmutableArray<string> Tags, Transform Transform);

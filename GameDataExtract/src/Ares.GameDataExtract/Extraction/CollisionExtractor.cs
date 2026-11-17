@@ -45,21 +45,12 @@ internal sealed class CollisionExtractor
         _surfaces = new SurfaceLibrary(packages);
     }
 
-    /// <summary>Extracts the Dam map's collision from <paramref name="archive"/>.</summary>
+    /// <summary>Extracts the Dam map's collision from the map package and its cells <paramref name="cellPackages"/> of <paramref name="packages"/>.</summary>
     /// <exception cref="InvalidDataException">The map, its cell list or its landscape cannot be read.</exception>
-    public static (MapCollision Map, ExtractionSummary Summary) Extract(GameArchive archive, CollisionProfiles profiles)
-    {
-        const string CellFolder = $"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}";
-        IReadOnlyList<string> cells = [DamMap.MapPackage, .. archive.PackagePathsUnder(CellFolder)];
-        return Extract(PackageCache.FromArchive(archive), profiles, cells);
-    }
-
-    /// <summary>Extracts the Dam map's collision from the cells <paramref name="cellPackages"/> of <paramref name="packages"/>.</summary>
-    /// <exception cref="InvalidDataException">The map, its cell list or its landscape cannot be read.</exception>
-    private static (MapCollision Map, ExtractionSummary Summary) Extract(PackageCache packages, CollisionProfiles profiles, IReadOnlyList<string> cellPackages)
+    public static (MapCollision Map, ExtractionSummary Summary) Extract(PackageCache packages, CollisionProfiles profiles, IReadOnlyList<string> cellPackages)
     {
         CollisionExtractor extractor = new(packages, profiles);
-        extractor.Run(cellPackages);
+        extractor.Run([DamMap.MapPackage, .. cellPackages]);
         MapCollision map = extractor._builder.Build();
         extractor._summary.ComplexMeshBodies = map.Bodies.Count(body => !body.ComplexMeshes.IsEmpty);
         extractor._summary.WithoutComplexCollision = map.Placements.Count(placement =>

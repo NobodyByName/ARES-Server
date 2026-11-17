@@ -23,7 +23,7 @@ public sealed record PlacedLootContainer(
     Vector3D Location,
     Rotator Rotation,
     Vector3D Scale,
-    string? DataLayer);
+    string? DataLayer = null);
 
 /// <summary>A container the game server spawned at a place the map data does not hold.</summary>
 /// <param name="Class">Container class path (<c>/Game/.../BP_X.BP_X_C</c>).</param>

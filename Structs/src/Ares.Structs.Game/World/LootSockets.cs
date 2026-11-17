@@ -37,7 +37,7 @@ public sealed record LootSocket(
     Vector3D Scale,
     int Mesh,
     IReadOnlyList<string?> OverrideMaterials,
-    string? DataLayer);
+    string? DataLayer = null);
 
 /// <summary>A static mesh that carries loot container sockets.</summary>
 /// <param name="Path">Mesh object path.</param>
