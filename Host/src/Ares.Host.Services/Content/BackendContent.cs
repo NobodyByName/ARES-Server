@@ -1,3 +1,4 @@
+using Ares.Common.Game.Content;
 using Ares.Structs.Backend.Accounts;
 using Ares.Structs.Backend.Matchmaking;
 using Ares.Structs.Backend.Platform;
@@ -6,8 +7,8 @@ using Ares.Structs.Backend.Progression;
 namespace Ares.Host.Services.Content;
 
 /// <summary>
-/// Backend content Host serves. Apart from the game's trader offers, each item is the synthetic
-/// minimum the client needs to reach the main menu and matchmaking.
+/// Backend content Host serves besides its item content (<see cref="AresContent"/>): the synthetic minimum the client
+/// needs to reach the main menu and matchmaking.
 /// </summary>
 public static class BackendContent
 {
@@ -36,19 +37,23 @@ public static class BackendContent
         [.. LevelGroups.Select(group => new LevelState(group.GroupId, 1, 0, []))];
 
     /// <summary>
-    /// Minimal definition tables and the trader offers. Startup needs at least one quest definition
-    /// (else ARSQ0003) and one offer definition (else ARSO0003).
+    /// The definition tables: a minimal quest table, the trader offers, the synthetic items followed by the served item
+    /// definitions, and the level groups. Startup needs at least one quest definition (else ARSQ0003) and one offer
+    /// definition (else ARSO0003).
     /// </summary>
-    public static GameDataResponse GameData { get; } = new(
+    /// <param name="offers">The trader offers.</param>
+    /// <param name="items">The served item definitions.</param>
+    public static GameDataResponse GameData(IReadOnlyList<OfferDescription> offers, IEnumerable<ItemDescription> items) => new(
         new QuestDescriptionTable(
         [
             new QuestDescription(1000001, "Local bootstrap", "Synthetic local quest definition", [], [], [], []),
         ]),
-        new OfferDescriptionTable(TraderOffers.Celeste),
+        new OfferDescriptionTable(offers),
         new ItemDescriptionTable(
         [
             new ItemDescription(1000003, "local", 1, Stackable: false, Unique: false, [], []),
             .. LevelGroups.Select(group => new ItemDescription(group.TrackingItemId, "local_xp", int.MaxValue, Stackable: true, Unique: false, [], [group.GroupId])),
+            .. items,
         ]),
         new LevelGroupTable(LevelGroups));
 

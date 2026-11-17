@@ -1,6 +1,5 @@
 using Ares.Common.Game.Inventory;
 using Ares.Raid.World;
-using Ares.Raid.World.Actors;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
@@ -33,7 +32,7 @@ public sealed class DepartureTests
         // The extraction and the export naming the controller's end-of-round component come first.
         (string name, Dictionary<string, object?> parameters) = Assert.Single(Calls(session));
         Assert.Equal(FunctionNames.ClientNotifyExtracted, name);
-        Assert.Equal(new GameplayTag(DamExtraction.ExtractionType), parameters[PropertyNames.ExtractionType]);
+        Assert.Equal(new GameplayTag(TestGameData.Dam.ExtractionElevator.ExtractionType), parameters[PropertyNames.ExtractionType]);
         ObjectExports named = Assert.Single(session.Sent.Where(bunch => bunch.PackageExports)
             .Select(bunch => ObjectExports.Read(new BitReader(bunch.Payload, bunch.PayloadBits)).Exports), exports => exports.Records.ContainsKey(session.Player.EndOfRound));
         StableSubobjectExport component = Assert.IsType<StableSubobjectExport>(named.Records[session.Player.EndOfRound]);
@@ -186,14 +185,14 @@ public sealed class DepartureTests
     private static double LeavesAt(ScriptedPlayer session, double at)
     {
         Assert.True(session.Raid.ExtractionStates.Call(0, session.Principal.UserId, session.Raid.WorldSeconds(at)));
-        return at + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds + DamExtraction.Settings.DefaultExtractionSeconds
-            + DamExtraction.DoorsSeconds;
+        return at + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds + TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds
+            + TestGameData.Dam.ExtractionElevator.DoorsSeconds;
     }
 
     private static Vector3D Inside(RaidWorld raid)
     {
-        ExtractionPointPlacement placement = DamExtraction.All[raid.Extraction.Points[0].Index];
-        Vector3D offset = placement.Rotation.Rotate(DamExtraction.ZoneLocation);
+        ExtractionPointPlacement placement = TestGameData.Dam.ExtractionPoints[raid.Extraction.Points[0].Index];
+        Vector3D offset = placement.Rotation.Rotate(TestGameData.Dam.ExtractionElevator.ZoneLocation);
         return new Vector3D(placement.Location.X + offset.X, placement.Location.Y + offset.Y, placement.Location.Z + offset.Z);
     }
 

@@ -82,7 +82,7 @@ public sealed class AdminTests
 
         LootContainer[] before = [.. session.Raid.Loot.Containers];
         HashSet<ulong> used = [.. before.SelectMany(container => container.Components.Append(container.Guid))];
-        LootContainerClass type = LootContainerClasses.All[0];
+        LootContainerClass type = LootSocketClasses.ServedClasses(TestGameData.Loot)[0];
         Assert.Equal(AdminRefusal.None, session.Channels.SpawnLoot(type, out LootContainer? spawned));
         Assert.Equal(AdminRefusal.None, session.Channels.SpawnLoot(type, out LootContainer? second));
         Assert.NotNull(spawned);

@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.GameplayTags;
@@ -16,31 +17,35 @@ public sealed record SpawnPlacement(string Start, int? Slot, Vector3D Location, 
         1 - (2 * ((Rotation.Y * Rotation.Y) + (Rotation.Z * Rotation.Z)))) * 180 / Math.PI;
 }
 
-/// <summary>The Dam player starts a round may use, and where their spawn points are in the world.</summary>
+/// <summary>The player starts of a map a round may use, and where their spawn points are in the world.</summary>
 public static class Spawns
 {
     /// <summary>Group starts the Salvage game mode may use in a round.</summary>
+    /// <param name="map">The map's data.</param>
     /// <param name="round">The round.</param>
     /// <param name="pve">Whether the round is player-versus-environment only.</param>
     /// <returns>The starts, in map order.</returns>
-    public static IReadOnlyList<PlayerStart> Eligible(RoundConfiguration round, bool pve = false)
+    public static IReadOnlyList<PlayerStart> Eligible(MapData map, RoundConfiguration round, bool pve = false)
     {
+        ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(round);
         GameplayTagQuery query = pve ? round.ContentQueryPvE : round.ContentQuery;
         return
         [
-            .. DamPlayerStarts.All.Where(start => start.ClassName == PlayerStartClassNames.Group
-                && start.Tags.Contains(DamMap.GameModeTag)
+            .. map.PlayerStarts.Where(start => start.ClassName == PlayerStartClassNames.Group
+                && start.Tags.Contains(DamProtocol.GameModeTag)
                 && (!round.FilterPlayerStarts || query.Matches(start.Tags))),
         ];
     }
 
     /// <summary>A spawn point of a group start: its offset rotated by the start's yaw, lifted by the capsule's half height.</summary>
+    /// <param name="map">The map's data.</param>
     /// <param name="start">A group start.</param>
     /// <param name="slot">Spawn point index.</param>
     /// <returns>The placement.</returns>
-    public static SpawnPlacement Place(PlayerStart start, int slot)
+    public static SpawnPlacement Place(MapData map, PlayerStart start, int slot)
     {
+        ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(start);
         if (start.ClassName != PlayerStartClassNames.Group || slot < 0 || slot >= start.SpawnPoints.Count)
         {
@@ -53,7 +58,7 @@ public static class Spawns
         Quaternion rotation = Normalize(Multiply(root, Normalize(point.Rotation)));
         Vector3D offset = Rotate(root, point.Translation);
         Vector3D up = Rotate(rotation, new Vector3D(0, 0, 1));
-        double lift = DamPlayerStarts.Capsule.HalfHeight;
+        double lift = map.PlayerStartCapsule.HalfHeight;
         Vector3D location = new(
             start.RootLocation.X + offset.X + (lift * up.X),
             start.RootLocation.Y + offset.Y + (lift * up.Y),

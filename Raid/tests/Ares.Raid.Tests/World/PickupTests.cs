@@ -18,20 +18,20 @@ namespace Ares.Raid.Tests.World;
 
 public sealed class PickupTests
 {
-    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
-    private static readonly int s_maxDucks = RaidInventory.MaxAmount(s_duck);
+    private static readonly Lazy<ushort> s_duck = new(() => checked((ushort)TestGameData.Items.Definitions.UsableIndex(StorageItems.RubberDuckAssetId)));
+    private static readonly Lazy<int> s_maxDucks = new(() => TestGameData.Items.MaxAmount(s_duck.Value));
 
     [Fact]
     public void Every_item_a_player_can_drop_has_a_data_asset_and_hand_items_stay_in_the_inventory()
     {
-        Assert.All(LoadoutDefinitions.Generated.All.Where(item => LoadoutDefinitions.Generated.SupportsCarriedItem(item.GameAssetId)), item =>
+        Assert.All(TestGameData.Items.Definitions.All.Where(item => TestGameData.Items.Definitions.SupportsCarriedItem(item.GameAssetId)), item =>
         {
-            ushort index = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(item.GameAssetId));
-            Assert.True(WorldPickups.Supports(index));
-            Assert.True(RaidInventory.MaxAmount(index) > 0);
+            ushort index = checked((ushort)TestGameData.Items.Definitions.UsableIndex(item.GameAssetId));
+            Assert.True(TestGameData.Items.Carried.ContainsKey(index));
+            Assert.True(TestGameData.Items.MaxAmount(index) > 0);
         });
 
-        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
         Assert.False(inventory.Apply(Drop(inventory.Loadout, InventoryBlackboard.UnarmedSlot), out string? rejection));
         Assert.Equal("not droppable", rejection);
         Assert.False(inventory.TryTakeDropped(out _));
@@ -57,7 +57,7 @@ public sealed class PickupTests
         Vector3D ahead = new(
             Math.Round(reported.X + (Pickups.DropDistance * Math.Cos(heading))),
             Math.Round(reported.Y + (Pickups.DropDistance * Math.Sin(heading))),
-            Math.Round(reported.Z + DamPlayerStarts.Capsule.HalfHeight));
+            Math.Round(reported.Z + TestGameData.Dam.PlayerStartCapsule.HalfHeight));
         Assert.Equal(ahead, pickup.Location);
         Assert.Equal((session.Principal.UserId, 0, 0.0, 0.0), (pickup.DroppedBy, pickup.DroppingPlayerId, pickup.Rotation.Pitch, pickup.Rotation.Roll));
         Assert.Equal(session.Raid.WorldSeconds(time - 0.3), pickup.DroppedAt, 6);
@@ -82,7 +82,7 @@ public sealed class PickupTests
             RemoteRole = NetRole.SimulatedProxy,
             Movement = new RepMovement(pickup.Location, pickup.Rotation),
             DataAsset = pickup.DataAsset,
-            Item = new PickupItem { DataAssetIndex = s_duck, Quality = 0, Amount = 4, AmmoInClip = 0, Guid = ducks.Id },
+            Item = new PickupItem { DataAssetIndex = s_duck.Value, Quality = 0, Amount = 4, AmmoInClip = 0, Guid = ducks.Id },
             DropServerWorldTime = pickup.DroppedAt,
             DroppingPlayerId = 0,
         }, properties);
@@ -105,7 +105,7 @@ public sealed class PickupTests
         session.Input(frame, frame + 3, position: at, inventory: Drop(session.Member.Inventory.Backpack, Slot(session, ducks), 2));
         Assert.Equal(ducks with { Amount = 3 }, session.Member.Inventory.Containers[session.Member.Inventory.Backpack].Items[Slot(session, ducks)]);
         WorldPickup pickup = Assert.Single(session.Raid.Pickups.All);
-        Assert.Equal((s_duck, 2), (pickup.Item.AssetIndex, pickup.Item.Amount));
+        Assert.Equal((s_duck.Value, 2), (pickup.Item.AssetIndex, pickup.Item.Amount));
         Assert.NotEqual(ducks.Id, pickup.Item.Id);
     }
 
@@ -149,12 +149,12 @@ public sealed class PickupTests
 
         Assert.NotEqual(first.Index, pickups.Drop(1, 0, Ducks(2), at with { Y = at.Y + Pickups.MergeDistance + 1 }, default, 3).Index);
         Assert.NotEqual(first.Index, pickups.Drop(2, 1, Ducks(2), at, default, 4).Index);
-        Assert.NotEqual(first.Index, pickups.Drop(1, 0, Ducks(s_maxDucks - 3), at, default, 5).Index);
+        Assert.NotEqual(first.Index, pickups.Drop(1, 0, Ducks(s_maxDucks.Value - 3), at, default, 5).Index);
 
-        const ushort Ferro = WeaponItems.FerroIUsableIndex;
-        Assert.True(RaidInventory.MaxAmount(Ferro) <= Pickups.MergeStackSizeThreshold);
-        WorldPickup rifle = pickups.Drop(1, 0, new ContainerItem(Ferro, Guid.NewGuid(), 1, 0.5), at, default, 6);
-        Assert.NotEqual(rifle.Index, pickups.Drop(1, 0, new ContainerItem(Ferro, Guid.NewGuid(), 1, 1), at, default, 7).Index);
+        ushort ferro = TestGameData.Items.FerroIIndex;
+        Assert.True(TestGameData.Items.MaxAmount(ferro) <= Pickups.MergeStackSizeThreshold);
+        WorldPickup rifle = pickups.Drop(1, 0, new ContainerItem(ferro, Guid.NewGuid(), 1, 0.5), at, default, 6);
+        Assert.NotEqual(rifle.Index, pickups.Drop(1, 0, new ContainerItem(ferro, Guid.NewGuid(), 1, 1), at, default, 7).Index);
         Assert.Equal(6, pickups.All.Count);
         Assert.Equal(6, pickups.All.Select(pickup => pickup.Guid).Distinct().Count());
         Assert.All(pickups.All, pickup => Assert.Same(pickup, pickups.ByTarget(pickup.Interaction)));
@@ -207,7 +207,7 @@ public sealed class PickupTests
         ScriptedPlayer session = new();
         Vector3D at = session.Member.Spawn.Location;
         (uint frame, double time) = Ready(session, at);
-        while (session.Member.Inventory.PickUp(Ducks(s_maxDucks)) == s_maxDucks)
+        while (session.Member.Inventory.PickUp(Ducks(s_maxDucks.Value)) == s_maxDucks.Value)
         {
         }
 
@@ -223,8 +223,8 @@ public sealed class PickupTests
         session.Input(frame, frame + 3, pickup.Interaction, pickup.Interaction, at);
         WorldPickup rest = session.Raid.Pickups.All[pickup.Index];
         Assert.Equal((3, (ulong?)null, 2), (rest.Item.Amount, rest.PickedUpBy, rest.Revision));
-        Assert.Equal(s_maxDucks, session.Member.Inventory.Containers[backpack].Items[1]!.Amount);
-        Assert.EndsWith("2 of item " + s_duck + " x5 by 42, 3 left", session.Channels.PickupEvents[^1], StringComparison.Ordinal);
+        Assert.Equal(s_maxDucks.Value, session.Member.Inventory.Containers[backpack].Items[1]!.Amount);
+        Assert.EndsWith("2 of item " + s_duck.Value + " x5 by 42, 3 left", session.Channels.PickupEvents[^1], StringComparison.Ordinal);
 
         Stand(session, frame + 3, time, at, 3);
         Assert.False(session.Raid.Pickups.All[pickup.Index].Destroyed);
@@ -318,11 +318,11 @@ public sealed class PickupTests
         StableSubobjectContent interaction = StableSubobjectContent.Read(reader);
         Assert.Equal(pickup.Interaction, interaction.Guid);
         Assert.Equal(new Dictionary<string, object?> { [PropertyNames.CurrentInteractionState] = (ulong)CurrentInteractionState.SuccessDisabled },
-            new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DamDoors.InteractionState])).Decode(new PropertyLayout(GameReplication.Catalog, Pickups.InteractionClass), interaction.Content));
+            new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DoorClasses.InteractionState])).Decode(new PropertyLayout(GameReplication.Catalog, Pickups.InteractionClass), interaction.Content));
         Assert.Equal(0, reader.Remaining);
     }
 
-    private static ContainerItem Ducks(int amount) => new(s_duck, Guid.NewGuid(), amount, 1);
+    private static ContainerItem Ducks(int amount) => new(s_duck.Value, Guid.NewGuid(), amount, 1);
 
     private static InventoryCommand Drop(int container, int slot, int amount = 0)
     {
@@ -407,7 +407,7 @@ public sealed class PickupTests
         StableSubobjectContent component = StableSubobjectContent.Read(reader);
         Assert.Equal(pickup.Interaction, component.Guid);
         Dictionary<ulong, string> components = new() { [pickup.RootCollider] = Pickups.RootColliderClass };
-        return new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DamDoors.InteractionState], components))
+        return new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DoorClasses.InteractionState], components))
             .Decode(new PropertyLayout(GameReplication.Catalog, Pickups.InteractionClass), component.Content);
     }
 

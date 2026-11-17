@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
@@ -25,16 +26,18 @@ public sealed record ZiplineLine(
     double ForcedTravelDirectionThresholdHome)
 {
     /// <summary>The ride frame of a placed line: from its actor location to its end.</summary>
+    /// <param name="data">The game data: what the map's ziplines share.</param>
     /// <param name="placement">The line.</param>
     /// <returns>Its ride frame.</returns>
-    public static ZiplineLine From(ZiplinePlacement placement)
+    public static ZiplineLine From(GameDataSet data, ZiplinePlacement placement)
     {
+        ArgumentNullException.ThrowIfNull(data);
         Vector3D end = placement.End;
         Vector3D direction = Vectors.Subtract(end, placement.Location);
         double horizontal = Math.Sqrt((direction.X * direction.X) + (direction.Y * direction.Y));
         Rotator rotation = new(Math.Atan2(direction.Z, horizontal) * 180 / Math.PI, Math.Atan2(direction.Y, direction.X) * 180 / Math.PI, 0);
         return new ZiplineLine(placement.Location, rotation, Vectors.Length(direction), placement.Location, placement.Rotation,
-            placement.ExitPoints, DamZiplines.ForcedTravelDirectionThresholdHome);
+            placement.ExitPoints, data.Names.Dam.ZiplineDefaults.ForcedTravelDirectionThresholdHome);
     }
 
     /// <summary>A world point in the line frame.</summary>
@@ -127,7 +130,7 @@ public readonly record struct ZiplineState(
 /// <param name="Velocity">Velocity of the step.</param>
 /// <param name="Position">Feet after moving with <paramref name="Velocity"/> for the step, without collision.</param>
 /// <param name="Yaw">Heading the rider turns to (the control heading), in radians.</param>
-/// <param name="Flags">Graph state flags (<see cref="GeneratedGraphStateFlags.ZiplineRiding"/>).</param>
+/// <param name="Flags">Graph state flags (<see cref="GraphStateFlags.ZiplineRiding"/>).</param>
 /// <param name="Exit">Why the ride ends after this step, if it does.</param>
 /// <param name="Finished">Whether the step raises the finished state, so the graph returns to ground movement.</param>
 /// <param name="HeavyLandingQuery">Whether the step runs the ground movement's heavy-landing query.</param>
@@ -157,15 +160,16 @@ public static class ZiplineMovement
     /// Where the hands hang relative to the capsule centre, negated: the inverse of the character mesh's relative
     /// placement plus the inverse of the line attachment pose, both as locations.
     /// </summary>
-    public static Vector3D HangOffset
+    /// <param name="data">The game data: what the map's ziplines share.</param>
+    /// <returns>The offset.</returns>
+    public static Vector3D HangOffset(GameDataSet data)
     {
-        get
-        {
-            Vector3D mesh = new Rotator(0, -DamZiplines.CharacterMeshYaw, 0).Rotate(DamZiplines.CharacterMeshLocation);
-            Transform attachment = DamZiplines.AttachmentOffset;
-            Vector3D pose = InverseRotate(attachment.Rotation, attachment.Translation);
-            return new Vector3D(-mesh.X - pose.X, -mesh.Y - pose.Y, -mesh.Z - pose.Z);
-        }
+        ArgumentNullException.ThrowIfNull(data);
+        ZiplineLineDefaults defaults = data.Names.Dam.ZiplineDefaults;
+        Vector3D mesh = new Rotator(0, -defaults.CharacterMeshYaw, 0).Rotate(defaults.CharacterMeshLocation);
+        (Quaternion rotation, Vector3D translation, _) = defaults.AttachmentOffset;
+        Vector3D pose = InverseRotate(rotation, translation);
+        return new Vector3D(-mesh.X - pose.X, -mesh.Y - pose.Y, -mesh.Z - pose.Z);
     }
 
     /// <summary>
@@ -205,6 +209,7 @@ public static class ZiplineMovement
     }
 
     /// <summary>Advances a ride by one simulation tick.</summary>
+    /// <param name="data">The game data: what the map's ziplines share and the graph state flags of a ride.</param>
     /// <param name="state">Ride state.</param>
     /// <param name="input">The tick's input.</param>
     /// <param name="feet">World position of the feet before the step.</param>
@@ -214,9 +219,11 @@ public static class ZiplineMovement
     /// <param name="collided">Whether the previous movement sweep collided.</param>
     /// <param name="floorDistance">Distance to a walkable floor below, or <see langword="null"/> without one.</param>
     /// <returns>Velocity, heading, flags and the exit, if any.</returns>
-    public static ZiplineStep Step(ZiplineState state, ZiplineInput input, Vector3D feet, Vector3D velocity, double halfHeight, double seconds,
-        bool collided = false, double? floorDistance = null)
+    public static ZiplineStep Step(GameDataSet data, ZiplineState state, ZiplineInput input, Vector3D feet, Vector3D velocity, double halfHeight,
+        double seconds, bool collided = false, double? floorDistance = null)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ulong riding = data.Names.GraphFlags.ZiplineRiding;
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -236,7 +243,7 @@ public static class ZiplineMovement
             ShouldDetach = state.ShouldDetach || input.Electrified || input.SoftBlockInteractions,
         };
         Vector3D centre = feet with { Z = feet.Z + halfHeight };
-        Vector3D hands = Vectors.Subtract(centre, HangOffset);
+        Vector3D hands = Vectors.Subtract(centre, HangOffset(data));
         Vector3D local = line.Local(hands);
         double yaw = input.ControlYaw;
         bool launched = Launches(entering, line, local, feet, centre, velocity, state.Direction, out Vector3D launch, out ZiplineExit exit);
@@ -260,7 +267,7 @@ public static class ZiplineMovement
                 if (next.ShouldDetach || (velocity.Z < ZiplineParameters.CatchFallSpeed && Math.Abs(line.Rotation.Pitch) < ZiplineParameters.CatchMaxPitch))
                 {
                     ZiplineExit why = next.ShouldDetach ? ZiplineExit.Detached : ZiplineExit.FellThrough;
-                    return FallThrough(next with { ShouldDetach = true }, why, feet, velocity, seconds, yaw);
+                    return FallThrough(riding, next with { ShouldDetach = true }, why, feet, velocity, seconds, yaw);
                 }
 
                 along = Catch(next, velocity, over, within, seconds, out bool help);
@@ -313,7 +320,7 @@ public static class ZiplineMovement
             result = result with { Z = Math.Max(result.Z, 0) };
         }
 
-        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, GeneratedGraphStateFlags.ZiplineRiding, exit, finished, heavyLanding, true);
+        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, riding, exit, finished, heavyLanding, true);
     }
 
     // The first ticks: the rider's own velocity fades (an upward speed faster), and hands past a line end are pulled
@@ -378,13 +385,13 @@ public static class ZiplineMovement
 
     // A rider being caught lets go or falls too fast for the line: its vertical speed fades towards zero and the ride
     // ends once it is slow enough; the action layer is not written on such a tick.
-    private static ZiplineStep FallThrough(ZiplineState next, ZiplineExit exit, Vector3D feet, Vector3D velocity, double seconds, double yaw)
+    private static ZiplineStep FallThrough(ulong riding, ZiplineState next, ZiplineExit exit, Vector3D feet, Vector3D velocity, double seconds, double yaw)
     {
         float alpha = (float)seconds * ZiplineParameters.FallingFadeRate;
         double fading = velocity.Z + (alpha * (0 - velocity.Z));
         Vector3D result = velocity with { Z = Math.Min(fading, 0) };
         bool finished = result.Z > ZiplineParameters.FallingExitSpeed;
-        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, GeneratedGraphStateFlags.ZiplineRiding, exit, finished, true, false);
+        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, riding, exit, finished, true, false);
     }
 
     // Exit points are not taken while the rider is being caught.

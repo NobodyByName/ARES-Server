@@ -1,10 +1,10 @@
 using System.Numerics;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Movement;
 
@@ -79,9 +79,17 @@ public static class BodyMotion
         (-1, 0), (-Math.Sqrt(0.5), -Math.Sqrt(0.5)), (0, -1), (Math.Sqrt(0.5), -Math.Sqrt(0.5)),
     ];
 
-    // The part of the character that walls block: a pill from knee height to the top of its capsule.
-    private static readonly double s_pillHalfHeight = ((DamPlayerStarts.Capsule.HalfHeight * 2) - GroundContactParameters.KneeHeight) / 2;
-    private static readonly double s_pillCenter = GroundContactParameters.KneeHeight + s_pillHalfHeight;
+    // The part of the character that walls block: a pill from knee height to the top of its capsule (the map's player
+    // start capsule, which the character uses).
+    private readonly record struct Pill(double HalfHeight, double Center)
+    {
+        public static Pill Of(GameDataSet data)
+        {
+            double halfHeight = ((data.Names.Dam.PlayerStartCapsule.HalfHeight * 2) - GroundContactParameters.KneeHeight) / 2;
+            return new Pill(halfHeight, GroundContactParameters.KneeHeight + halfHeight);
+        }
+    }
+
 
     /// <summary>A body at rest or in motion at a position, on the ground when the ground there carries it.</summary>
     /// <param name="world">The level's collision.</param>
@@ -157,13 +165,15 @@ public static class BodyMotion
     /// Moves the body for a tick with a horizontal velocity. In the air it falls; on the ground its feet settle on the
     /// ground plane while it moves and keep their height while it stands. What blocks the way turns the motion along itself.
     /// </summary>
+    /// <param name="data">The game data: the character's capsule.</param>
     /// <param name="world">The level's collision.</param>
     /// <param name="body">The body from <see cref="Begin"/>.</param>
     /// <param name="horizontal">Horizontal velocity for the tick, in world units per second.</param>
     /// <param name="seconds">Duration of the tick.</param>
     /// <returns>The body after the tick.</returns>
-    public static BodyState Move(CollisionWorld world, BodyState body, Vector3D horizontal, double seconds)
+    public static BodyState Move(GameDataSet data, CollisionWorld world, BodyState body, Vector3D horizontal, double seconds)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(world);
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
@@ -172,7 +182,7 @@ public static class BodyMotion
 
         double vertical = body.Airborne ? body.Velocity.Z - (AirMovementParameters.FallAcceleration * seconds) : body.Velocity.Z;
         Vector3D motion = new(horizontal.X * seconds, horizontal.Y * seconds, body.Airborne ? vertical * seconds : 0);
-        (Vector3D position, Vector3D moved, bool blocked) = Slide(world, body.Position, motion, body.Airborne);
+        (Vector3D position, Vector3D moved, bool blocked) = Slide(Pill.Of(data), world, body.Position, motion, body.Airborne);
         Vector3D velocity = blocked
             ? new Vector3D(moved.X / seconds, moved.Y / seconds, body.Airborne ? moved.Z / seconds : vertical)
             : horizontal with { Z = vertical };
@@ -274,14 +284,17 @@ public static class BodyMotion
     }
 
     /// <summary>Whether a character has room to stand at a position: nothing blocks its standing capsule above knee height.</summary>
+    /// <param name="data">The game data: the character's capsule.</param>
     /// <param name="world">The level's collision.</param>
     /// <param name="feet">World position of the feet.</param>
     /// <returns>True when the character can stand up there.</returns>
-    public static bool CanStand(CollisionWorld world, Vector3D feet)
+    public static bool CanStand(GameDataSet data, CollisionWorld world, Vector3D feet)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(world);
-        Vector3D center = feet with { Z = feet.Z + s_pillCenter };
-        return !world.OverlapCapsule(center, System.Numerics.Quaternion.Identity, GroundContactParameters.PillRadius, s_pillHalfHeight, Blocking);
+        Pill pill = Pill.Of(data);
+        Vector3D center = feet with { Z = feet.Z + pill.Center };
+        return !world.OverlapCapsule(center, System.Numerics.Quaternion.Identity, GroundContactParameters.PillRadius, pill.HalfHeight, Blocking);
     }
 
     /// <summary>The ground under a position: probes from knee height down to the ground reach, fitted to a plane.</summary>
@@ -374,7 +387,7 @@ public static class BodyMotion
     // Moves the feet by a motion, turning it along each surface that blocks the character's capsule above knee height.
     // On the ground only the horizontal part of a surface turns the motion; the feet's height is the ground's. The
     // distance moved leaves out what pushing the capsule out of a surface added, so it is never longer than the motion.
-    private static (Vector3D Position, Vector3D Moved, bool Blocked) Slide(CollisionWorld world, Vector3D feet, Vector3D motion, bool airborne)
+    private static (Vector3D Position, Vector3D Moved, bool Blocked) Slide(Pill pill, CollisionWorld world, Vector3D feet, Vector3D motion, bool airborne)
     {
         Double3 position = Double3.From(feet);
         Double3 remaining = Double3.From(motion);
@@ -382,8 +395,8 @@ public static class BodyMotion
         bool blocked = false;
         for (int pass = 0; pass < SlidePasses && remaining.LengthSquared() > Skin * Skin; pass++)
         {
-            Double3 center = position + new Double3(0, 0, s_pillCenter);
-            if (world.SweepCapsule(center.ToVector3D(), (center + remaining).ToVector3D(), GroundContactParameters.PillRadius, s_pillHalfHeight, Blocking) is not { } hit)
+            Double3 center = position + new Double3(0, 0, pill.Center);
+            if (world.SweepCapsule(center.ToVector3D(), (center + remaining).ToVector3D(), GroundContactParameters.PillRadius, pill.HalfHeight, Blocking) is not { } hit)
             {
                 position += remaining;
                 break;

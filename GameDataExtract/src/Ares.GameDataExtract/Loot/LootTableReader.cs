@@ -125,7 +125,7 @@ internal sealed class LootTableReader
     private StructSchema Schema(string classPath) => _schemas.ForPath(classPath) ?? throw new InvalidDataException($"No script class {classPath}");
 
     /// <summary>The elements of array member <paramref name="name"/>; none of them may be stored as zero.</summary>
-    private static IEnumerable<object> Elements(PropertyBag bag, string name, string where)
+    private static object[] Elements(PropertyBag bag, string name, string where)
     {
         object[] elements = bag.Get<object[]>(name, []);
         return elements.Any(element => element is PropertyBag { IsZero: true })

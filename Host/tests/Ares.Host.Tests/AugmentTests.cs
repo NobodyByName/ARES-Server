@@ -20,7 +20,7 @@ public sealed class AugmentTests : IDisposable
         OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == type);
         Assert.Equal(200, store.Commit(Move(duck.InstanceId, BackpackSlots(store.Snapshot)[0], "carry"), DateTimeOffset.UnixEpoch).StatusCode);
         InventorySnapshot before = store.Snapshot;
-        long frame = AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]];
+        long frame = TestCatalog.AugmentFrames[TestCatalog.Definitions.AssetIds[type]];
         string destination = BackpackSlots(before, frame)[0];
         Assert.NotEqual(BackpackSlots(before)[0], destination);
         string saved = _database.InventoryJson;
@@ -37,17 +37,17 @@ public sealed class AugmentTests : IDisposable
         Assert.Empty(changes.Deleted);
         Assert.Equal(destination, store.Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId);
         Assert.Empty(store.Snapshot.Items.Single(item => item.InstanceId == BackpackSlots(before)[0]).Slots);
-        foreach (long availableFrame in AugmentItems.FrameAssetIds.Values.Prepend(LoadoutItems.StandardFrameAssetId))
+        foreach (long availableFrame in TestCatalog.AugmentFrames.Values.Prepend(TestCatalog.StandardFrame))
         {
             Assert.Equal(BackpackSlots(before, availableFrame), BackpackSlots(store.Snapshot, availableFrame));
         }
 
         PlayerLoadout handoff = InventorySnapshots.Loadout(store.Snapshot);
         Assert.Contains(handoff.Items, item => item.GameAssetId == frame);
-        Assert.DoesNotContain(handoff.Items, item => item.GameAssetId == LoadoutItems.StandardFrameAssetId);
-        Assert.DoesNotContain(handoff.Items, item => AugmentItems.FrameAssetIds.Values.Contains(item.GameAssetId) && item.GameAssetId != frame);
+        Assert.DoesNotContain(handoff.Items, item => item.GameAssetId == TestCatalog.StandardFrame);
+        Assert.DoesNotContain(handoff.Items, item => TestCatalog.AugmentFrames.Values.Contains(item.GameAssetId) && item.GameAssetId != frame);
         Assert.Single(handoff.Items, item => item.InstanceId == duck.InstanceId);
-        Assert.Equal(destination, new InventoryStore(_database.Store, TestDatabase.UserId).Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId);
+        Assert.Equal(destination, new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId);
     }
 
     [Fact]
@@ -79,35 +79,35 @@ public sealed class AugmentTests : IDisposable
     {
         InventoryStore store = Create(type);
         InventorySnapshot before = store.Snapshot;
-        InventoryItem empty = Assert.Single(before.Items, item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId);
+        InventoryItem empty = Assert.Single(before.Items, item => item.GameAssetId == TestCatalog.AugmentContentSlot);
         Assert.Empty(empty.Slots);
-        string[] slots = BackpackSlots(before, AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]]);
+        string[] slots = BackpackSlots(before, TestCatalog.AugmentFrames[TestCatalog.Definitions.AssetIds[type]]);
         OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == type);
         ServiceReply reply = store.Commit(Move(augment.InstanceId, empty.InstanceId, "equip"), DateTimeOffset.UnixEpoch.AddMinutes(1));
         Assert.Equal(200, reply.StatusCode);
-        Assert.Equal(backpack, store.Inventory.Loadout.BackpackCapacity);
-        Assert.Equal(quickUse, store.Inventory.Loadout.QuickUseCapacity);
-        Assert.Equal(1, store.Inventory.Loadout.SafePocketCapacity);
+        Assert.Equal(backpack, TestCatalog.Real.LoadoutCapacity(store.Inventory.Loadout, InventoryArea.Backpack));
+        Assert.Equal(quickUse, TestCatalog.Real.LoadoutCapacity(store.Inventory.Loadout, InventoryArea.QuickUse));
+        Assert.Equal(1, TestCatalog.Real.LoadoutCapacity(store.Inventory.Loadout, InventoryArea.SafePockets));
         Assert.Equal(slots, BackpackSlots(store.Snapshot));
         Assert.Equal(augment with { ETag = "ares-host-inventory-3", UpdatedAt = 60000 }, store.Inventory.Loadout.Augment);
         AssertChanges(before, reply, store.Snapshot);
 
-        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         Assert.Equal(augment.InstanceId, restarted.Inventory.Loadout.Augment!.InstanceId);
-        Assert.Equal(backpack, restarted.Inventory.Loadout.BackpackCapacity);
+        Assert.Equal(backpack, TestCatalog.Real.LoadoutCapacity(restarted.Inventory.Loadout, InventoryArea.Backpack));
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout loadout = restarted.Reserve(ticket);
         Assert.Contains(loadout.Items, item => item.InstanceId == augment.InstanceId);
-        long frame = AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]];
+        long frame = TestCatalog.AugmentFrames[TestCatalog.Definitions.AssetIds[type]];
         Assert.Contains(loadout.Items, item => item.GameAssetId == frame);
-        Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == LoadoutItems.StandardFrameAssetId);
+        Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == TestCatalog.StandardFrame);
         Assert.Equal(409, restarted.Commit(Move(augment.InstanceId, StashSlot(restarted), "reserved"), DateTimeOffset.UnixEpoch).StatusCode);
         restarted.Release(ticket);
         InventorySnapshot equipped = restarted.Snapshot;
         reply = restarted.Commit(Move(augment.InstanceId, StashSlot(restarted), "remove"), DateTimeOffset.UnixEpoch.AddMinutes(2));
         Assert.Equal(200, reply.StatusCode);
         Assert.Null(restarted.Inventory.Loadout.Augment);
-        Assert.Equal(10, restarted.Inventory.Loadout.BackpackCapacity);
+        Assert.Equal(10, TestCatalog.Real.LoadoutCapacity(restarted.Inventory.Loadout, InventoryArea.Backpack));
         AssertChanges(equipped, reply, restarted.Snapshot);
     }
 
@@ -128,7 +128,7 @@ public sealed class AugmentTests : IDisposable
         Assert.Contains(store.Inventory.Stash.Items, item => item.InstanceId == combat.InstanceId);
         Assert.Equal(3, store.Inventory.ItemCount);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -152,7 +152,7 @@ public sealed class AugmentTests : IDisposable
         Assert.Equal(2, store.Inventory.Stash.Items.Count);
         Assert.Contains(store.Inventory.Stash.Items, item => item.InstanceId == duck.InstanceId && item.Slot is null);
         ItemChanges original = Assert.IsType<InventoryOperationsResponse>(reply.Body).Changeset.Items;
-        ServiceReply retried = new InventoryStore(_database.Store, TestDatabase.UserId).Commit(remove, DateTimeOffset.UnixEpoch);
+        ServiceReply retried = new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).Commit(remove, DateTimeOffset.UnixEpoch);
         Assert.Equal(original.Deleted, Assert.IsType<InventoryOperationsResponse>(retried.Body).Changeset.Items.Deleted);
         Assert.Equal(200, store.Commit(Move(augment.InstanceId, AugmentSlot(store), "reequip"), DateTimeOffset.UnixEpoch).StatusCode);
         long revision = store.Inventory.Revision;
@@ -173,7 +173,7 @@ public sealed class AugmentTests : IDisposable
             Stash = store.Inventory.Stash with { Items = [duck] },
             Loadout = store.Inventory.Loadout with { Augment = augment },
         };
-        string destination = BackpackSlots(InventoryProjection.Create(TestDatabase.UserId, equipped).Snapshot)[15];
+        string destination = BackpackSlots(InventoryProjection.Create(TestCatalog.Real, TestDatabase.UserId, equipped).Snapshot)[15];
         InventoryOperationsRequest batch = new([new SetItemParents(duck.InstanceId, [destination]), new SetItemParents(augment.InstanceId, [AugmentSlot(store)])], "grow");
         Assert.Equal(200, store.Commit(batch, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(15, Assert.Single(store.Inventory.Loadout.Backpack.Items).Slot);
@@ -195,24 +195,24 @@ public sealed class AugmentTests : IDisposable
 
     private InventoryStore Create(params string[] types)
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         OwnedItem[] augments = [.. types.Select(type => new OwnedItem(Guid.NewGuid().ToString("D"), type, 1, 0.5, 1, "original", 0))];
         store.Import(store.Inventory with { Stash = store.Inventory.Stash with { Items = [.. store.Inventory.Stash.Items, .. augments] } }, store.Inventory.Revision);
         return store;
     }
 
-    private static string AugmentSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
-    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[0];
+    private static string AugmentSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId;
+    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[0];
     private static InventoryOperationsRequest Move(string item, string target, string id) => new([new SetItemParents(item, [target])], id);
 
     private static string[] BackpackSlots(InventorySnapshot snapshot, long? frameAssetId = null)
     {
-        InventoryItem root = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId);
+        InventoryItem root = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.FrameSlot);
         InventoryItem frame = frameAssetId is { } asset ? snapshot.Items.Single(item => item.GameAssetId == asset)
             : snapshot.Items.Single(item => item.InstanceId == root.Slots[0]);
         InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId)
-            && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+            && TestCatalog.Definitions.StandardBranch(item.GameAssetId) == TestCatalog.Branches.Backpack);
         return [.. snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots];
     }
 

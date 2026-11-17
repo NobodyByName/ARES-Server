@@ -1,4 +1,5 @@
 using System.Numerics;
+using Ares.Common.GameData;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
@@ -116,40 +117,48 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
     /// <summary>The Snap Hook's hook, its move target and the pull it gives the character.</summary>
     public SnapHookUse SnapHook { get; init; } = SnapHookUse.None;
 
-    /// <summary>The graph-state flags the simulation decides (<see cref="GeneratedGraphStateFlags.Simulated"/>).</summary>
-    public ulong GraphFlags
+    /// <summary>The graph-state flags the simulation decides (<see cref="GraphStateFlags.Simulated"/>).</summary>
+    /// <param name="data">The game data: the graph state tag bits.</param>
+    /// <returns>The flags.</returns>
+    public ulong GraphFlags(GameDataSet data)
     {
-        get
+        ArgumentNullException.ThrowIfNull(data);
+        GraphTagBits tags = data.Names.GraphTags;
+        GraphStateFlags groups = data.Names.GraphFlags;
+        ulong flags = Flashlight ? tags.AbilityFlashlightActive.Mask : 0;
+        flags |= Body is { Jumping: true, Touching: false } ? tags.AnimationAbilityJumpStarted.Mask : 0;
+        flags |= Body is { JumpRequestedAt: not null } ? tags.AbilityJumpPending.Mask : 0;
+        flags |= JumpAirTicks is > 0 and <= AirMovementParameters.JumpTagTicks ? tags.AbilityJump.Mask : 0;
+        flags |= MovementLocomotion == LocoMode.Sprinting && !OnLadder ? tags.AbilitySprintActive.Mask : 0;
+        flags |= MovementStance == CharacterStance.Crouch && Stance == CharacterStance.Crouch && !CrouchLatched ? tags.AbilityCrouch.Mask : 0;
+        if (Stance == CharacterStance.Slide && Slide is { Ticks: > 0 and <= GraphStateFlags.SlideStaminaRechargeBlockedTicks } sliding)
         {
-            ulong flags = Flashlight ? GraphStateTags.AbilityFlashlightActive : 0;
-            flags |= Body is { Jumping: true, Touching: false } ? GraphStateTags.AnimationAbilityJumpStarted : 0;
-            flags |= Body is { JumpRequestedAt: not null } ? GraphStateTags.AbilityJumpPending : 0;
-            flags |= JumpAirTicks is > 0 and <= AirMovementParameters.JumpTagTicks ? GraphStateTags.AbilityJump : 0;
-            flags |= MovementLocomotion == LocoMode.Sprinting && !OnLadder ? GraphStateTags.AbilitySprintActive : 0;
-            flags |= MovementStance == CharacterStance.Crouch && Stance == CharacterStance.Crouch && !CrouchLatched ? GraphStateTags.AbilityCrouch : 0;
-            if (Stance == CharacterStance.Slide && Slide is { Ticks: > 0 and <= GraphStateFlags.SlideStaminaRechargeBlockedTicks } sliding)
-            {
-                flags |= GraphStateTags.AttributeStaminaBlockRechargePendulumMove
-                    | (sliding.Ticks >= GraphStateFlags.SlideSprintInputBlockedFirstTick ? GraphStateTags.AbilityBlockInputSprintPendulumMove : 0);
-            }
-
-            flags |= Rolling ? GeneratedGraphStateFlags.DodgeRolling : 0;
-            flags |= HeavyLandingTicks > 0 ? GeneratedGraphStateFlags.HeavyLandingRecovery : 0;
-            flags |= Vaulting ? GeneratedGraphStateFlags.Vaulting : 0;
-            flags |= LandingRecoveryTag ? GraphStateTags.AbilityLandingRecovery : 0;
-            flags |= CrouchBlockTicks > 0 ? GraphStateTags.AbilityBlockInputCrouchPendulumMove : 0;
-            flags |= HeldItem is { } held
-                ? (held.Zoom ? GraphStateTags.AbilityZooming : 0) | (held.PrimaryUseTag ? GraphStateTags.AbilityFirePrimaryPendulumWep : 0)
-                    | (held.ReloadBlocked ? GraphStateTags.AbilityBlockReloadPendulumMove : 0)
-                : 0;
-            flags |= SnapHook.Pull is not null ? GeneratedGraphStateFlags.SnapHookPulling : 0;
-            return flags | (Ladder is not null ? LadderFlags : LadderFollowedTicks > 0 ? GeneratedGraphStateFlags.LadderState : 0);
+            flags |= tags.AttributeStaminaBlockRechargePendulumMove.Mask
+                | (sliding.Ticks >= GraphStateFlags.SlideSprintInputBlockedFirstTick ? tags.AbilityBlockInputSprintPendulumMove.Mask : 0);
         }
+
+        flags |= Rolling ? groups.DodgeRolling : 0;
+        flags |= HeavyLandingTicks > 0 ? groups.HeavyLandingRecovery : 0;
+        flags |= Vaulting ? groups.Vaulting : 0;
+        flags |= LandingRecoveryTag ? tags.AbilityLandingRecovery.Mask : 0;
+        flags |= CrouchBlockTicks > 0 ? tags.AbilityBlockInputCrouchPendulumMove.Mask : 0;
+        flags |= HeldItem is { } held
+            ? (held.Zoom ? tags.AbilityZooming.Mask : 0) | (held.PrimaryUseTag ? tags.AbilityFirePrimaryPendulumWep.Mask : 0)
+                | (held.ReloadBlocked ? tags.AbilityBlockReloadPendulumMove.Mask : 0)
+            : 0;
+        flags |= SnapHook.Pull is not null ? groups.SnapHookPulling : 0;
+        return flags | (Ladder is not null ? LadderFlags : LadderFollowedTicks > 0 ? groups.LadderState : 0);
     }
 
-    /// <summary>The graph-state tags from 64 the simulation decides (<see cref="GeneratedGraphStateFlags.SimulatedUpper"/>).</summary>
-    public ulong UpperGraphFlags => (GroundNode.SprintBoosted ? GraphStateUpperTags.UiSkillStateActiveSprintBoost : 0)
-        | (Exhausted ? GraphStateUpperTags.StatusExhausted : 0);
+    /// <summary>The graph-state tags from 64 the simulation decides (<see cref="GraphStateFlags.SimulatedUpper"/>).</summary>
+    /// <param name="data">The game data: the graph state tag bits.</param>
+    /// <returns>The tags.</returns>
+    public ulong UpperGraphFlags(GameDataSet data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        GraphTagBits tags = data.Names.GraphTags;
+        return (GroundNode.SprintBoosted ? tags.UiSkillStateActiveSprintBoost.Mask : 0) | (Exhausted ? tags.StatusExhausted.Mask : 0);
+    }
 
     /// <summary>
     /// Whether the persistent action layer marks the character exhausted; its tag copies it every tick. Stamina, which the
@@ -159,7 +168,7 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
 
     /// <summary>
     /// What the held item leaves for the movement (aim, forced walk, sprint blocks), or null while the held item is not
-    /// simulated; its tags (<see cref="GeneratedGraphStateFlags.HeldItem"/>) then keep their initial values.
+    /// simulated; its tags (<see cref="GraphStateFlags.HeldItem"/>) then keep their initial values.
     /// </summary>
     public HeldItemState? HeldItem { get; init; }
 
@@ -185,32 +194,37 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
 /// </summary>
 public sealed class CharacterSimulation
 {
-    // The capsule the vault search traces with.
-    private static readonly VaultCapsule s_vaultCapsule = new(DamPlayerStarts.Capsule.Radius, DamPlayerStarts.Capsule.HalfHeight,
-        DamPlayerStarts.Capsule.HalfHeight, GroundContactParameters.CrouchedHalfHeight);
-
+    private readonly GameDataSet _data;
     private readonly CollisionWorld? _world;
 
+    // The capsule the vault search traces with.
+    private readonly VaultCapsule _vaultCapsule;
+
     /// <summary>Creates a character at its initial position and flashlight state.</summary>
+    /// <param name="data">The game data the character moves by.</param>
     /// <param name="position">Initial position.</param>
     /// <param name="flashlight">Initial flashlight state.</param>
     /// <param name="world">The level's collision, or null to keep the reported position.</param>
-    public CharacterSimulation(Vector3D position, bool flashlight = false, CollisionWorld? world = null)
-        : this(new CharacterState(0, position, flashlight), world)
+    public CharacterSimulation(GameDataSet data, Vector3D position, bool flashlight = false, CollisionWorld? world = null)
+        : this(data, new CharacterState(0, position, flashlight), world)
     {
     }
 
-    private CharacterSimulation(CharacterState state, CollisionWorld? world)
+    private CharacterSimulation(GameDataSet data, CharacterState state, CollisionWorld? world)
     {
+        _data = data ?? throw new ArgumentNullException(nameof(data));
         _world = world;
+        PlayerStartCapsule capsule = data.Names.Dam.PlayerStartCapsule;
+        _vaultCapsule = new VaultCapsule(capsule.Radius, capsule.HalfHeight, capsule.HalfHeight, GroundContactParameters.CrouchedHalfHeight);
         State = world is null || state.Body is not null ? state : state with { Body = BodyMotion.Start(world, state.Position, state.Velocity) };
     }
 
     /// <summary>Creates a character in a given state.</summary>
+    /// <param name="data">The game data the character moves by.</param>
     /// <param name="state">Initial state; its body is placed in the level when it has none.</param>
     /// <param name="world">The level's collision, or null to keep the reported position.</param>
     /// <returns>The simulation.</returns>
-    public static CharacterSimulation From(CharacterState state, CollisionWorld? world = null) => new(state, world);
+    public static CharacterSimulation From(GameDataSet data, CharacterState state, CollisionWorld? world = null) => new(data, state, world);
 
     /// <summary>State after the most recently applied input.</summary>
     public CharacterState State { get; private set; }
@@ -383,7 +397,7 @@ public sealed class CharacterSimulation
                 sprintStarted = time;
             }
 
-            actual = actual with { MaximumSpeed = SprintMovement.MaximumSpeed(parameters.MaximumSpeed, sprintParameters, time - sprintStarted.Value) };
+            actual = actual with { MaximumSpeed = SprintMovement.MaximumSpeed(_data, parameters.MaximumSpeed, sprintParameters, time - sprintStarted.Value) };
         }
         else if (held is { ForceWalk: true } && !shuffling)
         {
@@ -470,7 +484,7 @@ public sealed class CharacterSimulation
         {
             case { Roll: { } running } when rollRunning:
                 // The roll's animation drives the horizontal velocity; the movement state under the action is left as it was.
-                DodgeRollStep step = DodgeRollMovement.Step(running, State.Velocity, !airborne, -AirMovementParameters.FallAcceleration, seconds,
+                DodgeRollStep step = DodgeRollMovement.Step(_data, running, State.Velocity, !airborne, -AirMovementParameters.FallAcceleration, seconds,
                     movement.Buttons.HasFlag(MovementButtons.Crouch) && !State.RollFinished);
                 velocity = step.Velocity with { Z = 0 };
                 (actionStance, actionLocomotion) = (step.ActionStance, step.ActionLocomotion);
@@ -482,7 +496,7 @@ public sealed class CharacterSimulation
                 break;
             case { Roll: { } ending, RollExitTicks: > 0 and < DodgeRollParameters.ExitBlendTicks }:
                 // After the roll's last animated tick, ground movement takes over from that tick's velocity in equal steps.
-                Vector3D animated = DodgeRollMovement.Step(ending with { Ticks = ending.Ticks - 1 }, State.Velocity, true, 0, seconds).Velocity;
+                Vector3D animated = DodgeRollMovement.Step(_data, ending with { Ticks = ending.Ticks - 1 }, State.Velocity, true, 0, seconds).Velocity;
                 velocity = Blend(animated, velocity, State.RollExitTicks / (double)DodgeRollParameters.ExitBlendTicks);
                 rollExit = State.RollExitTicks + 1 < DodgeRollParameters.ExitBlendTicks ? State.RollExitTicks + 1 : 0;
                 roll = rollExit > 0 ? ending : null;
@@ -520,7 +534,7 @@ public sealed class CharacterSimulation
         bool crouchLatched = actionStance == CharacterStance.Slide || (crouching && State.CrouchLatched);
         if (_world is not null && body is { } begun)
         {
-            BodyState moved = BodyMotion.Move(_world, begun, velocity, seconds);
+            BodyState moved = BodyMotion.Move(_data, _world, begun, velocity, seconds);
             (body, position, velocity) = (moved, moved.Position, moved.Velocity);
             unsettled = unsettled || moved.Airborne || moved.Landing || moved.JumpRequestedAt is not null;
         }
@@ -607,8 +621,8 @@ public sealed class CharacterSimulation
         }
 
         Vector3D feet = State.Body?.Position ?? State.Position;
-        LadderStep step = LadderMovement.Step(climbing, LadderInput.From(movement, input, yaw, exhausted: false), feet, State.Velocity,
-            DamPlayerStarts.Capsule.HalfHeight, seconds, _world);
+        LadderStep step = LadderMovement.Step(_data, climbing, LadderInput.From(movement, input, yaw, exhausted: false), feet, State.Velocity,
+            _data.Names.Dam.PlayerStartCapsule.HalfHeight, seconds, _world);
         bool animated = step.Exit is LadderExit.JumpOff or LadderExit.ClimbOffTop;
         (Vector3D position, Vector3D velocity) = (climbing.PlayingTopEntry || animated) && reported is { } client
             ? (client, before is { } previous ? new Vector3D((client.X - previous.X) / seconds, (client.Y - previous.Y) / seconds, (client.Z - previous.Z) / seconds) : default)
@@ -651,7 +665,7 @@ public sealed class CharacterSimulation
             LadderFlags = step.Flags,
             LadderFollowedTicks = animated ? 1 : 0,
             LadderDiverged = start is null && State.LadderDiverged,
-            CrouchBlockTicks = (step.Flags & GeneratedGraphStateFlags.LadderCrouchInputBlocked) != 0 ? LadderMovement.CrouchBlockTicks : Math.Max(0, State.CrouchBlockTicks - 1),
+            CrouchBlockTicks = (step.Flags & _data.Names.GraphFlags.LadderCrouchInputBlocked) != 0 ? LadderMovement.CrouchBlockTicks : Math.Max(0, State.CrouchBlockTicks - 1),
             Vault = null,
             VaultFinished = false,
             VaultMissed = false,
@@ -668,7 +682,7 @@ public sealed class CharacterSimulation
     /// <param name="controls">The tick's Snap Hook controls.</param>
     /// <param name="frame">Input frame of the tick.</param>
     public void StepSnapHookItem(SnapHookControls controls, uint frame) =>
-        State = State with { SnapHook = State.SnapHook.StepItem(controls, frame, State.Body?.Position ?? State.Position, State.GraphFlags, _world) };
+        State = State with { SnapHook = State.SnapHook.StepItem(_data, controls, frame, State.Body?.Position ?? State.Position, State.GraphFlags(_data), _world) };
 
     /// <summary>Whether the Snap Hook's move target starts a pull on a tick (from ground movement or a ladder).</summary>
     /// <param name="frame">Input frame of the tick.</param>
@@ -695,7 +709,7 @@ public sealed class CharacterSimulation
         Vector3D? before, bool unsettled = false)
     {
         Vector3D feet = State.Body?.Position ?? State.Position;
-        Vector3D location = feet with { Z = feet.Z + DamPlayerStarts.Capsule.HalfHeight };
+        Vector3D location = feet with { Z = feet.Z + _data.Names.Dam.PlayerStartCapsule.HalfHeight };
         int time = SnapHookUse.Time(input.Frame);
         SnapHookUse use = State.SnapHook;
         Vector3D direction = FlatGroundMovement.Direction(movement, yaw);
@@ -710,7 +724,7 @@ public sealed class CharacterSimulation
         else
         {
             GroundContact ground = State.Body?.Ground ?? default;
-            SnapHookStep step = SnapHookMovement.Step(pull, new SnapHookInput(direction, movement.Buttons.HasFlag(MovementButtons.Jump), secondaryPressed), location,
+            SnapHookStep step = SnapHookMovement.Step(_data, pull, new SnapHookInput(direction, movement.Buttons.HasFlag(MovementButtons.Jump), secondaryPressed), location,
                 State.Velocity, new SnapHookGround(ground.Supported ? feet.Z - ground.Height : double.MaxValue, ground.Walkable), time, seconds);
             velocity = step.Exit == SnapHookExit.None ? SnapHookMovement.BlendIn(velocity, step.Velocity, step.State.Ticks) : step.Velocity;
             stance = step.ActionLayerWritten ? step.Stance : stance;
@@ -873,8 +887,8 @@ public sealed class CharacterSimulation
                 return null;
             }
 
-            VaultQuery query = new(body.Position with { Z = body.Position.Z + s_vaultCapsule.HalfHeight }, yaw, yaw, pitch, DodgeRollMovement.Direction(movement),
-                State.Velocity, body.Ground.Supported ? body.Ground.Normal : Vector3.UnitZ, body.Ground.Carries, body.Airborne, s_vaultCapsule);
+            VaultQuery query = new(body.Position with { Z = body.Position.Z + _vaultCapsule.HalfHeight }, yaw, yaw, pitch, DodgeRollMovement.Direction(movement),
+                State.Velocity, body.Ground.Supported ? body.Ground.Normal : Vector3.UnitZ, body.Ground.Carries, body.Airborne, _vaultCapsule);
             if (VaultDetection.FallCatch(body.Airborne, State.Velocity) || VaultDetection.Trace(_world, query) is not { } trace
                 || VaultDetection.Select(vaults, trace, body.Airborne, State.Velocity) is not { } clip || !VaultMovement.CanPlay(clip))
             {
@@ -926,11 +940,11 @@ public sealed class CharacterSimulation
 
     // The heavy landing of a body that falls onto the ground: its level from the fall height, its animation from the impact
     // direction against the heading (the control heading stands in for the game's smoothed steering angle).
-    private static HeavyLandingState BeginLanding(BodyState falling, double heading, bool pressed, bool blocked)
+    private HeavyLandingState BeginLanding(BodyState falling, double heading, bool pressed, bool blocked)
     {
         double height = HeavyLandingParameters.FallHeight(falling.Position.Z - falling.Ground.Height, falling.Velocity.Z, AirMovementParameters.FallAcceleration);
         Vector3D impact = new(Math.Round(falling.Velocity.X), Math.Round(falling.Velocity.Y), Math.Round(falling.Velocity.Z));
-        return HeavyLandingMovement.Begin(height, impact, falling.Velocity, heading, HeavyLandingMovement.IsRecoveryRoll(height, pressed, blocked));
+        return HeavyLandingMovement.Begin(_data, height, impact, falling.Velocity, heading, HeavyLandingMovement.IsRecoveryRoll(height, pressed, blocked));
     }
 
     // Whether a body falling onto the ground lands heavily.
@@ -939,7 +953,7 @@ public sealed class CharacterSimulation
         > HeavyLandingParameters.Height;
 
     // Whether the character, crouched where it is, has room to stand up.
-    private bool CanStand() => _world is null || State.Body is not { } body || BodyMotion.CanStand(_world, body.Position);
+    private bool CanStand() => _world is null || State.Body is not { } body || BodyMotion.CanStand(_data, _world, body.Position);
 
     private LocoMode Locomotion(double expected, double current, bool sprinting, bool shuffling)
     {

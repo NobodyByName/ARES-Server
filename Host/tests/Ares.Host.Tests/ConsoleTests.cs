@@ -61,7 +61,9 @@ public sealed class ConsoleTests
     [Fact]
     public void Completion_can_build_a_command_then_subcommand_then_match_an_item()
     {
+        using TestDatabase database = new();
         using HostConsole console = new("plain", TextWriter.Null);
+        using PlayerRegistry players = AttachSynthetic(console, database);
         Type(console, "inv");
         Key(console, ConsoleKey.Tab);
         Type(console, " tester ");
@@ -76,7 +78,9 @@ public sealed class ConsoleTests
     [InlineData("AuGmEnT_")]
     public void Partial_name_completion_cycles_all_matching_items_and_excludes_unrelated_items(string query)
     {
+        using TestDatabase database = new();
         using HostConsole console = new("plain", TextWriter.Null);
+        using PlayerRegistry players = AttachSynthetic(console, database);
         Type(console, "inventory tester add " + query);
         string[] matches = [ItemTechnicalNames.CombatMk1, ItemTechnicalNames.LootingMk1, ItemTechnicalNames.TacticalMk1, ItemTechnicalNames.CombatMk1];
         foreach (string name in matches)
@@ -92,7 +96,9 @@ public sealed class ConsoleTests
     [Fact]
     public void Item_name_completion_extends_the_common_prefix_then_cycles_in_both_directions()
     {
+        using TestDatabase database = new();
         using HostConsole console = new("plain", TextWriter.Null);
+        using PlayerRegistry players = AttachSynthetic(console, database);
         Type(console, "inventory tester add da_item_aug");
         Key(console, ConsoleKey.Tab);
         Assert.Contains("> inventory tester add DA_Item_Augment_", console.Render(120, 24), StringComparison.Ordinal);
@@ -109,7 +115,9 @@ public sealed class ConsoleTests
     [Fact]
     public void Completion_replaces_the_whole_name_at_the_cursor_and_resets_after_editing()
     {
+        using TestDatabase database = new();
         using HostConsole console = new("plain", TextWriter.Null);
+        using PlayerRegistry players = AttachSynthetic(console, database);
         Type(console, "inventory tester add da_item_augment_combINVALID suffix");
         Key(console, ConsoleKey.Home, control: true);
         for (int i = 0; i < "inventory tester add da_item_augment_comb".Length; i++)
@@ -129,7 +137,7 @@ public sealed class ConsoleTests
     public void Completing_an_item_name_does_not_add_it_until_the_command_is_submitted()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId, TestCatalog.Real);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         using HostConsole console = new("plain", TextWriter.Null);
         using PlayerRegistry players = Attach(console, database);
@@ -137,14 +145,14 @@ public sealed class ConsoleTests
         Key(console, ConsoleKey.Tab);
         Assert.Single(inventory.Inventory.Stash.Items);
         Key(console, ConsoleKey.Enter);
-        Assert.Contains(new InventoryStore(database.Store, TestDatabase.UserId).Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
+        Assert.Contains(new InventoryStore(database.Store, TestDatabase.UserId, TestCatalog.Real).Inventory.Stash.Items, item => item.Type == ItemTechnicalNames.CombatMk1);
     }
 
     [Fact]
     public void Quantity_grants_add_one_ammo_stack_and_reject_invalid_commands_without_writes()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId, TestCatalog.Real);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         using StringWriter output = new();
         using HostConsole console = new("plain", output);
@@ -175,11 +183,11 @@ public sealed class ConsoleTests
             File.WriteAllText(path, JsonSerializer.Serialize(PlayerInventory.Empty, InventoryStore.SerializationOptions));
             using StringWriter output = new();
             using HostConsole console = new("plain", output);
-            using PlayerRegistry players = Attach(console, database);
+            using PlayerRegistry players = AttachSynthetic(console, database);
             console.ExecuteCommand($"inventory tester import \"{path}\"", () => { });
             console.ExecuteCommand("inventory tester", () => { });
 
-            Assert.Equal(2, new InventoryStore(database.Store, TestDatabase.UserId).Snapshot.Revision);
+            Assert.Equal(2, new InventoryStore(database.Store, TestDatabase.UserId, players.Catalog).Snapshot.Revision);
             Assert.Contains("Imported 0 items at revision 2", output.ToString(), StringComparison.Ordinal);
             Assert.Contains("Reserved ticket: none", output.ToString(), StringComparison.Ordinal);
         }
@@ -421,7 +429,7 @@ public sealed class ConsoleTests
         using TestDatabase database = new();
         using StringWriter output = new();
         using HostConsole console = new("plain", output);
-        using PlayerRegistry players = Attach(console, database);
+        using PlayerRegistry players = AttachSynthetic(console, database);
         Type(console, "account create Alice secret-password");
         Key(console, ConsoleKey.Enter);
         console.ExecuteCommand("account create alice other-password", () => { });
@@ -448,10 +456,17 @@ public sealed class ConsoleTests
         Assert.Single(new AccountDirectory(database.Store, TimeProvider.System).List());
     }
 
-    private static PlayerRegistry Attach(HostConsole console, TestDatabase database)
+    // Attaches Host services that serve the real catalogue (a real-data test).
+    private static PlayerRegistry Attach(HostConsole console, TestDatabase database) => Attach(console, database, TestCatalog.Real);
+
+    // Attaches Host services that serve the synthetic catalogue, for tests that need no real items.
+    private static PlayerRegistry AttachSynthetic(HostConsole console, TestDatabase database) =>
+        Attach(console, database, SyntheticHost.Catalog(Path.Combine(database.Directory, "content")));
+
+    private static PlayerRegistry Attach(HostConsole console, TestDatabase database, InventoryCatalog catalog)
     {
         AccountDirectory accounts = new(database.Store, TimeProvider.System);
-        PlayerRegistry players = new(database.Store, accounts, null, new JsonEventLog(TextWriter.Null), TimeProvider.System);
+        PlayerRegistry players = new(database.Store, accounts, catalog, null, new JsonEventLog(TextWriter.Null), TimeProvider.System);
         console.Attach(new HostServices(accounts, players, null));
         return players;
     }

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using Ares.Common.Game.Inventory;
 using Ares.Host.Services.Accounts;
 using Ares.Structs.Backend.Progression;
 using MongoDB.Bson;
@@ -10,7 +9,7 @@ namespace Ares.Host.Tests;
 
 public sealed class PlayerAccountTests : IAsyncLifetime
 {
-    private readonly HostHarness _host = new();
+    private readonly HostHarness _host = HostHarness.Synthetic();
 
     public ValueTask InitializeAsync() => _host.InitializeAsync();
 
@@ -56,7 +55,7 @@ public sealed class PlayerAccountTests : IAsyncLifetime
         Assert.Equal("Bob", bobProfile.GetProperty("display_name").GetProperty("name").GetString());
         Assert.Equal(alice, aliceProfile.GetProperty("tenancy_user_id").GetInt64());
         Assert.NotEqual(alice, bobProfile.GetProperty("tenancy_user_id").GetInt64());
-        long ammo = LoadoutDefinitions.Generated.AssetIds[ItemTechnicalNames.HeavyAmmo];
+        long ammo = _host.Catalog.Items.AssetIds[ItemTechnicalNames.HeavyAmmo];
         Assert.Contains(aliceItems.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == ammo);
         Assert.DoesNotContain(bobItems.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == ammo);
     }

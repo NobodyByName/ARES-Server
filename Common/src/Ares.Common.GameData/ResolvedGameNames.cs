@@ -186,12 +186,14 @@ public sealed class ResolvedGameNames
 
         public void ThrowIfMissing(string? source)
         {
-            if (_problems.Count > 0)
+            if (_problems.Count == 0)
             {
-                string where = source is null ? "The game data" : $"The game data in {source}";
-                throw new GameDataException($"{where} does not have every game name ARES needs: {string.Join("; ", _problems)}. "
-                    + "Run the ARES-GameDataExtract of this ARES version on the supported game build; if the game renamed or removed them, ARES needs an update.");
+                return;
             }
+
+            string where = source is null ? "The game data" : $"The game data in {source}";
+            throw new GameDataException($"{where} does not have every game name ARES needs: {string.Join("; ", _problems)}. "
+                + "Run the ARES-GameDataExtract of this ARES version on the supported game build; if the game renamed or removed them, ARES needs an update.");
         }
     }
 }

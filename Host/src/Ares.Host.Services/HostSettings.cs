@@ -44,7 +44,7 @@ public sealed record HostSettings
     /// <summary>One database per independent Host/private server.</summary>
     public string MongoDbDatabase { get; init; } = "ares_host";
 
-    /// <summary>Coin price of each stash upgrade.</summary>
+    /// <summary>Coin price of each stash upgrade, for the tiers of the stash content Host serves.</summary>
     public StashUpgradePrices StashUpgrades { get; init; } = StashUpgradePrices.Default;
 
     /// <summary>Scale factor applied to the bootstrap reply delays some routes need (tests use 0).</summary>

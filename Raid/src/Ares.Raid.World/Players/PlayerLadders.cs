@@ -72,7 +72,7 @@ internal sealed class PlayerLadders : IPlayerFamily
             return false;
         }
 
-        string component = DamLadders.InteractionComponents[Enumerable.Range(0, ladder.Interactions.Count).First(index => ladder.Interactions[index] == request.Target)];
+        string component = LadderLogic.InteractionComponents[Enumerable.Range(0, ladder.Interactions.Count).First(index => ladder.Interactions[index] == request.Target)];
         player.Climb(request.Frame, ladder.Index, component == LadderParameters.TopEntryInteraction);
         return false;
     }

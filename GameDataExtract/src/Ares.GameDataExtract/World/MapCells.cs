@@ -7,7 +7,7 @@ namespace Ares.GameDataExtract.World;
 internal static class MapCells
 {
     /// <summary>Prefix of the generated cell packages of map package <paramref name="mapPackage"/>.</summary>
-    public static string Prefix(string mapPackage) => $"{mapPackage}/{RuntimeCellMembers.GeneratedFolder}/";
+    private static string Prefix(string mapPackage) => $"{mapPackage}/{RuntimeCellMembers.GeneratedFolder}/";
 
     /// <summary>
     /// The cell's name in the tables: the last segment of a generated cell package of <paramref name="mapPackage"/>, empty

@@ -1,4 +1,4 @@
-using Ares.Structs.Game.World;
+using Ares.Common.GameData;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
@@ -9,7 +9,8 @@ namespace Ares.Raid.World;
 /// keep loaded. Shared by the door and ladder catalogs so that each path has one id. They carry checksum 0, which
 /// the client does not check.
 /// </summary>
-public sealed class MapPaths
+/// <param name="map">The map's data: its world and persistent level names.</param>
+public sealed class MapPaths(MapData map)
 {
     private const ulong FirstGuid = 0x200001;
 
@@ -19,7 +20,7 @@ public sealed class MapPaths
     /// <summary>The persistent level of a cell (with the cell package and world).</summary>
     /// <param name="cell">Cell package.</param>
     /// <returns>The level id.</returns>
-    public ulong Level(string cell) => MapObject(MapObject(MapObject(0, cell), DamMap.WorldName), DamMap.PersistentLevelName);
+    public ulong Level(string cell) => MapObject(MapObject(MapObject(0, cell), map.WorldName), map.World.PersistentLevelName);
 
     /// <summary>A map object the client finds instead of loading.</summary>
     /// <param name="outer">Outer id; 0 for a package.</param>

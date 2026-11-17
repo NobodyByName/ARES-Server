@@ -61,7 +61,7 @@ public sealed class MultiplayerTests
         Assert.False(raid.Ended);
         Assert.True(first.Worlds.AcceptingPlayers(raid.MatchId));
         Assert.Null(first.Worlds.WelcomeFor(first.Principal));
-        Assert.Equal(RaidWorld.Welcome, first.Worlds.WelcomeFor(second.Principal));
+        Assert.Equal(raid.Welcome, first.Worlds.WelcomeFor(second.Principal));
         Assert.Throws<WorldPreparationException>(() => first.Worlds.Join(raid.MatchId, [42]));
 
         Surrender(second);
@@ -89,10 +89,10 @@ public sealed class MultiplayerTests
     [Fact]
     public void Every_party_shares_one_start_and_the_raid_refuses_players_it_cannot_place()
     {
-        DamWorlds worlds = new(() => 0, null, () => 7);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, null, () => 7);
         worlds.Prepare("a", [1]);
         RaidWorld raid = worlds.Current!;
-        IReadOnlyList<PlayerStart> starts = Spawns.Eligible(DamRounds.All[raid.Seed % DamRounds.All.Count]);
+        IReadOnlyList<PlayerStart> starts = Spawns.Eligible(TestGameData.Dam, TestGameData.Dam.Rounds[raid.Seed % TestGameData.Dam.Rounds.Length]);
         int points = starts[raid.Seed % starts.Count].SpawnPoints.Count;
         Assert.Throws<WorldPreparationException>(() => worlds.Join("b", [2]));
         Assert.Throws<WorldPreparationException>(() => worlds.Join("a", [1]));
@@ -135,7 +135,7 @@ public sealed class MultiplayerTests
         Assert.Equal(state.Channel + 1, pawn.Channel);
         Assert.DoesNotContain(first.Sent, bunch => OpenedActor(bunch) == first.Player.Pawn);
         PlayerMotion shown = second.Member.Motion!;
-        IReadOnlyDictionary<int, PendulumSlot> openState = PawnBlackboardFrames.State(shown.Tick, shown.Motion, 0, weapons: shown.Weapons, timeOffset: shown.TimeOffset);
+        IReadOnlyDictionary<int, PendulumSlot> openState = PawnBlackboardFrames.State(TestGameData.Data, shown.Tick, shown.Motion, 0, weapons: shown.Weapons, timeOffset: shown.TimeOffset);
         ActorContentBlock expected = WorldState.Merge(first.Raid.State.ObservedPawnProperties(second.Player, WorldState.CompressedPitch(shown.Pitch)),
             first.Raid.State.BlackboardFrame(0, shown.Tick, openState, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others));
         Assert.Equal(expected, Assert.Single(PawnContent(pawn)), new ContentComparer());
@@ -163,7 +163,7 @@ public sealed class MultiplayerTests
         Assert.Equal((shown.Tick, latest.Tick), first.LastFrameNumbers);
         Assert.All(first.Sent.Where(bunch => bunch.Channel == pawn.Channel), bunch => Assert.Null(bunch.Sequence));
         Assert.True(Distance(further, latest.Motion.Position) < 1);
-        Assert.Equal(PawnBlackboardFrames.State(latest.Tick, latest.Motion, 0)[PawnBlackboard.MovementStateSlot].Value,
+        Assert.Equal(PawnBlackboardFrames.State(TestGameData.Data, latest.Tick, latest.Motion, 0)[PawnBlackboard.MovementStateSlot].Value,
             next[PawnBlackboard.MovementStateSlot].Value);
 
         // A lost frame is not resent; the next one is coded against the last frame the client confirmed.
@@ -206,7 +206,7 @@ public sealed class MultiplayerTests
         Dictionary<int, PendulumSlot> reset = first.PawnFrame(new Dictionary<int, PendulumSlot>(), pawn.Channel, PendulumCodec.Others);
         uint resetTick = second.Member.Motion!.Tick;
         Assert.Equal((0U, resetTick), first.LastFrameNumbers);
-        Assert.Equal(PawnBlackboardFrames.State(second.Member.Motion!.Tick, second.Member.Motion!.Motion, 0)[PawnBlackboard.MovementStateSlot].Value,
+        Assert.Equal(PawnBlackboardFrames.State(TestGameData.Data, second.Member.Motion!.Tick, second.Member.Motion!.Motion, 0)[PawnBlackboard.MovementStateSlot].Value,
             reset[PawnBlackboard.MovementStateSlot].Value);
 
         // A second reset could clear this one from the client history before its acknowledgement reaches us.
@@ -275,7 +275,7 @@ public sealed class MultiplayerTests
         frame++;
         first.Service(at += 0.1);
         PlayerMotion opened = second.Member.Motion!;
-        Dictionary<int, PendulumSlot> seen = new(PawnBlackboardFrames.State(opened.Tick, opened.Motion, 0, weapons: opened.Weapons, timeOffset: opened.TimeOffset));
+        Dictionary<int, PendulumSlot> seen = new(PawnBlackboardFrames.State(TestGameData.Data, opened.Tick, opened.Motion, 0, weapons: opened.Weapons, timeOffset: opened.TimeOffset));
         seen = first.PawnFrame(seen, pawn.Channel, PendulumCodec.Others);
 
         // Draw the hook, throw it at the wall, ride the pull towards the wall, then let the client allow the next use.
@@ -345,8 +345,8 @@ public sealed class MultiplayerTests
             Assert.Equal(use.Target is not null, moveTarget is not null);
             PendulumSlot? pull = state.Values.SingleOrDefault(slot => slot.DescriptorId == QuickItemProtocol.PullNodeDescriptor);
             Assert.Equal(use.Pull is not null, pull is not null);
-            bool pulling = (PendulumCodec.Integer(graph[PawnBlackboard.GraphTagsField], state[PawnBlackboard.GraphStateSlot].Value) & GeneratedGraphStateFlags.SnapHookPulling)
-                == GeneratedGraphStateFlags.SnapHookPulling;
+            bool pulling = (PendulumCodec.Integer(graph[PawnBlackboard.GraphTagsField], state[PawnBlackboard.GraphStateSlot].Value) & TestGameData.Flags.SnapHookPulling)
+                == TestGameData.Flags.SnapHookPulling;
             Assert.Equal(use.Pull is not null, pulling);
             if (moveTarget is not null)
             {

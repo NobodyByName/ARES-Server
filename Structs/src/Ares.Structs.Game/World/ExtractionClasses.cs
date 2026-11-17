@@ -146,5 +146,5 @@ public static class ExtractionMembers
     public const string ExtractionInfoStruct = "FExtractionInfo";
 
     /// <summary><c>FExtractionInfo.ExtractionStartedTS</c>.</summary>
-    public const string ExtractionStartedTS = "ExtractionStartedTS";
+    public const string ExtractionStartedTs = "ExtractionStartedTS";
 }

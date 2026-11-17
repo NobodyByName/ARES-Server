@@ -29,13 +29,12 @@ internal sealed class ClassSchemas
     /// <exception cref="InvalidDataException">The class or one of its super classes has no known chain.</exception>
     public StructSchema ForObject(ExportRef target) => ForClass(target.Package, target.Export.Class, 0);
 
+    // The depth of a super class, refused past MaxSuperDepth.
+    private static int Deeper(CookedPackage package, int depth) =>
+        depth < MaxSuperDepth ? depth + 1 : throw new InvalidDataException($"{package.Name}: the class chain is too long");
+
     private StructSchema ForClass(CookedPackage package, PackageObjectIndex index, int depth)
     {
-        if (depth > MaxSuperDepth)
-        {
-            throw new InvalidDataException($"{package.Name}: the class chain is too long");
-        }
-
         if (index.Kind == PackageObjectKind.ScriptImport)
         {
             string path = _packages.ScriptPath(index) ?? throw new InvalidDataException($"{package.Name}: script class {index} is unknown");
@@ -48,7 +47,7 @@ internal sealed class ClassSchemas
             return cached;
         }
 
-        StructSchema super = ForClass(type.Package, type.Export.Super, depth + 1);
+        StructSchema super = ForClass(type.Package, type.Export.Super, Deeper(type.Package, depth));
         IReadOnlyList<PropertyField> members = BlueprintClassReader.DeclaredMembers(type.Package, type.Export, reference => Struct(type.Package, reference));
         StructSchema schema = new(type.Path, members, super);
         _blueprints[(type.Package, type.Export.Index)] = schema;

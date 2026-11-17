@@ -43,7 +43,7 @@ public sealed class ItemReaderTests
         Assert.True(query.Matches(["A", "C"]));
         Assert.False(query.Matches(["A.Sub"]));
         Assert.False(query.Matches(["A", "B.Sub"]));
-        Assert.False(Query([], [0, 0]).Matches(["A"]));
+        Assert.False(Query([], [.. "\0\0"u8]).Matches(["A"]));
         Assert.False(Query([], []).Matches(["A"]));
         Assert.Throws<InvalidDataException>(() => Query(["A"], [0, 1, 1, 1, 4]).Matches(["A"]));
         Assert.Throws<InvalidDataException>(() => Query(["A"], [0, 1, 1, 2, 0]).Matches(["A"]));

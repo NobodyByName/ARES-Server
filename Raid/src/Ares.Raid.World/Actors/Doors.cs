@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -7,7 +8,7 @@ using Ares.Structs.Net.Session;
 namespace Ares.Raid.World.Actors;
 
 /// <summary>A regular map door with its exported ids.</summary>
-/// <param name="Index">Index in <see cref="DamDoors.All"/>.</param>
+/// <param name="Index">Index in the map's doors (<see cref="MapData.Doors"/>).</param>
 /// <param name="Cell">World Partition cell package holding the door.</param>
 /// <param name="Guid">The door actor.</param>
 /// <param name="Buttons">Its open/close button components.</param>
@@ -28,16 +29,15 @@ public sealed class DoorCatalog
     /// <summary>Names the doors.</summary>
     /// <param name="replication">Replication context (knows the interaction-state enum).</param>
     /// <param name="paths">Map path ids.</param>
-    public DoorCatalog(ReplicationContext replication, MapPaths paths)
+    /// <param name="map">The map's data: its doors.</param>
+    public DoorCatalog(ReplicationContext replication, MapPaths paths, MapData map)
     {
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
         ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(map);
         List<Door> doors = [];
-        foreach (DoorPlacement placement in DamDoors.All)
+        foreach (Door door in map.Doors.Select((placement, index) => Create(index, placement)))
         {
-            ulong actor = paths.MapObject(paths.Level(placement.Cell), placement.Actor);
-            Door door = new(doors.Count, placement.Cell, actor, [.. DamDoors.InteractionComponents.Select(name => paths.MapObject(actor, name))],
-                paths.MapObject(actor, DamDoors.BreachInteractionComponent));
             doors.Add(door);
             _breaches[door.Breach] = door;
             foreach (ulong button in door.Buttons)
@@ -48,6 +48,15 @@ public sealed class DoorCatalog
 
         Exports = paths.Exports();
         Doors = doors;
+
+        return;
+
+        Door Create(int index, DoorPlacement placement)
+        {
+            ulong actor = paths.MapObject(paths.Level(placement.Cell), placement.Actor);
+            return new Door(index, placement.Cell, actor, [.. DoorClasses.InteractionComponents.Select(name => paths.MapObject(actor, name))],
+                paths.MapObject(actor, DoorClasses.BreachInteractionComponent));
+        }
     }
 
     /// <summary>The door exports.</summary>
@@ -85,7 +94,7 @@ public sealed class DoorCatalog
     public ChannelBunch OpenBunch(Door door, int channel, int sequence, DoorButtons buttons, DoorState doorState)
     {
         ArgumentNullException.ThrowIfNull(door);
-        ActorContentBlock actor = _replication.Encode(DamDoors.ActorClass, new Dictionary<string, object?>
+        ActorContentBlock actor = _replication.Encode(DoorClasses.ActorClass, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
@@ -103,7 +112,7 @@ public sealed class DoorCatalog
     public ChannelBunch UpdateBunch(Door door, int channel, DoorState doorState, DoorButtons buttons)
     {
         ArgumentNullException.ThrowIfNull(door);
-        ActorContentBlock actor = _replication.Encode(DamDoors.ActorClass, new Dictionary<string, object?> { [PropertyNames.DoorState] = doorState.Pack() });
+        ActorContentBlock actor = _replication.Encode(DoorClasses.ActorClass, new Dictionary<string, object?> { [PropertyNames.DoorState] = doorState.Pack() });
         IReadOnlyList<StaticSubobjectContent> components = ButtonContent(door, buttons);
         return Bunches.Actor(channel, writer =>
         {
@@ -119,7 +128,7 @@ public sealed class DoorCatalog
         [.. door.Buttons.Select(guid => new StaticSubobjectContent(guid, Button(buttons.OpenClose))), new(door.Breach, Button(buttons.Breach))];
 
     private ActorContentBlock Button(CurrentInteractionState state) =>
-        _replication.Encode(DamDoors.InteractionClass, new Dictionary<string, object?> { [PropertyNames.CurrentInteractionState] = (ulong)state });
+        _replication.Encode(DoorClasses.InteractionClass, new Dictionary<string, object?> { [PropertyNames.CurrentInteractionState] = (ulong)state });
 }
 
 /// <summary>States of a door's buttons.</summary>
@@ -137,7 +146,7 @@ public readonly record struct DoorButtons(CurrentInteractionState OpenClose, Cur
 public sealed class DoorStates
 {
     private const double AnimationSeconds = 2.0;
-    private const double BreachSeconds = DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds;
+    private const double BreachSeconds = DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds;
 
     private readonly IReadOnlyList<DoorPlacement> _placements;
     private readonly Dictionary<int, (DoorState State, int Revision, double? Until)> _states = [];

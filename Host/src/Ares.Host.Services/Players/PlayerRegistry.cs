@@ -11,12 +11,11 @@ namespace Ares.Host.Services.Players;
 /// <summary>One account's settings, inventory, party and matchmaking.</summary>
 public sealed class PlayerServices : IDisposable
 {
-    internal PlayerServices(Account account, HostDatabase database, RaidFleet? raids, JsonEventLog log, TimeProvider time,
-        StashUpgradePrices? stashUpgrades)
+    internal PlayerServices(Account account, HostDatabase database, InventoryCatalog catalog, RaidFleet? raids, JsonEventLog log, TimeProvider time)
     {
         Account = account;
         Settings = new AccountStore(database, account.UserId);
-        Inventory = new InventoryStore(database, account.UserId, stashUpgrades);
+        Inventory = new InventoryStore(database, account.UserId, catalog);
         Inventory.InitializeLayout(time.GetUtcNow());
         Profiles = new ProfileFactory(() => Account, time);
         Gate = new BackendGate();
@@ -51,13 +50,16 @@ public sealed class PlayerServices : IDisposable
 /// <summary>
 /// The players this Host has loaded, keyed by user id. A player is loaded on its first signed-in
 /// request, or at startup while it holds a raid reservation, and stays loaded until its account is deleted.
-/// Players pay <paramref name="stashUpgrades"/>, or the default prices, for stash upgrades.
+/// Inventories are served with the definitions and stash upgrade prices of <paramref name="catalog"/>.
 /// </summary>
-public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accounts, RaidFleet? raids, JsonEventLog log, TimeProvider time,
-    StashUpgradePrices? stashUpgrades = null) : IDisposable
+public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accounts, InventoryCatalog catalog, RaidFleet? raids, JsonEventLog log,
+    TimeProvider time) : IDisposable
 {
     private readonly Dictionary<long, PlayerServices> _players = [];
     private readonly Lock _lock = new();
+
+    /// <summary>The definitions every inventory is served with.</summary>
+    public InventoryCatalog Catalog => catalog;
 
     /// <summary>True when Host starts Raid servers.</summary>
     public bool HasAllocator => raids is not null;
@@ -161,7 +163,7 @@ public sealed class PlayerRegistry(HostDatabase database, AccountDirectory accou
                 return null;
             }
 
-            PlayerServices player = new(account, database, raids, log, time, stashUpgrades);
+            PlayerServices player = new(account, database, catalog, raids, log, time);
             _players.Add(userId, player);
             return player;
         }

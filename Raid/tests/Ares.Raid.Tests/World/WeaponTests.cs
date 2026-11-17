@@ -3,6 +3,7 @@ using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
@@ -17,17 +18,18 @@ public sealed class WeaponTests
     private const ulong Reload = 1UL << WeaponProtocol.ReloadDownBit;
 
     [Theory]
-    [InlineData(FerroDefaults.ItemClass, 0xD0674436U)]
-    [InlineData(HandItems.UnarmedItemClass, 0xD0674436U)]
-    [InlineData(HandItems.RaiderToolItemClass, 0xB63AEA3CU)]
-    public void Held_item_class_exports_carry_their_own_network_checksums(string itemClass, uint expected)
+    [InlineData(GameNames.Items.FerroI, 0xD0674436U)]
+    [InlineData(GameNames.Items.Unarmed, 0xD0674436U)]
+    [InlineData(GameNames.Items.RaiderTool, 0xB63AEA3CU)]
+    public void Held_item_class_exports_carry_their_own_network_checksums(string item, uint expected)
     {
+        string itemClass = TestGameData.Data.Items.ByTechnicalName[item].ItemClass;
         ScriptedPlayer session = new(loadout: WithWeapons());
         session.Flush("exports");
         ulong guid = session.Raid.Imports.Classes[itemClass];
         StaticObjectExport exported = Assert.Single(session.Sent.Where(bunch => bunch.PackageExports)
             .SelectMany(bunch => ObjectExports.Read(new BitReader(bunch.Payload, bunch.PayloadBits)).Exports.Records.Values)
-            .OfType<StaticObjectExport>(), item => item.Guid == guid);
+            .OfType<StaticObjectExport>(), export => export.Guid == guid);
         Assert.Equal(expected, exported.Checksum);
     }
 
@@ -56,7 +58,7 @@ public sealed class WeaponTests
         session.Service(100.2);
         ChannelBunch created = Assert.Single(session.Sent, bunch => bunch.Channel == 6 && Subobject(bunch) == itemGuid);
         DynamicSubobjectContent item = DynamicSubobjectContent.Read(new BitReader(created.Payload, created.PayloadBits));
-        Assert.Equal(session.Raid.Imports.Classes[FerroDefaults.ItemClass], item.ClassGuid);
+        Assert.Equal(session.Raid.Imports.Classes[TestGameData.Items.FerroI.ItemClass], item.ClassGuid);
         Assert.Equal(session.Player.Inventory, item.OuterGuid);
         Dictionary<ulong, string> objects = session.Raid.State.Objects([]);
         foreach (ulong guid in session.Player.HeldItems.Values)
@@ -83,8 +85,8 @@ public sealed class WeaponTests
         Dictionary<int, PendulumSlot> linked = session.PawnFrame(populated);
         Assert.Equal(itemGuid, ItemReference(linked, WeaponProtocol.FirstWeaponSlot));
         foreach ((int slot, int handle, int field) in ((int, int, int)[])
-            [(InventoryBlackboard.MeleeSlot, HandItems.RaiderToolHandle, HandItems.RaiderToolItemInstanceField),
-                (InventoryBlackboard.UnarmedSlot, WeaponProtocol.UnarmedHandle, HandItems.UnarmedItemInstanceField)])
+            [(InventoryBlackboard.MeleeSlot, HandItemFields.RaiderToolHandle, HandItemFields.RaiderToolItemInstanceField),
+                (InventoryBlackboard.UnarmedSlot, WeaponProtocol.UnarmedHandle, HandItemFields.UnarmedItemInstanceField)])
         {
             ContainerItem hand = session.Member.Inventory.Containers[session.Member.Inventory.Loadout].Items[slot]!;
             PendulumSlot node = linked[handle];
@@ -128,16 +130,16 @@ public sealed class WeaponTests
     [Fact]
     public void Weapon_replication_uses_simulation_time_units_and_the_items_default_model()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         Empty(inventory);
-        RaidWeapons weapons = new(inventory);
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         Assert.Equal(780UL, Read(WeaponProtocol.WeaponEquipTimeField, 30));
         Assert.Equal(420UL, Read(WeaponProtocol.WeaponUnequipTimeField, 30));
         Assert.Equal(600UL, Read(WeaponProtocol.WeaponZoomTimeField, 30));
         Assert.Equal(0x7FFFFFFFUL, Read(WeaponProtocol.WeaponVisualIndexField, 30));
         Assert.Equal(42597UL, Read(WeaponProtocol.WeaponDurabilityField, 30));
-        Assert.Equal((ulong)FerroDefaults.ModSlotCount, Read(WeaponProtocol.WeaponModSlotCountField, 30));
+        Assert.Equal((ulong)TestGameData.Items.FerroModSlotCount, Read(WeaponProtocol.WeaponModSlotCountField, 30));
         Assert.All(ModSlotStates(30), state => Assert.Equal(WeaponProtocol.EmptyModSlot, state));
 
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
@@ -160,15 +162,15 @@ public sealed class WeaponTests
             PendulumVariable node = weapons.Variables(frame).Single(item => item.Slot == WeaponProtocol.FirstWeaponSlot);
             byte[] bytes = PendulumCodec.Default.Value(node.DescriptorId, node.Values);
             int offset = PendulumRegistry.Descriptors[node.DescriptorId].Fields[WeaponProtocol.WeaponModSlotStatesField].Offset;
-            return bytes[offset..(offset + FerroDefaults.ModSlotCount)];
+            return bytes[offset..(offset + TestGameData.Items.FerroModSlotCount)];
         }
     }
 
     [Fact]
     public void Equip_requests_draw_the_named_ferro_keep_it_for_other_targets_and_report_the_handled_count()
     {
-        RaidInventory inventory = new(WithWeapons());
-        RaidWeapons weapons = new(inventory);
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         ContainerItem gun = inventory.Containers[inventory.Loadout].Items[0]!;
         Dictionary<Guid, ulong> objects = new() { [gun.Id] = 30 };
         weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
@@ -200,9 +202,9 @@ public sealed class WeaponTests
     [Fact]
     public void Reload_transfers_one_round_once_and_firing_consumes_it_without_duplicating_replayed_inputs()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         Empty(inventory);
-        RaidWeapons weapons = new(inventory);
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
         Assert.Equal(59, inventory.HeavyAmmo);
@@ -231,10 +233,10 @@ public sealed class WeaponTests
     [Fact]
     public void The_gun_in_hand_at_spawn_fires_at_once_but_blocked_fire_cannot_consume_a_chambered_round()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         Guid gun = inventory.Containers[inventory.Loadout].Items[0]!.Id;
         Assert.Equal(1, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
-        RaidWeapons weapons = new(inventory);
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, Fire | (1UL << WeaponProtocol.FireBlockedBit), 0, 0));
         Assert.True(weapons.Armed);
         Assert.Equal(0, weapons.ShotsFired);
@@ -249,18 +251,18 @@ public sealed class WeaponTests
     public void A_broken_ferro_cannot_fire_and_empty_reserves_cannot_complete_a_reload()
     {
         PlayerLoadout loadout = WithWeapons();
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == WeaponItems.FerroIAssetId ? item with { Durability = 0 } : item)] };
-        RaidInventory inventory = new(loadout);
-        RaidWeapons weapons = new(inventory);
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.Items.FerroI.AssetId ? item with { Durability = 0 } : item)] };
+        RaidInventory inventory = new(TestGameData.Items, loadout);
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Fire, 0, 0));
         Assert.Equal(0, weapons.ShotsFired);
         Assert.Equal(1, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
 
-        string ammo = loadout.Items.Single(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId).InstanceId;
+        string ammo = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.HeavyAmmo.AssetId).InstanceId;
         loadout = loadout with { Items = [.. loadout.Items.Where(item => item.InstanceId != ammo).Select(item => item.Slots.Contains(ammo) ? item with { Slots = [] } : item)] };
-        inventory = new RaidInventory(loadout);
-        weapons = new RaidWeapons(inventory);
+        inventory = new RaidInventory(TestGameData.Items, loadout);
+        weapons = new RaidWeapons(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
         weapons.Apply(new WeaponInput(400, 0, 0, 0));
@@ -273,9 +275,9 @@ public sealed class WeaponTests
     public void A_raid_starts_with_the_gun_loaded_from_carried_ammo_and_an_emptied_stack_leaves_its_slot()
     {
         PlayerLoadout loadout = WithWeapons();
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId ? item with { Amount = FerroDefaults.ClipSize } : item)] };
-        RaidInventory inventory = new(loadout);
-        Assert.Equal(FerroDefaults.ClipSize, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.Items.HeavyAmmo.AssetId ? item with { Amount = TestGameData.Items.FerroClipSize } : item)] };
+        RaidInventory inventory = new(TestGameData.Items, loadout);
+        Assert.Equal(TestGameData.Items.FerroClipSize, inventory.Containers[inventory.Loadout].Items[0]!.AmmoInClip);
         Assert.Equal(0, inventory.HeavyAmmo);
         Assert.Null(inventory.Containers[inventory.Backpack].Items[5]);
     }
@@ -283,9 +285,9 @@ public sealed class WeaponTests
     [Fact]
     public void Removing_a_gun_during_reload_cancels_the_transfer_and_keeps_its_reserve()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         Empty(inventory);
-        RaidWeapons weapons = new(inventory);
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         weapons.Apply(new WeaponInput(30, 0, 0, 0));
         weapons.Apply(new WeaponInput(100, Reload, 0, 0));
         Assert.True(inventory.Apply(Swap(inventory.Loadout, 0, inventory.Backpack, 4)));
@@ -319,19 +321,20 @@ public sealed class WeaponTests
 
     [Theory]
     [InlineData(null)]
-    [InlineData(AugmentItems.CombatMk1AssetId)]
-    [InlineData(AugmentItems.LootingMk1AssetId)]
-    [InlineData(AugmentItems.TacticalMk1AssetId)]
-    public void Ferro_and_heavy_ammo_prepare_and_join_with_their_identity_condition_amount_and_weight(long? augment)
+    [InlineData(GameNames.Items.CombatMk1)]
+    [InlineData(GameNames.Items.LootingMk1)]
+    [InlineData(GameNames.Items.TacticalMk1)]
+    public void Ferro_and_heavy_ammo_prepare_and_join_with_their_identity_condition_amount_and_weight(string? augmentName)
     {
+        long? augment = TestGameData.AssetId(augmentName);
         PlayerLoadout loadout = WithWeapons(augment);
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         RaidInventory inventory = session.Member.Inventory;
-        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
-        InventoryItem ammo = loadout.Items.Single(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId);
-        Assert.Equal(new ContainerItem(WeaponItems.FerroIUsableIndex, Guid.Parse(gun.InstanceId), 1, .65) { AmmoInClip = 1, ModContainerId = 5 }, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
-        Assert.Equal(new ContainerItem(WeaponItems.HeavyAmmoUsableIndex, Guid.Parse(ammo.InstanceId), 59, 1), inventory.Containers[inventory.Backpack].Items[5]);
+        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.FerroI.AssetId);
+        InventoryItem ammo = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.HeavyAmmo.AssetId);
+        Assert.Equal(new ContainerItem(TestGameData.Items.FerroIIndex, Guid.Parse(gun.InstanceId), 1, .65) { AmmoInClip = 1, ModContainerId = 5 }, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
+        Assert.Equal(new ContainerItem(TestGameData.Items.HeavyAmmoIndex, Guid.Parse(ammo.InstanceId), 59, 1), inventory.Containers[inventory.Backpack].Items[5]);
         Assert.Equal(12.2, inventory.Weight, precision: 6);
 
         session.Sent.Clear();
@@ -343,22 +346,22 @@ public sealed class WeaponTests
         session.Sent.Clear();
         session.Service(100.1);
         Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
-        Assert.Equal(WeaponItems.FerroIUsableIndex, AssetIndex(second, InventoryBlackboard.Firearm1Slot));
-        Assert.Equal(WeaponItems.HeavyAmmoUsableIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 5));
+        Assert.Equal(TestGameData.Items.FerroIIndex, AssetIndex(second, InventoryBlackboard.Firearm1Slot));
+        Assert.Equal(TestGameData.Items.HeavyAmmoIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 5));
         IReadOnlyList<PendulumField> weaponFields = PendulumRegistry.Descriptors[WeaponProtocol.WeaponDescriptor].Fields;
-        Assert.Equal((ulong)WeaponItems.FerroIUsableIndex, PendulumCodec.Integer(weaponFields[WeaponProtocol.WeaponAssetField], second[WeaponProtocol.FirstWeaponSlot].Value));
+        Assert.Equal(TestGameData.Items.FerroIIndex, PendulumCodec.Integer(weaponFields[WeaponProtocol.WeaponAssetField], second[WeaponProtocol.FirstWeaponSlot].Value));
     }
 
     [Fact]
     public void A_ferro_has_its_own_empty_mod_container_which_follows_it_and_accepts_no_moves()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         ContainerItem gun = inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]!;
         ItemContainerState mods = inventory.Containers[Assert.IsType<int>(gun.ModContainerId)];
-        Assert.Equal(FerroDefaults.ModSlotCount, mods.Items.Count);
+        Assert.Equal(TestGameData.Items.FerroModSlotCount, mods.Items.Count);
         Assert.All(mods.Items, Assert.Null);
         Assert.All(inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
-            .Where(item => item.AssetIndex != WeaponItems.FerroIUsableIndex), item => Assert.Null(item.ModContainerId));
+            .Where(item => item.AssetIndex != TestGameData.Items.FerroIIndex), item => Assert.Null(item.ModContainerId));
         Assert.True(inventory.Apply(Swap(inventory.Loadout, InventoryBlackboard.Firearm1Slot, inventory.Loadout, InventoryBlackboard.Firearm2Slot)));
         Assert.Equal(mods.Id, inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm2Slot]!.ModContainerId);
         Assert.False(inventory.Apply(Swap(inventory.Loadout, InventoryBlackboard.Firearm2Slot, mods.Id, 0)));
@@ -368,7 +371,7 @@ public sealed class WeaponTests
     [Fact]
     public void Carried_weapons_can_move_between_backpack_and_both_weapon_slots_and_ammo_stays_in_compatible_slots()
     {
-        RaidInventory inventory = new(WithWeapons());
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
         ContainerItem gun = inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]!;
         ContainerItem ammo = inventory.Containers[inventory.Backpack].Items[5]!;
         Assert.True(inventory.Apply(Swap(inventory.Loadout, InventoryBlackboard.Firearm1Slot, inventory.Loadout, InventoryBlackboard.Firearm2Slot)));
@@ -391,37 +394,37 @@ public sealed class WeaponTests
     public void Invalid_ammunition_stacks_are_rejected_before_world_preparation(long amount)
     {
         PlayerLoadout loadout = WithWeapons();
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId ? item with { Amount = amount } : item)] };
-        Assert.Throws<WorldPreparationException>(() => new RaidInventory(loadout));
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.Items.HeavyAmmo.AssetId ? item with { Amount = amount } : item)] };
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(TestGameData.Items, loadout));
     }
 
     [Fact]
     public void Ferro_mod_slots_must_be_present_in_order_and_empty()
     {
         PlayerLoadout loadout = WithWeapons();
-        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
-        Assert.Equal(StructuralSlots(WeaponItems.FerroIAssetId), [.. gun.Slots.Select(id => loadout.Items.Single(item => item.InstanceId == id).GameAssetId)]);
-        RaidInventory inventory = new(loadout);
+        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.FerroI.AssetId);
+        Assert.Equal(StructuralSlots(TestGameData.Items.FerroI.AssetId), [.. gun.Slots.Select(id => loadout.Items.Single(item => item.InstanceId == id).GameAssetId)]);
+        RaidInventory inventory = new(TestGameData.Items, loadout);
         Assert.NotNull(inventory.Containers[inventory.Loadout].Items[InventoryBlackboard.Firearm1Slot]);
 
         PlayerLoadout missing = loadout with { Items = [.. loadout.Items.Where(item => !gun.Slots.Contains(item.InstanceId)).Select(item => item == gun ? item with { Slots = [] } : item)] };
-        Assert.Throws<WorldPreparationException>(() => new RaidInventory(missing));
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(TestGameData.Items, missing));
         PlayerLoadout reordered = loadout with { Items = [.. loadout.Items.Select(item => item == gun ? item with { Slots = [.. gun.Slots.Reverse()] } : item)] };
-        Assert.Throws<WorldPreparationException>(() => new RaidInventory(reordered));
-        InventoryItem mod = new(Guid.NewGuid().ToString("D"), ((SingleItemSlot)LoadoutDefinitions.Generated.ByAsset[WeaponItems.MuzzleModSlotAssetId].SlotConfig!).AllowedSlotAssetIds[0],
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(TestGameData.Items, reordered));
+        InventoryItem mod = new(Guid.NewGuid().ToString("D"), ((SingleItemSlot)TestGameData.Items.Definitions.ByAsset[TestGameData.Data.Names.MuzzleModSlotAssetId].SlotConfig!).AllowedSlotAssetIds[0],
             1, [], 1, 1, "", "weapon-test", 0);
         PlayerLoadout filled = loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == gun.Slots[0] ? item with { Slots = [mod.InstanceId] } : item), mod] };
-        Assert.Throws<WorldPreparationException>(() => new RaidInventory(filled));
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(TestGameData.Items, filled));
         return;
 
-        static IReadOnlyList<long> StructuralSlots(long asset) => ((StructuralItemSlots)LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig!).SlotAssetIds;
+        static IReadOnlyList<long> StructuralSlots(long asset) => ((StructuralItemSlots)TestGameData.Items.Definitions.ByAsset[asset].SlotConfig!).SlotAssetIds;
     }
 
     [Fact]
     public void Ammo_without_a_firearm_still_stages_and_registers_both_hand_items()
     {
         PlayerLoadout loadout = WithWeapons();
-        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == WeaponItems.FerroIAssetId);
+        InventoryItem gun = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.FerroI.AssetId);
         loadout = loadout with
         {
             Items = [.. loadout.Items.Where(item => item != gun && !gun.Slots.Contains(item.InstanceId))
@@ -440,8 +443,8 @@ public sealed class WeaponTests
     [Fact]
     public void The_raider_tool_and_empty_hands_can_be_equipped_and_cannot_be_moved_out_of_the_loadout()
     {
-        RaidInventory inventory = new(WithWeapons());
-        RaidWeapons weapons = new(inventory);
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         ContainerItem?[] slots = [.. inventory.Containers[inventory.Loadout].Items];
         Dictionary<Guid, ulong> objects = new()
         {
@@ -453,7 +456,7 @@ public sealed class WeaponTests
         Assert.True(weapons.Armed);
         weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
         Assert.True(weapons.Armed);
-        Equip(40, 32, 1, HandItems.RaiderToolHandle);
+        Equip(40, 32, 1, HandItemFields.RaiderToolHandle);
         Equip(200, 34, 2, WeaponProtocol.UnarmedHandle);
         Equip(400, 30, 3, WeaponProtocol.FirstWeaponSlot);
         Assert.True(weapons.Armed);
@@ -482,8 +485,8 @@ public sealed class WeaponTests
     [Fact]
     public void Switching_puts_the_held_item_away_then_draws_the_next()
     {
-        RaidInventory inventory = new(WithWeapons());
-        RaidWeapons weapons = new(inventory);
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         ContainerItem?[] slots = [.. inventory.Containers[inventory.Loadout].Items];
         Dictionary<Guid, ulong> objects = new()
         {
@@ -527,8 +530,8 @@ public sealed class WeaponTests
     [Fact]
     public void A_gun_cannot_fire_while_it_is_being_put_away()
     {
-        RaidInventory inventory = new(WithWeapons());
-        RaidWeapons weapons = new(inventory);
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
         ContainerItem?[] slots = [.. inventory.Containers[inventory.Loadout].Items];
         Dictionary<Guid, ulong> objects = new() { [slots[InventoryBlackboard.Firearm1Slot]!.Id] = 30, [slots[InventoryBlackboard.UnarmedSlot]!.Id] = 34 };
         weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
@@ -540,16 +543,16 @@ public sealed class WeaponTests
     internal static PlayerLoadout WithWeapons(long? augment = null)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout(augment);
-        loadout = Add(loadout, LoadoutItems.Firearm1SlotAssetId, 0, WeaponItems.FerroIAssetId, 1, .65);
-        return Add(loadout, LoadoutItems.BackpackSlotAssetId, 5, WeaponItems.HeavyAmmoAssetId, 60, 1);
+        loadout = Add(loadout, LoadoutItems.Firearm1SlotAssetId, 0, TestGameData.Items.FerroI.AssetId, 1, .65);
+        return Add(loadout, LoadoutItems.BackpackSlotAssetId, 5, TestGameData.Items.HeavyAmmo.AssetId, 60, 1);
 
         static PlayerLoadout Add(PlayerLoadout source, long branchAsset, int index, long asset, long amount, double condition)
         {
-            InventoryItem branch = source.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
+            InventoryItem branch = source.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
             InventoryItem container = source.Items.Single(item => item.InstanceId == branch.Slots[0]);
             string slot = container.Slots[index];
             // Like the menu inventory, a weapon carries one empty node per mod slot.
-            InventoryItem[] modSlots = LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig is StructuralItemSlots slots
+            InventoryItem[] modSlots = TestGameData.Items.Definitions.ByAsset[asset].SlotConfig is StructuralItemSlots slots
                 ? [.. slots.SlotAssetIds.Select(slotAsset => new InventoryItem(Guid.NewGuid().ToString("D"), slotAsset, 1, [], 1, 1, "", "weapon-test", 0))]
                 : [];
             InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, amount, [.. modSlots.Select(modSlot => modSlot.InstanceId)], condition, 1, "", "weapon-test", 0);

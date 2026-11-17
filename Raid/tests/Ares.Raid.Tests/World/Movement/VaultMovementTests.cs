@@ -5,7 +5,6 @@ using Ares.Raid.World.Collision;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -14,8 +13,8 @@ public sealed class VaultMovementTests
     private const double Tick = 1.0 / 30;
     private const PlacementFlags Solid = PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable;
     private static readonly MovementInput s_press = new(10, 126, 0, MovementButtons.Jump);
-    private static readonly VaultCapsule s_capsule = new(DamPlayerStarts.Capsule.Radius, DamPlayerStarts.Capsule.HalfHeight,
-        DamPlayerStarts.Capsule.HalfHeight, 40);
+    private static readonly Lazy<VaultCapsule> s_capsule = new(() => new VaultCapsule(TestGameData.Dam.PlayerStartCapsule.Radius, TestGameData.Dam.PlayerStartCapsule.HalfHeight,
+        TestGameData.Dam.PlayerStartCapsule.HalfHeight, 40));
 
     [Fact]
     public void A_vault_is_looked_for_on_a_jump_press_with_input_or_on_request()
@@ -62,7 +61,7 @@ public sealed class VaultMovementTests
     [InlineData(VaultKind.Over, 60, 0, "HM_Vault_A_UA_AutoStepWalkFwd_00")]
     public void The_clip_is_the_highest_row_not_above_the_obstacle_at_the_nearest_speed(VaultKind kind, double height, double speed, string expected)
     {
-        VaultClip? clip = VaultDetection.Select(VaultDefinitions.Unarmed, Trace(kind, height), falling: false, new Vector3D(speed, 0, 0));
+        VaultClip? clip = VaultDetection.Select(TestGameData.Data.Movement.UnarmedVaults, Trace(kind, height), falling: false, new Vector3D(speed, 0, 0));
 
         Assert.Equal(expected, clip?.Sequence.Name);
     }
@@ -70,7 +69,7 @@ public sealed class VaultMovementTests
     [Fact]
     public void Obstacles_below_every_row_have_no_clip()
     {
-        Assert.Null(VaultDetection.Select(VaultDefinitions.Unarmed, Trace(VaultKind.Over, 40), falling: false, default));
+        Assert.Null(VaultDetection.Select(TestGameData.Data.Movement.UnarmedVaults, Trace(VaultKind.Over, 40), falling: false, default));
     }
 
     [Fact]
@@ -99,9 +98,9 @@ public sealed class VaultMovementTests
     [Fact]
     public void A_vault_plays_its_root_path_from_the_edge_and_hands_over_before_the_animation_ends()
     {
-        VaultClip clip = VaultDefinitions.Unarmed.Ground[1].Speeds[1].Over;
+        VaultClip clip = TestGameData.Data.Movement.UnarmedVaults.Ground[1].Speeds[1].Over;
         VaultTrace trace = Trace(VaultKind.Over, 115);
-        VaultState state = VaultMovement.Begin(clip, VaultDefinitions.Unarmed, trace, new Vector3D(-50, 0, 0), default, onGround: true);
+        VaultState state = VaultMovement.Begin(clip, TestGameData.Data.Movement.UnarmedVaults, trace, new Vector3D(-50, 0, 0), default, onGround: true);
         VaultPathPoint start = clip.Sequence.Path[0];
 
         Assert.Equal(clip.MaxEntrySecondsFromGround, state.StartTime, 6);
@@ -125,7 +124,7 @@ public sealed class VaultMovementTests
 
     // A character standing at the origin facing +X with a wall face at X = 100, 115 high, on a floor at height 0.
     private static VaultQuery Standing() =>
-        new(new Vector3D(0, 0, s_capsule.HalfHeight), 0, 0, 0, InputDirection.Forward, default, Vector3.UnitZ, OnGround: true, Falling: false, s_capsule);
+        new(new Vector3D(0, 0, s_capsule.Value.HalfHeight), 0, 0, 0, InputDirection.Forward, default, Vector3.UnitZ, OnGround: true, Falling: false, s_capsule.Value);
 
     private static CollisionWorld World(double depth, PlacementFlags blocks)
     {

@@ -2,7 +2,6 @@ using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.GameplayTags;
 
 namespace Ares.Raid.World.Players;
@@ -80,7 +79,7 @@ internal sealed class PlayerDeparture
             player.Member.Depart();
             player.QueueControllerCall(sender, FunctionNames.ClientNotifyExtracted, new Dictionary<string, object?>
             {
-                [PropertyNames.ExtractionType] = new GameplayTag(DamExtraction.ExtractionType),
+                [PropertyNames.ExtractionType] = new GameplayTag(raid.GameData.Map.ExtractionElevator.ExtractionType),
             });
             _endOfRoundExport = sender.Queue(Bunches.Exports(raid.State.EndOfRoundExports(player.Player), [player.Player.EndOfRound]));
             return;
@@ -133,9 +132,9 @@ internal sealed class PlayerDeparture
         foreach (ExtractionPoint point in raid.Extraction.Points)
         {
             if (raid.ExtractionStates.Departure(point.Index) is { } departure && departure.Players.Contains(player.Member.Id)
-                && at >= departure.At + DamExtraction.DoorsSeconds)
+                && at >= departure.At + raid.GameData.Map.ExtractionElevator.DoorsSeconds)
             {
-                return (point.Index, departure.At + DamExtraction.DoorsSeconds);
+                return (point.Index, departure.At + raid.GameData.Map.ExtractionElevator.DoorsSeconds);
             }
         }
 

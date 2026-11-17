@@ -20,7 +20,7 @@ internal sealed class ScriptStatements
     private static readonly Dictionary<string, Func<ScriptConstant, ScriptConstant>> s_conversions = new(StringComparer.Ordinal)
     {
         ["iTOf"] = c => ScriptConstant.Of((float)c.AsInt32),
-        ["uTOf"] = c => ScriptConstant.Of((float)(uint)c.Bits),
+        ["uTOf"] = c => ScriptConstant.Of((uint)c.Bits),
         ["fTOi"] = c => ScriptConstant.Of((int)c.AsSingle),
         ["dTOi"] = c => ScriptConstant.Of((int)c.AsDouble),
         ["dTOf"] = c => ScriptConstant.Of((float)c.AsDouble),
@@ -28,7 +28,7 @@ internal sealed class ScriptStatements
         ["uTOd"] = c => ScriptConstant.Of((double)(uint)c.Bits),
         ["fTOd"] = c => ScriptConstant.Of((double)c.AsSingle),
         ["i64TOd"] = c => ScriptConstant.Of((double)(long)c.Bits),
-        ["i64TOf"] = c => ScriptConstant.Of((float)(long)c.Bits),
+        ["i64TOf"] = c => ScriptConstant.Of((long)c.Bits),
     };
 
     private readonly ScriptCache _cache;
@@ -50,7 +50,7 @@ internal sealed class ScriptStatements
         }
     }
 
-    public IReadOnlyList<ScriptInstruction> Instructions { get; }
+    private IReadOnlyList<ScriptInstruction> Instructions { get; }
 
     /// <summary>Member stores in code order.</summary>
     public IReadOnlyList<ScriptStore> Stores => _stores;

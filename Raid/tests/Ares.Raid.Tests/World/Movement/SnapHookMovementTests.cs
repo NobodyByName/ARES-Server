@@ -14,8 +14,8 @@ public sealed class SnapHookMovementTests
     [Fact]
     public void The_item_blueprint_shortens_the_range_and_sets_the_cost()
     {
-        Assert.Equal(1800, SnapHookItem.Range);
-        Assert.Equal(60, SnapHookItem.ActivationCost);
+        Assert.Equal(1800, TestGameData.Data.Movement.SnapHookItem.Range);
+        Assert.Equal(60, TestGameData.Data.Movement.SnapHookItem.ActivationCost);
         Assert.Equal(TickTime, SnapHookThrow.TimeUnits(Tick));
         Assert.Equal(210, SnapHookThrow.TimeUnits(SnapHookParameters.PullDelaySeconds));
     }
@@ -23,12 +23,12 @@ public sealed class SnapHookMovementTests
     [Fact]
     public void Gadget_power_pays_for_a_throw_and_recharges()
     {
-        Assert.True(SnapHookThrow.CanThrow(SnapHookHook.Stowed, 60));
-        Assert.False(SnapHookThrow.CanThrow(SnapHookHook.Stowed, 59.9));
-        Assert.True(SnapHookThrow.CanThrow(SnapHookHook.Stowed, 0, infinitePower: true));
-        Assert.False(SnapHookThrow.CanThrow(new SnapHookHook(Thrown: true), 100));
-        Assert.Equal(40, SnapHookThrow.PowerAfterThrow(100));
-        Assert.Equal(0, SnapHookThrow.PowerAfterThrow(50));
+        Assert.True(SnapHookThrow.CanThrow(TestGameData.Data, SnapHookHook.Stowed, 60));
+        Assert.False(SnapHookThrow.CanThrow(TestGameData.Data, SnapHookHook.Stowed, 59.9));
+        Assert.True(SnapHookThrow.CanThrow(TestGameData.Data, SnapHookHook.Stowed, 0, infinitePower: true));
+        Assert.False(SnapHookThrow.CanThrow(TestGameData.Data, new SnapHookHook(Thrown: true), 100));
+        Assert.Equal(40, SnapHookThrow.PowerAfterThrow(TestGameData.Data, 100));
+        Assert.Equal(0, SnapHookThrow.PowerAfterThrow(TestGameData.Data, 50));
         Assert.Equal(40.15, SnapHookThrow.RechargePower(40, Tick), 9);
         Assert.Equal(100, SnapHookThrow.RechargePower(100, Tick));
         Assert.Equal(40, SnapHookThrow.RechargePower(40, Tick, blocked: true));
@@ -39,7 +39,7 @@ public sealed class SnapHookMovementTests
     {
         Vector3D from = default;
         Vector3D to = default;
-        SnapHookHook miss = SnapHookThrow.Throw(100, new Vector3D(0, 0, 150), new Vector3D(10, 0, 150), (a, b) =>
+        SnapHookHook miss = SnapHookThrow.Throw(TestGameData.Data, 100, new Vector3D(0, 0, 150), new Vector3D(10, 0, 150), (a, b) =>
         {
             (from, to) = (a, b);
             return null;
@@ -52,7 +52,7 @@ public sealed class SnapHookMovementTests
         Assert.Equal(to, miss.AttachPoint);
         Assert.Equal(100, miss.ThrownAt);
 
-        SnapHookHook hit = SnapHookThrow.Throw(100, default, new Vector3D(0, 1, 0), (_, _) => new GrappleHit(new Vector3D(0, 600, 0), new Vector3D(0, -1, 0)));
+        SnapHookHook hit = SnapHookThrow.Throw(TestGameData.Data, 100, default, new Vector3D(0, 1, 0), (_, _) => new GrappleHit(new Vector3D(0, 600, 0), new Vector3D(0, -1, 0)));
         Assert.True(hit.HasTarget);
         Assert.Equal(new Vector3D(0, 600, 0), hit.AttachPoint);
     }
@@ -69,7 +69,7 @@ public sealed class SnapHookMovementTests
         while (step.Event == SnapHookHookEvent.None)
         {
             tick++;
-            step = SnapHookThrow.Tick(hook, tick * TickTime, start, Tick, 0, null, SnapHookPullEnd.World);
+            step = SnapHookThrow.Tick(TestGameData.Data, hook, tick * TickTime, start, Tick, 0, null, SnapHookPullEnd.World);
         }
 
         Assert.Equal(7, tick);
@@ -80,11 +80,11 @@ public sealed class SnapHookMovementTests
         Assert.Equal(140 + 210, target.CreatedAt);
         Assert.Equal(2000, target.Speed, 9);
         Assert.Equal(750, target.AllowedWiggleSpeed);
-        Assert.Equal(new Vector3D(480, 0, 80), SnapHookThrow.HookLocation(hook, start, 0.2));
+        Assert.Equal(new Vector3D(480, 0, 80), SnapHookThrow.HookLocation(TestGameData.Data, hook, start, 0.2));
 
-        SnapHookHookStep held = SnapHookThrow.Tick(step.Hook, 400, start, Tick, 0, target, SnapHookPullEnd.World);
+        SnapHookHookStep held = SnapHookThrow.Tick(TestGameData.Data, step.Hook, 400, start, Tick, 0, target, SnapHookPullEnd.World);
         Assert.Equal(SnapHookHookEvent.None, held.Event);
-        SnapHookHookStep done = SnapHookThrow.Tick(step.Hook, 420, start, Tick, 0, target.Invalidate(400), SnapHookPullEnd.World);
+        SnapHookHookStep done = SnapHookThrow.Tick(TestGameData.Data, step.Hook, 420, start, Tick, 0, target.Invalidate(400), SnapHookPullEnd.World);
         Assert.Equal(SnapHookHookEvent.Cleared, done.Event);
         Assert.Equal(0, done.Refund);
         Assert.False(done.Hook.Thrown);
@@ -94,7 +94,7 @@ public sealed class SnapHookMovementTests
     public void A_hit_on_a_shield_lets_go_without_a_refund()
     {
         SnapHookHook hook = new(Thrown: true, HasTarget: true, ThrownAt: 0, AttachPoint: new Vector3D(50, 0, 80), OnShield: true);
-        SnapHookHookStep step = SnapHookThrow.Tick(hook, TickTime, new Vector3D(0, 0, 80), Tick, 0, null, SnapHookPullEnd.World);
+        SnapHookHookStep step = SnapHookThrow.Tick(TestGameData.Data, hook, TickTime, new Vector3D(0, 0, 80), Tick, 0, null, SnapHookPullEnd.World);
         Assert.Equal(SnapHookHookEvent.Cleared, step.Event);
         Assert.Null(step.Target);
         Assert.Equal(0, step.Refund);
@@ -110,7 +110,7 @@ public sealed class SnapHookMovementTests
         while (step.Event == SnapHookHookEvent.None)
         {
             tick++;
-            step = SnapHookThrow.Tick(hook, tick * TickTime, start, Tick, 0, null, SnapHookPullEnd.World);
+            step = SnapHookThrow.Tick(TestGameData.Data, hook, tick * TickTime, start, Tick, 0, null, SnapHookPullEnd.World);
             hook = step.Event == SnapHookHookEvent.None ? step.Hook : hook;
         }
 
@@ -119,20 +119,20 @@ public sealed class SnapHookMovementTests
         Assert.Equal(80 - (22 * 1964 * 0.16 * Tick), hook.AttachPoint.Z, 9);
         Assert.Equal(SnapHookHookEvent.Cleared, step.Event);
         Assert.Equal(60, step.Refund);
-        Assert.Equal(new Vector3D(1800, 0, 80), SnapHookThrow.HookLocation(hook with { AttachPoint = new Vector3D(1800, 0, 80) }, start, 0.75));
-        Assert.Equal(new Vector3D(0, 0, 80), SnapHookThrow.HookLocation(hook with { AttachPoint = new Vector3D(1800, 0, 80) }, start, 1.25));
+        Assert.Equal(new Vector3D(1800, 0, 80), SnapHookThrow.HookLocation(TestGameData.Data, hook with { AttachPoint = new Vector3D(1800, 0, 80) }, start, 0.75));
+        Assert.Equal(new Vector3D(0, 0, 80), SnapHookThrow.HookLocation(TestGameData.Data, hook with { AttachPoint = new Vector3D(1800, 0, 80) }, start, 1.25));
     }
 
     [Fact]
     public void A_heavy_landing_cancels_the_hook()
     {
         SnapHookHook flying = new(Thrown: true, HasTarget: true, ThrownAt: 0, AttachPoint: new Vector3D(1000, 0, 0));
-        SnapHookHookStep step = SnapHookThrow.Tick(flying, TickTime, default, Tick, GraphStateTags.AbilityLandingHeavy, null, SnapHookPullEnd.World);
+        SnapHookHookStep step = SnapHookThrow.Tick(TestGameData.Data, flying, TickTime, default, Tick, TestGameData.Tags.AbilityLandingHeavy.Mask, null, SnapHookPullEnd.World);
         Assert.Equal(SnapHookHookEvent.Cancelled, step.Event);
         Assert.Equal(60, step.Refund);
         Assert.False(step.Hook.Cancelled);
 
-        SnapHookHookStep attached = SnapHookThrow.Cancel(flying with { Attached = true });
+        SnapHookHookStep attached = SnapHookThrow.Cancel(TestGameData.Data, flying with { Attached = true });
         Assert.True(attached.Hook.Cancelled);
         Assert.Equal(0, attached.Refund);
     }
@@ -165,17 +165,17 @@ public sealed class SnapHookMovementTests
         SnapHookState state = SnapHookMovement.Begin(new SnapHookTarget(new Vector3D(1000, 0, 0), 0, 2000, 750), default);
         Assert.Equal(new Vector3D(1, 0, 0), state.PullDirection);
 
-        SnapHookStep first = SnapHookMovement.Step(state, s_idle, default, default, s_high, TickTime, Tick);
+        SnapHookStep first = SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, default, s_high, TickTime, Tick);
         Assert.Equal(SnapHookExit.None, first.Exit);
         Assert.Equal(5000.0 / 15 * Tick, first.Velocity.X, 9);
         Assert.Equal(0, first.Velocity.Z, 9);
-        Assert.Equal(GeneratedGraphStateFlags.SnapHookPulling, first.Flags);
+        Assert.Equal(TestGameData.Flags.SnapHookPulling, first.Flags);
         Assert.True(first.HeavyLandingQuery);
         Assert.True(first.ActionLayerWritten);
         Assert.Equal(CharacterStance.InAir, first.Stance);
         Assert.Null(first.Mode);
 
-        SnapHookStep later = SnapHookMovement.Step(state with { Ticks = 14 }, s_idle, default, default, new SnapHookGround(40, true), 300, Tick);
+        SnapHookStep later = SnapHookMovement.Step(TestGameData.Data, state with { Ticks = 14 }, s_idle, default, default, new SnapHookGround(40, true), 300, Tick);
         Assert.Equal(5000 * Tick, later.Velocity.X, 9);
         Assert.False(later.HeavyLandingQuery);
         Assert.Equal(CharacterStance.Stand, later.Stance);
@@ -193,8 +193,8 @@ public sealed class SnapHookMovementTests
     {
         SnapHookState state = new(new SnapHookTarget(new Vector3D(1000, 0, 0), 0, 2000, 750), new Vector3D(1, 0, 0), 20);
         Vector3D moving = new(1000, 0, 0);
-        SnapHookStep plain = SnapHookMovement.Step(state, s_idle, default, moving, s_high, 500, Tick);
-        SnapHookStep jumping = SnapHookMovement.Step(state, s_idle with { Jump = true }, default, moving, s_high, 500, Tick);
+        SnapHookStep plain = SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, moving, s_high, 500, Tick);
+        SnapHookStep jumping = SnapHookMovement.Step(TestGameData.Data, state, s_idle with { Jump = true }, default, moving, s_high, 500, Tick);
         Assert.Equal(0, plain.Velocity.Z, 9);
         Assert.True(jumping.Velocity.Z > 0);
     }
@@ -203,7 +203,7 @@ public sealed class SnapHookMovementTests
     public void The_pull_ends_near_the_target_and_tries_a_vault()
     {
         SnapHookState state = new(new SnapHookTarget(new Vector3D(150, 0, 0), 0, 2000, 750), new Vector3D(1, 0, 0), 20);
-        SnapHookStep step = SnapHookMovement.Step(state, s_idle, default, default, s_high, 500, Tick);
+        SnapHookStep step = SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, default, s_high, 500, Tick);
         Assert.Equal(SnapHookExit.Arrived, step.Exit);
         Assert.True(step.Finished);
         Assert.Equal(RoughMovementMode.Air, step.Mode);
@@ -211,7 +211,7 @@ public sealed class SnapHookMovementTests
         Assert.Equal(500, step.State.Target.RemovedAt);
         Assert.Equal(-1964 * Tick, step.Velocity.Z, 9);
 
-        SnapHookStep vaulting = SnapHookMovement.Step(state, s_idle, default, default, s_high, 500, Tick, vault: (_, _) => true);
+        SnapHookStep vaulting = SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, default, s_high, 500, Tick, vault: (_, _) => true);
         Assert.True(vaulting.Vaulting);
         Assert.False(vaulting.Finished);
         Assert.Equal(RoughMovementMode.Ground, vaulting.Mode);
@@ -221,32 +221,32 @@ public sealed class SnapHookMovementTests
     public void Passing_the_target_cancelling_or_losing_it_ends_the_pull()
     {
         SnapHookState state = new(new SnapHookTarget(new Vector3D(-1000, 0, 0), 0, 2000, 750), new Vector3D(1, 0, 0), 20);
-        Assert.Equal(SnapHookExit.Passed, SnapHookMovement.Step(state, s_idle, default, default, s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.Passed, SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, default, s_high, 500, Tick).Exit);
 
         SnapHookState ahead = state with { Target = state.Target with { Position = new Vector3D(1000, 0, 0) } };
-        Assert.Equal(SnapHookExit.Cancelled, SnapHookMovement.Step(ahead, s_idle with { SecondaryPressed = true }, default, default, s_high, 500, Tick).Exit);
-        Assert.Equal(SnapHookExit.NotHeld, SnapHookMovement.Step(ahead, s_idle with { HookHeld = false }, default, default, s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.Cancelled, SnapHookMovement.Step(TestGameData.Data, ahead, s_idle with { SecondaryPressed = true }, default, default, s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.NotHeld, SnapHookMovement.Step(TestGameData.Data, ahead, s_idle with { HookHeld = false }, default, default, s_high, 500, Tick).Exit);
         SnapHookState removed = ahead with { Target = ahead.Target with { RemovedAt = 480 } };
-        Assert.Equal(SnapHookExit.TargetLost, SnapHookMovement.Step(removed, s_idle, default, default, s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.TargetLost, SnapHookMovement.Step(TestGameData.Data, removed, s_idle, default, default, s_high, 500, Tick).Exit);
     }
 
     [Fact]
     public void A_weak_pull_stalls_unless_the_character_moves_away()
     {
         SnapHookState weak = new(new SnapHookTarget(new Vector3D(1000, 0, 0), 0, 250, 750), new Vector3D(1, 0, 0), 20);
-        Assert.Equal(SnapHookExit.Stalled, SnapHookMovement.Step(weak, s_idle, default, default, s_high, 500, Tick).Exit);
-        Assert.Equal(SnapHookExit.None, SnapHookMovement.Step(weak, s_idle, default, new Vector3D(-200, 0, 0), s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.Stalled, SnapHookMovement.Step(TestGameData.Data, weak, s_idle, default, default, s_high, 500, Tick).Exit);
+        Assert.Equal(SnapHookExit.None, SnapHookMovement.Step(TestGameData.Data, weak, s_idle, default, new Vector3D(-200, 0, 0), s_high, 500, Tick).Exit);
 
         SnapHookState slow = weak with { Target = weak.Target with { Speed = 2000 }, Ticks = 149 };
-        Assert.Equal(SnapHookExit.None, SnapHookMovement.Step(slow, s_idle, default, new Vector3D(50, 0, 0), s_high, 3000, Tick).Exit);
-        Assert.Equal(SnapHookExit.Stalled, SnapHookMovement.Step(slow with { Ticks = 150 }, s_idle, default, new Vector3D(50, 0, 0), s_high, 3020, Tick).Exit);
+        Assert.Equal(SnapHookExit.None, SnapHookMovement.Step(TestGameData.Data, slow, s_idle, default, new Vector3D(50, 0, 0), s_high, 3000, Tick).Exit);
+        Assert.Equal(SnapHookExit.Stalled, SnapHookMovement.Step(TestGameData.Data, slow with { Ticks = 150 }, s_idle, default, new Vector3D(50, 0, 0), s_high, 3020, Tick).Exit);
     }
 
     [Fact]
     public void Blending_out_releases_the_target_without_finishing()
     {
         SnapHookState state = new(new SnapHookTarget(new Vector3D(1000, 0, 0), 0, 2000, 750), new Vector3D(1, 0, 0), 20);
-        SnapHookStep step = SnapHookMovement.Step(state, s_idle, default, new Vector3D(300, 0, 0), new SnapHookGround(0, true), 500, Tick, blendingOut: true);
+        SnapHookStep step = SnapHookMovement.Step(TestGameData.Data, state, s_idle, default, new Vector3D(300, 0, 0), new SnapHookGround(0, true), 500, Tick, blendingOut: true);
         Assert.Equal(SnapHookExit.BlendingOut, step.Exit);
         Assert.False(step.Finished);
         Assert.False(step.ActionLayerWritten);

@@ -10,7 +10,7 @@ public enum NativeLayout
     Vector,
 
     /// <summary>Three floats.</summary>
-    Vector3f,
+    Vector3F,
 
     /// <summary>Two doubles.</summary>
     Vector2D,

@@ -21,7 +21,7 @@ public sealed class WeaponTests : IDisposable
         {
             store.AddItem(augmentType, DateTimeOffset.UnixEpoch);
             OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == augmentType);
-            Assert.Equal(200, Move(store, augment, store.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId, "augment").StatusCode);
+            Assert.Equal(200, Move(store, augment, store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId, "augment").StatusCode);
         }
 
         OwnedItem gun = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.FerroI);
@@ -35,21 +35,21 @@ public sealed class WeaponTests : IDisposable
                 Items = [.. store.Inventory.Stash.Items.Select(item => item.InstanceId == gun.InstanceId ? gun : item)],
             },
         }, store.Inventory.Revision);
-        Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.Firearm1SlotAssetId), "primary").StatusCode);
-        Assert.Equal(200, Move(store, ammo, Slot(store, LoadoutItems.BackpackSlotAssetId), "ammo").StatusCode);
-        Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.Firearm2SlotAssetId), "secondary").StatusCode);
-        Assert.Equal(200, Move(store, ammo, Slot(store, LoadoutItems.SafePocketSlotAssetId), "safe").StatusCode);
-        store = new InventoryStore(_database.Store, TestDatabase.UserId);
+        Assert.Equal(200, Move(store, gun, Slot(store, TestCatalog.Branches.MainWeapon), "primary").StatusCode);
+        Assert.Equal(200, Move(store, ammo, Slot(store, TestCatalog.Branches.Backpack), "ammo").StatusCode);
+        Assert.Equal(200, Move(store, gun, Slot(store, TestCatalog.Branches.SecondaryWeapon), "secondary").StatusCode);
+        Assert.Equal(200, Move(store, ammo, Slot(store, TestCatalog.Branches.SafePockets), "safe").StatusCode);
+        store = new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         Assert.Null(store.Inventory.Loadout.MainWeapon);
         Assert.Equal(gun.InstanceId, store.Inventory.Loadout.SecondaryWeapon!.InstanceId);
         Assert.Equal(gun.Durability, store.Inventory.Loadout.SecondaryWeapon.Durability);
         Assert.Equal(ammo.InstanceId, Assert.Single(store.Inventory.Loadout.SafePockets.Items).InstanceId);
         Assert.Equal(60, store.Inventory.Loadout.SafePockets.Items[0].Quantity);
         InventoryItem projected = store.Snapshot.Items.Single(item => item.InstanceId == gun.InstanceId);
-        Assert.Equal(WeaponItems.FerroIAssetId, projected.GameAssetId);
+        Assert.Equal(TestCatalog.Asset(ItemTechnicalNames.FerroI), projected.GameAssetId);
         Assert.Equal(gun.MaxDurability, projected.MaxDurability);
         Assert.Equal(60, store.Snapshot.Items.Single(item => item.InstanceId == ammo.InstanceId).Amount);
-        Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.BackpackSlotAssetId), "pack-gun").StatusCode);
+        Assert.Equal(200, Move(store, gun, Slot(store, TestCatalog.Branches.Backpack), "pack-gun").StatusCode);
         Assert.Equal(200, Move(store, gun, StashSlot(store), "stash-gun").StatusCode);
         Assert.Equal(200, Move(store, ammo, StashSlot(store), "stash-ammo").StatusCode);
         Assert.Equal(gun.Durability, store.Inventory.Stash.Items.Single(item => item.InstanceId == gun.InstanceId).Durability);
@@ -62,17 +62,17 @@ public sealed class WeaponTests : IDisposable
         InventoryStore store = Create();
         OwnedItem gun = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.FerroI);
         IReadOnlyList<string> inStash = ModSlots(store.Snapshot);
-        Assert.Equal(200, Move(store, gun, Slot(store, LoadoutItems.Firearm1SlotAssetId), "primary").StatusCode);
+        Assert.Equal(200, Move(store, gun, Slot(store, TestCatalog.Branches.MainWeapon), "primary").StatusCode);
         Assert.Equal(inStash, ModSlots(store.Snapshot));
         Assert.Equal(inStash.Count + 1, InventorySnapshots.Loadout(store.Snapshot).Items.Count(item => item.InstanceId == gun.InstanceId || inStash.Contains(item.InstanceId)));
-        Assert.Empty(store.Snapshot.Items.Where(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId).SelectMany(item => item.Slots));
+        Assert.Empty(store.Snapshot.Items.Where(item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.HeavyAmmo)).SelectMany(item => item.Slots));
         return;
 
         IReadOnlyList<string> ModSlots(InventorySnapshot snapshot)
         {
             InventoryItem projected = snapshot.Items.Single(item => item.InstanceId == gun.InstanceId);
             InventoryItem[] slots = [.. projected.Slots.Select(id => snapshot.Items.Single(item => item.InstanceId == id))];
-            Assert.Equal([WeaponItems.MuzzleModSlotAssetId, WeaponItems.UnderBarrelModSlotAssetId, WeaponItems.StockModSlotAssetId], slots.Select(slot => slot.GameAssetId));
+            Assert.Equal([TestCatalog.Data.Names.MuzzleModSlotAssetId, TestCatalog.Data.Names.UnderBarrelModSlotAssetId, TestCatalog.Data.Names.StockModSlotAssetId], slots.Select(slot => slot.GameAssetId));
             Assert.All(slots, slot => Assert.Empty(slot.Slots));
             return projected.Slots;
         }
@@ -86,13 +86,13 @@ public sealed class WeaponTests : IDisposable
         store.AddItem(ItemTechnicalNames.FerroI, DateTimeOffset.UnixEpoch);
         OwnedItem second = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.FerroI && item.InstanceId != first.InstanceId);
         OwnedItem ammo = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.HeavyAmmo);
-        string primary = Slot(store, LoadoutItems.Firearm1SlotAssetId);
+        string primary = Slot(store, TestCatalog.Branches.MainWeapon);
         Assert.Equal(200, Move(store, first, primary, "equip").StatusCode);
         string saved = _database.InventoryJson;
         Assert.Equal(400, Move(store, second, primary, "occupied").StatusCode);
         Assert.Equal(400, Move(store, ammo, primary, "ammo-weapon").StatusCode);
-        Assert.Equal(400, Move(store, first, Slot(store, LoadoutItems.ArmorSlotAssetId), "gun-armor").StatusCode);
-        Assert.Equal(400, Move(store, ammo, Slot(store, LoadoutItems.BeltSlotAssetId), "ammo-belt").StatusCode);
+        Assert.Equal(400, Move(store, first, Slot(store, TestCatalog.Branches.Shield), "gun-armor").StatusCode);
+        Assert.Equal(400, Move(store, ammo, Slot(store, TestCatalog.Branches.QuickUse), "ammo-belt").StatusCode);
         Assert.Equal(saved, _database.InventoryJson);
         InventorySnapshot before = store.Snapshot;
         InventoryOperationsRequest swap = new([new SetItemParents(second.InstanceId, [primary]), new SetItemParents(first.InstanceId, [StashSlot(store)])], "swap");
@@ -101,7 +101,7 @@ public sealed class WeaponTests : IDisposable
         AssertChanges(before, reply, store.Snapshot);
         Assert.Equal(second.InstanceId, store.Inventory.Loadout.MainWeapon!.InstanceId);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -146,7 +146,7 @@ public sealed class WeaponTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.FerroI, DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.HeavyAmmo, DateTimeOffset.UnixEpoch, 60);
@@ -156,13 +156,13 @@ public sealed class WeaponTests : IDisposable
     private static string Slot(InventoryStore store, long branchAsset)
     {
         InventorySnapshot snapshot = store.Snapshot;
-        string frameId = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId).Slots[0];
+        string frameId = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.FrameSlot).Slots[0];
         InventoryItem frame = snapshot.Items.Single(item => item.InstanceId == frameId);
-        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && TestCatalog.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
         return snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots[0];
     }
 
-    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[0];
+    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[0];
     private static ServiceReply Move(InventoryStore store, OwnedItem item, string target, string id) => store.Commit(new InventoryOperationsRequest([new SetItemParents(item.InstanceId, [target])], id), DateTimeOffset.UnixEpoch);
 
     private static void AssertChanges(InventorySnapshot before, ServiceReply reply, InventorySnapshot after)

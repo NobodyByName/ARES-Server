@@ -19,10 +19,10 @@ internal sealed class ItemSources
     public const int ExportTrailer = 4;
 
     /// <summary>Registry class of persistence assets, whose <see cref="AssetIdTag"/> tag is an item's asset id.</summary>
-    public const string PersistenceDataAssetClass = ScriptSchemas.ScriptPackage + "PersistenceDataAsset";
+    private const string PersistenceDataAssetClass = ScriptSchemas.ScriptPackage + "PersistenceDataAsset";
 
     /// <summary>Registry tag of a persistence asset holding its asset id.</summary>
-    public const string AssetIdTag = "AssetId";
+    private const string AssetIdTag = "AssetId";
 
     private readonly Dictionary<string, long> _persistenceIds;
     private readonly Dictionary<string, ScriptClassDefaults> _scriptDefaults = new(StringComparer.Ordinal);
@@ -55,9 +55,9 @@ internal sealed class ItemSources
 
     public ScriptCache Scripts { get; }
 
-    public ScriptSchemas Schemas { get; }
+    private ScriptSchemas Schemas { get; }
 
-    public ClassSchemas Classes { get; }
+    private ClassSchemas Classes { get; }
 
     public ObjectDefaults Defaults { get; }
 
@@ -74,17 +74,14 @@ internal sealed class ItemSources
     public PropertyBag ReadAsset(RegistryAsset asset)
     {
         CookedPackage package = Package(asset);
-        if (package.Exports.Count != 1)
-        {
-            throw new InvalidDataException($"{asset.PackageName}: expected one export, found {package.Exports.Count}");
-        }
-
-        return PropertyReader.ReadExport(package, package.Exports[0], SchemaOf(asset.ClassPath), ExportTrailer);
+        return package.Exports.Count == 1
+            ? PropertyReader.ReadExport(package, package.Exports[0], SchemaOf(asset.ClassPath), ExportTrailer)
+            : throw new InvalidDataException($"{asset.PackageName}: expected one export, found {package.Exports.Count}");
     }
 
     /// <summary>The property chain of script class <paramref name="classPath"/>.</summary>
     /// <exception cref="InvalidDataException">The class has no known chain.</exception>
-    public StructSchema SchemaOf(string classPath) =>
+    private StructSchema SchemaOf(string classPath) =>
         ItemAssetSchemas.ByClassPath.GetValueOrDefault(classPath) ?? Schemas.ForPath(classPath) ?? throw new InvalidDataException($"No property chain is known for {classPath}");
 
     /// <summary>The package an object reference of <paramref name="package"/> imports from.</summary>
@@ -123,7 +120,7 @@ internal sealed class ItemSources
             {
                 double value => value,
                 float value => value,
-                object other => throw new InvalidDataException($"{scriptClass}.{member} holds a {other.GetType().Name}, not a number"),
+                { } other => throw new InvalidDataException($"{scriptClass}.{member} holds a {other.GetType().Name}, not a number"),
             };
         }
 
@@ -172,12 +169,13 @@ internal sealed class ItemSources
             return null;
         }
 
-        if (!_scriptDefaults.TryGetValue(scriptClass, out ScriptClassDefaults? defaults))
+        if (_scriptDefaults.TryGetValue(scriptClass, out ScriptClassDefaults? defaults))
         {
-            defaults = ScriptClassDefaults.Of(Scripts, scriptClass);
-            _scriptDefaults[scriptClass] = defaults;
+            return defaults.Constant(offset);
         }
 
+        defaults = ScriptClassDefaults.Of(Scripts, scriptClass);
+        _scriptDefaults[scriptClass] = defaults;
         return defaults.Constant(offset);
     }
 
@@ -201,7 +199,7 @@ internal sealed class ItemSources
             }
 
             // The UI metadata item is read only up to its last needed member.
-            if (!expected.Take(actual.Count).SequenceEqual(actual, StringComparer.Ordinal) || (actual.Count < expected.Length && path != ItemAssetSchemas.UIGameplayItemMetaDataItemClass))
+            if (!expected.Take(actual.Count).SequenceEqual(actual, StringComparer.Ordinal) || (actual.Count < expected.Length && path != ItemAssetSchemas.UiGameplayItemMetaDataItemClass))
             {
                 throw new InvalidDataException($"The script members of {name} differ from ItemAssetSchemas: [{string.Join(", ", expected)}]");
             }

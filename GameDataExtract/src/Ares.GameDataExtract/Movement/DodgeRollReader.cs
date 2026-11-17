@@ -27,17 +27,16 @@ internal static class DodgeRollReader
         double[] defaults = Defaults(scripts);
         CookedPackage package = MovementPackages.Load(packages, MovementAssets.DodgeRollMetricsPackage);
         PropertyBag metrics = MovementPackages.ReadAsset(package, MovementPackages.OnlyExport(package), MovementAssetSchemas.DodgeRollMetrics, [0, 1, 2, 3]);
-        List<DodgeRollSequence> rolls = [];
-        foreach (DodgeRollKind kind in Enum.GetValues<DodgeRollKind>())
+        return [.. Enum.GetValues<DodgeRollKind>().Select(Variant)];
+
+        DodgeRollSequence Variant(DodgeRollKind kind)
         {
             string member = MovementAssetSchemas.DodgeRollMetrics.Members[(int)kind]!.Name;
             PropertyBag roll = metrics.Get<PropertyBag>(member);
             string sequence = MovementPackages.ImportedPackage(package, roll.Get("Sequence", new ObjectReference(0)), $"the {kind} roll sequence")
                 ?? throw new InvalidDataException($"{package.Name}: the {kind} roll has no sequence");
-            rolls.Add(Roll(packages, roll, defaults, sequence));
+            return Roll(packages, roll, defaults, sequence);
         }
-
-        return rolls;
     }
 
     private static DodgeRollSequence Roll(PackageCache packages, PropertyBag roll, double[] defaults, string sequence)

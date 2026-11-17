@@ -4,6 +4,7 @@ using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
@@ -16,17 +17,18 @@ public sealed class GadgetTests
 {
     [Theory]
     [InlineData(null, 0)]
-    [InlineData(AugmentItems.CombatMk1AssetId, 3)]
-    [InlineData(AugmentItems.LootingMk1AssetId, 1)]
-    [InlineData(AugmentItems.TacticalMk1AssetId, 4)]
-    public void A_snap_hook_in_quick_use_keeps_its_identity_and_is_sent_once_the_containers_exist(long? augment, int slot)
+    [InlineData(GameNames.Items.CombatMk1, 3)]
+    [InlineData(GameNames.Items.LootingMk1, 1)]
+    [InlineData(GameNames.Items.TacticalMk1, 4)]
+    public void A_snap_hook_in_quick_use_keeps_its_identity_and_is_sent_once_the_containers_exist(string? augmentName, int slot)
     {
+        long? augment = TestGameData.AssetId(augmentName);
         PlayerLoadout loadout = WithSnapHook(augment, slot);
-        InventoryItem hook = loadout.Items.Single(item => item.GameAssetId == GadgetItems.SnapHookAssetId);
+        InventoryItem hook = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.SnapHook.AssetId);
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         RaidInventory inventory = session.Member.Inventory;
-        Assert.Equal(new ContainerItem(GadgetItems.SnapHookUsableIndex, Guid.Parse(hook.InstanceId), 1, 0.5), inventory.Containers[inventory.Belt].Items[slot]);
+        Assert.Equal(new ContainerItem(TestGameData.Items.SnapHookIndex, Guid.Parse(hook.InstanceId), 1, 0.5), inventory.Containers[inventory.Belt].Items[slot]);
         Assert.Equal(6.2, inventory.Weight, precision: 6);
 
         int position = InventoryBlackboard.LoadoutSlotCount + inventory.Containers[inventory.Backpack].Items.Count + slot;
@@ -38,13 +40,13 @@ public sealed class GadgetTests
         session.Input(33, 36, position: session.Member.Spawn.Location);
         session.Sent.Clear();
         session.Service(100.1);
-        Assert.Equal(GadgetItems.SnapHookUsableIndex, ShieldTests.AssetIndex(session.PawnFrame(first), position));
+        Assert.Equal(TestGameData.Items.SnapHookIndex, ShieldTests.AssetIndex(session.PawnFrame(first), position));
     }
 
     [Fact]
     public void A_snap_hook_moves_between_quick_use_slots_and_the_backpack_but_not_into_equipment_slots()
     {
-        RaidInventory inventory = new(WithSnapHook(null, 0));
+        RaidInventory inventory = new(TestGameData.Items, WithSnapHook(null, 0));
         ContainerItem hook = inventory.Containers[inventory.Belt].Items[0]!;
         Assert.False(inventory.Apply(ShieldTests.Swap(inventory.Belt, 0, inventory.Loadout, InventoryBlackboard.Firearm1Slot)));
         Assert.False(inventory.Apply(ShieldTests.Swap(inventory.Belt, 0, inventory.Loadout, InventoryBlackboard.ArmorSlot)));
@@ -62,12 +64,12 @@ public sealed class GadgetTests
     public void An_extraction_brings_the_snap_hook_home_in_its_current_quick_use_slot()
     {
         PlayerLoadout loadout = WithSnapHook(null, 0);
-        InventoryItem hook = loadout.Items.Single(item => item.GameAssetId == GadgetItems.SnapHookAssetId);
-        RaidInventory inventory = new(loadout);
+        InventoryItem hook = loadout.Items.Single(item => item.GameAssetId == TestGameData.Items.SnapHook.AssetId);
+        RaidInventory inventory = new(TestGameData.Items, loadout);
         Assert.True(inventory.Apply(ShieldTests.Swap(inventory.Belt, 0, inventory.Belt, 2)));
         IReadOnlyList<CarriedItem> carried = inventory.CarriedHome(RaidOutcomes.Extracted, out _);
         RaidResults.Validate(new RaidResult(Guid.NewGuid().ToString("D"), 42, 7, RaidOutcomes.Extracted, carried));
-        CarriedItem home = Assert.Single(carried, item => item.Item.GameAssetId == GadgetItems.SnapHookAssetId);
+        CarriedItem home = Assert.Single(carried, item => item.Item.GameAssetId == TestGameData.Items.SnapHook.AssetId);
         Assert.Equal((CarriedPlaces.QuickUse, 2, hook), (home.Place, home.Slot, home.Item));
     }
 
@@ -76,12 +78,12 @@ public sealed class GadgetTests
     {
         ScriptedPlayer session = new(loadout: AddSnapHook(WeaponTests.WithWeapons(), 1));
         session.Flush("exports");
-        ulong classGuid = session.Raid.Imports.Classes[GadgetItems.SnapHookItemClass];
+        ulong classGuid = session.Raid.Imports.Classes[TestGameData.Items.SnapHook.ItemClass];
         StaticObjectExport exported = Assert.Single(session.Sent.Where(bunch => bunch.PackageExports)
             .SelectMany(bunch => ObjectExports.Read(new BitReader(bunch.Payload, bunch.PayloadBits)).Exports.Records.Values)
             .OfType<StaticObjectExport>(), item => item.Guid == classGuid);
         Assert.Equal(0xD0674436U, exported.Checksum);
-        Assert.True(GameReplication.Catalog.IsA(GadgetItems.SnapHookItemClass, ClassPaths.ItemBase));
+        Assert.True(GameReplication.Catalog.IsA(TestGameData.Items.SnapHook.ItemClass, ClassPaths.ItemBase));
 
         session.Possess();
         RaidInventory inventory = session.Member.Inventory;
@@ -184,7 +186,7 @@ public sealed class GadgetTests
 
             compared++;
             Assert.False(weapons.HoldsFrames(tick));
-            IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(tick, new PawnMotion(default), 0, weapons: weapons.Variables(tick, objects),
+            IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, tick, new PawnMotion(default), 0, weapons: weapons.Variables(tick, objects),
                 emptySlots: weapons.EmptyItemSlots(tick));
             string raid = Describe(state);
             if (raid != truth)
@@ -404,7 +406,7 @@ public sealed class GadgetTests
 
     private static (RaidInventory Inventory, RaidWeapons Weapons, Dictionary<Guid, ulong> Objects) Prepare(long durability = 50)
     {
-        RaidInventory inventory = new(AddSnapHook(WeaponTests.WithWeapons(), 0, durability));
+        RaidInventory inventory = new(TestGameData.Items, AddSnapHook(WeaponTests.WithWeapons(), 0, durability));
         ContainerItem?[] slots = [.. inventory.Containers[inventory.Loadout].Items];
         Dictionary<Guid, ulong> objects = new()
         {
@@ -412,7 +414,7 @@ public sealed class GadgetTests
             [slots[InventoryBlackboard.UnarmedSlot]!.Id] = Unarmed,
             [inventory.Containers[inventory.Belt].Items[0]!.Id] = Hook,
         };
-        return (inventory, new RaidWeapons(inventory), objects);
+        return (inventory, new RaidWeapons(inventory, TestGameData.Data), objects);
     }
 
     private static (int Phase, int Current, int Target, int LastWanted) Switch(IReadOnlyList<PendulumVariable> variables)
@@ -436,10 +438,10 @@ public sealed class GadgetTests
 
     internal static PlayerLoadout AddSnapHook(PlayerLoadout loadout, int slot, long durability = 50)
     {
-        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BeltSlotAssetId);
+        InventoryItem branch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == LoadoutItems.BeltSlotAssetId);
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branch.Slots[0]);
         string target = container.Slots[slot];
-        InventoryItem hook = new(Guid.NewGuid().ToString("D"), GadgetItems.SnapHookAssetId, 1, [], durability, 100, "", "hook", 0);
+        InventoryItem hook = new(Guid.NewGuid().ToString("D"), TestGameData.Items.SnapHook.AssetId, 1, [], durability, 100, "", "hook", 0);
         return loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == target ? item with { Slots = [hook.InstanceId] } : item), hook] };
     }
 }

@@ -40,7 +40,7 @@ public sealed partial class InventoryStore
                 throw new InvalidDataException("The raid result belongs to another player");
             }
 
-            if (result.Revision != _database.ReadReservation(_userId, result.TicketId)!.Loadout.Revision)
+            if (result.Revision != _database.ReadReservation(Catalog, _userId, result.TicketId)!.Loadout.Revision)
             {
                 throw new InvalidDataException("The raid result does not match the reserved loadout revision");
             }
@@ -48,7 +48,7 @@ public sealed partial class InventoryStore
             HashSet<string> stashIds = _state.Stash.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
             Dictionary<string, (InventoryArea Area, OwnedItem Item)> brought = Enum.GetValues<InventoryArea>()
                 .Where(area => area is not (InventoryArea.Stash or InventoryArea.Wallet))
-                .SelectMany(area => InventoryCatalog.Items(_state, area).Select(item => (Area: area, Item: item)))
+                .SelectMany(area => InventoryAreas.Items(_state, area).Select(item => (Area: area, Item: item)))
                 .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
             long revision = checked(_state.Revision + 1);
             string etag = ItemETag(revision);
@@ -62,10 +62,10 @@ public sealed partial class InventoryStore
                 }
 
                 InventoryArea area = CarriedArea(carried.Place);
-                OwnedItem item = new(carried.Item.InstanceId, InventoryCatalog.TechnicalName(carried.Item.GameAssetId), carried.Item.Amount,
+                OwnedItem item = new(carried.Item.InstanceId, Catalog.TechnicalName(carried.Item.GameAssetId), carried.Item.Amount,
                     carried.Item.Durability, carried.Item.MaxDurability, etag, updatedAt)
                 {
-                    Slot = InventoryCatalog.UsesSlots(area) ? carried.Slot : null,
+                    Slot = InventoryAreas.UsesSlots(area) ? carried.Slot : null,
                 };
                 if (brought.TryGetValue(item.InstanceId, out (InventoryArea Area, OwnedItem Item) previous) && previous.Area == area
                     && previous.Item == item with { ETag = previous.Item.ETag, UpdatedAt = previous.Item.UpdatedAt })
@@ -84,7 +84,7 @@ public sealed partial class InventoryStore
             PlayerInventory candidate = _state with { Revision = revision, Loadout = PlayerInventory.Empty.Loadout, RaidTicketId = null };
             foreach ((InventoryArea area, List<OwnedItem> items) in placed)
             {
-                candidate = InventoryCatalog.WithItems(candidate, area, items);
+                candidate = InventoryAreas.WithItems(candidate, area, items);
             }
 
             Save(candidate);

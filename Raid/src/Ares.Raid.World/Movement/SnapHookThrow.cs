@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Movement;
@@ -81,19 +82,21 @@ public static class SnapHookThrow
     public static int TimeUnits(double seconds) => (int)Math.Round(seconds * PawnBlackboard.TimePerSecond);
 
     /// <summary>Whether the item can throw: no hook out and enough gadget power.</summary>
+    /// <param name="data">The game data: the snap hook item's range and activation cost.</param>
     /// <param name="hook">The hook.</param>
     /// <param name="power">Gadget power.</param>
     /// <param name="infinitePower">Whether the character has infinite power (<c>Attribute.Power.Infinite</c>).</param>
     /// <returns>Whether a throw starts.</returns>
-    public static bool CanThrow(SnapHookHook hook, double power, bool infinitePower = false) =>
-        !hook.Thrown && (infinitePower || power >= SnapHookItem.ActivationCost);
+    public static bool CanThrow(GameDataSet data, SnapHookHook hook, double power, bool infinitePower = false) =>
+        !hook.Thrown && (infinitePower || power >= data.Movement.SnapHookItem.ActivationCost);
 
     /// <summary>Gadget power after a throw pays for itself.</summary>
+    /// <param name="data">The game data: the snap hook item's range and activation cost.</param>
     /// <param name="power">Gadget power before.</param>
     /// <param name="infinitePower">Whether the character has infinite power.</param>
     /// <returns>Gadget power after.</returns>
-    public static double PowerAfterThrow(double power, bool infinitePower = false) =>
-        infinitePower ? power : Math.Max(power - SnapHookItem.ActivationCost, 0);
+    public static double PowerAfterThrow(GameDataSet data, double power, bool infinitePower = false) =>
+        infinitePower ? power : Math.Max(power - data.Movement.SnapHookItem.ActivationCost, 0);
 
     /// <summary>Gadget power after a tick's recharge.</summary>
     /// <param name="power">Gadget power before.</param>
@@ -107,16 +110,18 @@ public static class SnapHookThrow
     /// Throws the hook: a trace from the shooting location towards the aim target, as long as the hook's range,
     /// decides where it flies; without a hit it flies to the end of the trace.
     /// </summary>
+    /// <param name="data">The game data: the snap hook item's range and activation cost.</param>
     /// <param name="time">Simulation time of the throw.</param>
     /// <param name="shootLocation">The character's shooting location.</param>
     /// <param name="aimTarget">The point the character aims at.</param>
     /// <param name="trace">The throw's world trace, ignoring the owner and its item actor.</param>
     /// <returns>The thrown hook.</returns>
-    public static SnapHookHook Throw(int time, Vector3D shootLocation, Vector3D aimTarget, GrappleTrace trace)
+    public static SnapHookHook Throw(GameDataSet data, int time, Vector3D shootLocation, Vector3D aimTarget, GrappleTrace trace)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(trace);
         Vector3D direction = Vectors.Normal(Vectors.Subtract(aimTarget, shootLocation));
-        Vector3D end = Vectors.Add(shootLocation, Vectors.Scale(direction, SnapHookItem.Range));
+        Vector3D end = Vectors.Add(shootLocation, Vectors.Scale(direction, data.Movement.SnapHookItem.Range));
         GrappleHit? hit = trace(shootLocation, end);
         return hit is { } found
             ? new SnapHookHook(Thrown: true, HasTarget: true, ThrownAt: time, AttachPoint: found.Point, Surface: found.Surface, OnShield: found.IsArcShield)
@@ -127,12 +132,15 @@ public static class SnapHookThrow
     /// Where the flying hook is: from the throw start towards its attach point at the range per extend duration;
     /// after a miss's extend duration, back from that point towards the throw start at the range per pullback duration.
     /// </summary>
+    /// <param name="data">The game data: the snap hook item's range and activation cost.</param>
     /// <param name="hook">The hook.</param>
     /// <param name="throwStart">The throw start now.</param>
     /// <param name="elapsed">Seconds since the throw.</param>
     /// <returns>The hook's world position.</returns>
-    public static Vector3D HookLocation(SnapHookHook hook, Vector3D throwStart, double elapsed)
+    public static Vector3D HookLocation(GameDataSet data, SnapHookHook hook, Vector3D throwStart, double elapsed)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        double range = data.Movement.SnapHookItem.Range;
         if (hook.Attached)
         {
             return hook.AttachPoint;
@@ -140,13 +148,13 @@ public static class SnapHookThrow
 
         if (hook.HasTarget || elapsed < SnapHookParameters.ExtendSeconds)
         {
-            const double Speed = SnapHookItem.Range / SnapHookParameters.ExtendSeconds;
-            return Vectors.Add(throwStart, Vectors.ClampToMaxSize(Vectors.Subtract(hook.AttachPoint, throwStart), Speed * elapsed));
+            double speed = range / SnapHookParameters.ExtendSeconds;
+            return Vectors.Add(throwStart, Vectors.ClampToMaxSize(Vectors.Subtract(hook.AttachPoint, throwStart), speed * elapsed));
         }
 
-        const double Back = SnapHookItem.Range / SnapHookParameters.PullbackSeconds;
+        double back = range / SnapHookParameters.PullbackSeconds;
         return Vectors.Add(hook.AttachPoint,
-            Vectors.ClampToMaxSize(Vectors.Subtract(throwStart, hook.AttachPoint), Back * (elapsed - SnapHookParameters.ExtendSeconds)));
+            Vectors.ClampToMaxSize(Vectors.Subtract(throwStart, hook.AttachPoint), back * (elapsed - SnapHookParameters.ExtendSeconds)));
     }
 
     /// <summary>
@@ -186,6 +194,7 @@ public static class SnapHookThrow
     /// once the pull it created has ended; while flying to a hit, attached on arrival or when the extend duration is
     /// over; a miss's end sinks while flying out and the hook is cleared once it is back.
     /// </summary>
+    /// <param name="data">The game data: the snap hook item and the graph state flags that cancel it.</param>
     /// <param name="hook">The hook.</param>
     /// <param name="time">Simulation time of the tick.</param>
     /// <param name="throwStart">The throw start now.</param>
@@ -194,38 +203,39 @@ public static class SnapHookThrow
     /// <param name="target">The owner's move target, if any.</param>
     /// <param name="hooked">What the hook holds, for the pull on arrival.</param>
     /// <returns>The hook after the tick and what happened.</returns>
-    public static SnapHookHookStep Tick(SnapHookHook hook, int time, Vector3D throwStart, double seconds, ulong previousFlags, SnapHookTarget? target,
-        SnapHookPullEnd hooked)
+    public static SnapHookHookStep Tick(GameDataSet data, SnapHookHook hook, int time, Vector3D throwStart, double seconds, ulong previousFlags,
+        SnapHookTarget? target, SnapHookPullEnd hooked)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!hook.Thrown)
         {
             return new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
         }
 
-        if ((previousFlags & GeneratedGraphStateFlags.SnapHookCancelling) != 0)
+        if ((previousFlags & data.Names.GraphFlags.SnapHookCancelling) != 0)
         {
-            return Cancel(hook);
+            return Cancel(data, hook);
         }
 
         if (hook.Attached)
         {
             bool pullOver = hook.PullsPlayer && target is not { IsActive: true };
-            return pullOver ? Clear(hook) : new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
+            return pullOver ? Clear(data, hook) : new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
         }
 
         double elapsed = (time - hook.ThrownAt) / (double)PawnBlackboard.TimePerSecond;
         if (hook.HasTarget)
         {
-            double distance = Vectors.Length(Vectors.Subtract(hook.AttachPoint, HookLocation(hook, throwStart, elapsed)));
+            double distance = Vectors.Length(Vectors.Subtract(hook.AttachPoint, HookLocation(data, hook, throwStart, elapsed)));
             return distance < SnapHookParameters.ReachedTargetDistance || elapsed >= SnapHookParameters.ExtendSeconds
-                ? Attach(hook, time, hooked)
+                ? Attach(data, hook, time, hooked)
                 : new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
         }
 
         if (elapsed >= SnapHookParameters.ExtendSeconds)
         {
             return elapsed >= SnapHookParameters.ExtendSeconds + SnapHookParameters.PullbackSeconds
-                ? Clear(hook)
+                ? Clear(data, hook)
                 : new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
         }
 
@@ -235,22 +245,23 @@ public static class SnapHookThrow
     }
 
     /// <summary>Cancels the hook (secondary use, or a heavy landing): it is cleared, and marked cancelled if it was attached.</summary>
+    /// <param name="data">The game data: the snap hook item's range and activation cost.</param>
     /// <param name="hook">The hook.</param>
     /// <returns>The cleared hook.</returns>
-    public static SnapHookHookStep Cancel(SnapHookHook hook)
+    public static SnapHookHookStep Cancel(GameDataSet data, SnapHookHook hook)
     {
-        SnapHookHookStep cleared = Clear(hook);
+        SnapHookHookStep cleared = Clear(data, hook);
         return cleared with { Hook = cleared.Hook with { Cancelled = hook.Attached }, Event = SnapHookHookEvent.Cancelled };
     }
 
     // On arrival the hook holds on; a shield makes it let go at once, and only a pull that moves the owner creates a
     // move target, valid after the pull delay.
-    private static SnapHookHookStep Attach(SnapHookHook hook, int time, SnapHookPullEnd hooked)
+    private static SnapHookHookStep Attach(GameDataSet data, SnapHookHook hook, int time, SnapHookPullEnd hooked)
     {
         SnapHookHook attached = hook with { Attached = true };
         if (hook.OnShield)
         {
-            return Clear(attached);
+            return Clear(data, attached);
         }
 
         double speed = PullSpeed(hooked);
@@ -264,8 +275,8 @@ public static class SnapHookThrow
     }
 
     // A hook that never attached gives its power back.
-    private static SnapHookHookStep Clear(SnapHookHook hook) =>
-        new(SnapHookHook.Stowed, SnapHookHookEvent.Cleared, null, hook.Attached ? 0 : SnapHookItem.ActivationCost);
+    private static SnapHookHookStep Clear(GameDataSet data, SnapHookHook hook) =>
+        new(SnapHookHook.Stowed, SnapHookHookEvent.Cleared, null, hook.Attached ? 0 : data.Movement.SnapHookItem.ActivationCost);
 }
 
 file static class Vectors

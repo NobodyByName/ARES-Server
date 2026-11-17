@@ -1,4 +1,6 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Loot;
@@ -14,8 +16,18 @@ public sealed record FreeStandingLoot(
     IReadOnlyList<ObservedLootContainer> Observed,
     Func<string, bool> SpawnerClassEnabled)
 {
-    /// <summary>The Dam's spawners, placed and observed containers with ARES's default spawner classes.</summary>
-    public static FreeStandingLoot Dam { get; } = new(DamDynamicLoot.Groups, DamPlacedLoot.Containers, DamPlacedLoot.Observed, DynamicLootDefaults.Enabled);
+    /// <summary>
+    /// A map's spawners and placed containers with ARES's default spawner classes; the Dam also gets its observed
+    /// containers (<see cref="DamPlacedLoot.Observed"/>), which the game data does not hold.
+    /// </summary>
+    /// <param name="map">The map's data.</param>
+    /// <returns>The containers.</returns>
+    public static FreeStandingLoot Of(MapData map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, map.WorldName == GameNames.Maps.Dam ? DamPlacedLoot.Observed : [],
+            DynamicLootDefaults.Enabled);
+    }
 
     /// <summary>No free-standing containers.</summary>
     public static FreeStandingLoot None { get; } = new([], [], [], _ => false);

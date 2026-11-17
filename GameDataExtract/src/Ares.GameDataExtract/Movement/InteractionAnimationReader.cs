@@ -108,16 +108,6 @@ internal static class InteractionAnimationReader
     private static InteractionAnimationContainer Container(MapRuleSources sources, ScriptSchemas schemas, string path, Dictionary<string, double> defaults)
     {
         (PropertyBag values, _) = DataAsset(sources, schemas, path, ContainerClass);
-        double Value(string member) => values.Contains(member)
-            ? values.Get<object>(member) switch
-            {
-                bool flag => flag ? 1 : 0,
-                byte value => value,
-                double value => value,
-                object other => throw new InvalidDataException($"{path}: {member} holds a {other.GetType().Name}"),
-            }
-            : defaults[member];
-
         double alignment = Value(AttachmentAlignmentType);
         double stop = Value(StopInteractResponse);
         if (!Enum.IsDefined((InteractionAlignment)(byte)alignment) || stop is not (0 or FinishAlignmentAnimation))
@@ -128,12 +118,22 @@ internal static class InteractionAnimationReader
         return new InteractionAnimationContainer(
             path,
             (InteractionAlignment)(byte)alignment,
-            stop == FinishAlignmentAnimation,
+            stop.Equals(FinishAlignmentAnimation),
             Value(AllowFloatingAlignment) != 0,
             Value(FullBodyInteraction) != 0,
             Value(HeightThresholdToTriggerCrouch),
             Value(FinishWhenAnimationsFinished) != 0,
             Value(UnendingInteraction) != 0);
+
+        double Value(string member) => values.Contains(member)
+            ? values.Get<object>(member) switch
+            {
+                bool flag => flag ? 1 : 0,
+                byte value => value,
+                double value => value,
+                { } other => throw new InvalidDataException($"{path}: {member} holds a {other.GetType().Name}"),
+            }
+            : defaults[member];
     }
 
     /// <summary>The literal the container class's script defaults store into <paramref name="member"/>, of <paramref name="size"/> bytes.</summary>

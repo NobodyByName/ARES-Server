@@ -18,7 +18,7 @@ public sealed class StashUpgradeTests : IDisposable
         store.AddItem(ItemTechnicalNames.Coins, DateTimeOffset.UnixEpoch, 7000);
         OwnedItem duck = Assert.Single(store.Inventory.Stash.Items);
         InventoryItem container = Container(store);
-        long next = TestStash.Next(StorageItems.StashContainerAssetId);
+        long next = TestStash.Next(TestCatalog.StashContainer);
 
         ServiceReply reply = store.Commit(Upgrade(container.InstanceId), DateTimeOffset.UnixEpoch);
 
@@ -29,10 +29,10 @@ public sealed class StashUpgradeTests : IDisposable
         Assert.Equal(88, upgraded.Slots.Count);
         Assert.Equal(container.Slots, upgraded.Slots.Take(container.Slots.Count));
         Assert.Equal(24, changes.Created.Count);
-        Assert.Contains(changes.Updated, item => item is { GameAssetId: CurrencyItems.CoinsAssetId, Amount: 2000 });
-        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
+        Assert.Contains(changes.Updated, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.Coins) && item.Amount == 2000);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         Assert.Equal(next, restarted.Inventory.Stash.ContainerAssetId);
-        Assert.Equal(88, restarted.Inventory.Stash.SlotCount);
+        Assert.Equal(88, TestCatalog.Real.StashCapacity(restarted.Inventory.Stash.ContainerAssetId));
         Assert.Equal([duck], restarted.Inventory.Stash.Items);
     }
 
@@ -50,7 +50,7 @@ public sealed class StashUpgradeTests : IDisposable
             (Upgrade(container), "upgrade_cost_not_met"),
             (Upgrade(duck), "item_not_upgradable"),
             (Upgrade("missing"), "item_not_upgradable"),
-            (new InventoryOperationsRequest([new UpgradeItem(container, null, StorageItems.StashContainerAssetId)], ""), "item_not_upgradable"),
+            (new InventoryOperationsRequest([new UpgradeItem(container, null, TestCatalog.StashContainer)], ""), "item_not_upgradable"),
         ];
 
         Assert.All(rejected, entry =>
@@ -65,13 +65,13 @@ public sealed class StashUpgradeTests : IDisposable
     public void Every_tier_up_to_the_last_holds_a_full_stash_and_the_last_cannot_be_upgraded()
     {
         InventoryStore store = Create();
-        long tier = StorageItems.StashContainerAssetId;
+        long tier = TestCatalog.StashContainer;
         List<int> sizes = [];
         while (true)
         {
             store.Import(store.Inventory with { Stash = store.Inventory.Stash with { ContainerAssetId = tier } }, store.Inventory.Revision);
-            sizes.Add(store.Inventory.Stash.SlotCount);
-            if (StorageItems.Definitions.Single(definition => definition.GameAssetId == tier).Upgrade is not { } upgrade)
+            sizes.Add(TestCatalog.Real.StashCapacity(store.Inventory.Stash.ContainerAssetId));
+            if (TestCatalog.Content.Stash.Definitions.Single(definition => definition.GameAssetId == tier).Upgrade is not { } upgrade)
             {
                 break;
             }
@@ -100,26 +100,26 @@ public sealed class StashUpgradeTests : IDisposable
         ServiceReply reply = InventoryStore.UpgradeReply(store.Commit(InventoryStore.UpgradeOperations(request), DateTimeOffset.UnixEpoch), container);
 
         UpgradeInventoryItemResponse upgraded = Assert.IsType<UpgradeInventoryItemResponse>(reply.Body);
-        Assert.Equal((container, TestStash.Next(StorageItems.StashContainerAssetId)), (upgraded.UpgradedItem.InstanceId, upgraded.UpgradedItem.GameAssetId));
+        Assert.Equal((container, TestStash.Next(TestCatalog.StashContainer)), (upgraded.UpgradedItem.InstanceId, upgraded.UpgradedItem.GameAssetId));
         Assert.Equal([coins], upgraded.Changeset.Items.Deleted);
     }
 
     [Fact]
     public void Operator_prices_are_announced_and_charged()
     {
-        StashUpgradePrices prices = new([1234, .. StashUpgradePrices.Default.Coins.Skip(1)]);
-        InventoryStore store = new(_database.Store, TestDatabase.UserId, prices);
+        StashUpgradePrices prices = new(TestCatalog.Content.Stash, [1234, .. StashUpgradePrices.Default.Coins.Skip(1)]);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, new InventoryCatalog(TestCatalog.Data, TestCatalog.Content, prices));
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.Coins, DateTimeOffset.UnixEpoch, 2000);
-        ItemDescription first = store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId);
+        ItemDescription first = store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == TestCatalog.StashContainer);
         Assert.Equal(1234, Assert.Single(first.Upgrade!.CostPackage.CostItems).Amount);
-        Assert.Equal(5000, Assert.Single(Assert.IsType<ItemAmountsOfferCost>(StashUpgradePrices.Default.GameData.ItemDescriptions.ItemDescriptions
-            .Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Upgrade!.Cost).ItemAmounts).Amount);
+        Assert.Equal(5000, Assert.Single(Assert.IsType<ItemAmountsOfferCost>(TestCatalog.Real.GameData.ItemDescriptions.ItemDescriptions
+            .Single(item => item.GameAssetId == TestCatalog.StashContainer).Upgrade!.Cost).ItemAmounts).Amount);
 
         Assert.Equal(200, store.Commit(Upgrade(Container(store).InstanceId), DateTimeOffset.UnixEpoch).StatusCode);
 
         Assert.Equal(766, Assert.Single(store.Inventory.Wallet).Quantity);
-        Assert.Throws<ArgumentException>(() => new StashUpgradePrices([1, 2]));
+        Assert.Throws<ArgumentException>(() => new StashUpgradePrices(TestCatalog.Content.Stash, [1, 2]));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class StashUpgradeTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

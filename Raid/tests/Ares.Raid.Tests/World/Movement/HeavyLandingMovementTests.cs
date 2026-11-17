@@ -29,7 +29,7 @@ public sealed class HeavyLandingMovementTests
     [InlineData(3000, 3)]
     public void The_level_is_the_last_one_whose_height_the_fall_exceeds(double fallHeight, int level)
     {
-        Assert.Equal(level, HeavyLandingMovement.Level(fallHeight, HeavyLandingAnimations.Heavy));
+        Assert.Equal(level, HeavyLandingMovement.Level(fallHeight, TestGameData.Data.Movement.HeavyLandingLevels));
     }
 
     [Theory]
@@ -41,18 +41,18 @@ public sealed class HeavyLandingMovementTests
     [InlineData(0, 0, "HM_Landing_A_Com_R_HeavyFallOnSpot_00")]
     public void The_animation_follows_the_impact_direction_relative_to_the_heading(double x, double y, string clip)
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(690, new Vector3D(x, y, -1650), default, 0);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 690, new Vector3D(x, y, -1650), default, 0);
         Assert.Equal(clip, state.Clip.Name);
         Assert.Equal(0, state.Level);
-        Assert.Equal(clip, HeavyLandingMovement.Begin(690, new Vector3D(-y, x, -1650), default, Math.PI / 2).Clip.Name);
+        Assert.Equal(clip, HeavyLandingMovement.Begin(TestGameData.Data, 690, new Vector3D(-y, x, -1650), default, Math.PI / 2).Clip.Name);
     }
 
     [Fact]
     public void High_levels_play_one_animation_in_every_direction()
     {
-        Assert.Equal("HM_Landing_A_UA_Pancake_00", HeavyLandingMovement.Begin(1900, new Vector3D(0, 400, -2000), default, 0).Clip.Name);
-        Assert.Equal("HM_Landing_A_UA_SuperPancakeGetUp_00", HeavyLandingMovement.Begin(2500, new Vector3D(400, 0, -2000), default, 0).Clip.Name);
-        Assert.Equal("HM_Landing_A_UA_SuperHeavyFwd_00", HeavyLandingMovement.Begin(1300, s_falling, default, 0).Clip.Name);
+        Assert.Equal("HM_Landing_A_UA_Pancake_00", HeavyLandingMovement.Begin(TestGameData.Data, 1900, new Vector3D(0, 400, -2000), default, 0).Clip.Name);
+        Assert.Equal("HM_Landing_A_UA_SuperPancakeGetUp_00", HeavyLandingMovement.Begin(TestGameData.Data, 2500, new Vector3D(400, 0, -2000), default, 0).Clip.Name);
+        Assert.Equal("HM_Landing_A_UA_SuperHeavyFwd_00", HeavyLandingMovement.Begin(TestGameData.Data, 1300, s_falling, default, 0).Clip.Name);
     }
 
     [Theory]
@@ -67,7 +67,7 @@ public sealed class HeavyLandingMovementTests
     [InlineData("HM_Landing_A_R_RecoveryRoll_00", 27)]
     public void The_landing_lasts_until_its_animation_hands_over(string clip, int ticks)
     {
-        HeavyLandingClip animation = HeavyLandingAnimations.Heavy.Concat(HeavyLandingAnimations.Recovery)
+        HeavyLandingClip animation = TestGameData.Data.Movement.HeavyLandingLevels.Concat(TestGameData.Data.Movement.RecoveryLandingLevels)
             .SelectMany(level => new[] { level.NoDirection, level.Forward, level.Left, level.Right, level.Backward })
             .First(candidate => candidate?.Name == clip)!;
         Assert.Equal(ticks, HeavyLandingMovement.Duration(animation));
@@ -76,7 +76,7 @@ public sealed class HeavyLandingMovementTests
     [Fact]
     public void Each_step_moves_by_the_root_motion_along_the_heading_and_keeps_the_vertical_speed_on_the_ground()
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(690, new Vector3D(0, 400, -1650), default, Math.PI / 2);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 690, new Vector3D(0, 400, -1650), default, Math.PI / 2);
         Assert.Equal("HM_Landing_A_Com_R_HeavyFallFwd_00", state.Clip.Name);
         HeavyLandingStep step = HeavyLandingMovement.Step(state, s_falling, onGround: true, Gravity, Tick);
         Assert.Equal(0, step.Velocity.X, 9);
@@ -97,7 +97,7 @@ public sealed class HeavyLandingMovementTests
     [Fact]
     public void The_side_animation_moves_to_the_characters_right()
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(690, new Vector3D(0, 400, -1650), default, 0);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 690, new Vector3D(0, 400, -1650), default, 0);
         double travelled = 0;
         for (int tick = 0; tick < 30; tick++)
         {
@@ -106,14 +106,15 @@ public sealed class HeavyLandingMovementTests
             travelled += step.Velocity.Y * Tick;
         }
 
-        Assert.Equal(-HeavyLandingAnimations.HeavyFallRight.Root[0].Right + HeavyLandingAnimations.HeavyFallRight.Root[30].Right, travelled, 3);
+        HeavyLandingClip right = TestGameData.Data.Movement.HeavyLandingLevels.Select(level => level.Right).First(clip => clip?.Name == "HM_Landing_A_Com_R_HeavyFallRight_00")!;
+        Assert.Equal(-right.Root[0].Right + right.Root[30].Right, travelled, 3);
         Assert.True(travelled > 90);
     }
 
     [Fact]
     public void The_last_step_hands_over_with_the_finished_blend()
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(690, new Vector3D(400, 0, -1650), default, 0);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 690, new Vector3D(400, 0, -1650), default, 0);
         for (int tick = 1; tick < 30; tick++)
         {
             HeavyLandingStep step = HeavyLandingMovement.Step(state, default, onGround: true, Gravity, Tick);
@@ -129,7 +130,7 @@ public sealed class HeavyLandingMovementTests
     [Fact]
     public void Falling_fast_again_ends_the_landing_at_once()
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(690, s_falling, default, 0);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 690, s_falling, default, 0);
         Assert.True(HeavyLandingMovement.Step(state, new Vector3D(0, 0, -1451), onGround: false, Gravity, Tick).Finished);
         Assert.False(HeavyLandingMovement.Step(state, new Vector3D(0, 0, -1449), onGround: false, Gravity, Tick).Finished);
         Assert.False(HeavyLandingMovement.Step(state, new Vector3D(0, 0, -1451), onGround: true, Gravity, Tick).Finished);
@@ -138,10 +139,10 @@ public sealed class HeavyLandingMovementTests
     [Fact]
     public void A_recovery_roll_follows_the_velocity_and_leaves_with_the_quick_blend()
     {
-        HeavyLandingState state = HeavyLandingMovement.Begin(800, new Vector3D(0, 300, -1500), new Vector3D(0, 300, -1500), 0, recovery: true);
+        HeavyLandingState state = HeavyLandingMovement.Begin(TestGameData.Data, 800, new Vector3D(0, 300, -1500), new Vector3D(0, 300, -1500), 0, recovery: true);
         Assert.Equal("HM_Landing_A_R_RecoveryRoll_00", state.Clip.Name);
         Assert.Equal(Math.Atan2(300, 0), state.Heading, 12);
-        Assert.Equal(0, HeavyLandingMovement.Begin(800, s_falling, default, 0, recovery: true).Heading);
+        Assert.Equal(0, HeavyLandingMovement.Begin(TestGameData.Data, 800, s_falling, default, 0, recovery: true).Heading);
 
         HeavyLandingStep step = default;
         for (int tick = 0; tick < 27; tick++)

@@ -1,4 +1,3 @@
-using System.Text;
 using Ares.Common.Archives;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Registry;
@@ -61,7 +60,7 @@ public sealed class AssetRegistryTests : IDisposable
         byte[] version = Registry();
         version[16] = 21;
         Assert.Throws<InvalidDataException>(() => AssetRegistry.Parse(version));
-        Assert.Throws<InvalidDataException>(() => AssetRegistry.Parse(Registry()[..^4]));
+        Assert.Throws<InvalidDataException>(() => AssetRegistry.Parse(Registry().AsSpan()[..^4]));
     }
 
     private static byte[] Registry()
@@ -71,7 +70,7 @@ public sealed class AssetRegistryTests : IDisposable
         Words(stream, AssetRegistry.SupportedVersion, 1);
         stream.Write(SyntheticArchives.NameBatch(s_names));
 
-        byte[] ansi = Encoding.UTF8.GetBytes("923438116\0");
+        byte[] ansi = [.. "923438116\0"u8];
         Words(stream, 0x12345679);
         Words(stream, 1, 1, 1, 0, 1, 1, 0, (uint)ansi.Length, 0, 4, 1, 0);
         stream.Write(PropertyBlocks.String("Hello"));

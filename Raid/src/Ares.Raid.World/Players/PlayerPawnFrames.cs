@@ -157,7 +157,7 @@ internal sealed class PlayerPawnFrames
         RaidWorld raid = player.Raid;
         RaidPlayer member = player.Member;
         WorldActor pawn = raid.State.Actor(player.Player.Pawn);
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(raid.GameData.Data, PawnBlackboardFrames.FirstTick,
             new PawnMotion(pawn.Location, Yaw: pawn.Rotation.Yaw * Math.PI / 180), 0, member.Inventory.InitialBlackboard,
             member.Weapons.Variables(PawnBlackboardFrames.FirstTick), TimeOffsetAt(raid, PawnBlackboardFrames.FirstTick, raid.Clock()));
         uint delivery = checked((uint)BlackboardFrames);
@@ -238,10 +238,10 @@ internal sealed class PlayerPawnFrames
         {
             WorldActor pawn = raid.State.Actor(actors.Pawn);
             double yaw = pawn.Rotation.Yaw * Math.PI / 180;
-            state = PawnBlackboardFrames.State(frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
+            state = PawnBlackboardFrames.State(raid.GameData.Data, frame, new PawnMotion(pawn.Location, Yaw: yaw), focus,
                 member.Inventory.InitialBlackboard, member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(raid, frame, now),
                 emptySlots: member.Weapons.EmptyItemSlots(frame));
-            Movement = new PlayerMovement(frame, pawn.Location, yaw, raid.Collision);
+            Movement = new PlayerMovement(raid.GameData.Data, frame, pawn.Location, yaw, raid.Collision);
         }
         else
         {
@@ -271,7 +271,7 @@ internal sealed class PlayerPawnFrames
             }
 
             // The character's interactor shows the server-run interaction (an open container is still its search).
-            state = PawnBlackboardFrames.State(frame, Motion(character, position, before, yaw, input.ActionRotation(frame)), focus, member.Inventory.Blackboard,
+            state = PawnBlackboardFrames.State(raid.GameData.Data, frame, Motion(character, position, before, yaw, input.ActionRotation(frame)), focus, member.Inventory.Blackboard,
                 member.Weapons.Variables(frame, weaponObjects), TimeOffsetAt(raid, frame, now),
                 _interaction is { } interaction ? OnCharacterClock(interaction) : null, member.Weapons.EmptyItemSlots(frame));
         }
@@ -305,7 +305,7 @@ internal sealed class PlayerPawnFrames
         RaidWorld raid = player.Raid;
         RaidPlayer member = player.Member;
         CharacterState rest = new(latest, position, Movement?.Latest.Flashlight ?? false) { Yaw = yaw };
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(latest, new PawnMotion(position, default, yaw, rest), 0,
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(raid.GameData.Data, latest, new PawnMotion(position, default, yaw, rest), 0,
             member.Inventory.Blackboard, member.Weapons.Variables(latest, ItemsLinked ? player.Player.HeldItems : null), TimeOffsetAt(raid, latest, now),
             emptySlots: member.Weapons.EmptyItemSlots(latest));
         uint delivery = checked((uint)BlackboardFrames);

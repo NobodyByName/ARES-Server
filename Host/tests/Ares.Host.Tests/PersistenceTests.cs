@@ -14,12 +14,12 @@ public sealed class PersistenceTests
     {
         using TestDatabase database = new();
         HostDatabase store = database.Store;
-        InventoryStore inventory = new(store, TestDatabase.UserId);
+        InventoryStore inventory = new(store, TestDatabase.UserId, TestCatalog.Real);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         string saved = database.Account.ToJson();
         store.Initialize();
         Assert.Equal(saved, database.Account.ToJson());
-        Assert.Equal(1, new InventoryStore(store, TestDatabase.UserId).Inventory.ItemCount);
+        Assert.Equal(1, new InventoryStore(store, TestDatabase.UserId, TestCatalog.Real).Inventory.ItemCount);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class PersistenceTests
     public void Running_stores_observe_external_updates_and_preserve_64_bit_ids()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId, TestCatalog.Real);
         inventory.InitializeLayout(DateTimeOffset.UnixEpoch);
         AccountStore account = new(database.Store, TestDatabase.UserId);
         database.Accounts.UpdateOne(FilterDefinition<BsonDocument>.Empty,
@@ -89,7 +89,7 @@ public sealed class PersistenceTests
     public void Invalid_versions_and_deleted_players_fail_instead_of_resetting()
     {
         using TestDatabase database = new();
-        InventoryStore inventory = new(database.Store, TestDatabase.UserId);
+        InventoryStore inventory = new(database.Store, TestDatabase.UserId, TestCatalog.Real);
         database.Accounts.UpdateOne(FilterDefinition<BsonDocument>.Empty, Builders<BsonDocument>.Update.Set("inventoryVersion", -1L),
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Throws<InvalidDataException>(() => inventory.Snapshot);

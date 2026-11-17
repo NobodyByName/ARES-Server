@@ -35,7 +35,7 @@ public sealed class InteractionAnimationParityTests
         string[] unservedOnly =
         [
             .. classes.Where(row => !LootContainerSupport.IsSupported(row.Container.Class)).Select(row => row.SearchAnimation).OfType<string>().Select(ObjectPath)
-                .Where(path => !served.Contains(path) && !InteractionAnimationContainers.All.Any(container => container.Path == path)).Distinct(StringComparer.Ordinal),
+                .Where(path => !served.Contains(path) && InteractionAnimationContainers.All.All(container => container.Path != path)).Distinct(StringComparer.Ordinal),
         ];
 
         Assert.Equal(Rows(InteractionAnimationContainers.All, s_json.InteractionAnimationContainer),

@@ -2,7 +2,6 @@ using System.Net;
 using Ares.Common.CommandLine;
 using Ares.Common.Endpoints;
 using Ares.Common.Security;
-using Ares.Raid.World;
 
 namespace Ares.Raid;
 
@@ -29,6 +28,8 @@ public sealed record RaidConfiguration
           --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
           --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (required to start)
+          --content-dir <dir>         Folder whose ARES content files replace the built-in defaults of the same name
+                                      (default: the built-in defaults; ARES-Host passes its content-dir)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
           --help                      Show this help
@@ -59,11 +60,14 @@ public sealed record RaidConfiguration
     /// <summary>Stop when standard input closes, so a Raid never outlives the Host that started it.</summary>
     public bool StopOnInputClose { get; private init; }
 
-    /// <summary>Lighting of the raid, or null for a weighted pick.</summary>
+    /// <summary>Lighting of the raid, or null for a weighted pick; checked against the map's lightings once the game data is loaded.</summary>
     public string? Lighting { get; private init; }
 
-    /// <summary>Folder with the map files, or null when none is configured.</summary>
+    /// <summary>Folder with the game data, or null when none is configured.</summary>
     public string? GameDataDirectory { get; private init; }
+
+    /// <summary>Folder with the operator's ARES content files, or null for the built-in defaults alone.</summary>
+    public string? ContentDirectory { get; private init; }
 
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
@@ -95,6 +99,7 @@ public sealed record RaidConfiguration
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
         string? gameDataDirectory = arguments.GetString("game-data-dir");
+        string? contentDirectory = arguments.GetString("content-dir");
         int maxPlayers = arguments.GetInt32("max-players", 1);
         int fillSeconds = arguments.GetInt32("fill-seconds", 60);
         bool stopOnInputClose = arguments.Has("stop-on-input-close");
@@ -131,11 +136,6 @@ public sealed record RaidConfiguration
             throw new CommandLineException("--advertise-host and --control-token-file are required");
         }
 
-        if (lighting is not null && !DamWorlds.Lightings.Contains(lighting))
-        {
-            throw new CommandLineException($"--lighting must be one of: {string.Join(", ", DamWorlds.Lightings)}");
-        }
-
         try
         {
             return new RaidConfiguration
@@ -149,6 +149,7 @@ public sealed record RaidConfiguration
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
                 GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
+                ContentDirectory = contentDirectory is null ? null : Path.GetFullPath(contentDirectory),
                 MaxPlayers = maxPlayers,
                 FillSeconds = fillSeconds,
                 StopOnInputClose = stopOnInputClose,

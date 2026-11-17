@@ -85,8 +85,8 @@ public sealed class BackendRoutes
         Player(Get, IdentityPaths.ThirdPartyAccessToken, (_, player) => identity.ThirdPartyAccessToken(player.Account));
         Player(Post, BootstrapPaths.Manifest, (request, player) => identity.Manifest(request.Read<ManifestRequest>(), player.Inventory.DefinitionHash()));
         Add(Post, BootstrapPaths.LatestBuild, request => IdentityService.LatestBuild(request.Read<LatestBuildRequest>()));
-        Add(Get, EosEndpoints.DefaultSdkConfigurationPath, EosSdkDefaults.Configuration);
-        Add(Get, EosEndpoints.GameProductSdkConfigurationPath, EosSdkDefaults.Configuration);
+        Add(Get, EosEndpoints.DefaultSdkConfigurationPath, EosSdkConfigurationDefaults.Configuration);
+        Add(Get, EosEndpoints.GameProductSdkConfigurationPath, EosSdkConfigurationDefaults.Configuration);
         Add(Post, EosEndpoints.TokenPath, request => identity.EosToken(
             new EosTokenRequest(request.FormValue("grant_type"), request.FormValue("deployment_id"), request.FormValue("nonce")),
             request.Authorization).Response);

@@ -66,7 +66,7 @@ public static class MovementAssetSchemas
     /// <summary>A cooked root position of a distance-matched animation and its animation time.</summary>
     public static StructSchema RootMotionDistanceMatchingPoint { get; } = new("RootMotionDistanceMatchingPoint",
     [
-        new PropertyField("Position", PropertyType.StructOf(EngineStructs.Vector3f)),
+        new PropertyField("Position", PropertyType.StructOf(EngineStructs.Vector3F)),
         new PropertyField("Time", PropertyType.Float),
     ]);
 

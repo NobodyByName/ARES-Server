@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
@@ -64,6 +65,9 @@ public sealed class LootCatalog
     private const int ContentSeedSalt = 0x4C4F4F54;
 
     private readonly ReplicationContext _replication;
+    private readonly LootData _loot;
+    private readonly LootContentRolls _rolls;
+    private readonly double _cullDistance;
     private readonly ObjectExports _classExports;
     private readonly Dictionary<string, ulong> _exported;
     private readonly List<LootContainer> _containers = [];
@@ -74,18 +78,21 @@ public sealed class LootCatalog
     private readonly LootValueAreas _areas;
     private readonly SortedDictionary<string, int> _placeholders = new(StringComparer.Ordinal);
 
-    /// <summary>Spawns the containers of a Dam raid.</summary>
+    /// <summary>Spawns the containers of a raid of the game data's map.</summary>
+    /// <param name="gameData">The game data: the map's sockets, the loot definitions and the content rolls.</param>
     /// <param name="replication">Replication context.</param>
     /// <param name="round">Name of the raid's round configuration: it picks the dynamic loot groups.</param>
     /// <param name="activeDataLayers">Names of the raid's active data layers.</param>
     /// <param name="seed">The raid's seed: it rolls the sockets and picks among a socket's classes when there are several.</param>
     /// <param name="rules">Spawn chances, limiters and free-standing containers.</param>
-    public LootCatalog(ReplicationContext replication, string round, IReadOnlyCollection<string> activeDataLayers, int seed, LootSpawnRules rules)
-        : this(replication, DamLootSockets.All, DamLootSockets.Meshes, round, activeDataLayers, seed, rules)
+    public LootCatalog(RaidGameData gameData, ReplicationContext replication, string round, IReadOnlyCollection<string> activeDataLayers, int seed,
+        LootSpawnRules rules)
+        : this(gameData, replication, gameData.Map.LootSockets, gameData.Map.LootSocketMeshes, round, activeDataLayers, seed, rules)
     {
     }
 
     /// <summary>Spawns the containers of a raid on the sockets of the active data layers.</summary>
+    /// <param name="gameData">The game data: the loot definitions, the world item list and the content rolls.</param>
     /// <param name="replication">Replication context.</param>
     /// <param name="sockets">The map's container sockets.</param>
     /// <param name="meshes">The meshes <see cref="LootSocket.Mesh"/> indexes.</param>
@@ -96,9 +103,15 @@ public sealed class LootCatalog
     /// and rolls the placed containers; a second stream drawn from it rolls every container's contents.
     /// </param>
     /// <param name="rules">Spawn chances, limiters and free-standing containers.</param>
-    public LootCatalog(ReplicationContext replication, IReadOnlyList<LootSocket> sockets, IReadOnlyList<LootSocketMesh> meshes, string round, IReadOnlyCollection<string> activeDataLayers, int seed, LootSpawnRules rules)
+    public LootCatalog(RaidGameData gameData, ReplicationContext replication, IReadOnlyList<LootSocket> sockets, IReadOnlyList<LootSocketMesh> meshes, string round,
+        IReadOnlyCollection<string> activeDataLayers, int seed, LootSpawnRules rules)
     {
+        ArgumentNullException.ThrowIfNull(gameData);
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
+        _loot = gameData.Data.Loot;
+        _rolls = gameData.LootRolls;
+        _cullDistance = _loot.ContainerDefaults.NetCullDistance;
+        LootData loot = _loot;
         ArgumentNullException.ThrowIfNull(sockets);
         ArgumentNullException.ThrowIfNull(meshes);
         ArgumentNullException.ThrowIfNull(round);
@@ -121,14 +134,14 @@ public sealed class LootCatalog
                 continue;
             }
 
-            IReadOnlyList<ArchetypeClass> candidates = LootSocketClasses.Candidates(socket, meshes);
+            IReadOnlyList<ArchetypeClass> candidates = LootSocketClasses.Candidates(loot, socket, meshes);
             if (candidates.Count == 0)
             {
                 untyped++;
                 continue;
             }
 
-            List<LootContainerClass> supported = [.. candidates.Select(candidate => LootContainerClasses.Find(candidate.Class)).OfType<LootContainerClass>()];
+            List<LootContainerClass> supported = [.. candidates.Select(candidate => LootSocketClasses.Served(loot, candidate.Class)).OfType<LootContainerClass>()];
             if (supported.Count == 0)
             {
                 unsupported++;
@@ -138,7 +151,7 @@ public sealed class LootCatalog
             servable.Add((socket, supported));
         }
 
-        LootSpawnSelection selection = LootSpawnSelection.Select([.. servable.Select(entry => entry.Socket)], rules, activeDataLayers, random);
+        LootSpawnSelection selection = LootSpawnSelection.Select(loot, [.. servable.Select(entry => entry.Socket)], rules, activeDataLayers, random);
         for (int candidate = 0; candidate < servable.Count; candidate++)
         {
             if (!selection.Spawns[candidate])
@@ -158,8 +171,9 @@ public sealed class LootCatalog
         LootPlacedCounts observed = Placed(LootContainerSource.Observed, [.. free.Observed.Select(entry => (entry.Class, entry.Location, entry.Rotation, (string?)null))]);
 
         // Every servable class may also be spawned during the raid, so each has its export and its world item bit.
-        ulong[] worldItems = new ulong[WorldItemList.WordCount];
-        foreach (LootContainerClass type in LootContainerClasses.All)
+        WorldItemClasses worldItemList = gameData.Data.WorldItems;
+        ulong[] worldItems = new ulong[worldItemList.WordCount];
+        foreach (LootContainerClass type in LootSocketClasses.ServedClasses(loot))
         {
             _ = Export(type.Container.Archetype);
             if (type.SearchAnimation is { } animation)
@@ -167,8 +181,8 @@ public sealed class LootCatalog
                 _ = Export(animation);
             }
 
-            int bit = WorldItemList.IndexOf(type.Container.Class) ?? throw new InvalidOperationException($"{type.Container.Class} is not a world item class");
-            worldItems[bit / WorldItemList.WordBits] |= 1UL << (bit % WorldItemList.WordBits);
+            int bit = worldItemList.IndexOf(type.Container.Class) ?? throw new InvalidOperationException($"{type.Container.Class} is not a world item class");
+            worldItems[bit / WorldItemClasses.WordBits] |= 1UL << (bit % WorldItemClasses.WordBits);
         }
 
         WorldItemClassBits = worldItems;
@@ -205,7 +219,7 @@ public sealed class LootCatalog
                     {
                         disabled++;
                     }
-                    else if (LootContainerClasses.Find(placement.Class) is not { } type)
+                    else if (LootSocketClasses.Served(loot, placement.Class) is not { } type)
                     {
                         unservable++;
                     }
@@ -230,11 +244,11 @@ public sealed class LootCatalog
                 {
                     layer++;
                 }
-                else if (LootContainerClasses.Find(path) is not { } type)
+                else if (LootSocketClasses.Served(loot, path) is not { } type)
                 {
                     unservable++;
                 }
-                else if (LootSocketClasses.ContainerTag(path) is not { } tag)
+                else if (LootSocketClasses.ContainerTag(loot, path) is not { } tag)
                 {
                     untagged++;
                 }
@@ -323,7 +337,7 @@ public sealed class LootCatalog
     /// <returns>The containers, nearest first.</returns>
     public IReadOnlyList<LootContainer> Relevant(Vector3D location)
     {
-        const double Limit = LootContainerClasses.NetCullDistance * LootContainerClasses.NetCullDistance;
+        double limit = _cullDistance * _cullDistance;
         (long x, long y) = Cell(location);
         List<(LootContainer Container, double Distance)> found = [];
         for (long cellX = x - 1; cellX <= x + 1; cellX++)
@@ -337,7 +351,7 @@ public sealed class LootCatalog
 
                 found.AddRange(inCell
                     .Select(container => (Container: container, Distance: DistanceSquared(container.Location, location)))
-                    .Where(entry => entry.Distance <= Limit));
+                    .Where(entry => entry.Distance <= limit));
             }
         }
 
@@ -455,9 +469,9 @@ public sealed class LootCatalog
         ulong guid = _nextGuid;
         ulong[] parts = [.. type.Components.Select((_, index) => guid + (2 * (ulong)(index + 1)))];
         _nextGuid = guid + (2 * (ulong)(type.Components.Count + 1));
-        string? tag = socket?.ContainerTag ?? LootSocketClasses.ContainerTag(type.Container.Class);
+        string? tag = socket?.ContainerTag ?? LootSocketClasses.ContainerTag(_loot, type.Container.Class);
         PointOfInterestLootValue value = _areas.At(location);
-        LootContents contents = LootContentRolls.Roll(tag, type.Container.Class, type.SlotCount, value, _contents);
+        LootContents contents = _rolls.Roll(tag, type.Container.Class, type.SlotCount, value, _contents);
         LootContainer container = new(_containers.Count, source, location, rotation, socket, type, guid, archetype, animation, parts, tag, value, contents);
         if (contents.Stacks.Count == 0)
         {
@@ -476,8 +490,8 @@ public sealed class LootCatalog
         return container;
     }
 
-    private static (long X, long Y) Cell(Vector3D location) =>
-        ((long)Math.Floor(location.X / LootContainerClasses.NetCullDistance), (long)Math.Floor(location.Y / LootContainerClasses.NetCullDistance));
+    private (long X, long Y) Cell(Vector3D location) =>
+        ((long)Math.Floor(location.X / _cullDistance), (long)Math.Floor(location.Y / _cullDistance));
 
     private static double DistanceSquared(Vector3D a, Vector3D b) =>
         ((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)) + ((a.Z - b.Z) * (a.Z - b.Z));

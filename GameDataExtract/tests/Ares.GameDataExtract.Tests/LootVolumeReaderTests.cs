@@ -35,7 +35,7 @@ public sealed class LootVolumeReaderTests
 
         Assert.Null(LootVolumeReader.BoundingPlanes(square, "square", allowFlat: true));
         Assert.Throws<InvalidDataException>(() => LootVolumeReader.BoundingPlanes(square, "square", allowFlat: false));
-        Assert.Throws<InvalidDataException>(() => LootVolumeReader.BoundingPlanes([new(0, 0, 0), new(1, 1, 1), new(2, 2, 2), new(3, 3, 3)], "line", allowFlat: true));
+        Assert.Throws<InvalidDataException>(() => LootVolumeReader.BoundingPlanes([new Vector3D(0, 0, 0), new Vector3D(1, 1, 1), new Vector3D(2, 2, 2), new Vector3D(3, 3, 3)], "line", allowFlat: true));
     }
 
     [Fact]

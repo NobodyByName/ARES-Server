@@ -23,6 +23,7 @@ namespace Ares.Common.Game.Inventory;
 /// <param name="RaiderTool">The Raider Tool.</param>
 /// <param name="Unarmed">The empty-handed item.</param>
 /// <param name="SnapHook">The Snap Hook.</param>
+/// <param name="Content">The backend item content the menu definitions, frames, recycle packages and quality levels come from.</param>
 internal sealed record ItemDataSources(
     IReadOnlyList<ItemDefinition> Catalogue,
     IReadOnlyDictionary<long, ItemDefinition> CatalogueByAssetId,
@@ -38,20 +39,22 @@ internal sealed record ItemDataSources(
     ItemDefinition LightShield,
     ItemDefinition RaiderTool,
     ItemDefinition Unarmed,
-    ItemDefinition SnapHook)
+    ItemDefinition SnapHook,
+    BackendItemContent Content)
 {
-    /// <summary>The sources of loaded game data.</summary>
-    public static ItemDataSources From(GameDataSet data)
+    /// <summary>The sources of loaded game data and backend item content.</summary>
+    public static ItemDataSources From(GameDataSet data, BackendItemContent content)
     {
         ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(content);
         MenuItemTables menu = data.Menu;
         ResolvedGameNames names = data.Names;
         return new ItemDataSources(data.Items.All, data.Items.ByAssetId, data.Items.ByTechnicalName,
             [
-                .. StorageItems.Definitions, .. LoadoutItems.Definitions, .. menu.Augments.Definitions, .. menu.Shields.Definitions, .. menu.Weapons.Definitions,
+                .. content.Storage, .. content.Loadout, .. menu.Augments.Definitions, .. menu.Shields.Definitions, .. menu.Weapons.Definitions,
                 .. menu.Gadgets.Definitions, .. menu.Salvage.Definitions, .. menu.Currency.Definitions,
             ],
             data.Items.ScrapValues, names.Coins.AssetId, menu.Augments.FrameAssetIds, menu.Augments.MaxWeights, menu.Augments.BranchAssetIds, names.AugmentSlotAssetId,
-            names.FerroI, names.LightShield, names.RaiderTool, names.Unarmed, names.SnapHook);
+            names.FerroI, names.LightShield, names.RaiderTool, names.Unarmed, names.SnapHook, content);
     }
 }

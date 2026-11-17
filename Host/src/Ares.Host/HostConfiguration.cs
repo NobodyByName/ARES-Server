@@ -3,6 +3,7 @@ using System.Net;
 using Ares.Common.Archives;
 using Ares.Common.CommandLine;
 using Ares.Common.Endpoints;
+using Ares.Common.Game.Content;
 using Ares.Common.Security;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
@@ -40,6 +41,12 @@ public sealed record HostConfiguration
     /// startup and refuses to start without it; it also passes it to every Raid it starts.
     /// </summary>
     public string? GameDataDirectory { get; private init; }
+
+    /// <summary>
+    /// The ARES content Host serves: the defaults, with the files of the operator's content folder (<c>content-dir</c>)
+    /// in their place.
+    /// </summary>
+    public AresContent Content { get; init; } = AresContent.Defaults;
 
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
@@ -88,6 +95,7 @@ public sealed record HostConfiguration
         int raidControlPort = file.GetInt32(HostOptions.RaidControlPort);
         string? raidLighting = EmptyToNull(file.GetString(HostOptions.RaidLighting));
         string? gameDataDirectory = file.GetPath(HostOptions.GameDataDirectory);
+        string? contentDirectory = file.GetPath(HostOptions.ContentDirectory);
         string? authKeyFile = file.GetPath(HostOptions.AuthKeyFile);
         string archiveKeysFile = file.GetPath(HostOptions.ArchiveKeysFile)
             ?? throw new CommandLineException("archive-keys-file must not be empty");
@@ -167,9 +175,10 @@ public sealed record HostConfiguration
             throw new CommandLineException("A non-loopback --public-origin requires --allow-network-clients");
         }
 
+        AresContent content = AresContent.Load(contentDirectory);
         RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
-            gameDataDirectory, bind, originUri.Host, port);
-        StashUpgradePrices stashUpgrades = stashUpgradeCoins is null ? StashUpgradePrices.Default : ReadStashUpgrades(stashUpgradeCoins);
+            gameDataDirectory, content.Directory, bind, originUri.Host, port);
+        StashUpgradePrices stashUpgrades = stashUpgradeCoins is null ? StashUpgradePrices.Of(content.Stash) : ReadStashUpgrades(content.Stash, stashUpgradeCoins);
         byte[]? identityKey = authKeyFile is null ? null : ReadIdentityKey(authKeyFile);
         ArchiveKeys archiveKeys = ReadArchiveKeys(archiveKeysFile, archiveKeysSha256);
 
@@ -197,22 +206,23 @@ public sealed record HostConfiguration
             AllowNetworkClients = allowNetwork,
             Raids = raids,
             GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
+            Content = content,
         };
     }
 
     private static string? EmptyToNull(string? value) => value == "" ? null : value;
 
-    private static StashUpgradePrices ReadStashUpgrades(string text)
+    private static StashUpgradePrices ReadStashUpgrades(StashContent stash, string text)
     {
         string[] parts = text.Split(',', StringSplitOptions.TrimEntries);
-        int expected = StashUpgradePrices.Default.Coins.Count;
+        int expected = stash.Tiers.Count - 1;
         long[] coins = [.. parts.Select(part => long.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out long price) ? price : -1)];
-        return coins.Length == expected && coins.All(price => price >= 0) ? new StashUpgradePrices(coins)
+        return coins.Length == expected && coins.All(price => price >= 0) ? new StashUpgradePrices(stash, coins)
             : throw new CommandLineException($"--stash-upgrade-coins expects {expected} comma-separated coin prices of zero or more");
     }
 
     private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
-        int controlPort, string? lighting, string? gameDataDirectory, IPAddress bind, string advertiseHost, int hostPort)
+        int controlPort, string? lighting, string? gameDataDirectory, string? contentDirectory, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {
@@ -256,7 +266,7 @@ public sealed record HostConfiguration
             string fullTokenFile = Path.GetFullPath(tokenFile);
             return new RaidLaunch(fullExecutable, fullTokenFile, SecretFiles.ReadOperatorToken(fullTokenFile), bind,
                 ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting,
-                gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory));
+                gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory), contentDirectory);
         }
         catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException)
         {

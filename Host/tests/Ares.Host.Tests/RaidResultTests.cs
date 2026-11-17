@@ -100,9 +100,9 @@ public sealed class RaidResultTests : IAsyncLifetime
     {
         OwnedItem augment = store.Inventory.Loadout.Augment!;
         CarriedItem carriedAugment = new(CarriedPlaces.Augment, 0,
-            new InventoryItem(augment.InstanceId, LoadoutDefinitions.Generated.AssetIds[augment.Type], augment.Quantity, [], augment.Durability, augment.MaxDurability, "", augment.ETag, augment.UpdatedAt));
+            new InventoryItem(augment.InstanceId, TestCatalog.Definitions.AssetIds[augment.Type], augment.Quantity, [], augment.Durability, augment.MaxDurability, "", augment.ETag, augment.UpdatedAt));
         CarriedItem looted = new(CarriedPlaces.Backpack, 0,
-            new InventoryItem("looted-duck", StorageItems.RubberDuckAssetId, 2, [], StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "", "", 0));
+            new InventoryItem("looted-duck", TestCatalog.Asset(ItemTechnicalNames.RubberDuck), 2, [], OwnedItem.FullDurability, OwnedItem.FullDurability, "", "", 0));
         return new RaidResult(ticket, userId, store.Snapshot.Revision, RaidOutcomes.Extracted, [carriedAugment, looted]);
     }
 }

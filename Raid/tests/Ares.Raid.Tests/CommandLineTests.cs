@@ -24,7 +24,7 @@ public sealed class CommandLineTests
     }
 
     [Fact]
-    public void Game_data_directory_is_optional_and_made_absolute()
+    public void Game_data_and_content_directories_are_optional_and_made_absolute()
     {
         string directory = Directory.CreateTempSubdirectory("ares-raid-config-").FullName;
         try
@@ -34,6 +34,8 @@ public sealed class CommandLineTests
             string[] required = ["--advertise-host", "127.0.0.1", "--control-port", "17778", "--control-token-file", tokenFile];
             Assert.Null(RaidConfiguration.Parse(required).GameDataDirectory);
             Assert.Equal(Path.GetFullPath("gamedata"), RaidConfiguration.Parse([.. required, "--game-data-dir", "gamedata"]).GameDataDirectory);
+            Assert.Null(RaidConfiguration.Parse(required).ContentDirectory);
+            Assert.Equal(Path.GetFullPath("content"), RaidConfiguration.Parse([.. required, "--content-dir", "content"]).ContentDirectory);
         }
         finally
         {

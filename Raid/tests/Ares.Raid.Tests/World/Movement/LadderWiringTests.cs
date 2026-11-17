@@ -3,7 +3,6 @@ using Ares.Raid.World.Collision;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -14,17 +13,17 @@ public sealed class LadderWiringTests
     private const sbyte Down = -126;
 
     // The tallest ladder, with a floor at the foot of its line.
-    private static readonly int s_ladder = Enumerable.Range(0, DamLadders.All.Count).MaxBy(index => LadderLine.From(DamLadders.All[index]).Height);
-    private static readonly LadderLine s_line = LadderLine.From(DamLadders.All[s_ladder]);
-    private static readonly CollisionWorld s_world = ScriptedClient.World((s_line.Origin with { Z = s_line.Origin.Z - 10 }, new Vector3(600, 600, 10)));
+    private static readonly Lazy<int> s_ladder = new(() => Enumerable.Range(0, TestGameData.Dam.Ladders.Length).MaxBy(index => LadderLine.From(TestGameData.Dam.Ladders[index]).Height));
+    private static readonly Lazy<LadderLine> s_line = new(() => LadderLine.From(TestGameData.Dam.Ladders[s_ladder.Value]));
+    private static readonly Lazy<CollisionWorld> s_world = new(() => ScriptedClient.World((s_line.Value.Origin with { Z = s_line.Value.Origin.Z - 10 }, new Vector3(600, 600, 10))));
 
     [Fact]
     public void Getting_on_climbing_sprinting_up_and_sliding_down_are_simulated_and_the_bottom_steps_off()
     {
         const uint Climb = Start + 3;
-        Vector3D floor = s_line.Origin;
-        PlayerMovement movement = new(Start, floor, 0, s_world, double.PositiveInfinity);
-        movement.Climb(Climb, s_ladder, topEntry: false);
+        Vector3D floor = s_line.Value.Origin;
+        PlayerMovement movement = new(TestGameData.Data, Start, floor, 0, s_world.Value, double.PositiveInfinity);
+        movement.Climb(Climb, s_ladder.Value, topEntry: false);
         Dictionary<uint, CharacterState> states = Run(movement, Script, Climb + 160);
 
         foreach (CharacterState state in Range(states, Climb, Climb + 79))
@@ -40,8 +39,8 @@ public sealed class LadderWiringTests
         double sprinting = Speed(states, Climb + 70, Climb + 79);
         Assert.Equal(LadderParameters.ClimbUpSpeed, climbing, 1);
         Assert.Equal(LadderParameters.SprintUpSpeed, sprinting, 1);
-        Assert.Equal(GeneratedGraphStateFlags.LadderSprintActive, states[Climb + 75].GraphFlags & GeneratedGraphStateFlags.LadderSprintActive);
-        Assert.Contains(Range(states, Climb + 80, Climb + 160), state => (state.GraphFlags & GeneratedGraphStateFlags.LadderSliding) != 0);
+        Assert.Equal(TestGameData.Flags.LadderSprintActive, states[Climb + 75].GraphFlags(TestGameData.Data) & TestGameData.Flags.LadderSprintActive);
+        Assert.Contains(Range(states, Climb + 80, Climb + 160), state => (state.GraphFlags(TestGameData.Data) & TestGameData.Flags.LadderSliding) != 0);
         Assert.False(states[Climb + 159].OnLadder);
         Assert.Equal(0, movement.Reseeds);
         return;
@@ -61,15 +60,15 @@ public sealed class LadderWiringTests
         const uint Climb = Start + 2;
         const uint Crouch = Climb + 10;
         Vector3D feet = Feet(150);
-        PlayerMovement movement = new(Start, feet, 0, s_world, double.PositiveInfinity);
-        movement.Climb(Climb, s_ladder, topEntry: false, attached: true);
+        PlayerMovement movement = new(TestGameData.Data, Start, feet, 0, s_world.Value, double.PositiveInfinity);
+        movement.Climb(Climb, s_ladder.Value, topEntry: false, attached: true);
         Dictionary<uint, CharacterState> states = Run(movement,
             frame => new ScriptedFrame(feet, Claims: frame == Crouch ? 1UL << LadderParameters.CrouchButtonDownBit : 0), Climb + 30);
 
         Assert.True(states[Crouch - 1].OnLadder);
         Assert.Null(states[Crouch].Ladder);
         Assert.False(states[Crouch + 1].OnLadder);
-        int blocked = Range(states, Crouch + 1, Climb + 30).Count(state => (state.GraphFlags & GeneratedGraphStateFlags.LadderCrouchInputBlocked) != 0);
+        int blocked = Range(states, Crouch + 1, Climb + 30).Count(state => (state.GraphFlags(TestGameData.Data) & TestGameData.Flags.LadderCrouchInputBlocked) != 0);
         Assert.Equal(LadderMovement.CrouchBlockTicks - 1, blocked);
     }
 
@@ -77,9 +76,9 @@ public sealed class LadderWiringTests
     public void A_top_entry_follows_the_reports_for_its_animation_counted_once_then_climbs()
     {
         const uint Climb = Start + 2;
-        Vector3D top = Feet(s_line.Height);
-        PlayerMovement movement = new(Start, top, 0, s_world, double.PositiveInfinity);
-        movement.Climb(Climb, s_ladder, topEntry: true);
+        Vector3D top = Feet(s_line.Value.Height);
+        PlayerMovement movement = new(TestGameData.Data, Start, top, 0, s_world.Value, double.PositiveInfinity);
+        movement.Climb(Climb, s_ladder.Value, topEntry: true);
         Dictionary<uint, CharacterState> states = Run(movement, Script, Climb + 60);
 
         int animated = (int)Math.Round(LadderParameters.TopEntrySeconds * 30);
@@ -101,9 +100,9 @@ public sealed class LadderWiringTests
     public void Climbing_off_the_top_follows_the_client_counted_once_for_at_most_the_follow_cap()
     {
         const uint Climb = Start + 2;
-        Vector3D near = Feet(LadderParameters.TopExitHeight(s_line.Height) - 2);
-        PlayerMovement movement = new(Start, near, 0, s_world, double.PositiveInfinity);
-        movement.Climb(Climb, s_ladder, topEntry: false, attached: true);
+        Vector3D near = Feet(LadderParameters.TopExitHeight(s_line.Value.Height) - 2);
+        PlayerMovement movement = new(TestGameData.Data, Start, near, 0, s_world.Value, double.PositiveInfinity);
+        movement.Climb(Climb, s_ladder.Value, topEntry: false, attached: true);
         Dictionary<uint, CharacterState> states = Run(movement, _ => new ScriptedFrame(near, Up, FireBlocked: true), Climb + 100);
 
         CharacterState exit = states.Values.First(state => state.LadderFollowedTicks == 1);
@@ -120,8 +119,8 @@ public sealed class LadderWiringTests
         const uint Climb = Start + 2;
         const uint Jump = Climb + 5;
         Vector3D feet = Feet(200);
-        PlayerMovement movement = new(Start, feet, 0, s_world, double.PositiveInfinity);
-        movement.Climb(Climb, s_ladder, topEntry: false, attached: true);
+        PlayerMovement movement = new(TestGameData.Data, Start, feet, 0, s_world.Value, double.PositiveInfinity);
+        movement.Climb(Climb, s_ladder.Value, topEntry: false, attached: true);
         Dictionary<uint, CharacterState> states = Run(movement,
             frame => new ScriptedFrame(feet, Buttons: frame == Jump ? MovementButtons.Jump : MovementButtons.None, FireBlocked: frame is > Jump and <= Jump + 10),
             Climb + 40);
@@ -139,10 +138,10 @@ public sealed class LadderWiringTests
         const uint Climb = Start + 2;
         const uint Push = Climb + 10;
         Vector3D feet = Feet(200);
-        (double sin, double cos) = Math.SinCos(s_line.Yaw);
+        (double sin, double cos) = Math.SinCos(s_line.Value.Yaw);
         Vector3D away = feet with { X = feet.X - (70 * sin), Y = feet.Y + (70 * cos) };
-        PlayerMovement movement = new(Start, feet, 0, s_world);
-        movement.Climb(Climb, s_ladder, topEntry: false, attached: true);
+        PlayerMovement movement = new(TestGameData.Data, Start, feet, 0, s_world.Value);
+        movement.Climb(Climb, s_ladder.Value, topEntry: false, attached: true);
         Dictionary<uint, int> reseeds = [];
         Dictionary<uint, CharacterState> states = Run(movement, frame => new ScriptedFrame(frame > Push ? away : feet), Push + 3,
             packet => reseeds[packet] = movement.Reseeds);
@@ -154,7 +153,7 @@ public sealed class LadderWiringTests
         Assert.Equal(1, reseeds[Push + 2]);
     }
 
-    private static Vector3D Feet(double height) => s_line.Origin with { Z = s_line.Origin.Z + LadderParameters.LineStartHeight + height };
+    private static Vector3D Feet(double height) => s_line.Value.Origin with { Z = s_line.Value.Origin.Z + LadderParameters.LineStartHeight + height };
 
     private static Dictionary<uint, CharacterState> Run(PlayerMovement movement, Func<uint, ScriptedFrame> script, uint last, Action<uint>? delivered = null) =>
         ScriptedClient.Deliver(movement, script, ScriptedClient.InOrder(Start + 3, last + 1), delivered).ToDictionary(state => state.Frame);

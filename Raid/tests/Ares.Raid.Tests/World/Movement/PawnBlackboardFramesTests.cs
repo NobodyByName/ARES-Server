@@ -1,6 +1,7 @@
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 
@@ -14,7 +15,7 @@ public sealed class PawnBlackboardFramesTests
     public void Pawn_positions_match_the_quantized_world_coordinates()
     {
         Vector3D position = new(515991.956948754, 590748.297616738, -45139.267750934);
-        PendulumSlot movement = PawnBlackboardFrames.State(30, new PawnMotion(position), 0)[PawnBlackboard.MovementStateSlot];
+        PendulumSlot movement = PawnBlackboardFrames.State(TestGameData.Data, 30, new PawnMotion(position), 0)[PawnBlackboard.MovementStateSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
         Assert.Equal(13799175UL, PendulumCodec.Integer(fields[PawnBlackboard.PositionXField], movement.Value));
         Assert.Equal(14583052UL, PendulumCodec.Integer(fields[PawnBlackboard.PositionYField], movement.Value));
@@ -22,16 +23,17 @@ public sealed class PawnBlackboardFramesTests
     }
 
     [Theory]
-    [InlineData(false, false, false, RoughMovementMode.Ground, 0UL)]
-    [InlineData(false, false, true, RoughMovementMode.Ground, GraphStateTags.AbilityJumpPending)]
-    [InlineData(true, true, false, RoughMovementMode.Air, GraphStateTags.AnimationAbilityJumpStarted)]
-    [InlineData(true, false, false, RoughMovementMode.Air, 0UL)]
-    public void A_simulated_body_sets_the_movement_mode_and_the_jump_flags(bool airborne, bool jumping, bool pending, RoughMovementMode mode, ulong flags)
+    [InlineData(false, false, false, RoughMovementMode.Ground, null)]
+    [InlineData(false, false, true, RoughMovementMode.Ground, GameNames.GraphTags.AbilityJumpPending)]
+    [InlineData(true, true, false, RoughMovementMode.Air, GameNames.GraphTags.AnimationAbilityJumpStarted)]
+    [InlineData(true, false, false, RoughMovementMode.Air, null)]
+    public void A_simulated_body_sets_the_movement_mode_and_the_jump_flags(bool airborne, bool jumping, bool pending, RoughMovementMode mode, string? tag)
     {
+        ulong flags = TestGameData.TagMask(tag);
         BodyState body = new(s_spawn, default, default) { Airborne = airborne, Jumping = jumping, JumpRequestedAt = pending ? 29 : null };
         CharacterState character = new(30, s_spawn, false) { Body = body };
 
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, 30, new PawnMotion(s_spawn, Character: character), 0);
 
         PendulumSlot movement = state[PawnBlackboard.MovementStateSlot];
         PendulumSlot graph = state[PawnBlackboard.GraphStateSlot];
@@ -39,14 +41,14 @@ public sealed class PawnBlackboardFramesTests
             PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields[PawnBlackboard.RoughMovementModeField], movement.Value));
         Assert.Equal(flags, PendulumCodec.Integer(
             PendulumRegistry.Descriptors[graph.DescriptorId!.Value].Fields[PawnBlackboard.GraphTagsField], graph.Value)
-            & (GraphStateTags.AnimationAbilityJumpStarted | GraphStateTags.AbilityJumpPending));
+            & (TestGameData.Tags.AnimationAbilityJumpStarted.Mask | TestGameData.Tags.AbilityJumpPending.Mask));
     }
 
     [Fact]
     public void A_focus_frame_changes_only_the_tick_and_the_interactor_state()
     {
-        IReadOnlyDictionary<int, PendulumSlot> reset = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0);
-        IReadOnlyDictionary<int, PendulumSlot> focused = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn), 0x20008D);
+        IReadOnlyDictionary<int, PendulumSlot> reset = PawnBlackboardFrames.State(TestGameData.Data, 30, new PawnMotion(s_spawn), 0);
+        IReadOnlyDictionary<int, PendulumSlot> focused = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn), 0x20008D);
 
         BitWriter writer = new();
         PawnBlackboardFrames.Write(writer, focused, reset);
@@ -66,8 +68,8 @@ public sealed class PawnBlackboardFramesTests
     [Fact]
     public void Losing_focus_restores_the_initial_interactor_state()
     {
-        IReadOnlyDictionary<int, PendulumSlot> initial = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0);
-        IReadOnlyDictionary<int, PendulumSlot> unfocused = PawnBlackboardFrames.State(50, new PawnMotion(s_spawn), 0);
+        IReadOnlyDictionary<int, PendulumSlot> initial = PawnBlackboardFrames.State(TestGameData.Data, 30, new PawnMotion(s_spawn), 0);
+        IReadOnlyDictionary<int, PendulumSlot> unfocused = PawnBlackboardFrames.State(TestGameData.Data, 50, new PawnMotion(s_spawn), 0);
         Assert.Equal(initial[PawnBlackboard.InteractorSlot].Value, unfocused[PawnBlackboard.InteractorSlot].Value);
     }
 
@@ -76,10 +78,10 @@ public sealed class PawnBlackboardFramesTests
     {
         for (int from = -180; from < 180; from += 5)
         {
-            IReadOnlyDictionary<int, PendulumSlot> previous = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Yaw: from * Math.PI / 180), 0);
+            IReadOnlyDictionary<int, PendulumSlot> previous = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Yaw: from * Math.PI / 180), 0);
             for (int to = -1800; to < 1800; to++)
             {
-                IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(41, new PawnMotion(s_spawn, Yaw: to * Math.PI / 1800), 0);
+                IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, 41, new PawnMotion(s_spawn, Yaw: to * Math.PI / 1800), 0);
                 PawnBlackboardFrames.Write(new BitWriter(), state, previous);
             }
         }
@@ -89,7 +91,7 @@ public sealed class PawnBlackboardFramesTests
     public void A_moving_frame_carries_the_velocity_and_facing()
     {
         // 375 world units per second (12.5 per tick) along X, facing a quarter turn to the left.
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, new Vector3D(375, 0.0, 0.0), -Math.PI / 2), 0);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, new Vector3D(375, 0.0, 0.0), -Math.PI / 2), 0);
         PendulumSlot movement = state[PawnBlackboard.MovementStateSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
         PendulumScalarField velocity = (PendulumScalarField)fields[PawnBlackboard.VelocityXField];
@@ -106,7 +108,7 @@ public sealed class PawnBlackboardFramesTests
     [InlineData(120.0)]
     public void The_action_rotation_turns_with_the_facing(double degrees)
     {
-        PendulumSlot action = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Yaw: degrees * Math.PI / 180), 0)[PawnBlackboard.ActionStateSlot];
+        PendulumSlot action = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Yaw: degrees * Math.PI / 180), 0)[PawnBlackboard.ActionStateSlot];
         PendulumQuaternionField rotation = (PendulumQuaternionField)PendulumRegistry.Descriptors[action.DescriptorId!.Value].Fields[PawnBlackboard.ActionRotationField];
         PendulumQuaternion quaternion = PendulumCodec.Quaternion(rotation, action.Value);
 
@@ -125,7 +127,7 @@ public sealed class PawnBlackboardFramesTests
     [InlineData(9000.0, 4095UL)]
     public void Velocities_use_the_clients_quantization(double velocity, ulong expected)
     {
-        PendulumSlot movement = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, new Vector3D(velocity, 0.0, 0.0)), 0)[PawnBlackboard.MovementStateSlot];
+        PendulumSlot movement = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, new Vector3D(velocity, 0.0, 0.0)), 0)[PawnBlackboard.MovementStateSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
         Assert.Equal(expected, PendulumCodec.Integer(fields[PawnBlackboard.VelocityXField], movement.Value));
     }
@@ -138,7 +140,7 @@ public sealed class PawnBlackboardFramesTests
             GroundNode = (GroundNodeState.Initial with { InputHeld = false }).Next(40, new MovementInput(40, PendulumInput.MovementAxisMaximum, 0, default), 300, sprinting: false,
                 sprintStarted: false, boosted: false, LocoMode.Running, CharacterStance.Stand, shuffling: false, sliding: false),
         };
-        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Character: character), 0);
         PendulumSlot action = slots[PawnBlackboard.ActionStateSlot];
         IReadOnlyList<PendulumField> actionFields = PendulumRegistry.Descriptors[action.DescriptorId!.Value].Fields;
         Assert.Equal((39UL * PawnBlackboard.TimePerTick) + 1, PendulumCodec.Integer(actionFields[PawnBlackboard.ActionClockField], action.Value));
@@ -170,14 +172,14 @@ public sealed class PawnBlackboardFramesTests
         Assert.Equal((12, PawnGroundNodeState.InitialSlot, 13, true), (layout.GroundSlot, layout.TransitionSlot, layout.SlideSlot, layout.GroundAdded));
 
         CharacterState character = new(80, s_spawn, Flashlight: false) { Nodes = layout, Slide = pressed with { Ticks = 40 } };
-        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(80, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(TestGameData.Data, 80, new PawnMotion(s_spawn, Character: character), 0);
         Assert.Equal(PawnTransitionState.DescriptorId, slots[PawnGroundNodeState.InitialSlot].DescriptorId);
         Assert.Equal(PawnGroundNodeState.DescriptorId, slots[12].DescriptorId);
         Assert.Equal(PawnSlideState.DescriptorId, slots[13].DescriptorId);
 
         // A laid-out slot whose node ended reaches the client empty.
         character = character with { Nodes = layout with { TransitionSlot = -1 } };
-        slots = PawnBlackboardFrames.State(81, new PawnMotion(s_spawn, Character: character), 0);
+        slots = PawnBlackboardFrames.State(TestGameData.Data, 81, new PawnMotion(s_spawn, Character: character), 0);
         BitWriter writer = new();
         PawnBlackboardFrames.Write(writer, slots, new Dictionary<int, PendulumSlot>());
         Dictionary<int, PendulumSlot> read = PendulumCodec.Default.ReadFrame(new BitReader(writer.ToArray()), new Dictionary<int, PendulumSlot>());
@@ -195,17 +197,17 @@ public sealed class PawnBlackboardFramesTests
             MovementStance = CharacterStance.Crouch,
             MovementLocomotion = LocoMode.Walking,
         };
-        IReadOnlyDictionary<int, PendulumSlot> lit = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character), 0);
-        IReadOnlyDictionary<int, PendulumSlot> dark = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character with { Flashlight = false }), 0);
-        IReadOnlyDictionary<int, PendulumSlot> initial = PawnBlackboardFrames.State(40, new PawnMotion(s_spawn), 0);
+        IReadOnlyDictionary<int, PendulumSlot> lit = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> dark = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Character: character with { Flashlight = false }), 0);
+        IReadOnlyDictionary<int, PendulumSlot> initial = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn), 0);
 
         Assert.Equal((ulong)CharacterStance.Crouch, Field(lit, PawnBlackboard.MovementStateSlot, PawnBlackboard.CharacterStanceField));
         Assert.Equal((ulong)LocoMode.Walking, Field(lit, PawnBlackboard.MovementStateSlot, PawnBlackboard.LocoModeField));
         Assert.Equal((ulong)CharacterStance.Crouch, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionStanceField));
         Assert.Equal((ulong)LocoMode.Walking, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionLocoModeField));
         // The simulated flags replace the initial ones: a crouch by input, no sprint.
-        ulong flags = (Field(initial, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField) & ~GeneratedGraphStateFlags.Simulated) | GraphStateTags.AbilityCrouch;
-        Assert.Equal(flags | GraphStateTags.AbilityFlashlightActive, Field(lit, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField));
+        ulong flags = (Field(initial, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField) & ~TestGameData.Flags.Simulated) | TestGameData.Tags.AbilityCrouch.Mask;
+        Assert.Equal(flags | TestGameData.Tags.AbilityFlashlightActive.Mask, Field(lit, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField));
         Assert.Equal(flags, Field(dark, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField));
     }
 
@@ -215,9 +217,9 @@ public sealed class PawnBlackboardFramesTests
     public void The_sprint_flag_follows_the_sprint_locomotion(LocoMode locomotion, bool sprinting)
     {
         CharacterState character = new(40, s_spawn, Flashlight: false) { MovementLocomotion = locomotion, Locomotion = locomotion };
-        ulong flags = Field(PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character), 0), PawnBlackboard.GraphStateSlot,
+        ulong flags = Field(PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Character: character), 0), PawnBlackboard.GraphStateSlot,
             PawnBlackboard.GraphTagsField);
-        Assert.Equal(sprinting, (flags & GraphStateTags.AbilitySprintActive) != 0);
+        Assert.Equal(sprinting, (flags & TestGameData.Tags.AbilitySprintActive.Mask) != 0);
     }
 
     [Fact]
@@ -225,14 +227,14 @@ public sealed class PawnBlackboardFramesTests
     {
         CharacterState rolling = new(40, s_spawn, Flashlight: false) { Roll = new DodgeRollState(DodgeRollKind.Standard, new Vector3D(1, 0, 0), 5) };
         CharacterState recovering = new(40, s_spawn, Flashlight: false) { HeavyLandingTicks = 3 };
-        Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, Graph(rolling) & GeneratedGraphStateFlags.DodgeRolling);
-        Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, Graph(rolling with { RollExitTicks = 1 }) ^ Graph(rolling));
-        Assert.Equal(GeneratedGraphStateFlags.HeavyLandingRecovery, Graph(recovering) & GeneratedGraphStateFlags.HeavyLandingRecovery);
-        Assert.Equal(0UL, Graph(recovering with { HeavyLandingTicks = 0 }) & GraphStateTags.AbilityLandingHeavy);
+        Assert.Equal(TestGameData.Flags.DodgeRolling, Graph(rolling) & TestGameData.Flags.DodgeRolling);
+        Assert.Equal(TestGameData.Flags.DodgeRolling, Graph(rolling with { RollExitTicks = 1 }) ^ Graph(rolling));
+        Assert.Equal(TestGameData.Flags.HeavyLandingRecovery, Graph(recovering) & TestGameData.Flags.HeavyLandingRecovery);
+        Assert.Equal(0UL, Graph(recovering with { HeavyLandingTicks = 0 }) & TestGameData.Tags.AbilityLandingHeavy.Mask);
     }
 
     private static ulong Graph(CharacterState character) =>
-        Field(PawnBlackboardFrames.State(40, new PawnMotion(s_spawn, Character: character), 0), PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField);
+        Field(PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(s_spawn, Character: character), 0), PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField);
 
     [Fact]
     public void A_sliding_frame_carries_the_action_and_movement_pairs_and_the_slide_state()
@@ -247,7 +249,7 @@ public sealed class PawnBlackboardFramesTests
             Slide = slide,
             Nodes = NodeLayout.Initial.Next(2133, slide with { Ticks = 0 }, 0),
         };
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(2141, new PawnMotion(s_spawn, Character: character), 0);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, 2141, new PawnMotion(s_spawn, Character: character), 0);
 
         Assert.Equal((ulong)CharacterStance.Slide, Field(state, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionStanceField));
         Assert.Equal((ulong)LocoMode.Running, Field(state, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionLocoModeField));
@@ -263,20 +265,20 @@ public sealed class PawnBlackboardFramesTests
         Assert.Equal(PawnSlideState.UnknownField6Value, Field(state, PawnSlideState.Slot, PawnSlideState.UnknownField6));
         Assert.Equal(0x8000A6A4UL, Field(state, PawnSlideState.Slot, PawnSlideState.StartTimeField));
         Assert.Equal(PawnSlideState.ConsumedSprintInputFlag, Field(state, PawnSlideState.Slot, PawnSlideState.FlagsField));
-        Assert.False(PawnBlackboardFrames.State(2141, new PawnMotion(s_spawn, Character: character with { Slide = null, Nodes = NodeLayout.Initial }), 0).ContainsKey(PawnSlideState.Slot));
+        Assert.False(PawnBlackboardFrames.State(TestGameData.Data, 2141, new PawnMotion(s_spawn, Character: character with { Slide = null, Nodes = NodeLayout.Initial }), 0).ContainsKey(PawnSlideState.Slot));
     }
 
     [Fact]
     public void The_press_tick_leaves_the_slide_state_to_the_client()
     {
         CharacterState character = new(2133, s_spawn, false) { Slide = new SlideState(default, 0) { StartFrame = 2133 } };
-        Assert.False(PawnBlackboardFrames.State(2133, new PawnMotion(s_spawn, Character: character), 0).ContainsKey(PawnSlideState.Slot));
+        Assert.False(PawnBlackboardFrames.State(TestGameData.Data, 2133, new PawnMotion(s_spawn, Character: character), 0).ContainsKey(PawnSlideState.Slot));
     }
 
     [Fact]
     public void A_stationary_spawn_has_no_velocity_on_any_axis()
     {
-        PendulumSlot movement = PawnBlackboardFrames.State(30, new PawnMotion(s_spawn), 0)[PawnBlackboard.MovementStateSlot];
+        PendulumSlot movement = PawnBlackboardFrames.State(TestGameData.Data, 30, new PawnMotion(s_spawn), 0)[PawnBlackboard.MovementStateSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
         foreach (int index in (int[])[PawnBlackboard.VelocityXField, PawnBlackboard.VelocityYField, PawnBlackboard.VelocityZField])
         {
@@ -287,7 +289,7 @@ public sealed class PawnBlackboardFramesTests
 
     [Fact]
     public void Ticks_outside_the_simulation_range_are_rejected() =>
-        Assert.Throws<InvalidPacketException>(() => PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick - 1, new PawnMotion(s_spawn), 0));
+        Assert.Throws<InvalidPacketException>(() => PawnBlackboardFrames.State(TestGameData.Data, PawnBlackboardFrames.FirstTick - 1, new PawnMotion(s_spawn), 0));
 
     private static ulong Field(IReadOnlyDictionary<int, PendulumSlot> state, int slot, int field) =>
         PendulumCodec.Integer(PendulumRegistry.Descriptors[state[slot].DescriptorId!.Value].Fields[field], state[slot].Value);

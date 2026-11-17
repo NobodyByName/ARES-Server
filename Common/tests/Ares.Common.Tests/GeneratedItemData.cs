@@ -1,33 +1,35 @@
+using Ares.Common.Game.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game;
 using Ares.Structs.Game.Inventory;
 
-namespace Ares.Common.Game.Inventory;
+namespace Ares.Common.Tests;
 
 /// <summary>
-/// Transitional: the shared item rules built from the generated Structs item classes, for the Host and Raid code that
-/// does not receive the loaded game data yet. Host and Raid switch to instances built from their
-/// <see cref="GameData.GameDataSet"/>; this file goes with the generated classes.
+/// Transitional parity source: the shared item rules built from the generated Structs item classes, which the rules built
+/// from the loaded game data and the default ARES content must equal (<see cref="ItemRulesRealTests"/>). Goes with the
+/// generated classes.
 /// </summary>
-public sealed partial class LoadoutDefinitions
+internal static class GeneratedItemRules
 {
-    /// <summary>The definitions of the generated Structs item classes (transitional, see <see cref="GeneratedItemData"/>).</summary>
-    public static LoadoutDefinitions Generated { get; } = new(GeneratedItemData.Sources);
-}
+    /// <summary>The definitions of the generated Structs item classes.</summary>
+    public static LoadoutDefinitions Definitions { get; } = new(GeneratedItemData.Sources);
 
-/// <summary>Transitional: see <see cref="LoadoutDefinitions"/>.</summary>
-public sealed partial class ItemTraitsTable
-{
-    /// <summary>The traits of the generated Structs item classes (transitional, see <see cref="GeneratedItemData"/>).</summary>
-    public static ItemTraitsTable Generated { get; } = new(GeneratedItemData.Sources, LoadoutDefinitions.Generated);
+    /// <summary>The traits of the generated Structs item classes.</summary>
+    public static ItemTraitsTable Traits { get; } = new(GeneratedItemData.Sources, Definitions);
 }
 
 /// <summary>
-/// Transitional: the <see cref="ItemDataSources"/> of the generated Structs item classes. The catalogue items carry no
+/// Transitional: the item data sources of the generated Structs item classes. The catalogue items carry no
 /// item class or timings except the hand items, the Ferro I and the Snap Hook, which is all the item rules read.
 /// </summary>
 internal static class GeneratedItemData
 {
+    /// <summary>The backend item content of the generated Structs classes.</summary>
+    public static BackendItemContent Content { get; } = new(StorageItems.Definitions, LoadoutItems.Definitions, LoadoutItems.FrameSlotAssetId,
+        LoadoutItems.StandardFrameAssetId, ItemRecycling.Outputs,
+        UsableItems.All.Where(item => item.QualityLevel != 0).ToDictionary(item => item.AssetId, item => (long)item.QualityLevel));
+
     /// <summary>The sources.</summary>
     public static ItemDataSources Sources { get; } = Create();
 
@@ -61,11 +63,11 @@ internal static class GeneratedItemData
         Dictionary<string, ItemDefinition> byTechnicalName = catalogue.ToDictionary(item => item.TechnicalName, StringComparer.Ordinal);
         return new ItemDataSources(catalogue, byAssetId, byTechnicalName,
             [
-                .. StorageItems.Definitions, .. LoadoutItems.Definitions, .. AugmentItems.Definitions, .. ShieldItems.Definitions, .. WeaponItems.Definitions,
+                .. Content.Storage, .. Content.Loadout, .. AugmentItems.Definitions, .. ShieldItems.Definitions, .. WeaponItems.Definitions,
                 .. GadgetItems.Definitions, .. SalvageItems.Definitions, .. CurrencyItems.Definitions,
             ],
             ItemValues.ScrapValues, CurrencyItems.CoinsAssetId, AugmentItems.FrameAssetIds, AugmentItems.MaxWeights, AugmentItems.BranchAssetIds,
             AugmentItems.AugmentSlotAssetId, byTechnicalName[GameNames.Items.FerroI], byTechnicalName[GameNames.Items.LightShield],
-            byTechnicalName[GameNames.Items.RaiderTool], byTechnicalName[GameNames.Items.Unarmed], byTechnicalName[GameNames.Items.SnapHook]);
+            byTechnicalName[GameNames.Items.RaiderTool], byTechnicalName[GameNames.Items.Unarmed], byTechnicalName[GameNames.Items.SnapHook], Content);
     }
 }

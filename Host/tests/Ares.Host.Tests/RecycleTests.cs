@@ -1,4 +1,3 @@
-using Ares.Common.Game.Inventory;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -18,7 +17,7 @@ public sealed class RecycleTests : IDisposable
 
         Assert.All(descriptions, item =>
         {
-            bool recyclable = ItemRecycling.Outputs.TryGetValue(item.GameAssetId, out IReadOnlyList<ItemAssetAmount>? outputs)
+            bool recyclable = TestCatalog.Content.RecycleOutputs.TryGetValue(item.GameAssetId, out IReadOnlyList<ItemAssetAmount>? outputs)
                 && outputs.All(output => supported.Contains(output.GameAssetId));
             Assert.Equal(recyclable, item.Recycle is not null);
             if (!recyclable)
@@ -58,7 +57,7 @@ public sealed class RecycleTests : IDisposable
     public void Recycling_part_of_a_stack_keeps_the_rest_and_fills_existing_stacks_first()
     {
         InventoryStore store = Create();
-        long stackLimit = InventoryCatalog.ByAsset[Asset(ItemTechnicalNames.RubberParts)].MaxAmount;
+        long stackLimit = TestCatalog.Real.ByAsset[Asset(ItemTechnicalNames.RubberParts)].MaxAmount;
         string rubber = Add(store, ItemTechnicalNames.RubberParts, stackLimit - 1);
         string wires = Add(store, ItemTechnicalNames.Wires, 5);
 
@@ -79,7 +78,7 @@ public sealed class RecycleTests : IDisposable
         string ferro = Add(store, ItemTechnicalNames.FerroI, 1);
         string[] held = [.. store.Snapshot.Items.Single(item => item.InstanceId == ferro).Slots];
         Assert.NotEmpty(held);
-        IReadOnlyList<ItemAssetAmount> outputs = ItemRecycling.Outputs[Asset(ItemTechnicalNames.FerroI)];
+        IReadOnlyList<ItemAssetAmount> outputs = TestCatalog.Content.RecycleOutputs[Asset(ItemTechnicalNames.FerroI)];
 
         ServiceReply reply = store.Commit(Recycle(ferro), DateTimeOffset.UnixEpoch);
 
@@ -121,7 +120,7 @@ public sealed class RecycleTests : IDisposable
         Assert.Equal(200, store.Commit(Recycle(wires), DateTimeOffset.UnixEpoch).StatusCode);
     }
 
-    private static long Asset(string type) => LoadoutDefinitions.Generated.AssetIds[type];
+    private static long Asset(string type) => TestCatalog.Definitions.AssetIds[type];
 
     private static ItemDescription Description(IReadOnlyList<ItemDescription> descriptions, string type) =>
         descriptions.Single(item => item.GameAssetId == Asset(type));
@@ -142,7 +141,7 @@ public sealed class RecycleTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

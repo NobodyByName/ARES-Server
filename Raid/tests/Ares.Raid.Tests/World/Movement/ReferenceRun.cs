@@ -18,7 +18,7 @@ internal static class ReferenceRun
     public static Dictionary<uint, CharacterState> Run(CollisionWorld world, Vector3D start, uint first, uint last,
         Func<uint, (MovementInput Movement, CharacterInput Claims)> input)
     {
-        CharacterSimulation simulation = new(start, world: world);
+        CharacterSimulation simulation = new(TestGameData.Data, start, world: world);
         Dictionary<uint, CharacterState> states = new() { [first - 1] = simulation.State };
         for (uint frame = first; frame <= last; frame++)
         {
@@ -26,7 +26,7 @@ internal static class ReferenceRun
             states[frame] = simulation.StepOnGround(claims, movement, 0, PawnBlackboard.TickSeconds, GroundMovementParameters.Unarmed,
                 steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Unarmed,
                 slide: SlideMovementParameters.ForSurface(simulation.State.Body?.Ground.Surface ?? default),
-                vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
+                vaults: TestGameData.Data.Movement.Vaults(armed: false, exhausted: false));
         }
 
         return states;

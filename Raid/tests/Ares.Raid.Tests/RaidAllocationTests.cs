@@ -236,7 +236,7 @@ public sealed class RaidAllocationTests
     [Fact]
     public void Two_tickets_share_the_real_dam_world_and_an_expired_one_leaves_it_alone()
     {
-        DamWorlds worlds = new(() => _now[0], "Lighting.GreyMorning", () => 123456789);
+        DamWorlds worlds = new(TestGameData.Raid, () => _now[0], "Lighting.GreyMorning", () => 123456789);
         RaidAllocations allocations = new(s_endpoint, worlds, () => _now[0], maxPlayers: 2);
         Allocation first = allocations.Reserve(Request()).Allocation!;
         Allocation second = allocations.Reserve(Request(OtherTicket, player: 43)).Allocation!;
@@ -263,7 +263,7 @@ public sealed class RaidAllocationTests
     [Fact]
     public void A_ferro_and_heavy_ammo_loadout_can_be_reserved_against_the_real_dam_world()
     {
-        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, "Lighting.GreyMorning", () => 123456789);
         RaidAllocations allocations = new(s_endpoint, worlds, () => 0);
         AllocationRequest request = Request() with { Loadouts = [World.WeaponTests.WithWeapons()] };
         AllocationResult result = allocations.Reserve(request);
@@ -275,7 +275,7 @@ public sealed class RaidAllocationTests
     [Fact]
     public void Prepared_worlds_retain_the_loadout_without_sharing_operator_mutations()
     {
-        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, "Lighting.GreyMorning", () => 123456789);
         PlayerLoadout loadout = World.InventoryTests.StandardLoadout();
         InventoryItem[] items = [.. loadout.Items];
         PlayerLoadout[] loadouts = [loadout with { Items = items }];
@@ -306,7 +306,7 @@ public sealed class RaidAllocationTests
         Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { TenancyUserId = new TenancyUserId(43) }] }).Error);
         Assert.Equal("invalid_session_profiles", allocations.Reserve(request with { Profiles = [profile with { DisplayName = "bad\0name" }] }).Error);
 
-        DamWorlds worlds = new(() => 0, "Lighting.GreyMorning", () => 123456789);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, "Lighting.GreyMorning", () => 123456789);
         worlds.Prepare(Ticket, [42], profiles: [profile]);
         Assert.Equal(profile, Assert.Single(Assert.Single(worlds.Current!.Players).Profiles));
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare(Ticket, [42], profiles: profiles));

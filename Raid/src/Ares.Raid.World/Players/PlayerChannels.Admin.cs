@@ -6,7 +6,6 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Players;
 
@@ -60,7 +59,7 @@ public sealed partial class PlayerChannels
     // How far in front of the character a spawned ARC hovers, and its height above the character's feet: about head
     // height, the top of the character's capsule.
     private const double SpawnedArcDistance = 350;
-    private static double SpawnedArcHeight => 2 * DamPlayerStarts.Capsule.HalfHeight;
+    private double SpawnedArcHeight => 2 * _raid.GameData.Map.PlayerStartCapsule.HalfHeight;
 
     // Seconds a teleport waits for the client's reports to come from its destination; then frames resume anyway.
     private const double TeleportConfirmSeconds = 3;

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Ares.Common;
 using Ares.Common.CommandLine;
+using Ares.Common.Game.Content;
 using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Host;
@@ -14,6 +15,11 @@ HostConfiguration configuration;
 try
 {
     configuration = HostConfiguration.Parse(args);
+}
+catch (AresContentException error)
+{
+    Console.Error.WriteLine($"ARES-Host: cannot start: {error.Message}");
+    return 2;
 }
 catch (HelpRequestedException)
 {
@@ -50,7 +56,12 @@ log.Write(gameDataLoaded);
 WebApplication application;
 try
 {
-    application = HostApplication.Build(configuration, log, loggerProvider: console, gameData: gameData);
+    application = HostApplication.Build(configuration, log, gameData, loggerProvider: console);
+}
+catch (AresContentException error)
+{
+    Console.Error.WriteLine($"ARES-Host: cannot start: {error.Message}");
+    return 2;
 }
 catch (Exception error) when (error is PersistenceException or InvalidDataException or System.Text.Json.JsonException)
 {
@@ -74,6 +85,7 @@ log.Write(new JsonObject
     ["raid_capacity"] = configuration.Settings.RaidCapacity,
     ["raid_players"] = configuration.Raids?.Players,
     ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
+    ["content"] = configuration.Content.Source,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "per-run-key",
 });
 if (configuration.MissingSettings.Count > 0)

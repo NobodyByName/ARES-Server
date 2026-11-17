@@ -109,6 +109,13 @@ internal static class PropertyReader
 
     private static object ReadValue(CookedPackage package, ref ByteReader reader, PropertyType type, int depth)
     {
+        // An enum is stored as its underlying type.
+        while (type.Kind == PropertyKind.Enum)
+        {
+            type = Inner(type);
+            depth++;
+        }
+
         switch (type.Kind)
         {
             case PropertyKind.Bool:
@@ -143,8 +150,6 @@ internal static class PropertyReader
                 return new ObjectReference(reader.ReadInt32());
             case PropertyKind.SoftObject:
                 return ReadSoftObjectPath(package, ref reader);
-            case PropertyKind.Enum:
-                return ReadValue(package, ref reader, Inner(type), depth + 1);
             case PropertyKind.Array:
                 return ReadElements(package, ref reader, Inner(type), reader.ReadCount(MaxElements), depth);
             case PropertyKind.Set:
@@ -199,7 +204,7 @@ internal static class PropertyReader
         {
             case NativeLayout.Vector:
                 return new Vector3D(ReadDouble(ref reader), ReadDouble(ref reader), ReadDouble(ref reader));
-            case NativeLayout.Vector3f:
+            case NativeLayout.Vector3F:
                 return new Vector3D(ReadFloat(ref reader), ReadFloat(ref reader), ReadFloat(ref reader));
             case NativeLayout.Vector2D:
                 return new[] { ReadDouble(ref reader), ReadDouble(ref reader) };
@@ -271,7 +276,7 @@ internal static class PropertyReader
         return schema.Native switch
         {
             NativeLayout.None => new PropertyBag(schema, new Dictionary<string, object>(StringComparer.Ordinal), isZero: true),
-            NativeLayout.Vector or NativeLayout.Vector3f => default(Vector3D),
+            NativeLayout.Vector or NativeLayout.Vector3F => default(Vector3D),
             NativeLayout.Vector2D => new double[2],
             NativeLayout.Rotator => default(Rotator),
             NativeLayout.Quat => default(Quaternion),

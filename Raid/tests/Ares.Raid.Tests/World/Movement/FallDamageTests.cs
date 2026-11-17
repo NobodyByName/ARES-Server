@@ -68,7 +68,7 @@ public sealed class FallDamageTests
         Assert.True(result.Fatal);
         Assert.Equal(FallDamageParameters.FatalLevelHeight, result.LevelHeight);
         Assert.Equal(CharacterStance.Dbno, result.FatalStance);
-        Assert.Equal(HeavyLandingAnimations.Heavy.Count - 1, HeavyLandingMovement.Level(result.LevelHeight, HeavyLandingAnimations.Heavy));
+        Assert.Equal(TestGameData.Data.Movement.HeavyLandingLevels.Length - 1, HeavyLandingMovement.Level(result.LevelHeight, TestGameData.Data.Movement.HeavyLandingLevels));
     }
 
     [Fact]

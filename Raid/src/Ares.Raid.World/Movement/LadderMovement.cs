@@ -1,4 +1,5 @@
 using System.Numerics;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
@@ -26,7 +27,7 @@ public readonly record struct LadderLine(Vector3D Origin, double Yaw, double Hei
         (double sin, double cos) = Math.SinCos(yaw);
         Vector3D origin = new(placement.Location.X + (LadderParameters.LineForwardOffset * cos),
             placement.Location.Y + (LadderParameters.LineForwardOffset * sin), placement.Location.Z);
-        return new LadderLine(origin, yaw, LadderLogic.LadderHeight(placement.SplineTop, DamLadders.CycleHeight, DamLadders.EndInteractionDistance));
+        return new LadderLine(origin, yaw, LadderLogic.LadderHeight(placement.SplineTop, LadderLogic.CycleHeight, LadderLogic.EndInteractionDistance));
     }
 
     /// <summary>A world point in the line's frame: forward, right and up from the line start.</summary>
@@ -161,6 +162,7 @@ public static class LadderMovement
         placement.Location with { Z = feet.Z - LadderParameters.TopEntryDrop - LadderParameters.RungLength };
 
     /// <summary>Advances a climb by one simulation tick.</summary>
+    /// <param name="data">The game data: the graph state flags of a climb.</param>
     /// <param name="state">Climb state.</param>
     /// <param name="input">The tick's input.</param>
     /// <param name="feet">World position of the feet before the step.</param>
@@ -169,8 +171,11 @@ public static class LadderMovement
     /// <param name="seconds">Simulation step duration.</param>
     /// <param name="world">Collision for the floor search at the bottom; without it a floor is assumed.</param>
     /// <returns>Velocity, heading, action locomotion, flags and the exit, if any.</returns>
-    public static LadderStep Step(LadderState state, LadderInput input, Vector3D feet, Vector3D velocity, double halfHeight, double seconds, CollisionWorld? world)
+    public static LadderStep Step(GameDataSet data, LadderState state, LadderInput input, Vector3D feet, Vector3D velocity, double halfHeight, double seconds,
+        CollisionWorld? world)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        GraphStateFlags graph = data.Names.GraphFlags;
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -184,7 +189,7 @@ public static class LadderMovement
         LadderState next = state with { Ticks = state.Ticks + 1 };
         bool sprinting = input is { Sprint: true, Exhausted: false };
         LocoMode locomotion = sprinting ? LocoMode.Sprinting : LocoMode.Still;
-        ulong flags = GeneratedGraphStateFlags.LadderState | (input.Sprint ? GeneratedGraphStateFlags.LadderSprintActive : 0);
+        ulong flags = graph.LadderState | (input.Sprint ? graph.LadderSprintActive : 0);
         double yaw = state.Line.Yaw;
         if (state.PlayingTopEntry)
         {
@@ -209,13 +214,13 @@ public static class LadderMovement
         double correctionZ = height < 0 ? -height : height > state.Line.Height ? state.Line.Height - height : 0;
         Vector3D correction = new(-local.X, -local.Y, correctionZ);
         return state.Aligning
-            ? Align(state, next, input, feet, velocity, height, correction, seconds, locomotion, flags)
-            : Climb(state, next, input, feet, centre, velocity, height, correction, seconds, locomotion, flags, world);
+            ? Align(graph, state, next, input, feet, velocity, height, correction, seconds, locomotion, flags)
+            : Climb(graph, state, next, input, feet, centre, velocity, height, correction, seconds, locomotion, flags, world);
     }
 
     // The first ticks on the ladder: a share of the way onto the line each tick; a falling character keeps most of its
     // vertical speed and slides.
-    private static LadderStep Align(LadderState state, LadderState next, LadderInput input, Vector3D feet, Vector3D velocity, double height,
+    private static LadderStep Align(GraphStateFlags graph, LadderState state, LadderState next, LadderInput input, Vector3D feet, Vector3D velocity, double height,
         Vector3D correction, double seconds, LocoMode locomotion, ulong flags)
     {
         Vector3D pull = state.Line.Direction(correction);
@@ -240,14 +245,14 @@ public static class LadderMovement
             aligned = aligned with { Z = velocity.Z + ((0 - velocity.Z) * fade) };
         }
 
-        flags |= sliding ? GeneratedGraphStateFlags.LadderSliding : 0;
+        flags |= sliding ? graph.LadderSliding : 0;
         Vector3D moved = aligned.Z < 0 && input.ClimberBelow ? default : aligned;
         return Result(next, moved, feet, seconds, yaw, locomotion, flags, LadderExit.None);
     }
 
     // Climbing: up or down the line at the climbing speed, reached at a constant vertical acceleration, and across to
     // the line at the remaining distance per second.
-    private static LadderStep Climb(LadderState state, LadderState next, LadderInput input, Vector3D feet, Vector3D centre, Vector3D velocity,
+    private static LadderStep Climb(GraphStateFlags graph, LadderState state, LadderState next, LadderInput input, Vector3D feet, Vector3D centre, Vector3D velocity,
         double height, Vector3D correction, double seconds, LocoMode locomotion, ulong flags, CollisionWorld? world)
     {
         double yaw = state.Line.Yaw;
@@ -282,7 +287,7 @@ public static class LadderMovement
                 break;
         }
 
-        flags |= GeneratedGraphStateFlags.LadderCrouchInputBlocked;
+        flags |= graph.LadderCrouchInputBlocked;
         if (input.CrouchHeld)
         {
             return Result(next, default, feet, seconds, yaw, locomotion, flags, LadderExit.StepOff);
@@ -294,7 +299,7 @@ public static class LadderMovement
         Vector3D moving = state.Line.Direction(correction with { Z = vertical });
         sliding |= fast;
         Vector3D moved = vertical < 0 && input.ClimberBelow ? default : moving;
-        flags |= sliding ? GeneratedGraphStateFlags.LadderSliding : 0;
+        flags |= sliding ? graph.LadderSliding : 0;
         bool drain = moving.Z > 0 && sprinting;
         LadderExit exit = climbOffTop ? LadderExit.ClimbOffTop : LadderExit.None;
         Vector3D? target = climbOffTop ? ClimbOffTopTarget(centre, yaw) : null;

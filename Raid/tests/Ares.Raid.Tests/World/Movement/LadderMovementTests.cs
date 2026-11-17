@@ -13,7 +13,7 @@ public sealed class LadderMovementTests
 {
     private const double Tick = 1.0 / 30;
     private const int Climbing = 15;
-    private static readonly double s_halfHeight = DamPlayerStarts.Capsule.HalfHeight;
+    private static readonly Lazy<double> s_halfHeight = new(() => TestGameData.Dam.PlayerStartCapsule.HalfHeight);
 
     // A ladder facing +Y (yaw 90) at the origin, 925 cm of spline: climb height 824, line 55 cm behind it (-Y).
     private static readonly LadderPlacement s_ladder = new("/Game/Cell", "BP_Ladder", 925, new Vector3D(0, 0, 0), 90);
@@ -36,7 +36,7 @@ public sealed class LadderMovementTests
     [Fact]
     public void Every_Dam_ladder_has_a_line_long_enough_to_leave_over_the_top()
     {
-        Assert.All(DamLadders.All, ladder => Assert.True(LadderParameters.TopExitHeight(LadderLine.From(ladder).Height) > 0));
+        Assert.All(TestGameData.Dam.Ladders, ladder => Assert.True(LadderParameters.TopExitHeight(LadderLine.From(ladder).Height) > 0));
     }
 
     [Fact]
@@ -53,7 +53,7 @@ public sealed class LadderMovementTests
         Assert.Equal(LocoMode.Sprinting, sprint.ActionLocomotion);
         Assert.True(sprint.StaminaDrain);
         Assert.Equal(-1.2, LadderParameters.SprintStaminaMagnitude, 12);
-        Assert.Equal(GeneratedGraphStateFlags.LadderSprintActive, sprint.Flags & GeneratedGraphStateFlags.LadderSprintActive);
+        Assert.Equal(TestGameData.Flags.LadderSprintActive, sprint.Flags & TestGameData.Flags.LadderSprintActive);
         LadderStep exhausted = Climb(Input(InputDirection.Forward) with { Sprint = true, Exhausted = true }, Feet(100), new Vector3D(0, 0, 140));
         Assert.Equal(140, exhausted.Velocity.Z, 9);
         Assert.False(exhausted.StaminaDrain);
@@ -72,7 +72,7 @@ public sealed class LadderMovementTests
         Assert.Equal(-155, Climb(Input(InputDirection.Backward), Feet(300), new Vector3D(0, 0, -150)).Velocity.Z, 9);
         LadderStep slide = Climb(Input(InputDirection.BackwardRight) with { Sprint = true }, Feet(300), new Vector3D(0, 0, -480));
         Assert.Equal(-480 - (500 * Tick), slide.Velocity.Z, 9);
-        Assert.Equal(GeneratedGraphStateFlags.LadderSliding, slide.Flags & GeneratedGraphStateFlags.LadderSliding);
+        Assert.Equal(TestGameData.Flags.LadderSliding, slide.Flags & TestGameData.Flags.LadderSliding);
         Assert.Equal(-700 + (5000 * Tick), Climb(Input(InputDirection.None), Feet(300), new Vector3D(0, 0, -700)).Velocity.Z, 9);
     }
 
@@ -84,7 +84,7 @@ public sealed class LadderMovementTests
         Assert.Equal(-10, step.Velocity.X, 9);
         Assert.Equal(0, step.Velocity.Y, 9);
         Assert.Equal(Math.PI / 2, step.Yaw, 12);
-        Assert.Equal(GeneratedGraphStateFlags.LadderState | GeneratedGraphStateFlags.LadderCrouchInputBlocked, step.Flags);
+        Assert.Equal(TestGameData.Flags.LadderState | TestGameData.Flags.LadderCrouchInputBlocked, step.Flags);
         Assert.Equal(LadderExit.FallOff, Climb(Input(InputDirection.None), Feet(100) with { X = 60 }, default).Exit);
         Assert.Equal(LadderExit.None, Climb(Input(InputDirection.None), Feet(100) with { X = 59 }, default).Exit);
     }
@@ -94,13 +94,13 @@ public sealed class LadderMovementTests
     {
         LadderState state = LadderMovement.Begin(s_line, topEntry: false);
         // Feet on the floor 20 cm below the line start: pulled towards 10 cm above it.
-        LadderStep step = LadderMovement.Step(state, Input(InputDirection.Forward) with { JumpPressed = true }, Feet(-20) with { X = 5 }, default,
-            s_halfHeight, Tick, null);
+        LadderStep step = LadderMovement.Step(TestGameData.Data, state, Input(InputDirection.Forward) with { JumpPressed = true }, Feet(-20) with { X = 5 }, default,
+            s_halfHeight.Value, Tick, null);
         Assert.Equal(0.3 * 30 / Tick, step.Velocity.Z, 9);
         Assert.Equal(-0.3 * 5 / Tick, step.Velocity.X, 9);
         Assert.Equal(LadderExit.None, step.Exit);
         Assert.Equal(1, step.State.Ticks);
-        Assert.Equal(GeneratedGraphStateFlags.LadderState, step.Flags);
+        Assert.Equal(TestGameData.Flags.LadderState, step.Flags);
         Assert.True(state with { Ticks = 14 } is { Aligning: true });
         Assert.False(state with { Ticks = 15 } is { Aligning: true });
     }
@@ -109,14 +109,14 @@ public sealed class LadderMovementTests
     public void A_falling_catch_slides_and_slows_down_over_time()
     {
         LadderState state = LadderMovement.Begin(s_line, topEntry: false);
-        LadderStep caught = LadderMovement.Step(state, Input(InputDirection.None), Feet(300), new Vector3D(0, 0, -300), s_halfHeight, Tick, null);
+        LadderStep caught = LadderMovement.Step(TestGameData.Data, state, Input(InputDirection.None), Feet(300), new Vector3D(0, 0, -300), s_halfHeight.Value, Tick, null);
         Assert.Equal(-300, caught.Velocity.Z, 9);
-        Assert.Equal(GeneratedGraphStateFlags.LadderSliding, caught.Flags & GeneratedGraphStateFlags.LadderSliding);
-        LadderStep later = LadderMovement.Step(state with { Ticks = 6 }, Input(InputDirection.None), Feet(300), new Vector3D(0, 0, -300), s_halfHeight, Tick, null);
+        Assert.Equal(TestGameData.Flags.LadderSliding, caught.Flags & TestGameData.Flags.LadderSliding);
+        LadderStep later = LadderMovement.Step(TestGameData.Data, state with { Ticks = 6 }, Input(InputDirection.None), Feet(300), new Vector3D(0, 0, -300), s_halfHeight.Value, Tick, null);
         // 0.2 s of the 4 s fade.
         Assert.Equal(-285, later.Velocity.Z, 4);
         // At the bottom a fast fall goes on falling and leaves the ladder.
-        LadderStep fast = LadderMovement.Step(state, Input(InputDirection.None), Feet(-5), new Vector3D(0, 0, -600), s_halfHeight, Tick, null);
+        LadderStep fast = LadderMovement.Step(TestGameData.Data, state, Input(InputDirection.None), Feet(-5), new Vector3D(0, 0, -600), s_halfHeight.Value, Tick, null);
         Assert.Equal(LadderExit.StepOff, fast.Exit);
         Assert.Equal(-600 - (1964 * Tick), fast.Velocity.Z, 9);
     }
@@ -155,7 +155,7 @@ public sealed class LadderMovementTests
         Vector3D start = jump.ExitStart!.Value;
         Assert.Equal(0, start.X, 9);
         Assert.Equal(-55 + 70, start.Y, 9);
-        Assert.Equal(Feet(300).Z + s_halfHeight - 92 + 150, start.Z, 9);
+        Assert.Equal(Feet(300).Z + s_halfHeight.Value - 92 + 150, start.Z, 9);
         Assert.Equal(-1, jump.JumpDirection!.Value.X, 9);
     }
 
@@ -166,13 +166,13 @@ public sealed class LadderMovementTests
         Assert.Equal(LadderExit.ClimbOffTop, top.Exit);
         Vector3D target = top.ExitTarget!.Value;
         Assert.Equal(-55 + 99, target.Y, 9);
-        Assert.Equal(Feet(724).Z + s_halfHeight, target.Z, 9);
+        Assert.Equal(Feet(724).Z + s_halfHeight.Value, target.Z, 9);
         Assert.Equal(LadderExit.None, Climb(Input(InputDirection.Forward), Feet(700), new Vector3D(0, 0, 140)).Exit);
         Assert.Equal(target with { Z = 800 }, LadderMovement.ClimbOffTopFloor(Floor(800), target));
         Assert.Equal(target, LadderMovement.ClimbOffTopFloor(Floor(-100), target));
         // A ladder that does not climb off stops at the top exit height.
         LadderState stopping = LadderMovement.Begin(s_line with { AutoClimbOffTop = false }, false) with { Ticks = Climbing };
-        LadderStep stopped = LadderMovement.Step(stopping, Input(InputDirection.Forward), Feet(724), new Vector3D(0, 0, 30), s_halfHeight, Tick, null);
+        LadderStep stopped = LadderMovement.Step(TestGameData.Data, stopping, Input(InputDirection.Forward), Feet(724), new Vector3D(0, 0, 30), s_halfHeight.Value, Tick, null);
         Assert.Equal(LadderExit.None, stopped.Exit);
         Assert.Equal(30, stopped.Velocity.Z, 9);
     }
@@ -181,10 +181,10 @@ public sealed class LadderMovementTests
     public void A_top_entry_plays_its_animation_for_a_second()
     {
         LadderState state = LadderMovement.Begin(s_line, topEntry: true);
-        LadderStep entry = LadderMovement.Step(state with { Ticks = 29 }, Input(InputDirection.Forward), Feet(700), default, s_halfHeight, Tick, null);
+        LadderStep entry = LadderMovement.Step(TestGameData.Data, state with { Ticks = 29 }, Input(InputDirection.Forward), Feet(700), default, s_halfHeight.Value, Tick, null);
         Assert.Equal(default, entry.Velocity);
         Assert.Equal(LadderExit.None, entry.Exit);
-        Assert.NotEqual(default, LadderMovement.Step(state with { Ticks = 30 }, Input(InputDirection.Forward), Feet(700), default, s_halfHeight, Tick, null).Velocity);
+        Assert.NotEqual(default, LadderMovement.Step(TestGameData.Data, state with { Ticks = 30 }, Input(InputDirection.Forward), Feet(700), default, s_halfHeight.Value, Tick, null).Velocity);
         Vector3D anchor = LadderMovement.TopEntryAnchor(s_ladder, new Vector3D(1, 2, 900));
         Assert.Equal(new Vector3D(0, 0, 900 - 187 - 33), anchor);
     }
@@ -195,7 +195,7 @@ public sealed class LadderMovementTests
     private static Vector3D Feet(double height) => new(0, -55, LadderParameters.LineStartHeight + height);
 
     private static LadderStep Climb(LadderInput input, Vector3D feet, Vector3D velocity, CollisionWorld? world = null) =>
-        LadderMovement.Step(LadderMovement.Begin(s_line, topEntry: false) with { Ticks = Climbing }, input, feet, velocity, s_halfHeight, Tick, world);
+        LadderMovement.Step(TestGameData.Data, LadderMovement.Begin(s_line, topEntry: false) with { Ticks = Climbing }, input, feet, velocity, s_halfHeight.Value, Tick, world);
 
     private static CollisionWorld Floor(double height)
     {

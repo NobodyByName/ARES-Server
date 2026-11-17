@@ -144,17 +144,17 @@ internal static class LootVolumeReader
             CompensatedFloat.Sum(points.Select(point => point.X)) / points.Count,
             CompensatedFloat.Sum(points.Select(point => point.Y)) / points.Count,
             CompensatedFloat.Sum(points.Select(point => point.Z)) / points.Count);
-        if (planes.Count < MinPlanes || planes.Any(plane => CompensatedFloat.Dot(plane.Normal, centre) >= plane.Distance))
+        if (planes.Count >= MinPlanes && !planes.Any(plane => CompensatedFloat.Dot(plane.Normal, centre) >= plane.Distance))
         {
-            if (allowFlat && planes.Count > 0 && points.All(point => Math.Abs(CompensatedFloat.Dot(planes[0].Normal, point) - planes[0].Distance) <= tolerance))
-            {
-                return null;
-            }
-
-            throw new InvalidDataException($"{where}: degenerate convex element");
+            return [.. planes.Select(plane => new LootVolumePlane(DecimalRounding.Round(plane.Normal, NormalDigits), DecimalRounding.Round(plane.Distance, DistanceDigits)))];
         }
 
-        return [.. planes.Select(plane => new LootVolumePlane(DecimalRounding.Round(plane.Normal, NormalDigits), DecimalRounding.Round(plane.Distance, DistanceDigits)))];
+        if (allowFlat && planes.Count > 0 && points.All(point => Math.Abs(CompensatedFloat.Dot(planes[0].Normal, point) - planes[0].Distance) <= tolerance))
+        {
+            return null;
+        }
+
+        throw new InvalidDataException($"{where}: degenerate convex element");
     }
 
     /// <summary>The outward plane through <paramref name="a"/>, <paramref name="b"/> and <paramref name="c"/> when every point is on one side of it.</summary>

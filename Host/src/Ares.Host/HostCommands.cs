@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
-using Ares.Common.Game.Inventory;
 using Ares.Common.Logging;
 using Ares.Common.Terminal;
 using Ares.Host.Services.Accounts;
@@ -53,7 +52,7 @@ internal sealed class HostCommands(JsonEventLog log)
             Complete: preceding => preceding switch
             {
                 [_, _] => s_inventoryCommands,
-                [_, _, var subcommand] when subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => LoadoutDefinitions.Generated.AssetIds.Keys,
+                [_, _, var subcommand] when subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => Services?.Players.Catalog.ItemNames ?? [],
                 _ => [],
             }),
         new("raid",
@@ -285,8 +284,9 @@ internal sealed class HostCommands(JsonEventLog log)
         {
             case "":
                 PlayerInventory state = inventory.Inventory;
-                reply($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {state.Stash.SlotCount}, backpack capacity {state.Loadout.BackpackCapacity}");
-                reply($"QuickUse capacity {state.Loadout.QuickUseCapacity}, Safe Pocket capacity {state.Loadout.SafePocketCapacity}");
+                InventoryCapacities capacities = inventory.Catalog.Capacities(state);
+                reply($"Inventory revision {state.Revision}: {state.ItemCount} items, stash capacity {capacities.Stash}, backpack capacity {capacities.Backpack}");
+                reply($"QuickUse capacity {capacities.QuickUse}, Safe Pocket capacity {capacities.SafePockets}");
                 reply($"Augment: {state.Loadout.Augment?.Type ?? "none"}");
                 reply($"Reserved ticket: {inventory.ReservedTicketId ?? "none"}");
                 break;

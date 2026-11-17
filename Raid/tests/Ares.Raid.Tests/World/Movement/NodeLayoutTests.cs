@@ -3,7 +3,6 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -64,7 +63,7 @@ public sealed class NodeLayoutTests
                 if (ladder)
                 {
                     simulation.StepOnLadder(new CharacterInput(frame, 0), new MovementInput(frame, 126, 0, MovementButtons.None), 0, Tick, null, null,
-                        tick == 0 ? LadderMovement.Begin(LadderLine.From(DamLadders.All[0]), topEntry: false) : null);
+                        tick == 0 ? LadderMovement.Begin(LadderLine.From(TestGameData.Dam.Ladders[0]), topEntry: false) : null);
                 }
                 else
                 {
@@ -119,7 +118,7 @@ public sealed class NodeLayoutTests
             equipped.Add(first with { Slot = WeaponProtocol.FirstWeaponSlot + 1, Position = first.Position + first.Size });
         }
 
-        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(40, new PawnMotion(default, Character: character), 0, weapons: equipped);
+        IReadOnlyDictionary<int, PendulumSlot> slots = PawnBlackboardFrames.State(TestGameData.Data, 40, new PawnMotion(default, Character: character), 0, weapons: equipped);
         Assert.Equal(PawnGroundNodeState.DescriptorId, slots[groundSlot].DescriptorId);
         Assert.Equal(groundPosition, slots[groundSlot].Position);
         Assert.Equal(first.DescriptorId, slots[WeaponProtocol.FirstWeaponSlot + weapons - 1].DescriptorId);
@@ -139,7 +138,7 @@ public sealed class NodeLayoutTests
 
     private static CharacterSimulation Sprinting(out uint frame)
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         for (frame = 1; frame <= 45; frame++)
         {
             Step(simulation, frame, MovementButtons.Sprint);

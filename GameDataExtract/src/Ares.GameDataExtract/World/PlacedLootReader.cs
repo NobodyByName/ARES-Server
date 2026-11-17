@@ -16,7 +16,7 @@ namespace Ares.GameDataExtract.World;
 internal sealed class PlacedLootReader
 {
     /// <summary>Name of a container actor's root component.</summary>
-    public const string RootComponent = "Mesh";
+    private const string RootComponent = "Mesh";
 
     private const int LocationDigits = 2;
     private const int RotationDigits = 3;

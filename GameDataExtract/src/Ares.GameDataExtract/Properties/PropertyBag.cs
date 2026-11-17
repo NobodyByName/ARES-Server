@@ -24,7 +24,7 @@ internal sealed class PropertyBag
     }
 
     /// <summary>The schema the block was read with (for a merged bag, the most derived one).</summary>
-    public StructSchema Schema { get; }
+    private StructSchema Schema { get; }
 
     /// <summary>Whether this is a struct the block marks as zero as a whole (no member stored).</summary>
     public bool IsZero { get; }

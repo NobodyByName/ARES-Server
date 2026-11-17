@@ -26,12 +26,12 @@ internal static class ZiplineDefaultsReader
     /// <exception cref="InvalidDataException">A value is missing or does not decode as expected.</exception>
     public static ZiplineLineDefaults Read(MapRuleSources sources)
     {
-        string line = ZiplineClasses.LineBlueprintPackage;
-        ExportRef lineDefault = sources.Export(line, ClassDefaultPrefix + line[(line.LastIndexOf('/') + 1)..] + ClassSuffix);
+        const string Line = ZiplineClasses.LineBlueprintPackage;
+        ExportRef lineDefault = sources.Export(Line, ClassDefaultPrefix + Line[(Line.LastIndexOf('/') + 1)..] + ClassSuffix);
         double threshold = sources.Members(lineDefault, ZiplineDefaultMembers.ForcedTravelDirectionThresholdHome).Get<double>(ZiplineDefaultMembers.ForcedTravelDirectionThresholdHome);
 
-        string information = ZiplineDefaultMembers.AttachmentInformation;
-        ExportRef asset = sources.Export(information, "." + information[(information.LastIndexOf('/') + 1)..]);
+        const string Information = ZiplineDefaultMembers.AttachmentInformation;
+        ExportRef asset = sources.Export(Information, "." + Information[(Information.LastIndexOf('/') + 1)..]);
         PropertyBag offset = sources.Members(asset, ZiplineDefaultMembers.OffsetToUse).Get<PropertyBag>(ZiplineDefaultMembers.OffsetToUse);
         Quaternion rotation = offset.Get(Rotation, new Quaternion(0, 0, 0, 1));
         Vector3D translation = offset.Get(Translation, default(Vector3D));
@@ -41,8 +41,8 @@ internal static class ZiplineDefaultsReader
         }
 
         Transform attachment = new(rotation, new Vector3D(translation.X + 0.0, translation.Y + 0.0, translation.Z + 0.0), offset.Get(Scale3D, Vector3D.One));
-        string character = ZiplineDefaultMembers.CharacterBlueprint;
-        ExportRef mesh = sources.Export(character, $"{ClassDefaultPrefix}{character[(character.LastIndexOf('/') + 1)..]}{ClassSuffix}:{ZiplineDefaultMembers.CharacterMesh}");
+        const string Character = ZiplineDefaultMembers.CharacterBlueprint;
+        ExportRef mesh = sources.Export(Character, $"{ClassDefaultPrefix}{Character[(Character.LastIndexOf('/') + 1)..]}{ClassSuffix}:{ZiplineDefaultMembers.CharacterMesh}");
         if (sources.Packages.ScriptPath(mesh.Export.Class) != CharacterMeshMembers.ClassPath
             || ScenePart.Read(mesh.Package, mesh.Export, CharacterMeshMembers.ScenePart, NativeTail.None) is not { Location: { } location, Rotation: { } meshRotation }
             || Math.Abs(meshRotation.Pitch) + Math.Abs(meshRotation.Roll) > LevelTolerance)

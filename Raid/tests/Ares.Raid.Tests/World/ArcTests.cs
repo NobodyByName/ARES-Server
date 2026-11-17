@@ -1,5 +1,4 @@
 using System.Collections;
-using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
@@ -9,7 +8,6 @@ using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -29,7 +27,7 @@ public sealed class ArcTests
         WorldArc arc = Assert.IsType<WorldArc>(spawned);
         Vector3D feet = session.Channels.CharacterPosition!.Value;
         double yaw = session.Channels.CharacterYaw!.Value;
-        Assert.Equal(new Vector3D(Math.Round(feet.X + (350 * Math.Cos(yaw))), Math.Round(feet.Y + (350 * Math.Sin(yaw))), Math.Round(feet.Z + (2 * DamPlayerStarts.Capsule.HalfHeight))),
+        Assert.Equal(new Vector3D(Math.Round(feet.X + (350 * Math.Cos(yaw))), Math.Round(feet.Y + (350 * Math.Sin(yaw))), Math.Round(feet.Z + (2 * TestGameData.Dam.PlayerStartCapsule.HalfHeight))),
             arc.Location);
         Assert.Equal(((yaw * 180 / Math.PI) + 180 + 360) % 360, arc.Rotation.Yaw, 1);
 
@@ -139,7 +137,7 @@ public sealed class ArcTests
     {
         ScriptedPlayer session = new();
         WorldArc first = session.Raid.Arcs.Spawn(Arcs.Wasp, session.Member.Spawn.Location, default)!;
-        ushort duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
+        ushort duck = checked((ushort)TestGameData.Items.Definitions.UsableIndex(StorageItems.RubberDuckAssetId));
         WorldPickup pickup = session.Raid.Pickups.Drop(1, 0, new ContainerItem(duck, Guid.NewGuid(), 1, 1), session.Member.Spawn.Location, default, 0);
         Assert.True(first.Guid > pickup.Guid + (6UL * 10_000_000));
         for (int index = 1; index < WorldArcs.MaxArcs; index++)

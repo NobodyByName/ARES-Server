@@ -100,12 +100,9 @@ internal sealed class SceneResolver
     /// </summary>
     public Transform? SocketTransform(CookedPackage package, ZenExport parent, string name)
     {
-        if ((parent.Class == s_staticMeshComponent ? _staticMesh(package, parent) : null) is not { } mesh)
-        {
-            return null;
-        }
-
-        return ReadSockets(mesh).FirstOrDefault(socket => string.Equals(socket.Name, name, StringComparison.OrdinalIgnoreCase))?.Transform;
+        return (parent.Class == s_staticMeshComponent ? _staticMesh(package, parent) : null) is { } mesh
+            ? ReadSockets(mesh).FirstOrDefault(socket => string.Equals(socket.Name, name, StringComparison.OrdinalIgnoreCase))?.Transform
+            : null;
     }
 
     /// <summary>The sockets of static mesh <paramref name="mesh"/> (its socket subobjects), in export order.</summary>

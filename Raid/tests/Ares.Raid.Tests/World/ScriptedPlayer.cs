@@ -14,7 +14,6 @@ using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.Control;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
@@ -47,7 +46,7 @@ internal sealed class ScriptedPlayer
         MapCollision? collision = null)
     {
         // Every socket gets a container by default, so the scripted raids always have the containers they search.
-        Worlds = new DamWorlds(() => _now[0], Lighting, () => Seed, lootRules ?? LootSpawnRules.EverySocket, collision);
+        Worlds = new DamWorlds(TestGameData.Raid, () => _now[0], Lighting, () => Seed, lootRules ?? LootSpawnRules.EverySocket, collision);
         Principal = new SessionPrincipal(42, MatchId);
         Worlds.Prepare(MatchId, [42], loadouts: loadout is null ? null : [loadout], profiles: profiles);
         Io = new ChannelIo(new ReliableSender(SenderSeed), new ReliableReceiver(ReceiverSeed));
@@ -308,7 +307,7 @@ internal sealed class ScriptedPlayer
     }
 
     // The state the character opens with: the spawn frame inside the pawn's opening bunch.
-    public Dictionary<int, PendulumSlot> SpawnState => new(PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick,
+    public Dictionary<int, PendulumSlot> SpawnState => new(PawnBlackboardFrames.State(TestGameData.Data, PawnBlackboardFrames.FirstTick,
         new PawnMotion(Member.Spawn.Location, Yaw: Member.Spawn.Yaw * Math.PI / 180), 0, Member.Inventory.InitialBlackboard,
         Member.Weapons.Variables(PawnBlackboardFrames.FirstTick), _spawnTimeOffset));
 
@@ -354,7 +353,7 @@ internal sealed class ScriptedPlayer
         Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
         Flush("initial levels loaded");
         Call(FunctionNames.ServerAcknowledgePossession, new Dictionary<string, object?> { [PropertyNames.P] = Player.Pawn });
-        ReportVisible((DamMap.MapPackage, true, true), (Door.Cell, true, false));
+        ReportVisible((TestGameData.Dam.MapPackage, true, true), (Door.Cell, true, false));
         Flush("possession and visibility");
         Input(0, 30);
     }

@@ -1,6 +1,5 @@
 using System.Globalization;
-using Ares.Common.Game.Inventory;
-using Ares.Structs.Backend.Progression;
+using Ares.Raid.World.Inventory;
 using Ares.Structs.Game.Inventory;
 
 namespace Ares.Raid.World.Loot;
@@ -10,21 +9,13 @@ namespace Ares.Raid.World.Loot;
 /// creation and keeps what the players who opened it left inside, and the time it was first opened.
 /// </summary>
 /// <param name="catalog">The raid's containers.</param>
-public sealed class LootStates(LootCatalog catalog)
+/// <param name="raidItems">The raid's item rules: the item names and the placeholder rubber duck.</param>
+public sealed class LootStates(LootCatalog catalog, RaidItems raidItems)
 {
     private readonly Dictionary<int, IReadOnlyList<ContainerItem?>> _items = [];
     private readonly Dictionary<int, double> _openedAt = [];
     private readonly List<int> _openings = [];
     private readonly List<string> _events = [];
-
-    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
-
-    private static readonly Dictionary<ushort, string> s_names = LoadoutDefinitions.Generated.CarriedItems
-        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.TechnicalName);
-
-    /// <summary>Unit weight of each item type a container may hold.</summary>
-    public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = LoadoutDefinitions.Generated.CarriedItems
-        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.Weight);
 
     /// <summary>The containers in the order they were first opened: every player's view of them changed then.</summary>
     public IReadOnlyList<int> Openings => _openings;
@@ -51,7 +42,7 @@ public sealed class LootStates(LootCatalog catalog)
         IReadOnlyList<LootStack> stacks = container.Contents.Stacks;
         if (stacks.Count == 0)
         {
-            slots[0] = new ContainerItem(s_duck, Guid.NewGuid(), 1, 1);
+            slots[0] = new ContainerItem(raidItems.RubberDuckIndex, Guid.NewGuid(), 1, 1);
         }
 
         for (int slot = 0; slot < stacks.Count && slot < slots.Length; slot++)
@@ -68,11 +59,14 @@ public sealed class LootStates(LootCatalog catalog)
     public string Describe(int index)
     {
         LootContainer container = catalog.Containers[index];
-        string items = string.Join(", ", Items(index).OfType<ContainerItem>()
-            .Select(item => string.Create(CultureInfo.InvariantCulture, $"{item.Amount}x {s_names.GetValueOrDefault(item.AssetIndex, $"item {item.AssetIndex}")}")));
+        string held = string.Join(", ", Items(index).OfType<ContainerItem>()
+            .Select(item => string.Create(CultureInfo.InvariantCulture, $"{item.Amount}x {Name(item.AssetIndex)}")));
         string pool = (container.Contents.Pool ?? "none") + (container.Contents.Stacks.Count == 0 ? " (placeholder duck)" : "");
-        return $"#{index} {container.ClassName} tag {container.Tag ?? "-"} value {container.LootValue} pool {pool}: {(items.Length == 0 ? "empty" : items)}";
+        return $"#{index} {container.ClassName} tag {container.Tag ?? "-"} value {container.LootValue} pool {pool}: {(held.Length == 0 ? "empty" : held)}";
     }
+
+    // The technical name of a carried item, or its usable index.
+    private string Name(ushort index) => raidItems.Carried.TryGetValue(index, out ItemDefinition? item) ? item.TechnicalName : $"item {index}";
 
     /// <summary>Keeps what a player left in a container.</summary>
     /// <param name="index">Container index.</param>

@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 
@@ -118,20 +119,22 @@ public static class HeavyLandingMovement
     } ?? level.NoDirection;
 
     /// <summary>Starts a heavy landing: picks the level from the fall height and the animation from the impact direction.</summary>
+    /// <param name="data">The game data: the heavy landing levels.</param>
     /// <param name="fallHeight">Fall height that picks the level.</param>
     /// <param name="impact">Velocity when the landing was detected, the tick before the character touches down.</param>
     /// <param name="velocity">Velocity when the landing starts; a recovery roll follows its direction.</param>
     /// <param name="heading">The character's heading in radians; the impact direction is taken relative to it.</param>
     /// <param name="recovery">Whether a recovery roll softens the landing.</param>
     /// <returns>The landing state before its first step.</returns>
-    public static HeavyLandingState Begin(double fallHeight, Vector3D impact, Vector3D velocity, double heading, bool recovery = false)
+    public static HeavyLandingState Begin(GameDataSet data, double fallHeight, Vector3D impact, Vector3D velocity, double heading, bool recovery = false)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!double.IsFinite(heading))
         {
             throw new ArgumentOutOfRangeException(nameof(heading));
         }
 
-        IReadOnlyList<HeavyLandingLevel> levels = recovery ? HeavyLandingAnimations.Recovery : HeavyLandingAnimations.Heavy;
+        IReadOnlyList<HeavyLandingLevel> levels = recovery ? data.Movement.RecoveryLandingLevels : data.Movement.HeavyLandingLevels;
         int level = Level(fallHeight, levels);
         HeavyLandingClip clip = Clip(levels[level], Direction(impact, heading));
         double speedSquared = (velocity.X * velocity.X) + (velocity.Y * velocity.Y) + (velocity.Z * velocity.Z);

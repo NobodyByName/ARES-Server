@@ -19,10 +19,10 @@ public sealed class MenuInventoryTests : IAsyncLifetime
     public async Task Game_data_lists_celestes_offers_and_buying_one_is_saved()
     {
         JsonElement offers = (await _host.GetJson("/v1/pioneer/game-data")).GetProperty("offer-descriptions").GetProperty("offerDescriptions");
-        Assert.Equal(TraderOffers.Celeste.Select(offer => offer.OfferId), offers.EnumerateArray().Select(offer => offer.GetProperty("offerId").GetInt64()));
-        Assert.All(offers.EnumerateArray(), offer => Assert.Equal(TraderOffers.CelesteAssetId, offer.GetProperty("ownerGameAssetId").GetInt64()));
+        Assert.Equal(TestCatalog.Content.TraderOffers.Select(offer => offer.OfferId), offers.EnumerateArray().Select(offer => offer.GetProperty("offerId").GetInt64()));
+        Assert.All(offers.EnumerateArray(), offer => Assert.Equal(TestCatalog.CelesteAssetId, offer.GetProperty("ownerGameAssetId").GetInt64()));
 
-        OfferDescription bought = TraderOffers.Celeste[0];
+        OfferDescription bought = TestCatalog.Content.TraderOffers[0];
         long seeds = Assert.Single(Assert.IsType<ItemAmountsOfferCost>(bought.Cost).ItemAmounts).Amount;
         _host.HostInventory().AddItem(ItemTechnicalNames.AssortedSeeds, DateTimeOffset.UnixEpoch, seeds);
         object body = new { requestId = "buy", operations = new[] { new { discriminator = "acceptOffer", offerId = bought.OfferId, times = 1, payment = Array.Empty<object>(), paymentByAmounts = Array.Empty<object>() } } };
@@ -41,7 +41,7 @@ public sealed class MenuInventoryTests : IAsyncLifetime
             requestId = "unknown",
             operations = new object[]
             {
-                new { discriminator = "acceptOffer", offerId = TraderOffers.Celeste[0].OfferId, times = 1, payment = Array.Empty<object>(), paymentByAmounts = Array.Empty<object>() },
+                new { discriminator = "acceptOffer", offerId = TestCatalog.Content.TraderOffers[0].OfferId, times = 1, payment = Array.Empty<object>(), paymentByAmounts = Array.Empty<object>() },
                 new { discriminator = "notYetDecoded" },
             },
         };
@@ -69,9 +69,9 @@ public sealed class MenuInventoryTests : IAsyncLifetime
         const string Path = "/v1/pioneer/v1/batch-operation";
         string bearer = await _host.SignIn();
         InventoryStore store = _host.HostInventory();
-        InventoryItem duck = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        InventoryItem duck = store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.RubberDuck));
         string stash = store.Snapshot.Items.Single(item => item.Slots.Contains(duck.InstanceId)).InstanceId;
-        InventoryItem backpack = store.Snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.BackpackAssetId);
+        InventoryItem backpack = store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.BackpackContainer);
         string destination = backpack.Slots[0];
         object body = new
         {
@@ -83,11 +83,11 @@ public sealed class MenuInventoryTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, (await _host.Post(Path, new { requestId = "malformed", operations = new[] { new { discriminator = "unknown" } } }, bearer)).StatusCode);
         JsonElement response = await HostHarness.Json(await _host.Post(Path, body, bearer));
         Assert.Equal(3, response.GetProperty("changeset").GetProperty("items").GetProperty("updated").GetArrayLength());
-        InventoryStore persisted = new(_host.Database.Store, TestDatabase.UserId);
+        InventoryStore persisted = new(_host.Database.Store, TestDatabase.UserId, TestCatalog.Real);
         Assert.Contains(duck.InstanceId, persisted.Snapshot.Items.Single(item => item.InstanceId == destination).Slots);
         long revision = persisted.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await _host.Post(Path, body, bearer)).StatusCode);
-        Assert.Equal(revision, new InventoryStore(_host.Database.Store, TestDatabase.UserId).Snapshot.Revision);
+        Assert.Equal(revision, new InventoryStore(_host.Database.Store, TestDatabase.UserId, TestCatalog.Real).Snapshot.Revision);
         object stockBody = new
         {
             requestId = "",
@@ -98,7 +98,7 @@ public sealed class MenuInventoryTests : IAsyncLifetime
         revision = store.Snapshot.Revision;
         Assert.Equal(HttpStatusCode.OK, (await _host.Post(Path, stockBody, bearer)).StatusCode);
         Assert.Equal(revision, store.Snapshot.Revision);
-        Assert.Contains(duck.InstanceId, new InventoryStore(_host.Database.Store, TestDatabase.UserId).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
+        Assert.Contains(duck.InstanceId, new InventoryStore(_host.Database.Store, TestDatabase.UserId, TestCatalog.Real).Snapshot.Items.Single(item => item.InstanceId == stash).Slots);
     }
 
     [Fact]
@@ -108,20 +108,20 @@ public sealed class MenuInventoryTests : IAsyncLifetime
         using HttpRequestMessage read = new(HttpMethod.Get, "/v1/pioneer/inventory");
         read.Headers.Authorization = AuthenticationHeaderValue.Parse(bearer);
         JsonElement inventory = await HostHarness.Json(await _host.Client.SendAsync(read, TestContext.Current.CancellationToken));
-        JsonElement duck = Assert.Single(inventory.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
+        JsonElement duck = Assert.Single(inventory.GetProperty("items").EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == TestCatalog.Asset(ItemTechnicalNames.RubberDuck));
         Assert.Equal(1, duck.GetProperty("amount").GetInt64());
 
         JsonElement data = await _host.GetJson("/v1/pioneer/game-data");
         JsonElement definitions = data.GetProperty("items-description").GetProperty("itemDescriptions");
-        JsonElement duckDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
+        JsonElement duckDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == TestCatalog.Asset(ItemTechnicalNames.RubberDuck));
         Assert.Equal("GameItem", duckDefinition.GetProperty("itemType").GetString());
         Assert.Equal(15, duckDefinition.GetProperty("maxAmount").GetInt64());
         Assert.Equal("noSlot", duckDefinition.GetProperty("slotConfig").GetProperty("discriminator").GetString());
-        JsonElement containerDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.StashContainerAssetId);
-        Assert.Equal(StorageItems.StashSlotCount, containerDefinition.GetProperty("slotConfig").GetProperty("numberOfSlots").GetInt64());
+        JsonElement containerDefinition = Assert.Single(definitions.EnumerateArray(), item => item.GetProperty("gameAssetId").GetInt64() == TestCatalog.StashContainer);
+        Assert.Equal(TestCatalog.StashSlotCount, containerDefinition.GetProperty("slotConfig").GetProperty("numberOfSlots").GetInt64());
         JsonElement upgrade = containerDefinition.GetProperty("upgrade");
-        Assert.Equal(TestStash.Next(StorageItems.StashContainerAssetId), upgrade.GetProperty("nextItemGameAssetId").GetInt64());
-        Assert.Equal(CurrencyItems.CoinsAssetId, upgrade.GetProperty("costPackage").GetProperty("costItems")[0].GetProperty("gameAssetId").GetInt64());
+        Assert.Equal(TestStash.Next(TestCatalog.StashContainer), upgrade.GetProperty("nextItemGameAssetId").GetInt64());
+        Assert.Equal(TestCatalog.Asset(ItemTechnicalNames.Coins), upgrade.GetProperty("costPackage").GetProperty("costItems")[0].GetProperty("gameAssetId").GetInt64());
         Assert.Equal("itemAmounts", upgrade.GetProperty("cost").GetProperty("discriminant").GetString());
         Assert.Equal(0, upgrade.GetProperty("requirements").GetProperty("projecRequirements").GetArrayLength());
     }

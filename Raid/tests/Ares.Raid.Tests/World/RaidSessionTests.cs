@@ -160,7 +160,7 @@ public sealed class RaidSessionTests
     public void A_barricaded_door_keeps_its_buttons_disabled_and_ignores_presses()
     {
         ScriptedPlayer session = new();
-        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        Door barricaded = session.Raid.Doors.Doors.First(door => TestGameData.Dam.Doors[door.Index].StartAsSealed);
         session.Possess();
         session.ReportVisible((barricaded.Cell, true, false));
         foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
@@ -182,7 +182,7 @@ public sealed class RaidSessionTests
     public void Holding_the_breach_button_removes_the_barricade_after_the_hold_time()
     {
         ScriptedPlayer session = new();
-        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        Door barricaded = session.Raid.Doors.Doors.First(door => TestGameData.Dam.Doors[door.Index].StartAsSealed);
         session.Possess();
         session.ReportVisible((barricaded.Cell, true, false));
         foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
@@ -197,7 +197,7 @@ public sealed class RaidSessionTests
         Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);
 
         int sent = session.Sent.Count;
-        session.Service(123.5 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds + 0.1);
+        session.Service(123.5 + DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds + 0.1);
 
         DoorState state = session.Raid.DoorStates.Get(barricaded.Index).State;
         Assert.Equal((DoorOpenState.Closed, DoorSealState.Unsealed), (state.Open, state.Seal));
@@ -210,7 +210,7 @@ public sealed class RaidSessionTests
     public void Moving_during_a_breach_cancels_it_and_the_door_can_be_breached_again()
     {
         ScriptedPlayer session = new();
-        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        Door barricaded = session.Raid.Doors.Doors.First(door => TestGameData.Dam.Doors[door.Index].StartAsSealed);
         session.Possess();
         session.ReportVisible((barricaded.Cell, true, false));
         foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
@@ -228,7 +228,7 @@ public sealed class RaidSessionTests
         Assert.False(session.Raid.DoorStates.Breaching(barricaded.Index));
         Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle), session.Raid.DoorStates.Buttons(barricaded.Index));
 
-        session.Service(123.5 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds + 0.1);
+        session.Service(123.5 + DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds + 0.1);
         Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);
 
         session.Input(39, 42, barricaded.Breach);
@@ -239,7 +239,7 @@ public sealed class RaidSessionTests
     public void A_breach_pressed_with_the_raider_tool_holstered_starts_on_that_press()
     {
         ScriptedPlayer session = new();
-        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        Door barricaded = session.Raid.Doors.Doors.First(door => TestGameData.Dam.Doors[door.Index].StartAsSealed);
         session.Possess();
         session.ReportVisible((barricaded.Cell, true, false));
         foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
@@ -256,7 +256,7 @@ public sealed class RaidSessionTests
     public void No_pawn_frame_resets_the_clients_breach_until_its_ending_played()
     {
         ScriptedPlayer session = new();
-        Door barricaded = session.Raid.Doors.Doors.First(door => DamDoors.All[door.Index].StartAsSealed);
+        Door barricaded = session.Raid.Doors.Doors.First(door => TestGameData.Dam.Doors[door.Index].StartAsSealed);
         session.Possess();
         session.ReportVisible((barricaded.Cell, true, false));
         foreach (double at in (double[])[100.0, 106.0, 121.0, 121.5, 122.0, 122.5, 123.0])
@@ -272,7 +272,7 @@ public sealed class RaidSessionTests
         session.Service(124.0);
 
         // The barricade comes off, so the focused breach button is no longer usable: that frame waits.
-        const double End = 124.0 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds;
+        const double End = 124.0 + DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds;
         session.Service(End + 0.1);
         session.Input(36, 39, focus: barricaded.Breach, position: reported);
         session.Service(End + 1);
@@ -291,7 +291,7 @@ public sealed class RaidSessionTests
         Assert.False(states.StartBreach(0, 10.5));
         Assert.False(states.Press(0, 10.5));
 
-        states.Advance(10.0 + DamDoors.BreachAlignmentSeconds + DamDoors.BreachHoldSeconds);
+        states.Advance(10.0 + DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds);
         Assert.Equal((DoorOpenState.Opening, DoorSealState.Unsealed), (states.Get(0).State.Open, states.Get(0).State.Seal));
         Assert.False(states.StartBreach(0, 30.0));
     }
@@ -419,27 +419,27 @@ public sealed class RaidSessionTests
     public void One_reservation_owns_the_world_until_it_is_released()
     {
         const double Now = 0;
-        DamWorlds worlds = new(() => Now, null, () => 7);
+        DamWorlds worlds = new(TestGameData.Raid, () => Now, null, () => 7);
         Assert.Null(worlds.WelcomeFor(new SessionPrincipal(1, "a")));
         worlds.Prepare("a", [1]);
         worlds.Prepare("a", [1]);
         Assert.Throws<WorldPreparationException>(() => worlds.Prepare("b", [2]));
-        Assert.Throws<WorldPreparationException>(() => new DamWorlds(() => Now).Prepare("c", [1, 2]));
-        Assert.Equal(RaidWorld.Welcome, worlds.WelcomeFor(new SessionPrincipal(1, "a")));
+        Assert.Throws<WorldPreparationException>(() => new DamWorlds(TestGameData.Raid, () => Now).Prepare("c", [1, 2]));
+        Assert.Equal(worlds.Current!.Welcome, worlds.WelcomeFor(new SessionPrincipal(1, "a")));
         Assert.Throws<InvalidPacketException>(() => worlds.WelcomeFor(new SessionPrincipal(2, "a")));
-        Assert.Contains(worlds.Current!.Lighting, DamWorlds.Lightings);
+        Assert.Contains(worlds.Current!.Lighting, DamWorlds.LightingsOf(TestGameData.Dam));
         Assert.True(worlds.AcceptingPlayers("a"));
         worlds.Release("b");
         Assert.True(worlds.AcceptingPlayers("a"));
         worlds.Release("a");
         Assert.False(worlds.AcceptingPlayers("a"));
-        Assert.Throws<ArgumentException>(() => new DamWorlds(() => Now, "Lighting.Unknown"));
+        Assert.Throws<ArgumentException>(() => new DamWorlds(TestGameData.Raid, () => Now, "Lighting.Unknown"));
     }
 
     [Fact]
     public void The_round_turns_on_its_map_layers()
     {
-        DamWorlds worlds = new(() => 0, null, () => 7);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, null, () => 7);
         worlds.Prepare("a", [1]);
         RaidWorld world = worlds.Current!;
 
@@ -453,13 +453,13 @@ public sealed class RaidSessionTests
     [Fact]
     public void Spawn_points_are_lifted_to_the_capsule_center()
     {
-        RoundConfiguration round = DamRounds.All[0];
-        IReadOnlyList<PlayerStart> starts = Spawns.Eligible(round);
+        RoundConfiguration round = TestGameData.Dam.Rounds[0];
+        IReadOnlyList<PlayerStart> starts = Spawns.Eligible(TestGameData.Dam, round);
         Assert.NotEmpty(starts);
-        Assert.All(starts, start => Assert.Contains(DamMap.GameModeTag, start.Tags));
+        Assert.All(starts, start => Assert.Contains(DamProtocol.GameModeTag, start.Tags));
         PlayerStart first = starts[0];
-        SpawnPlacement placement = Spawns.Place(first, 0);
-        Assert.Equal(first.RootLocation.Z + first.SpawnPoints[0].Translation.Z + DamPlayerStarts.Capsule.HalfHeight, placement.Location.Z, 6);
-        Assert.Throws<ArgumentOutOfRangeException>(() => Spawns.Place(first, first.SpawnPoints.Count));
+        SpawnPlacement placement = Spawns.Place(TestGameData.Dam, first, 0);
+        Assert.Equal(first.RootLocation.Z + first.SpawnPoints[0].Translation.Z + TestGameData.Dam.PlayerStartCapsule.HalfHeight, placement.Location.Z, 6);
+        Assert.Throws<ArgumentOutOfRangeException>(() => Spawns.Place(TestGameData.Dam, first, first.SpawnPoints.Count));
     }
 }

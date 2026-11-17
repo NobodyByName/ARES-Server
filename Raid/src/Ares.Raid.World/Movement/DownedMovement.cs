@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 
@@ -75,7 +76,7 @@ public readonly record struct DownedInput(
 /// <param name="MaxMoveSpeed">Current maximum crawl speed, when the crawl wrote it.</param>
 /// <param name="SlopeInputScalar">Slope part of the crawl input, when the slope wrote it.</param>
 /// <param name="RaisedTransients">Raised transient states, one bit per <see cref="DownedTransientState"/> value.</param>
-/// <param name="GraphTags">Graph tags the node holds after the step (<see cref="GraphStateTags"/>).</param>
+/// <param name="GraphTags">Graph tags the node holds after the step (<see cref="GraphTagBits"/>).</param>
 /// <param name="Exit">How the node hands over after this step, or null while it goes on.</param>
 public readonly record struct DownedStep(
     DownedState State,
@@ -105,6 +106,7 @@ public readonly record struct DownedStep(
 public static class DownedMovement
 {
     /// <summary>Advances the downed node by one simulation tick.</summary>
+    /// <param name="data">The game data: the graph state tag bits the node holds.</param>
     /// <param name="state">Node state.</param>
     /// <param name="input">What the node reads.</param>
     /// <param name="previous">World velocity before the step.</param>
@@ -112,9 +114,10 @@ public static class DownedMovement
     /// <param name="steerAboveMaximum">Whether input steering is enabled above maximum speed.</param>
     /// <param name="fixBrakingOvershoot">Whether braking overshoot is corrected when accelerating forward.</param>
     /// <returns>Velocity, posture, tags and whether the node hands over.</returns>
-    public static DownedStep Step(DownedState state, DownedInput input, Vector3D previous, double seconds,
+    public static DownedStep Step(GameDataSet data, DownedState state, DownedInput input, Vector3D previous, double seconds,
         bool steerAboveMaximum, bool fixBrakingOvershoot)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -185,12 +188,12 @@ public static class DownedMovement
 
         Vector3D velocity = Velocity(previous, crawl, maximum, input.WalkableFloor, seconds, steerAboveMaximum, fixBrakingOvershoot);
         return new DownedStep(next, DownedPhase.Crawling, velocity, input.Yaw, moving ? LocoMode.Walking : LocoMode.Still,
-            !input.WalkableFloor, input.WalkableFloor, direction, maximum, slopeScalar, raised, Tags(next), null);
+            !input.WalkableFloor, input.WalkableFloor, direction, maximum, slopeScalar, raised, Tags(data, next), null);
 
         DownedStep Held(DownedPhase phase, DownedState held, uint transients, DownedExit? exit = null) =>
             new(held, phase, Velocity(previous, raw, DownedMovementParameters.HeldSpeed, input.WalkableFloor, seconds, steerAboveMaximum,
                     fixBrakingOvershoot),
-                input.Yaw, LocoMode.Still, !input.WalkableFloor, input.WalkableFloor, null, null, null, transients, Tags(held), exit);
+                input.Yaw, LocoMode.Still, !input.WalkableFloor, input.WalkableFloor, null, null, null, transients, Tags(data, held), exit);
     }
 
     /// <summary>
@@ -253,10 +256,10 @@ public static class DownedMovement
         return FlatGroundMovement.CalculateVelocity(previous, input, seconds, parameters, steerAboveMaximum, fixBrakingOvershoot);
     }
 
-    private static ulong Tags(DownedState state) =>
-        GeneratedGraphStateFlags.DownedNodeTags
-        | (state.GoingDownTag ? GraphStateTags.AnimationPendulumStateDeathToDbno : 0)
-        | (state.StandingUpTag ? GraphStateTags.AnimationPendulumStateDbnoToBaseMove : 0);
+    private static ulong Tags(GameDataSet data, DownedState state) =>
+        data.Names.GraphFlags.DownedNodeTags
+        | (state.GoingDownTag ? data.Names.GraphTags.AnimationPendulumStateDeathToDbno.Mask : 0)
+        | (state.StandingUpTag ? data.Names.GraphTags.AnimationPendulumStateDbnoToBaseMove.Mask : 0);
 
     private static uint Bit(DownedTransientState state) => 1u << (int)state;
 

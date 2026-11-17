@@ -197,11 +197,11 @@ internal sealed class LadderReader
     private (Vector3D Location, double Yaw) SplineTransform(CookedPackage package, ZenExport spline)
     {
         SceneMembers scene = _scenes.Scene(package, spline);
-        int location = SplineComponentMembers.ScenePart + SceneComponentMembers.RelativeLocation;
-        int rotation = SplineComponentMembers.ScenePart + SceneComponentMembers.RelativeRotation;
-        if (!scene.Header.IsNonZero(location) || !scene.Header.IsNonZero(rotation)
+        const int Location = SplineComponentMembers.ScenePart + SceneComponentMembers.RelativeLocation;
+        const int Rotation = SplineComponentMembers.ScenePart + SceneComponentMembers.RelativeRotation;
+        if (!scene.Header.IsNonZero(Location) || !scene.Header.IsNonZero(Rotation)
             || scene.Header.Contains(SplineComponentMembers.ScenePart + SceneComponentMembers.AttachParent)
-            || scene.Header.Members.Any(member => member.Index > rotation)
+            || scene.Header.Members.Any(member => member.Index > Rotation)
             || scene.Location is not { } at || scene.Rotation is not { } turn)
         {
             throw new InvalidDataException($"spline transform members {string.Join(", ", scene.Header.Members.Select(member => member.Index))}");
@@ -254,7 +254,7 @@ internal sealed class LadderReader
         }
 
         Vector3D top = points[^1].Value;
-        return Math.Abs(top.X) > MaxSplineOffset || Math.Abs(top.Y) > MaxSplineOffset || !(top.Z > 0 && top.Z < MaxSplineTop)
+        return Math.Abs(top.X) > MaxSplineOffset || Math.Abs(top.Y) > MaxSplineOffset || top.Z is not (> 0 and < MaxSplineTop)
             ? throw new InvalidDataException($"last spline point {top} is not above the ladder origin")
             : top.Z;
     }

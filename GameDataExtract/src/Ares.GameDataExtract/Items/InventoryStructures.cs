@@ -23,9 +23,9 @@ internal sealed record InventoryStructure(RegistryAsset Asset, CookedPackage Pac
 internal sealed class InventoryStructures
 {
     public const string LoadoutFrameClass = ScriptSchemas.ScriptPackage + "LoadoutFrameItemDataAsset";
-    public const string ContainerSlotClass = ScriptSchemas.ScriptPackage + "InventoryContainerSlotDataAsset";
-    public const string ContainerClass = ScriptSchemas.ScriptPackage + "InventoryContainerItemDataAsset";
-    public const string ContentSlotClass = ScriptSchemas.ScriptPackage + "InventoryContentSlotDataAsset";
+    private const string ContainerSlotClass = ScriptSchemas.ScriptPackage + "InventoryContainerSlotDataAsset";
+    private const string ContainerClass = ScriptSchemas.ScriptPackage + "InventoryContainerItemDataAsset";
+    private const string ContentSlotClass = ScriptSchemas.ScriptPackage + "InventoryContentSlotDataAsset";
     public const string ModSlotClass = ScriptSchemas.ScriptPackage + "ModSlotAsset";
 
     private static readonly string[] s_classes = [LoadoutFrameClass, ContainerSlotClass, ContainerClass, ContentSlotClass, ModSlotClass];

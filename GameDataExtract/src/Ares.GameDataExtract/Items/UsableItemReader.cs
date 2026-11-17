@@ -19,8 +19,8 @@ internal sealed record ItemAsset(RegistryAsset Asset, CookedPackage Package, Pro
 /// </summary>
 internal static class UsableItemReader
 {
-    private const string UIMetaDataAssetClass = "/Script/EmbarkUI.UIMetaDataAsset";
-    private const string UIMetaDataItemPrefix = "UIGameplayItemMetaDataItem";
+    private const string UiMetaDataAssetClass = "/Script/EmbarkUI.UIMetaDataAsset";
+    private const string UiMetaDataItemPrefix = "UIGameplayItemMetaDataItem";
     private const string ItemsFolder = "/Game/Pioneer/Items/";
     private const string SocketTagPrefix = "Socket.";
     private const string NoTag = "None";
@@ -111,7 +111,7 @@ internal static class UsableItemReader
     }
 
     /// <summary>The script class of an item data asset, for example <c>UItemDataAsset</c>.</summary>
-    public static string ScriptClassOf(RegistryAsset asset) => "U" + asset.ClassPath[(asset.ClassPath.LastIndexOf('.') + 1)..];
+    private static string ScriptClassOf(RegistryAsset asset) => "U" + asset.ClassPath[(asset.ClassPath.LastIndexOf('.') + 1)..];
 
     /// <summary><c>FStaticLootPlacementSpecification</c>: a socket tag (an unset one matches no socket) and the tags under it to skip.</summary>
     private static LootPlacement Placement(string item, PropertyBag placement)
@@ -147,16 +147,16 @@ internal static class UsableItemReader
     private static Dictionary<long, int> ReadRarities(ItemSources sources)
     {
         Dictionary<long, int> result = [];
-        foreach (RegistryAsset asset in sources.Registry.Assets.Where(asset => asset.ClassPath == UIMetaDataAssetClass && asset.PackageName.StartsWith(ItemsFolder, StringComparison.Ordinal)))
+        foreach (RegistryAsset asset in sources.Registry.Assets.Where(asset => asset.ClassPath == UiMetaDataAssetClass && asset.PackageName.StartsWith(ItemsFolder, StringComparison.Ordinal)))
         {
             if (sources.Packages.Load(asset.PackageName) is not { } package)
             {
                 continue;
             }
 
-            foreach (ZenExport export in package.Exports.Where(export => export.Name.StartsWith(UIMetaDataItemPrefix, StringComparison.Ordinal)))
+            foreach (ZenExport export in package.Exports.Where(export => export.Name.StartsWith(UiMetaDataItemPrefix, StringComparison.Ordinal)))
             {
-                PropertyBag values = PropertyReader.ReadPrefix(package, CookedPackage.StartOf(export), ItemAssetSchemas.UIGameplayItemMetaDataItem, out _);
+                PropertyBag values = PropertyReader.ReadPrefix(package, CookedPackage.StartOf(export), ItemAssetSchemas.UiGameplayItemMetaDataItem, out _);
                 long? id = values.Get("bOverrideAssetId", false) ? values.Get<long>("OverrideAssetId")
                     : values.Get("PersistenceDataAsset", new ObjectReference(0)).IsNull ? null
                     : sources.PersistenceIdOf(ItemSources.ImportedPackage(package, values.Get<ObjectReference>("PersistenceDataAsset")));

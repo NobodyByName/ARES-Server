@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Raid.World.Movement;
@@ -6,12 +7,14 @@ namespace Ares.Raid.World.Movement;
 public static class SprintMovement
 {
     /// <summary>Evaluates maximum speed at the supplied elapsed sprint time.</summary>
+    /// <param name="data">The game data: the sprint burst curve.</param>
     /// <param name="runSpeed">Maximum speed without sprinting.</param>
     /// <param name="parameters">Sprint speed and burst modifiers.</param>
     /// <param name="seconds">Elapsed sprint time in seconds.</param>
     /// <returns>The maximum world speed.</returns>
-    public static double MaximumSpeed(double runSpeed, SprintMovementParameters parameters, double seconds)
+    public static double MaximumSpeed(GameDataSet data, double runSpeed, SprintMovementParameters parameters, double seconds)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!double.IsFinite(seconds) || seconds < 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -23,25 +26,25 @@ public static class SprintMovement
         }
 
         double time = seconds;
-        float peakTime = SprintMovementParameters.BurstCurve[1].Time;
+        IReadOnlyList<WeightedCurveKey> keys = data.Movement.SprintBurstCurve;
+        float peakTime = keys[1].Time;
         if (parameters.DurationBonus > 0 && time > peakTime)
         {
             time = Math.Max(peakTime, time - parameters.DurationBonus);
         }
 
-        double alpha = BurstAlpha(time);
+        double alpha = BurstAlpha(keys, time);
         double speed = runSpeed + ((parameters.BaseSpeed - runSpeed) * Math.Min(1, alpha));
         return speed + (((parameters.BaseSpeed * SprintMovementParameters.BurstSpeedMultiplier) - speed) * Math.Max(0, alpha - 1));
     }
 
-    private static double BurstAlpha(double seconds)
+    private static double BurstAlpha(IReadOnlyList<WeightedCurveKey> keys, double seconds)
     {
         if (!double.IsFinite(seconds))
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
         }
 
-        IReadOnlyList<WeightedCurveKey> keys = SprintMovementParameters.BurstCurve;
         if (seconds <= keys[0].Time)
         {
             return keys[0].Value;

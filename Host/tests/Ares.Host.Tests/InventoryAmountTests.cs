@@ -110,7 +110,7 @@ public sealed class InventoryAmountTests : IDisposable
     private static long Amount(InventoryStore store, string itemId) => store.Snapshot.Items.Single(item => item.InstanceId == itemId).Amount;
 
     private static long MaxAmmo(InventoryStore store) =>
-        store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == WeaponItems.HeavyAmmoAssetId).MaxAmount;
+        store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.HeavyAmmo)).MaxAmount;
 
     private static string AddAmmo(InventoryStore store, long quantity)
     {
@@ -120,13 +120,13 @@ public sealed class InventoryAmountTests : IDisposable
     }
 
     private static string StashSlot(InventoryStore store, int index) =>
-        store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[index];
+        store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[index];
 
-    private static string BackpackSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.BackpackAssetId).Slots[0];
+    private static string BackpackSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.BackpackContainer).Slots[0];
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

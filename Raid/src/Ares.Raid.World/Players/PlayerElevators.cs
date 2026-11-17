@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Movement;
@@ -17,6 +18,7 @@ internal sealed class PlayerElevators : IPlayerFamily
 {
     private readonly ChannelRange _channels;
     private Dictionary<int, (ElevatorChannel State, ReliableKey[] Keys)> _elevators = [];
+    private readonly MapData _map;
     private Dictionary<int, ExtractionPointState> _states = [];
     private HashSet<int> _failed = [];
     private BoundedLog _requests = new(PlayerChannels.InteractionRequestLog);
@@ -28,7 +30,12 @@ internal sealed class PlayerElevators : IPlayerFamily
 
     /// <summary>Creates the elevators of a connection that has none yet.</summary>
     /// <param name="channels">The elevators' channels, one each.</param>
-    public PlayerElevators(ChannelRange channels) => _channels = channels;
+    /// <param name="map">The raid's map: its elevator buttons.</param>
+    public PlayerElevators(ChannelRange channels, MapData map)
+    {
+        _channels = channels;
+        _map = map ?? throw new ArgumentNullException(nameof(map));
+    }
 
     private enum ElevatorChannel
     {
@@ -46,7 +53,7 @@ internal sealed class PlayerElevators : IPlayerFamily
     /// server world time it started, with the descend switch held (+switch@press, ~hold@hold start once the hold runs)
     /// or, once the elevator left, the one that sent it (^switch).
     /// </summary>
-    public string States => string.Join(' ', _states.OrderBy(entry => entry.Key).Select(entry => Describe(entry.Key, entry.Value)));
+    public string States => string.Join(' ', _states.OrderBy(entry => entry.Key).Select(entry => Describe(_map, entry.Key, entry.Value)));
 
     /// <summary>Calls of an elevator by this player.</summary>
     public int Calls { get; private set; }
@@ -116,7 +123,7 @@ internal sealed class PlayerElevators : IPlayerFamily
             && raid.ExtractionStates.Call(called.Index, player.Member.Id, raid.WorldSeconds(now)))
         {
             Calls++;
-            player.ExtendFrameHold(now + ExtractionStates.CallSeconds + PlayerChannels.BreachEndingSeconds);
+            player.ExtendFrameHold(now + raid.ExtractionStates.CallSeconds + PlayerChannels.BreachEndingSeconds);
         }
         else if ((request.Request & PendulumInput.PressRequest) != 0 && _descent is null && Descendable(player, request.Target) is { } descend
             && raid.ExtractionStates.Descend(descend.Point.Index, descend.Button, player.Member.Id, raid.WorldSeconds(now)))
@@ -198,17 +205,17 @@ internal sealed class PlayerElevators : IPlayerFamily
         }
     }
 
-    private static string Describe(int index, ExtractionPointState state)
+    private static string Describe(MapData map, int index, ExtractionPointState state)
     {
         string text = $"{index}:{(state.CalledAt is null ? state.State.ToString() : "Called")}" + (state.ChangedAt is { } at ? $"@{PlayerChannels.Seconds(at)}" : string.Empty);
         if (state.Descent is { } descent)
         {
-            text += $"+{DamExtraction.Buttons[descent.Button].Component}@{PlayerChannels.Seconds(descent.PressedAt)}"
-                + (descent.Holding ? $"~hold@{PlayerChannels.Seconds(descent.HoldStartsAt)}" : string.Empty);
+            text += $"+{map.ExtractionButtons[descent.Button].Component}@{PlayerChannels.Seconds(descent.PressedAt)}"
+                + (descent.Holding ? $"~hold@{PlayerChannels.Seconds(descent.HoldStartsAt(map))}" : string.Empty);
         }
         else if (state.Departed is { } departed && state.State != ExtractionState.Ready)
         {
-            text += $"^{DamExtraction.Buttons[departed.Button].Component}";
+            text += $"^{map.ExtractionButtons[departed.Button].Component}";
         }
 
         return text;
@@ -239,10 +246,10 @@ internal sealed class PlayerElevators : IPlayerFamily
             }
 
             ulong button = descent.Point.Buttons[descent.Button];
-            player.RunInteraction(new PawnInteraction(button, LastInteractionEvent.Succeeded, departed.PressedAt, departed.PressedAt, departed.HoldStartsAt,
+            player.RunInteraction(new PawnInteraction(button, LastInteractionEvent.Succeeded, departed.PressedAt, departed.PressedAt, departed.HoldStartsAt(raid.GameData.Map),
                 player.NextInteractionSequence(), Animation: raid.Extraction.Animation(descent.Button)));
             sender.Queue(Bunches.Actor(ChannelLayout.Pawn, raid.State.InteractorCall(player.Player, FunctionNames.ClientEndInteractionSuccessfullyImplementation, button,
-                DamExtraction.Buttons[descent.Button].Class).Write));
+                raid.GameData.Map.ExtractionButtons[descent.Button].Class).Write));
             CompletedDescents++;
         }
 
@@ -252,7 +259,7 @@ internal sealed class PlayerElevators : IPlayerFamily
 
     private void LogChange(int index, ExtractionPointState state)
     {
-        string entry = Describe(index, state);
+        string entry = Describe(_map, index, state);
         if (_changes.Count == 0 || _changes[^1] != entry)
         {
             _changes.Add(entry);

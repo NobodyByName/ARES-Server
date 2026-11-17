@@ -8,7 +8,7 @@ namespace Ares.Common.Game.Inventory;
 /// Shared item definitions and the inventory frame selected by an equipped augment, built from the game data once at
 /// startup and passed to what needs it.
 /// </summary>
-public sealed partial class LoadoutDefinitions
+public sealed class LoadoutDefinitions
 {
     private readonly IReadOnlyDictionary<long, ItemDefinition> _catalogue;
     private readonly IReadOnlyDictionary<long, long> _augmentFrames;
@@ -16,10 +16,11 @@ public sealed partial class LoadoutDefinitions
     private readonly IReadOnlyDictionary<long, long> _augmentBranches;
     private readonly HashSet<long> _carried;
 
-    /// <summary>Builds the definitions from loaded game data.</summary>
+    /// <summary>Builds the definitions from loaded game data and the server's backend item content.</summary>
     /// <param name="data">The game data.</param>
-    public LoadoutDefinitions(GameDataSet data)
-        : this(ItemDataSources.From(data))
+    /// <param name="content">The backend item content.</param>
+    public LoadoutDefinitions(GameDataSet data, BackendItemContent content)
+        : this(ItemDataSources.From(data, content))
     {
     }
 
@@ -30,29 +31,41 @@ public sealed partial class LoadoutDefinitions
         _augmentMaxWeights = sources.AugmentMaxWeights;
         _augmentBranches = sources.AugmentBranches;
         AugmentSlotAssetId = sources.AugmentSlotAssetId;
+        Content = sources.Content;
+        IReadOnlyDictionary<long, long> qualityLevels = sources.Content.QualityLevels;
 
-        // Catalogue items Host and Raid hold without item-specific code: items without child slots, outside the categories
-        // with gameplay of their own (weapons, shields, augments, hand items, currencies, outpost stations, progress counters).
-        ItemDefinition[] plainItems =
+        // Catalogue items served with a plain menu description: items without child slots, outside the categories with
+        // gameplay of their own (weapons, shields, augments, hand items, currencies, outpost stations, progress counters).
+        ItemDefinition[] described =
         [
             .. sources.Catalogue.Where(item => item is { HasChildSlots: false, Category: not (ItemCategory.Launcher or ItemCategory.Rifle or ItemCategory.Armor
                 or ItemCategory.Augment or ItemCategory.MeleeWeapon or ItemCategory.Unarmed or ItemCategory.Currency or ItemCategory.Generator
                 or ItemCategory.MetaItem) }),
         ];
+
+        // Of those, the items Host and Raid hold without item-specific code: the ones ARES supports (ItemSupport). The
+        // others are served to the menu but never held, carried or rolled as loot.
+        ItemDefinition[] plainItems = [.. described.Where(item => ItemSupport.IsSupported(item.TechnicalName))];
         ItemDescription[] definitions =
         [
             .. sources.MenuDefinitions,
-            .. plainItems.ExceptBy(sources.MenuDefinitions.Select(definition => definition.GameAssetId), item => item.AssetId).Select(Description),
+            .. described.ExceptBy(sources.MenuDefinitions.Select(definition => definition.GameAssetId), item => item.AssetId)
+                .Select(item => Description(item, qualityLevels.GetValueOrDefault(item.AssetId))),
         ];
         _carried = [.. plainItems.Select(item => item.AssetId), sources.LightShield.AssetId, sources.FerroI.AssetId, .. sources.AugmentFrames.Keys];
-        HashSet<long> supported = [.. definitions.Select(definition => definition.GameAssetId)];
+        HashSet<long> supported =
+        [
+            .. definitions.Select(definition => definition.GameAssetId)
+                .Except(described.Where(item => !ItemSupport.IsSupported(item.TechnicalName)).Select(item => item.AssetId)),
+        ];
         All =
         [
             .. definitions.Select(definition => definition with
             {
                 Scrap = ItemRewardPackages.Scrap(sources.ScrapValues.GetValueOrDefault(definition.GameAssetId), sources.CoinsAssetId),
-                Recycle = ItemRewardPackages.Recycle(definition.GameAssetId) is { } recycle && recycle.RewardedItems.All(item => supported.Contains(item.GameAssetId))
-                    ? recycle : null,
+                Recycle = sources.Content.RecycleOutputs.TryGetValue(definition.GameAssetId, out IReadOnlyList<ItemAssetAmount>? outputs)
+                    && outputs.All(item => supported.Contains(item.GameAssetId))
+                    ? ItemRewardPackages.Recycle(outputs) : null,
             }),
         ];
         ByAsset = All.ToDictionary(item => item.GameAssetId);
@@ -65,12 +78,13 @@ public sealed partial class LoadoutDefinitions
     }
 
     /// <summary>
-    /// Supported item definitions, each with its sell value when it has one, and its recycle package when it has one
-    /// and every recycled item is supported.
+    /// The served item definitions, each with its sell value when it has one, and its recycle package when it has one
+    /// and every recycled item is supported. They include the catalogue items ARES serves but does not support
+    /// (<see cref="ItemSupport"/>), which no player can hold.
     /// </summary>
     public IReadOnlyList<ItemDescription> All { get; }
 
-    /// <summary>The supported item definitions by asset id.</summary>
+    /// <summary>The served item definitions by asset id.</summary>
     public IReadOnlyDictionary<long, ItemDescription> ByAsset { get; }
 
     /// <summary>Asset ids of the supported items, by technical name.</summary>
@@ -78,6 +92,15 @@ public sealed partial class LoadoutDefinitions
 
     /// <summary>Asset id of the loadout's augment slot.</summary>
     public long AugmentSlotAssetId { get; }
+
+    /// <summary>Asset id of the loadout root that holds the selected frame.</summary>
+    public long FrameSlotAssetId => Content.FrameSlotAssetId;
+
+    /// <summary>Asset id of the frame selected without an augment.</summary>
+    public long StandardFrameAssetId => Content.StandardFrameAssetId;
+
+    /// <summary>The backend item content the definitions were built from.</summary>
+    internal BackendItemContent Content { get; }
 
     /// <summary>The catalogue items players can carry in a raid, by usable index.</summary>
     public IReadOnlyList<ItemDefinition> CarriedItems { get; }
@@ -89,7 +112,7 @@ public sealed partial class LoadoutDefinitions
     public IReadOnlyList<ItemDefinition> PlainItems { get; }
 
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
-    public long FrameAssetId(long? augmentAssetId) => augmentAssetId is null ? LoadoutItems.StandardFrameAssetId
+    public long FrameAssetId(long? augmentAssetId) => augmentAssetId is null ? StandardFrameAssetId
         : _augmentFrames.TryGetValue(augmentAssetId.Value, out long frame) ? frame
         : throw new InvalidDataException("Unsupported augment");
 
@@ -130,11 +153,12 @@ public sealed partial class LoadoutDefinitions
     private ItemDefinition CarriedItem(long assetId) => SupportsCarriedItem(assetId) ? _catalogue[assetId]
         : throw new InvalidDataException("Unsupported carried inventory item");
 
-    // The menu description of a catalogue item without child slots. The published quality level of every such item is 0.
-    private static ItemDescription Description(ItemDefinition item) => new(item.AssetId, item.ItemType, item.MaxStack, item.Stackable, item.Unique,
-        [.. item.DescriptionTags], [])
+    // The menu description of a catalogue item without child slots.
+    private static ItemDescription Description(ItemDefinition item, long qualityLevel) => new(item.AssetId, item.ItemType, item.MaxStack, item.Stackable,
+        item.Unique, [.. item.DescriptionTags], [])
     {
         BaseGameAssetId = item.BaseAssetId,
+        QualityLevel = qualityLevel,
         SlotConfig = new NoItemSlots(),
     };
 }

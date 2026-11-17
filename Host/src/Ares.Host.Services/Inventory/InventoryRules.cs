@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Ares.Host.Services.Content;
 using Ares.Structs.Backend.Progression;
 
 namespace Ares.Host.Services.Inventory;
@@ -12,20 +11,18 @@ internal sealed record AppliedOperations(PlayerInventory Inventory, bool Changed
 
 /// <summary>
 /// Validates menu inventory operation batches and applies their quantity operations (amount moves, purchases, sales,
-/// recycling and upgrades) to an owned-item state. Parent moves are left to <see cref="ParentMoveLayout"/>.
+/// recycling and upgrades) to an owned-item state, with the definitions, offers and stash upgrade prices of
+/// <paramref name="catalog"/>. Parent moves are left to <see cref="ParentMoveLayout"/>.
 /// </summary>
-internal static class InventoryRules
+internal sealed class InventoryRules(InventoryCatalog catalog)
 {
     private const int MaximumOperations = 64;
-
-    private static readonly Dictionary<long, OfferDescription> s_offers =
-        BackendContent.GameData.OfferDescriptions.OfferDescriptions.ToDictionary(offer => offer.OfferId);
 
     /// <summary>
     /// Checks a batch's shape before it touches any state: the request id, the operation count, every operation's
     /// required fields and payments, and that each bought offer exists. Returns false with the error code otherwise.
     /// </summary>
-    internal static bool TryValidate(InventoryOperationsRequest request, [NotNullWhen(true)] out IReadOnlyList<InventoryOperation>? operations,
+    internal bool TryValidate(InventoryOperationsRequest request, [NotNullWhen(true)] out IReadOnlyList<InventoryOperation>? operations,
         out string rejection)
     {
         rejection = "invalid_inventory_operations";
@@ -44,7 +41,7 @@ internal static class InventoryRules
             return false;
         }
 
-        if (requested.OfType<AcceptOffer>().Any(purchase => !s_offers.ContainsKey(purchase.OfferId)))
+        if (requested.OfType<AcceptOffer>().Any(purchase => catalog.Offer(purchase.OfferId) is null))
         {
             rejection = "unknown_offer";
             operations = null;
@@ -62,8 +59,8 @@ internal static class InventoryRules
     /// the client view of the inventory before the batch. Returns null with the error code when an operation is refused,
     /// and throws <see cref="InvalidDataException"/> or <see cref="OverflowException"/> when one is malformed.
     /// </summary>
-    internal static AppliedOperations? Apply(PlayerInventory inventory, IReadOnlyList<InventoryOperation> operations,
-        IReadOnlyDictionary<string, InventoryItem> before, StashUpgradePrices stashUpgrades, string etag, long updatedAt, out string rejection)
+    internal AppliedOperations? Apply(PlayerInventory inventory, IReadOnlyList<InventoryOperation> operations,
+        IReadOnlyDictionary<string, InventoryItem> before, string etag, long updatedAt, out string rejection)
     {
         // Amount moves and purchases only change quantities, create split stacks and add bought
         // stacks to the stash; the parent moves then decide the final layout, which also places
@@ -108,7 +105,7 @@ internal static class InventoryRules
                     changed = true;
                     break;
                 case UpgradeItem upgrade:
-                    if (Upgrade(inventory, upgrade, before, stashUpgrades, consumed, etag, updatedAt, out rejection) is not { } upgraded)
+                    if (Upgrade(inventory, upgrade, before, consumed, etag, updatedAt, out rejection) is not { } upgraded)
                     {
                         return null;
                     }
@@ -132,11 +129,11 @@ internal static class InventoryRules
     /// by the target id. A source moved in full is removed. New stacks wait in the source's area for
     /// their parent move.
     /// </summary>
-    private static PlayerInventory MoveAmount(PlayerInventory inventory, MoveItemAmount transfer, IReadOnlyDictionary<string, InventoryItem> before,
+    private PlayerInventory MoveAmount(PlayerInventory inventory, MoveItemAmount transfer, IReadOnlyDictionary<string, InventoryItem> before,
         HashSet<string> created, HashSet<string> consumed, string etag, long updatedAt)
     {
         (InventoryArea area, OwnedItem source) = Find(inventory, transfer.FromInstanceId) ?? throw new InvalidDataException("Unknown amount source");
-        ItemDescription definition = InventoryCatalog.ByAsset[InventoryCatalog.AssetId(source.Type)];
+        ItemDescription definition = catalog.ByAsset[catalog.AssetId(source.Type)];
         if (!definition.Stackable || transfer.Amount > source.Quantity || transfer.FromInstanceId == transfer.ToInstanceId)
         {
             throw new InvalidDataException("Invalid amount move");
@@ -162,7 +159,7 @@ internal static class InventoryRules
             }
 
             OwnedItem split = source with { InstanceId = transfer.ToInstanceId, Quantity = transfer.Amount, Slot = null, ETag = etag, UpdatedAt = updatedAt };
-            result = InventoryCatalog.WithItems(result, area, [.. InventoryCatalog.Items(result, area), split]);
+            result = InventoryAreas.WithItems(result, area, [.. InventoryAreas.Items(result, area), split]);
             created.Add(split.InstanceId);
         }
 
@@ -182,10 +179,10 @@ internal static class InventoryRules
     /// filling stacks of the same item before starting new ones. Returns null with the reason when the player
     /// cannot pay or the stash has no room.
     /// </summary>
-    private static PlayerInventory? Accept(PlayerInventory inventory, AcceptOffer purchase, HashSet<string> consumed, string etag, long updatedAt,
+    private PlayerInventory? Accept(PlayerInventory inventory, AcceptOffer purchase, HashSet<string> consumed, string etag, long updatedAt,
         out string rejection)
     {
-        OfferDescription offer = s_offers[purchase.OfferId];
+        OfferDescription offer = catalog.Offer(purchase.OfferId)!;
         rejection = "offer_cost_not_met";
         if (offer.Cost is not ItemAmountsOfferCost cost
             || Pay(inventory, cost.ItemAmounts, purchase.Times, purchase.Payment, consumed, etag, updatedAt) is not { } paid)
@@ -202,12 +199,12 @@ internal static class InventoryRules
     /// offer. The container keeps its identity and contents. Returns null with the reason when the item cannot be
     /// upgraded or the player cannot pay.
     /// </summary>
-    private static PlayerInventory? Upgrade(PlayerInventory inventory, UpgradeItem upgrade, IReadOnlyDictionary<string, InventoryItem> before,
-        StashUpgradePrices stashUpgrades, HashSet<string> consumed, string etag, long updatedAt, out string rejection)
+    private PlayerInventory? Upgrade(PlayerInventory inventory, UpgradeItem upgrade, IReadOnlyDictionary<string, InventoryItem> before,
+        HashSet<string> consumed, string etag, long updatedAt, out string rejection)
     {
         rejection = "item_not_upgradable";
         if (!before.TryGetValue(upgrade.ItemInstanceId, out InventoryItem? item) || item.GameAssetId != inventory.Stash.ContainerAssetId
-            || stashUpgrades.Upgrade(item.GameAssetId) is not { NextItemGameAssetId: not 0 } description
+            || catalog.Upgrade(item.GameAssetId) is not { NextItemGameAssetId: not 0 } description
             || upgrade.TargetItemGameAssetId != 0 && upgrade.TargetItemGameAssetId != description.NextItemGameAssetId)
         {
             return null;
@@ -225,13 +222,13 @@ internal static class InventoryRules
     /// when none are named, from the player's stacks of each cost item, stash first and smaller stacks first. Returns
     /// null when the named stacks do not match the price or the player cannot pay.
     /// </summary>
-    private static PlayerInventory? Pay(PlayerInventory inventory, IReadOnlyList<ItemAssetAmount> price, long times,
+    private PlayerInventory? Pay(PlayerInventory inventory, IReadOnlyList<ItemAssetAmount> price, long times,
         IReadOnlyList<ItemAmountToConsume>? chosen, HashSet<string> consumed, string etag, long updatedAt)
     {
         Dictionary<long, long> due = price.GroupBy(cost => cost.GameAssetId)
             .ToDictionary(group => group.Key, group => checked(group.Sum(cost => cost.Amount) * times));
         Dictionary<string, (InventoryArea Area, OwnedItem Item)> owned = Enum.GetValues<InventoryArea>()
-            .SelectMany(area => InventoryCatalog.Items(inventory, area).Select(item => (Area: area, Item: item)))
+            .SelectMany(area => InventoryAreas.Items(inventory, area).Select(item => (Area: area, Item: item)))
             .ToDictionary(entry => entry.Item.InstanceId, StringComparer.Ordinal);
         Dictionary<string, long> taken = new(StringComparer.Ordinal);
         if (chosen is [_, ..])
@@ -246,7 +243,7 @@ internal static class InventoryRules
             foreach ((long asset, long amount) in due)
             {
                 long remaining = amount;
-                foreach ((_, OwnedItem stack) in owned.Values.Where(entry => InventoryCatalog.AssetId(entry.Item.Type) == asset)
+                foreach ((_, OwnedItem stack) in owned.Values.Where(entry => catalog.AssetId(entry.Item.Type) == asset)
                              .OrderBy(entry => entry.Area).ThenBy(entry => entry.Item.Quantity).TakeWhile(_ => remaining > 0))
                 {
                     long take = Math.Min(remaining, stack.Quantity);
@@ -257,8 +254,8 @@ internal static class InventoryRules
         }
 
         if (taken.Any(pair => !owned.TryGetValue(pair.Key, out (InventoryArea Area, OwnedItem Item) entry) || pair.Value > entry.Item.Quantity
-                || !due.ContainsKey(InventoryCatalog.AssetId(entry.Item.Type)))
-            || due.Any(pair => taken.Where(entry => InventoryCatalog.AssetId(owned[entry.Key].Item.Type) == pair.Key).Sum(entry => entry.Value) != pair.Value))
+                || !due.ContainsKey(catalog.AssetId(entry.Item.Type)))
+            || due.Any(pair => taken.Where(entry => catalog.AssetId(owned[entry.Key].Item.Type) == pair.Key).Sum(entry => entry.Value) != pair.Value))
         {
             return null;
         }
@@ -281,12 +278,12 @@ internal static class InventoryRules
     /// Adds a reward package <paramref name="times"/> over to the stash, filling stacks of the same item before
     /// starting new ones. Returns null when the stash has no room.
     /// </summary>
-    private static PlayerInventory? Give(PlayerInventory inventory, OfferRewardPackage package, long times, string etag, long updatedAt)
+    private PlayerInventory? Give(PlayerInventory inventory, OfferRewardPackage package, long times, string etag, long updatedAt)
     {
         foreach (IGrouping<long, OfferRewardedItem> reward in package.RewardedItems.GroupBy(item => item.GameAssetId))
         {
-            string type = InventoryCatalog.TechnicalName(reward.Key);
-            ItemDescription definition = InventoryCatalog.ByAsset[reward.Key];
+            string type = catalog.TechnicalName(reward.Key);
+            ItemDescription definition = catalog.ByAsset[reward.Key];
             long stackLimit = definition.Stackable ? definition.MaxAmount : 1;
             long remaining = checked(reward.Sum(item => item.Amount) * times);
             List<OwnedItem> stash = [.. inventory.Stash.Items];
@@ -305,14 +302,13 @@ internal static class InventoryRules
 
             while (remaining > 0)
             {
-                if (stash.Count >= inventory.Stash.SlotCount)
+                if (stash.Count >= catalog.StashCapacity(inventory.Stash.ContainerAssetId))
                 {
                     return null;
                 }
 
                 long added = Math.Min(remaining, stackLimit);
-                stash.Add(new OwnedItem(Guid.NewGuid().ToString("D"), type, added,
-                    StorageItems.InitialDurability, StorageItems.InitialMaxDurability, etag, updatedAt));
+                stash.Add(new OwnedItem(Guid.NewGuid().ToString("D"), type, added, OwnedItem.FullDurability, OwnedItem.FullDurability, etag, updatedAt));
                 remaining -= added;
             }
 
@@ -328,12 +324,12 @@ internal static class InventoryRules
     /// stack of each currency, which a sale may not fill beyond its maximum. A stack split off earlier in the batch and sold
     /// whole needs no parent move. Returns null with the reason when the item cannot be sold.
     /// </summary>
-    private static PlayerInventory? Sell(PlayerInventory inventory, ScrapItem sale, HashSet<string> created, HashSet<string> consumed, string etag,
+    private PlayerInventory? Sell(PlayerInventory inventory, ScrapItem sale, HashSet<string> created, HashSet<string> consumed, string etag,
         long updatedAt, out string rejection)
     {
         rejection = "item_not_sellable";
         if (Find(inventory, sale.InstanceId) is not var (area, item) || area == InventoryArea.Wallet
-            || InventoryCatalog.ByAsset[InventoryCatalog.AssetId(item.Type)].Scrap is not { } scrap)
+            || catalog.ByAsset[catalog.AssetId(item.Type)].Scrap is not { } scrap)
         {
             return null;
         }
@@ -348,9 +344,9 @@ internal static class InventoryRules
         inventory = Take(inventory, area, item, amount, created, consumed, etag, updatedAt);
         foreach (IGrouping<long, OfferRewardedItem> reward in scrap.RewardPackage.RewardedItems.GroupBy(rewarded => rewarded.GameAssetId))
         {
-            string currency = InventoryCatalog.TechnicalName(reward.Key);
+            string currency = catalog.TechnicalName(reward.Key);
             long coins = checked(reward.Sum(rewarded => ItemRewardPackages.SaleUnitPrice(rewarded.Amount, item.Durability)) * amount);
-            if (!InventoryCatalog.IsCurrency(currency))
+            if (!catalog.IsCurrency(currency))
             {
                 throw new InvalidDataException("Unsupported scrap reward");
             }
@@ -361,14 +357,14 @@ internal static class InventoryRules
             }
 
             OwnedItem? stack = inventory.Wallet.SingleOrDefault(owned => owned.Type == currency);
-            if (coins > InventoryCatalog.ByAsset[reward.Key].MaxAmount - (stack?.Quantity ?? 0))
+            if (coins > catalog.ByAsset[reward.Key].MaxAmount - (stack?.Quantity ?? 0))
             {
                 rejection = "currency_full";
                 return null;
             }
 
             OwnedItem paid = stack is null
-                ? new OwnedItem(Guid.NewGuid().ToString("D"), currency, coins, StorageItems.InitialDurability, StorageItems.InitialMaxDurability, etag, updatedAt)
+                ? new OwnedItem(Guid.NewGuid().ToString("D"), currency, coins, OwnedItem.FullDurability, OwnedItem.FullDurability, etag, updatedAt)
                 : stack with { Quantity = stack.Quantity + coins, ETag = etag, UpdatedAt = updatedAt };
             inventory = inventory with { Wallet = [.. inventory.Wallet.Where(owned => owned.Type != currency), paid] };
         }
@@ -382,12 +378,12 @@ internal static class InventoryRules
     /// (<see cref="Give"/>). A stack split off earlier in the batch and recycled whole needs no parent move. Returns null
     /// with the reason when the item cannot be recycled or the stash has no room.
     /// </summary>
-    private static PlayerInventory? Recycle(PlayerInventory inventory, RecycleItem recycling, HashSet<string> created, HashSet<string> consumed,
+    private PlayerInventory? Recycle(PlayerInventory inventory, RecycleItem recycling, HashSet<string> created, HashSet<string> consumed,
         string etag, long updatedAt, out string rejection)
     {
         rejection = "item_not_recyclable";
         if (Find(inventory, recycling.InstanceId) is not var (area, item) || area == InventoryArea.Wallet
-            || InventoryCatalog.ByAsset[InventoryCatalog.AssetId(item.Type)].Recycle is not { } package)
+            || catalog.ByAsset[catalog.AssetId(item.Type)].Recycle is not { } package)
         {
             return null;
         }
@@ -426,7 +422,7 @@ internal static class InventoryRules
     {
         foreach (InventoryArea area in Enum.GetValues<InventoryArea>())
         {
-            if (InventoryCatalog.Items(inventory, area).FirstOrDefault(item => item.InstanceId == instanceId) is { } found)
+            if (InventoryAreas.Items(inventory, area).FirstOrDefault(item => item.InstanceId == instanceId) is { } found)
             {
                 return (area, found);
             }
@@ -436,6 +432,6 @@ internal static class InventoryRules
     }
 
     private static PlayerInventory Replace(PlayerInventory inventory, InventoryArea area, string instanceId, OwnedItem? replacement) =>
-        InventoryCatalog.WithItems(inventory, area,
-            [.. InventoryCatalog.Items(inventory, area).Select(item => item.InstanceId == instanceId ? replacement : item).OfType<OwnedItem>()]);
+        InventoryAreas.WithItems(inventory, area,
+            [.. InventoryAreas.Items(inventory, area).Select(item => item.InstanceId == instanceId ? replacement : item).OfType<OwnedItem>()]);
 }

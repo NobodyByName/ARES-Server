@@ -5,8 +5,11 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Ares.Common.Archives;
+using Ares.Common.Game.Content;
 using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
 using Ares.Common.Logging;
+using Ares.Common.Testing;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Inventory;
@@ -20,19 +23,33 @@ namespace Ares.Host.Tests;
 
 /// <summary>
 /// A Host on a test server with its own test database, event log and one shared <see cref="FakeRaidServer"/>
-/// behind every raid slot. <see cref="Client"/> is signed in as the database's test account.
+/// behind every raid slot. <see cref="Client"/> is signed in as the database's test account. The Host runs on the real
+/// game data and the default content (a real-data test: creating the harness skips the test without the game data), or,
+/// from <see cref="Synthetic"/>, on <see cref="SyntheticHost"/>.
 /// </summary>
 internal sealed class HostHarness : IAsyncLifetime
 {
     private readonly StringWriter _log = new();
     private readonly FakeRaidStarter _raids;
+    private readonly GameDataSet _data;
+    private readonly bool _synthetic;
     private WebApplication? _app;
     private HttpClient? _client;
 
     public HostHarness()
+        : this(RealGameData.Require(), synthetic: false)
     {
+    }
+
+    private HostHarness(GameDataSet data, bool synthetic)
+    {
+        _data = data;
+        _synthetic = synthetic;
         _raids = new FakeRaidStarter(Raid);
     }
+
+    /// <summary>A harness on the synthetic game data and content, for tests that need no real items.</summary>
+    public static HostHarness Synthetic() => new(SyntheticHost.Data, synthetic: true);
 
     public TestDatabase Database { get; } = new();
 
@@ -47,6 +64,9 @@ internal sealed class HostHarness : IAsyncLifetime
     public HttpClient Client => _client!;
 
     public PlayerRegistry Players => App.Services.GetRequiredService<PlayerRegistry>();
+
+    /// <summary>The inventory catalogue the Host serves.</summary>
+    public InventoryCatalog Catalog => App.Services.GetRequiredService<InventoryCatalog>();
 
     public async ValueTask InitializeAsync()
     {
@@ -78,8 +98,18 @@ internal sealed class HostHarness : IAsyncLifetime
             Bind = IPAddress.Loopback,
             Port = 18080,
         };
+        if (_synthetic)
+        {
+            AresContent content = SyntheticHost.Content(Path.Combine(Database.Directory, "content"));
+            configuration = configuration with
+            {
+                Content = content,
+                Settings = configuration.Settings with { StashUpgrades = StashUpgradePrices.Of(content.Stash) },
+            };
+        }
+
         _ = Database.Store;
-        _app = HostApplication.Build(configuration, new JsonEventLog(_log), raidStarter: _raids,
+        _app = HostApplication.Build(configuration, new JsonEventLog(_log), _data, raidStarter: _raids,
             configureBuilder: builder => builder.WebHost.UseTestServer());
         await _app.StartAsync(TestContext.Current.CancellationToken);
         _client?.Dispose();
@@ -182,11 +212,11 @@ internal sealed class HostHarness : IAsyncLifetime
             Loadout = state.Loadout with { Augment = looting, Backpack = new PlayerItemContainer([duck with { Slot = 0 }]) },
         }, state.Revision);
         InventorySnapshot snapshot = store.Snapshot;
-        string augmentSlot = snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
-        string stashSlot = snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[0];
-        InventoryItem frame = snapshot.Items.Single(item => item.GameAssetId == AugmentItems.FrameAssetIds[AugmentItems.CombatMk1AssetId]);
+        string augmentSlot = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId;
+        string stashSlot = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[0];
+        InventoryItem frame = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentFrames[TestCatalog.Asset(ItemTechnicalNames.CombatMk1)]);
         InventoryItem backpack = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId)
-            && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+            && TestCatalog.Definitions.StandardBranch(item.GameAssetId) == TestCatalog.Branches.Backpack);
         string backpackSlot = snapshot.Items.Single(item => item.InstanceId == backpack.Slots[0]).Slots[0];
         InventoryOperationsRequest swap = new(
             [new SetItemParents(combat.InstanceId, [augmentSlot]), new SetItemParents(looting.InstanceId, [stashSlot]),

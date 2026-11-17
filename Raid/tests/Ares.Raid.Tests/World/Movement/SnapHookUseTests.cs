@@ -7,7 +7,6 @@ using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -196,7 +195,7 @@ public sealed class SnapHookUseTests
             for (uint tick = thrownAt; cleared is null && tick < thrownAt + 120; tick++)
             {
                 SnapHookControls controls = new(true, tick == thrownAt, tick == thrownAt, presses.Contains(tick), presses.Contains(tick), 0, 0);
-                use = use.StepItem(controls, tick, feet, 0, null);
+                use = use.StepItem(TestGameData.Data, controls, tick, feet, 0, null);
                 if (tick == thrownAt)
                 {
                     // The client's target in place of the aim, which needs the level.
@@ -218,7 +217,7 @@ public sealed class SnapHookUseTests
                         Assert.Equal(Tick(start[1]), tick);
                         pullFirst = tick;
                         open = (Vector(start, 2), Vector(start, 5));
-                        use = use with { Pull = SnapHookMovement.Begin(created, open.Value.Position with { Z = open.Value.Position.Z + DamPlayerStarts.Capsule.HalfHeight }) };
+                        use = use with { Pull = SnapHookMovement.Begin(created, open.Value.Position with { Z = open.Value.Position.Z + TestGameData.Dam.PlayerStartCapsule.HalfHeight }) };
                     }
 
                     continue;
@@ -229,8 +228,8 @@ public sealed class SnapHookUseTests
                 MovementInput movement = new(tick, sbyte.Parse(cells[1], CultureInfo.InvariantCulture), sbyte.Parse(cells[2], CultureInfo.InvariantCulture),
                     cells[3] == "1" ? MovementButtons.Jump : MovementButtons.None);
                 Vector3D direction = FlatGroundMovement.Direction(movement, double.Parse(cells[4], CultureInfo.InvariantCulture));
-                SnapHookStep step = SnapHookMovement.Step(running, new SnapHookInput(direction, cells[3] == "1", presses.Contains(tick)),
-                    position with { Z = position.Z + DamPlayerStarts.Capsule.HalfHeight }, velocity, new SnapHookGround(0, true), time, PawnBlackboard.TickSeconds);
+                SnapHookStep step = SnapHookMovement.Step(TestGameData.Data, running, new SnapHookInput(direction, cells[3] == "1", presses.Contains(tick)),
+                    position with { Z = position.Z + TestGameData.Dam.PlayerStartCapsule.HalfHeight }, velocity, new SnapHookGround(0, true), time, PawnBlackboard.TickSeconds);
                 Vector3D ground = FlatGroundMovement.StepVelocity(velocity, direction, new Vector3D(0, 0, 1), PawnBlackboard.TickSeconds, GroundMovementParameters.Armed,
                     true, true);
                 Vector3D next = step.Exit == SnapHookExit.None ? SnapHookMovement.BlendIn(ground, step.Velocity, step.State.Ticks) : step.Velocity;
@@ -270,7 +269,7 @@ public sealed class SnapHookUseTests
         foreach (string row in s_throws.Where(row => !row.StartsWith(' ') && !row.StartsWith('>') && row.Split(' ')[7] == "0"))
         {
             string[] cells = row.Split(' ');
-            SnapHookHook hook = SnapHookAim.Throw(0, Vector(cells, 1), double.Parse(cells[10], CultureInfo.InvariantCulture),
+            SnapHookHook hook = SnapHookAim.Throw(TestGameData.Data, 0, Vector(cells, 1), double.Parse(cells[10], CultureInfo.InvariantCulture),
                 double.Parse(cells[11], CultureInfo.InvariantCulture), Vector(cells, 12), null);
             Assert.False(hook.HasTarget);
             Vector3D target = Vector(cells, 4);
@@ -285,14 +284,14 @@ public sealed class SnapHookUseTests
         const uint Thrown = 120;
         SnapHookUse use = SnapHookUse.None;
         Assert.Equal((0UL, 0UL, 1UL, s_never), Fields(use));
-        use = use.StepItem(new SnapHookControls(true, false, false, true, true, 0, 0), 110, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, false, false, true, true, 0, 0), 110, default, 0, null);
         Assert.Equal((Bit(QuickItemProtocol.AimingBit), (ulong)QuickItemProtocol.ItemUseAiming, 1UL, s_never), Fields(use));
-        use = use.StepItem(new SnapHookControls(true, true, true, true, false, 0, 0), Thrown, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, true, true, true, false, 0, 0), Thrown, default, 0, null);
         ulong flying = Bit(QuickItemProtocol.HookOutBit) | Bit(QuickItemProtocol.HookFlyingBit);
         ulong thrownAt = PawnSlideState.TimeBias + (ulong)SnapHookUse.Time(Thrown);
         Assert.Equal((flying, (ulong)QuickItemProtocol.ItemUseThrown, 1UL, thrownAt), Fields(use));
         // The node stays fresh until the primary use is let go.
-        use = use.StepItem(new SnapHookControls(true, false, false, true, false, 0, 0), Thrown + 1, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, false, false, true, false, 0, 0), Thrown + 1, default, 0, null);
         Assert.Equal((flying, (ulong)QuickItemProtocol.ItemUseThrown, 0UL, thrownAt), Fields(use));
         use = use with { Hook = use.Hook with { Attached = true, HasTarget = true, PullsPlayer = true, Surface = PhysicalSurfaceType.Concrete } };
         ulong held = Bit(QuickItemProtocol.HookOutBit) | Bit(QuickItemProtocol.HookAttachedBit) | Bit(QuickItemProtocol.HookTargetBit) | Bit(QuickItemProtocol.HookPullsBit);
@@ -300,13 +299,13 @@ public sealed class SnapHookUseTests
         Assert.Equal((ulong)PhysicalSurfaceType.Concrete, Value(use, QuickItemProtocol.SurfaceField));
 
         // Calling back a hook that holds on leaves the cancelled bit; a secondary use still held does not aim.
-        use = use.StepItem(new SnapHookControls(true, false, false, true, true, 0, 0), Thrown + 20, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, false, false, true, true, 0, 0), Thrown + 20, default, 0, null);
         Assert.Equal((Bit(QuickItemProtocol.HookCancelledBit), (ulong)QuickItemProtocol.ItemUseThrown, 0UL, s_never), Fields(use));
         Assert.Equal(PawnSlideState.TimeBias + (ulong)SnapHookUse.Time(Thrown), Value(use, QuickItemProtocol.LastThrowTimeField));
         Assert.Equal(0UL, Value(use, QuickItemProtocol.SurfaceField));
-        use = use.StepItem(new SnapHookControls(true, false, false, true, false, 0, 0), Thrown + 21, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, false, false, true, false, 0, 0), Thrown + 21, default, 0, null);
         Assert.Equal((Bit(QuickItemProtocol.HookCancelledBit), (ulong)QuickItemProtocol.ItemUseThrown, 0UL, s_never), Fields(use));
-        use = use.StepItem(new SnapHookControls(true, false, false, true, true, 0, 0), Thrown + 22, default, 0, null);
+        use = use.StepItem(TestGameData.Data, new SnapHookControls(true, false, false, true, true, 0, 0), Thrown + 22, default, 0, null);
         Assert.Equal(Bit(QuickItemProtocol.HookCancelledBit) | Bit(QuickItemProtocol.AimingBit), Value(use, QuickItemProtocol.HookStateField));
 
         // A node laid out after the throw knows nothing of it.
@@ -335,7 +334,7 @@ public sealed class SnapHookUseTests
         Assert.Null(states[pullFirst - 1].SnapHook.Pull);
         foreach (uint frame in Enumerable.Range((int)pullFirst, (int)(end - pullFirst)).Select(frame => (uint)frame))
         {
-            Assert.Equal(GeneratedGraphStateFlags.SnapHookPulling, states[frame].GraphFlags & GeneratedGraphStateFlags.SnapHookPulling);
+            Assert.Equal(TestGameData.Flags.SnapHookPulling, states[frame].GraphFlags(TestGameData.Data) & TestGameData.Flags.SnapHookPulling);
             // The reports' coarser grid.
             Assert.Equal(Report(frame + 1).X, states[frame].Position.X, 0);
         }
@@ -344,7 +343,7 @@ public sealed class SnapHookUseTests
         Assert.Equal(SnapHookUse.Time(end), states[end].SnapHook.Target!.Value.RemovedAt);
         Assert.True(states[end].SnapHook.Hook.Thrown);
         Assert.False(states[end + 1].SnapHook.Busy);
-        Assert.Equal(0UL, states[end + 1].GraphFlags & GeneratedGraphStateFlags.SnapHookPulling);
+        Assert.Equal(0UL, states[end + 1].GraphFlags(TestGameData.Data) & TestGameData.Flags.SnapHookPulling);
         Assert.Equal(0UL, Value(states[end + 1].SnapHook, QuickItemProtocol.HookStateField, Start));
     }
 
@@ -389,7 +388,7 @@ public sealed class SnapHookUseTests
     private static readonly CollisionWorld s_world = ScriptedClient.World((new Vector3D(0, 0, -10), new Vector3(3000, 3000, 10)),
         (new Vector3D(WallFace + 10, 0, 300), new Vector3(10, 1000, 300)));
 
-    private static PlayerMovement Movement() => new(Start, default, 0, s_world, double.PositiveInfinity);
+    private static PlayerMovement Movement() => new(TestGameData.Data, Start, default, 0, s_world, double.PositiveInfinity);
 
     // Throws at the wall, then reports the character pulled towards it from the pull's second tick on.
     private static (Dictionary<uint, CharacterState> States, uint PullFirst, uint End) PullAtWall(uint? cancelAt)

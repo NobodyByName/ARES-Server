@@ -136,7 +136,7 @@ internal sealed class PlayerObserved : IPlayerFamily
     // Frames are numbered by the character's simulation tick (about 30 per second).
     private static ObservedPlayer OpenObservedPawn(RaidWorld raid, ReliableSender sender, WorldPlayer other, int channel, PlayerMotion motion, double now)
     {
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(raid.GameData.Data, motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
         Rotator facing = new(0, (motion.Motion.Yaw ?? 0) * 180 / Math.PI, 0);
         ActorSpawn spawn = new(other.Pawn, raid.Imports.Archetypes[raid.State.Actor(other.Pawn).ClassPath], 0, motion.Motion.Position, facing);
         ushort pitch = WorldState.CompressedPitch(motion.Pitch);
@@ -173,7 +173,7 @@ internal sealed class PlayerObserved : IPlayerFamily
             return observed;
         }
 
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(raid.GameData.Data, motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
         // The client may already have overwritten a baseline this far back; a reset frame starts from the defaults.
         bool reset = observed.State is null || motion.Tick - observed.Tick >= PendulumFrames.History;
         if (!reset && WithEndedSlots(state, observed.State!) is { } kept)

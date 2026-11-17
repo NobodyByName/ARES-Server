@@ -1,7 +1,6 @@
 using Ares.Raid.World;
 using Ares.Raid.World.Loot;
 using Ares.Structs.Core.Geometry;
-using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World;
@@ -11,15 +10,13 @@ public sealed class LootSpawnSelectionTests
     private const string Tag = "Socket.LootContainer.Tech.Server.Door";
     private const int Seeds = 200;
 
-    private static readonly LootSocket[] s_damSockets =
-    [
-        .. DamLootSockets.All.Where(socket => socket.DataLayer is null && LootSocketClasses.Supported(socket).Count > 0),
-    ];
+    private static readonly Lazy<LootSocket[]> s_damSockets = new(() => [
+        .. TestGameData.Dam.LootSockets.Where(socket => socket.DataLayer is null && LootSocketClasses.Supported(TestGameData.Data, socket).Count > 0),
+    ]);
 
-    private static readonly LootSpawnSelection[] s_damSelections =
-    [
-        .. Enumerable.Range(1, Seeds).Select(seed => LootSpawnSelection.Select(s_damSockets, LootSpawnRules.Dam, [], new Random(seed))),
-    ];
+    private static readonly Lazy<LootSpawnSelection[]> s_damSelections = new(() => [
+        .. Enumerable.Range(1, Seeds).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam), [], new Random(seed))),
+    ]);
 
     [Fact]
     public void A_sphere_limiter_covers_points_within_its_radius()
@@ -64,7 +61,7 @@ public sealed class LootSpawnSelectionTests
             Limiter(LootLimiterShape.Sphere, new Rotator(0, 0, 0), 1e300, []),
             Limiter(LootLimiterShape.Box, new Rotator(10, 20, 30), 1e300, []),
             Limiter(LootLimiterShape.Volumes, new Rotator(0, 0, 0), 0, [new LootLimiterVolume("Volume", [Cube(-1e300, 1e300)])]),
-            .. DamLootLimiters.All,
+            .. TestGameData.Dam.LootLimiters,
         ];
         Vector3D[] points =
         [
@@ -75,7 +72,7 @@ public sealed class LootSpawnSelectionTests
         ];
 
         Assert.All(limiters, limiter => Assert.All(points[..3], point => Assert.False(LootLimiterRules.IsPointInside(limiter, point))));
-        Assert.All(DamLootLimiters.All, limiter => Assert.False(LootLimiterRules.IsPointInside(limiter, points[3])));
+        Assert.All(TestGameData.Dam.LootLimiters, limiter => Assert.False(LootLimiterRules.IsPointInside(limiter, points[3])));
     }
 
     [Fact]
@@ -92,12 +89,12 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void A_group_gets_no_more_than_its_types_most_containers()
     {
-        int most = LootContainerTypes.Find(Tag)!.MaxPerGroup;
+        int most = TestGameData.Loot.FindContainerType(Tag)!.MaxPerGroup;
         LootSocket[] rack = [.. Enumerable.Range(0, most + 3).Select(index => Socket("Rack", $"Door_{index}", Tag, new Vector3D(0, 0, 0)))];
         LootSocket[] otherRack = [.. rack.Select(socket => socket with { Component = "Other" })];
         LootSpawnRules always = new([], [], (_, _) => 1, true);
 
-        LootSpawnSelection selection = LootSpawnSelection.Select([.. rack, .. otherRack], always, [], new Random(3));
+        LootSpawnSelection selection = LootSpawnSelection.Select(TestGameData.Loot, [.. rack, .. otherRack], always, [], new Random(3));
         Assert.Equal(most, selection.Spawns.Take(rack.Length).Count(spawns => spawns));
         Assert.Equal(most, selection.Spawns.Skip(rack.Length).Count(spawns => spawns));
         Assert.Equal((0, 6, 0), (selection.SkippedByRoll, selection.SkippedByGroupCap, selection.SkippedByLimiter));
@@ -116,7 +113,7 @@ public sealed class LootSpawnSelectionTests
         LootLimiter inactive = limiter with { DataLayer = "DataLayer_Inactive", Limits = [new LootLimit("Socket.LootContainer", false, 0)] };
         LootSpawnRules always = new([limiter, inactive], [], (_, _) => 1, true);
 
-        LootSpawnSelection selection = LootSpawnSelection.Select([.. servers, .. outside, .. medical], always, [], new Random(5));
+        LootSpawnSelection selection = LootSpawnSelection.Select(TestGameData.Loot, [.. servers, .. outside, .. medical], always, [], new Random(5));
         Assert.Equal(2, selection.Spawns.Take(servers.Length).Count(spawns => spawns));
         Assert.All(selection.Spawns.Skip(servers.Length), Assert.True);
         Assert.Equal((0, 0, 4), (selection.SkippedByRoll, selection.SkippedByGroupCap, selection.SkippedByLimiter));
@@ -125,30 +122,30 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void Without_rolls_every_socket_spawns()
     {
-        LootSpawnSelection selection = LootSpawnSelection.Select(s_damSockets, LootSpawnRules.EverySocket, [], new Random(1));
+        LootSpawnSelection selection = LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.EverySocket, [], new Random(1));
         Assert.All(selection.Spawns, Assert.True);
     }
 
     [Fact]
     public void A_seed_always_selects_the_same_sockets()
     {
-        LootSpawnSelection again = LootSpawnSelection.Select(s_damSockets, LootSpawnRules.Dam, [], new Random(1));
-        Assert.Equal(s_damSelections[0], again with { Spawns = s_damSelections[0].Spawns, Values = s_damSelections[0].Values });
-        Assert.Equal(s_damSelections[0].Values, again.Values);
-        Assert.Equal(s_damSelections[0].Spawns, again.Spawns);
-        Assert.NotEqual(s_damSelections[0].Spawns, s_damSelections[1].Spawns);
+        LootSpawnSelection again = LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam), [], new Random(1));
+        Assert.Equal(s_damSelections.Value[0], again with { Spawns = s_damSelections.Value[0].Spawns, Values = s_damSelections.Value[0].Values });
+        Assert.Equal(s_damSelections.Value[0].Values, again.Values);
+        Assert.Equal(s_damSelections.Value[0].Spawns, again.Spawns);
+        Assert.NotEqual(s_damSelections.Value[0].Spawns, s_damSelections.Value[1].Spawns);
     }
 
     [Fact]
     public void Dam_raids_never_exceed_a_group_or_limiter_cap()
     {
-        foreach (LootSpawnSelection selection in s_damSelections)
+        foreach (LootSpawnSelection selection in s_damSelections.Value)
         {
-            LootSocket[] spawned = [.. s_damSockets.Where((_, index) => selection.Spawns[index])];
+            LootSocket[] spawned = [.. s_damSockets.Value.Where((_, index) => selection.Spawns[index])];
             Assert.All(
                 spawned.GroupBy(socket => (socket.Cell, socket.Actor, socket.Component, Tag: socket.ContainerTag.ToUpperInvariant())),
-                group => Assert.True(group.Count() <= LootContainerTypes.Find(group.Key.Tag)!.MaxPerGroup, $"{group.Key} has {group.Count()}"));
-            foreach (LootLimiter limiter in DamLootLimiters.All)
+                group => Assert.True(group.Count() <= TestGameData.Loot.FindContainerType(group.Key.Tag)!.MaxPerGroup, $"{group.Key} has {group.Count()}"));
+            foreach (LootLimiter limiter in TestGameData.Dam.LootLimiters)
             {
                 LootSocket[] inside = [.. spawned.Where(socket => LootLimiterRules.IsPointInside(limiter, socket.Location))];
                 Assert.All(
@@ -161,9 +158,9 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void Dam_server_racks_never_get_more_than_two_containers()
     {
-        foreach (LootSpawnSelection selection in s_damSelections)
+        foreach (LootSpawnSelection selection in s_damSelections.Value)
         {
-            int most = s_damSockets
+            int most = s_damSockets.Value
                 .Where((socket, index) => selection.Spawns[index] && string.Equals(socket.ContainerTag, Tag, StringComparison.OrdinalIgnoreCase))
                 .GroupBy(socket => (socket.Cell, socket.Actor, socket.Component))
                 .Select(group => group.Count())
@@ -176,12 +173,12 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void Dam_sockets_roll_their_chance_and_group_caps_take_at_most_two_fifths_of_the_hits_outside_limiters()
     {
-        bool[] limited = [.. s_damSockets.Select(socket => DamLootLimiters.All.Any(limiter => limiter.Limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location)))];
-        foreach (IGrouping<double, int> sameChance in Enumerable.Range(0, s_damSockets.Length).GroupBy(index => LootSpawnDefaults.Chance(s_damSockets[index].ContainerTag, s_damSelections[0].Values[index])))
+        bool[] limited = [.. s_damSockets.Value.Select(socket => TestGameData.Dam.LootLimiters.Any(limiter => limiter.Limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location)))];
+        foreach (IGrouping<double, int> sameChance in Enumerable.Range(0, s_damSockets.Value.Length).GroupBy(index => LootSpawnDefaults.Chance(s_damSockets.Value[index].ContainerTag, s_damSelections.Value[0].Values[index])))
         {
             double chance = sameChance.Key;
             int rolls = sameChance.Count() * Seeds;
-            int spawned = s_damSelections.Sum(selection => sameChance.Count(index => selection.Spawns[index]));
+            int spawned = s_damSelections.Value.Sum(selection => sameChance.Count(index => selection.Spawns[index]));
             Assert.True(spawned / (double)rolls <= chance + (4 * Math.Sqrt(chance * (1 - chance) / rolls)), $"{chance}");
 
             // Area caps take a large part of the hits and a chance of 1 leaves the group cap alone to decide, while the
@@ -193,29 +190,29 @@ public sealed class LootSpawnSelectionTests
                 continue;
             }
 
-            int freeSpawned = s_damSelections.Sum(selection => free.Count(index => selection.Spawns[index]));
+            int freeSpawned = s_damSelections.Value.Sum(selection => free.Count(index => selection.Spawns[index]));
             Assert.True(freeSpawned / (double)(free.Length * Seeds) >= chance * 0.6, $"{chance}");
         }
 
         // Every roll is counted once: as a spawn or under the reason it did not spawn.
-        double hits = s_damSelections.Average(selection => selection.Spawns.Count(spawns => spawns) + selection.SkippedByGroupCap + selection.SkippedByLimiter);
-        double expected = s_damSockets.Select((socket, index) => LootSpawnDefaults.Chance(socket.ContainerTag, s_damSelections[0].Values[index])).Sum();
+        double hits = s_damSelections.Value.Average(selection => selection.Spawns.Count(spawns => spawns) + selection.SkippedByGroupCap + selection.SkippedByLimiter);
+        double expected = s_damSockets.Value.Select((socket, index) => LootSpawnDefaults.Chance(socket.ContainerTag, s_damSelections.Value[0].Values[index])).Sum();
         Assert.InRange(hits, expected * 0.97, expected * 1.03);
-        Assert.All(s_damSelections, selection => Assert.Equal(s_damSockets.Length, selection.Spawns.Count(spawns => spawns) + selection.SkippedByRoll + selection.SkippedByGroupCap + selection.SkippedByLimiter));
+        Assert.All(s_damSelections.Value, selection => Assert.Equal(s_damSockets.Value.Length, selection.Spawns.Count(spawns => spawns) + selection.SkippedByRoll + selection.SkippedByGroupCap + selection.SkippedByLimiter));
     }
 
     [Fact]
     public void A_dam_raid_fills_about_one_socket_in_fourteen()
     {
-        double share = s_damSelections.Average(selection => selection.Spawns.Count(spawns => spawns)) / s_damSockets.Length;
+        double share = s_damSelections.Value.Average(selection => selection.Spawns.Count(spawns => spawns)) / s_damSockets.Value.Length;
         Assert.InRange(share, 0.06, 0.085);
-        Assert.All(s_damSelections, selection => Assert.True(selection.SkippedByGroupCap + selection.SkippedByLimiter > 0));
+        Assert.All(s_damSelections.Value, selection => Assert.True(selection.SkippedByGroupCap + selection.SkippedByLimiter > 0));
     }
 
     [Fact]
     public void A_raid_uses_the_dam_spawn_rolls_by_default()
     {
-        DamWorlds worlds = new(() => 0, DamWorlds.Lightings[0], () => 123456789);
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, DamWorlds.LightingsOf(TestGameData.Dam)[0], () => 123456789);
         worlds.Prepare("match", [1]);
         LootSpawnCounts counts = worlds.Current!.Loot.Counts;
         Assert.InRange(counts.Spawned, 150, 350);

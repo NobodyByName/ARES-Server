@@ -1,4 +1,3 @@
-using Ares.Common.Game.Inventory;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -13,10 +12,11 @@ public sealed class OfferTests : IDisposable
     [Fact]
     public void Every_permanent_offer_costs_and_gives_supported_items()
     {
-        Assert.All(TraderOffers.Celeste.SelectMany(offer => Assert.IsType<ItemAmountsOfferCost>(offer.Cost).ItemAmounts.Select(price => price.GameAssetId)
+        IReadOnlyDictionary<string, long> supported = TestCatalog.Definitions.AssetIds;
+        Assert.All(TestCatalog.Content.TraderOffers.SelectMany(offer => Assert.IsType<ItemAmountsOfferCost>(offer.Cost).ItemAmounts.Select(price => price.GameAssetId)
                 .Concat(offer.RewardPackage.RewardedItems.Select(reward => reward.GameAssetId))),
-            asset => Assert.Contains(asset, LoadoutDefinitions.Generated.AssetIds.Values));
-        Assert.Equal(TraderOffers.Celeste, new InventoryStore(_database.Store, TestDatabase.UserId).GameData().OfferDescriptions.OfferDescriptions);
+            asset => Assert.Contains(asset, supported.Values));
+        Assert.Equal(TestCatalog.Content.TraderOffers, new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).GameData().OfferDescriptions.OfferDescriptions);
     }
 
     [Fact]
@@ -34,7 +34,7 @@ public sealed class OfferTests : IDisposable
         ItemChanges changes = Changes(reply);
         Assert.Equal([small], changes.Deleted);
         Assert.Contains(changes.Updated, item => item.InstanceId == large && item.Amount == 4);
-        InventoryItem bought = Assert.Single(changes.Created, item => item.GameAssetId == LoadoutDefinitions.Generated.AssetIds[ItemTechnicalNames.SheetMetal]);
+        InventoryItem bought = Assert.Single(changes.Created, item => item.GameAssetId == TestCatalog.Definitions.AssetIds[ItemTechnicalNames.SheetMetal]);
         Assert.Equal(1, bought.Amount);
         Assert.Equal(4, Owned(store, ItemTechnicalNames.AssortedSeeds));
         Assert.Equal(1, Owned(store, ItemTechnicalNames.SheetMetal));
@@ -54,7 +54,7 @@ public sealed class OfferTests : IDisposable
         Assert.Equal(200, reply.StatusCode);
         ItemChanges changes = Changes(reply);
         Assert.Contains(changes.Updated, item => item.InstanceId == existing && item.Amount == max);
-        Assert.Equal(2, Assert.Single(changes.Created, item => item.GameAssetId == LoadoutDefinitions.Generated.AssetIds[ItemTechnicalNames.MetalParts]).Amount);
+        Assert.Equal(2, Assert.Single(changes.Created, item => item.GameAssetId == TestCatalog.Definitions.AssetIds[ItemTechnicalNames.MetalParts]).Amount);
         Assert.Equal(0, Owned(store, ItemTechnicalNames.AssortedSeeds));
         Assert.Equal(max + 2, Owned(store, ItemTechnicalNames.MetalParts));
     }
@@ -118,7 +118,7 @@ public sealed class OfferTests : IDisposable
     }
 
     private static OfferDescription Offer(string reward) =>
-        TraderOffers.Celeste.Single(offer => offer.RewardPackage.RewardedItems.Single().GameAssetId == LoadoutDefinitions.Generated.AssetIds[reward]);
+        TestCatalog.Content.TraderOffers.Single(offer => offer.RewardPackage.RewardedItems.Single().GameAssetId == TestCatalog.Definitions.AssetIds[reward]);
 
     private static long Price(OfferDescription offer) => Assert.IsType<ItemAmountsOfferCost>(offer.Cost).ItemAmounts.Single().Amount;
 
@@ -132,7 +132,7 @@ public sealed class OfferTests : IDisposable
     private static long Owned(InventoryStore store, string type) => store.Inventory.Stash.Items.Where(item => item.Type == type).Sum(item => item.Quantity);
 
     private static long MaxAmount(InventoryStore store, string type) =>
-        store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == LoadoutDefinitions.Generated.AssetIds[type]).MaxAmount;
+        store.GameData().ItemDescriptions.ItemDescriptions.Single(item => item.GameAssetId == TestCatalog.Definitions.AssetIds[type]).MaxAmount;
 
     private static string Add(InventoryStore store, string type, long quantity)
     {
@@ -143,7 +143,7 @@ public sealed class OfferTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

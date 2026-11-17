@@ -50,7 +50,7 @@ internal sealed class SyntheticScriptCache
 
     public static uint[] Quad(double value) => Quad((ulong)BitConverter.DoubleToInt64Bits(value));
 
-    public static int OpcodeOf(string name) => Enumerable.Range(0, ScriptOpcodes.Count).Single(code => ScriptOpcodes.Find(code)!.Name == name);
+    private static int OpcodeOf(string name) => Enumerable.Range(0, ScriptOpcodes.Count).Single(code => ScriptOpcodes.Find(code)!.Name == name);
 
     public ScriptCache Parse() => ScriptCacheReader.Parse(Write());
 
@@ -61,7 +61,7 @@ internal sealed class SyntheticScriptCache
         writer.Write(new byte[ScriptCacheReader.HeaderSize]);
         writer.Write(Revision);
         writer.Write(1);
-        byte[] key = Encoding.UTF8.GetBytes("module-key\0");
+        byte[] key = [.. "module-key\0"u8];
         writer.Write(key.Length);
         writer.Write(key);
 
@@ -104,7 +104,7 @@ internal sealed class SyntheticScriptCache
             w.Write(0);
             w.Write(f.Value.IsMethod ? 1 : 0);
             w.Write(f.Value.ObjectType);
-            Items(w, Enumerable.Repeat(new ScriptDataType(0, 68), f.Value.ParameterCount).ToArray(), DataType);
+            Items(w, [.. Enumerable.Repeat(new ScriptDataType(0, 68), f.Value.ParameterCount)], DataType);
             DataType(w, new ScriptDataType(0, 82));
         });
         Items(writer, [.. FunctionIds], (w, f) =>
@@ -141,14 +141,16 @@ internal sealed class SyntheticScriptCache
             Text(w, p.Name);
             DataType(w, p.Type);
             w.Write(p.Flags);
-            if ((p.Flags & ScriptProperty.ReflectedFlag) != 0)
+            if ((p.Flags & ScriptProperty.ReflectedFlag) == 0)
             {
-                Items(w, ["Category"], Text);
-                Items(w, ["Test"], Text);
-                if ((p.Flags & ScriptProperty.ReplicatedFlag) != 0)
-                {
-                    w.Write((byte)0);
-                }
+                return;
+            }
+
+            Items(w, ["Category"], Text);
+            Items(w, ["Test"], Text);
+            if ((p.Flags & ScriptProperty.ReplicatedFlag) != 0)
+            {
+                w.Write((byte)0);
             }
         });
         Items(writer, type.Methods ?? [], WriteFunction);
@@ -161,18 +163,20 @@ internal sealed class SyntheticScriptCache
         writer.Write(0); // behaviours
         writer.Write(0); // behaviour kinds
         writer.Write(type.UnrealSuper is null ? 0 : 1);
-        if (type.UnrealSuper is not null)
+        if (type.UnrealSuper is null)
         {
-            Text(writer, type.UnrealSuper);
-            Text(writer, type.UnrealSuper);
-            writer.Write(new byte[7 * sizeof(int)]);
-            Text(writer, "");
-            Text(writer, "");
-            writer.Write(0);
-            writer.Write(0);
-            writer.Write(0);
-            Text(writer, "");
+            return;
         }
+
+        Text(writer, type.UnrealSuper);
+        Text(writer, type.UnrealSuper);
+        writer.Write(new byte[7 * sizeof(int)]);
+        Text(writer, "");
+        Text(writer, "");
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0);
+        Text(writer, "");
     }
 
     private static void WriteGlobal(BinaryWriter writer, TestGlobal global)
@@ -216,13 +220,15 @@ internal sealed class SyntheticScriptCache
         writer.Write(0);
         Items(writer, [1, 0], (w, v) => w.Write(v));
         writer.Write((byte)(function.UnrealName is null ? 0 : 1));
-        if (function.UnrealName is not null)
+        if (function.UnrealName is null)
         {
-            Text(writer, function.UnrealName);
-            writer.Write(0);
-            writer.Write(0);
-            writer.Write(0u);
+            return;
         }
+
+        Text(writer, function.UnrealName);
+        writer.Write(0);
+        writer.Write(0);
+        writer.Write(0u);
     }
 
     private static void DataType(BinaryWriter writer, ScriptDataType type)
@@ -236,11 +242,13 @@ internal sealed class SyntheticScriptCache
     {
         byte[] bytes = Encoding.UTF8.GetBytes(text);
         writer.Write(bytes.Length);
-        if (bytes.Length > 0)
+        if (bytes.Length == 0)
         {
-            writer.Write(bytes);
-            writer.Write((byte)0);
+            return;
         }
+
+        writer.Write(bytes);
+        writer.Write((byte)0);
     }
 
     private static void Items<T>(BinaryWriter writer, IReadOnlyCollection<T> items, Action<BinaryWriter, T> write)

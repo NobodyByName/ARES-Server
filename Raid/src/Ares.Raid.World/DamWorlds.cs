@@ -30,17 +30,19 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     private RaidWorld? _current;
 
     /// <summary>Creates the world host.</summary>
+    /// <param name="gameData">The game data the server loaded at startup; every raid runs on it.</param>
     /// <param name="clock">Monotonic clock in seconds.</param>
     /// <param name="lighting">Lighting tag for every raid; null picks one by the authored weights.</param>
     /// <param name="random">Random numbers from 0 to 2^31 - 2 (seeds, lighting); a secure generator by default.</param>
-    /// <param name="lootRules">How each raid picks the sockets that get a container; <see cref="LootSpawnRules.Dam"/> by default.</param>
+    /// <param name="lootRules">How each raid picks the sockets that get a container; the map's default rules (<see cref="LootSpawnRules.Of"/>) by default.</param>
     /// <param name="collision">The map's static collision, or null when the operator has none; each raid indexes it.</param>
-    /// <param name="gameData">The game data the server loaded at startup; raids do not read it yet (null in tests that predate it).</param>
-    public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null, MapCollision? collision = null,
-        GameDataSet? gameData = null)
+    public DamWorlds(RaidGameData gameData, Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null,
+        MapCollision? collision = null)
     {
+        GameData = gameData ?? throw new ArgumentNullException(nameof(gameData));
         Clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _random = random ?? (() => RandomNumberGenerator.GetInt32(int.MaxValue));
+        Lightings = LightingsOf(gameData.Map);
         if (lighting is not null && !Lightings.Contains(lighting))
         {
             throw new ArgumentException("Not a lighting of this map.", nameof(lighting));
@@ -48,22 +50,20 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 
         _lighting = lighting;
         MapCollision = collision;
-        GameData = gameData;
-        LootRules = lootRules ?? LootSpawnRules.Dam;
-        Imports = new WorldImports(GameReplication.Catalog);
+        LootRules = lootRules ?? LootSpawnRules.Of(gameData.Map);
+        Imports = new WorldImports(GameReplication.Catalog, gameData);
         Replication = new ReplicationContext(
             GameReplication.Catalog,
-            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DamDoors.InteractionState, DamExtraction.StateEnum],
+            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DoorClasses.InteractionState, ExtractionClasses.StateEnum],
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
-        MapPaths paths = new();
-        Doors = new DoorCatalog(Replication, paths);
-        Ladders = new LadderCatalog(Replication, paths);
-        Extraction = new ExtractionCatalog(Replication, paths);
+        MapPaths paths = new(gameData.Map);
+        Doors = new DoorCatalog(Replication, paths, gameData.Map);
+        Ladders = new LadderCatalog(Replication, paths, gameData.Map);
+        Extraction = new ExtractionCatalog(Replication, paths, gameData.Map);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>
-    public static IReadOnlyList<string> Lightings { get; } =
-        [.. DamLighting.Scenarios.Where(row => row.Weight > 0 && row.FilterTags.Contains(DamMap.LocationTag)).Select(row => row.Tag)];
+    private IReadOnlyList<string> Lightings { get; }
 
     /// <summary>The prepared raid, if any.</summary>
     public RaidWorld? Current
@@ -91,8 +91,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 
     internal MapCollision? MapCollision { get; }
 
-    /// <summary>The game data the server loaded at startup, or null.</summary>
-    public GameDataSet? GameData { get; }
+    /// <summary>The game data the server loaded at startup.</summary>
+    public RaidGameData GameData { get; }
 
     internal LootSpawnRules LootRules { get; }
 
@@ -194,7 +194,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     }
 
     /// <inheritdoc />
-    public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Raid(principal) is null ? null : RaidWorld.Welcome;
+    public ControlWelcome? WelcomeFor(SessionPrincipal principal) => Raid(principal)?.Raid.Welcome;
 
     /// <inheritdoc />
     public IPlayerChannels StartPlayer(SessionPrincipal principal, PlayerLogin login, ChannelIo io)
@@ -244,10 +244,19 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         return member.Left ? null : (raid, member);
     }
 
-    // A weighted pick among the location's lightings.
-    private static string PickLighting(int random)
+    /// <summary>Lightings a raid of a map can use: those of the map's location with a weight.</summary>
+    /// <param name="map">The map's data.</param>
+    /// <returns>Their tags, in lookup order.</returns>
+    public static IReadOnlyList<string> LightingsOf(MapData map)
     {
-        LightingScenario[] rows = [.. DamLighting.Scenarios.Where(row => Lightings.Contains(row.Tag))];
+        ArgumentNullException.ThrowIfNull(map);
+        return [.. map.LightingScenarios.Where(row => row.Weight > 0 && row.FilterTags.Contains(map.GameMode.LocationTag)).Select(row => row.Tag)];
+    }
+
+    // A weighted pick among the location's lightings.
+    private string PickLighting(int random)
+    {
+        LightingScenario[] rows = [.. GameData.Map.LightingScenarios.Where(row => Lightings.Contains(row.Tag))];
         double point = random / (double)int.MaxValue * rows.Sum(row => row.Weight);
         foreach (LightingScenario row in rows)
         {

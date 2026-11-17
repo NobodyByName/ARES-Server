@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 
@@ -85,7 +86,7 @@ public enum SnapHookExit : byte
 /// <param name="State">Pull state after the step.</param>
 /// <param name="Velocity">Velocity of the step.</param>
 /// <param name="Position">Location after moving with <paramref name="Velocity"/> for the step, without collision.</param>
-/// <param name="Flags">Graph state flags (<see cref="GeneratedGraphStateFlags.SnapHookPulling"/>).</param>
+/// <param name="Flags">Graph state flags (<see cref="GraphStateFlags.SnapHookPulling"/>).</param>
 /// <param name="Exit">Why the pull ends after this step, if it does.</param>
 /// <param name="Finished">Whether the step raises the finished state, so the graph returns to ground movement.</param>
 /// <param name="Vaulting">Whether the step's vault query found a vault (the vault takes over instead of finishing).</param>
@@ -134,6 +135,7 @@ public static class SnapHookMovement
         new(target, Vectors.Normal(Vectors.Subtract(target.Position, location)));
 
     /// <summary>Advances a pull by one simulation tick.</summary>
+    /// <param name="data">The game data: the graph state flags of a pull.</param>
     /// <param name="state">Pull state.</param>
     /// <param name="input">The tick's input.</param>
     /// <param name="location">The character's location (capsule centre) before the step.</param>
@@ -145,9 +147,11 @@ public static class SnapHookMovement
     /// <param name="vault">The vault query an ending pull runs (from the location, facing the control heading), if any.</param>
     /// <param name="facing">Flat control facing for the vault query.</param>
     /// <returns>Velocity, flags and the exit, if any.</returns>
-    public static SnapHookStep Step(SnapHookState state, SnapHookInput input, Vector3D location, Vector3D velocity, SnapHookGround ground, int time,
-        double seconds, bool blendingOut = false, RopeSwingVaultQuery? vault = null, Vector3D facing = default)
+    public static SnapHookStep Step(GameDataSet data, SnapHookState state, SnapHookInput input, Vector3D location, Vector3D velocity, SnapHookGround ground,
+        int time, double seconds, bool blendingOut = false, RopeSwingVaultQuery? vault = null, Vector3D facing = default)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        ulong pulling = data.Names.GraphFlags.SnapHookPulling;
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -158,7 +162,7 @@ public static class SnapHookMovement
         {
             next = next with { Target = next.Target.IsActive ? next.Target.Invalidate(time) : next.Target };
             Vector3D plain = EndVelocity(input, velocity, ground, seconds);
-            return new SnapHookStep(next, plain, Advance(location, plain, seconds), GeneratedGraphStateFlags.SnapHookPulling, SnapHookExit.BlendingOut, false, false,
+            return new SnapHookStep(next, plain, Advance(location, plain, seconds), pulling, SnapHookExit.BlendingOut, false, false,
                 null, false, false, CharacterStance.Stand);
         }
 
@@ -166,7 +170,7 @@ public static class SnapHookMovement
         SnapHookExit exit = Ends(next, input, location, velocity, time, out Vector3D pull);
         if (exit != SnapHookExit.None)
         {
-            return End(next, exit, input, location, velocity, ground, time, seconds, stance, vault, facing);
+            return End(pulling, next, exit, input, location, velocity, ground, time, seconds, stance, vault, facing);
         }
 
         Vector3D steer = Vectors.Normal(input.Direction);
@@ -184,7 +188,7 @@ public static class SnapHookMovement
         double share = Math.Min(next.Ticks * PawnBlackboard.TickSeconds / SnapHookParameters.CatchUpSeconds, 1);
         Vector3D result = InterpolateConstant(velocity, flying, seconds, share * SnapHookParameters.CatchUpRate);
         result = Vectors.Add(result, Vectors.Scale(input.Wind, SnapHookParameters.WindPushSpeed * seconds));
-        return new SnapHookStep(next, result, Advance(location, result, seconds), GeneratedGraphStateFlags.SnapHookPulling, SnapHookExit.None, false, false, null,
+        return new SnapHookStep(next, result, Advance(location, result, seconds), pulling, SnapHookExit.None, false, false, null,
             share < 1, true, stance);
     }
 
@@ -299,13 +303,13 @@ public static class SnapHookMovement
 
     // The pull ends: a plain air or ground step, the target released, then a vault query; without a vault the node
     // finishes in the air.
-    private static SnapHookStep End(SnapHookState state, SnapHookExit exit, SnapHookInput input, Vector3D location, Vector3D velocity, SnapHookGround ground,
+    private static SnapHookStep End(ulong pulling, SnapHookState state, SnapHookExit exit, SnapHookInput input, Vector3D location, Vector3D velocity, SnapHookGround ground,
         int time, double seconds, CharacterStance stance, RopeSwingVaultQuery? vault, Vector3D facing)
     {
         Vector3D result = EndVelocity(input, velocity, ground, seconds);
         SnapHookState next = state with { Target = state.Target.IsActive ? state.Target.Invalidate(time) : state.Target };
         bool vaulting = vault is not null && vault(location, facing);
-        return new SnapHookStep(next, result, Advance(location, result, seconds), GeneratedGraphStateFlags.SnapHookPulling, exit, !vaulting, vaulting,
+        return new SnapHookStep(next, result, Advance(location, result, seconds), pulling, exit, !vaulting, vaulting,
             vaulting ? RoughMovementMode.Ground : RoughMovementMode.Air, false, true, stance);
     }
 

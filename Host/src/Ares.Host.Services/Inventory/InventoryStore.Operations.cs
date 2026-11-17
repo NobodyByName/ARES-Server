@@ -12,7 +12,7 @@ public sealed partial class InventoryStore
 
     public ServiceReply Commit(InventoryOperationsRequest request, DateTimeOffset now)
     {
-        if (!InventoryRules.TryValidate(request, out IReadOnlyList<InventoryOperation>? operations, out string invalid))
+        if (!_rules.TryValidate(request, out IReadOnlyList<InventoryOperation>? operations, out string invalid))
         {
             return ServiceReply.Error(400, invalid);
         }
@@ -45,13 +45,13 @@ public sealed partial class InventoryStore
             {
                 string etag = ItemETag(revision);
                 long updatedAt = now.ToUnixTimeMilliseconds();
-                if (InventoryRules.Apply(_state, operations, before, _stashUpgrades, etag, updatedAt, out string rejection) is not { } applied)
+                if (_rules.Apply(_state, operations, before, etag, updatedAt, out string rejection) is not { } applied)
                 {
                     return ServiceReply.Error(400, rejection);
                 }
 
-                string augmentSlot = _projection.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
-                if (ParentMoveLayout.Apply(_userId, applied, parentMoves, augmentSlot, etag, updatedAt, out bool moved) is not { } placed)
+                string augmentSlot = _projection.Snapshot.Items.Single(item => item.GameAssetId == Catalog.AugmentContentSlotAssetId).InstanceId;
+                if (ParentMoveLayout.Apply(Catalog, _userId, applied, parentMoves, augmentSlot, etag, updatedAt, out bool moved) is not { } placed)
                 {
                     return ServiceReply.Error(400, "invalid_inventory_move");
                 }
@@ -68,7 +68,7 @@ public sealed partial class InventoryStore
             IReadOnlyList<string> deleted;
             try
             {
-                HashSet<string> remaining = InventoryProjection.Create(_userId, candidate).Snapshot.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
+                HashSet<string> remaining = InventoryProjection.Create(Catalog, _userId, candidate).Snapshot.Items.Select(item => item.InstanceId).ToHashSet(StringComparer.Ordinal);
                 deleted = [.. before.Keys.Where(id => !remaining.Contains(id))];
                 candidate = candidate with
                 {

@@ -15,7 +15,7 @@ namespace Ares.GameDataExtract.Items;
 internal static class ItemValueReader
 {
     /// <summary>Object path of the cache.</summary>
-    public const string CacheAsset = "/Game/Pioneer/Items/DA_LootValueCache.DA_LootValueCache";
+    private const string CacheAsset = "/Game/Pioneer/Items/DA_LootValueCache.DA_LootValueCache";
 
     private const string DefaultBranch = "Main";
 
@@ -67,16 +67,19 @@ internal static partial class WorldItemListReader
 
         PropertyBag list = PropertyReader.ReadExport(package, package.Exports[0], WorldItemListAsset.Schema, ItemSources.ExportTrailer);
         ImmutableArray<string> classes = [.. list.Get<object[]>(WorldItemListAsset.ClassesMember).Cast<SoftObjectPath>().Select(path => path.Path)];
-        foreach (string path in classes)
+        if (classes.FirstOrDefault(path => !IsBlueprintClassPath(path)) is { } invalid)
         {
-            int dot = path.LastIndexOf('.');
-            if (!ClassPath().IsMatch(path) || path[(dot + 1)..] != path[(path.LastIndexOf('/', dot) + 1)..dot] + "_C")
-            {
-                throw new InvalidDataException($"{WorldItemListAsset.Package}: entry {path} is not a Blueprint class path");
-            }
+            throw new InvalidDataException($"{WorldItemListAsset.Package}: entry {invalid} is not a Blueprint class path");
         }
 
         return classes.Distinct(StringComparer.Ordinal).Count() == classes.Length ? classes : throw new InvalidDataException($"{WorldItemListAsset.Package}: duplicate entries");
+    }
+
+    // A Blueprint class path: /Game/.../Name.Name_C.
+    private static bool IsBlueprintClassPath(string path)
+    {
+        int dot = path.LastIndexOf('.');
+        return ClassPath().IsMatch(path) && path[(dot + 1)..] == path[(path.LastIndexOf('/', dot) + 1)..dot] + "_C";
     }
 
     [GeneratedRegex(@"\A(/[A-Za-z0-9_]+)+\.[A-Za-z0-9_]+_C\z")]

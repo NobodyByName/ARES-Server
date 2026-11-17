@@ -69,7 +69,7 @@ public sealed class PositionFollowingTests
     {
         InputHistory history = new();
         history.Read(Payload(Start + 3, _ => new Vector3D(100, 200, 0)));
-        PlayerMovement movement = new(Start, new Vector3D(100, 200, 0), 0);
+        PlayerMovement movement = new(TestGameData.Data, Start, new Vector3D(100, 200, 0), 0);
 
         CharacterState state = movement.Advance(history, armed: false);
 
@@ -86,7 +86,7 @@ public sealed class PositionFollowingTests
             builder.AddCell("/Game/Cell", []), SyntheticMaps.At(0, 0, -10), PlacementFlags.BlocksPawn);
         CollisionWorld world = new(builder.Build());
         InputHistory history = new();
-        PlayerMovement movement = new(Start, reported(Start), 0, world, tolerance);
+        PlayerMovement movement = new(TestGameData.Data, Start, reported(Start), 0, world, tolerance);
 
         for (uint latest = Start + 3; latest <= Last; latest++)
         {

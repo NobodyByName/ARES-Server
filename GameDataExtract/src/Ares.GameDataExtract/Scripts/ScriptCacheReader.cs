@@ -60,17 +60,17 @@ internal ref struct ScriptCacheReader
             modules.Add(ReadModule());
         }
 
-        Dictionary<long, ScriptTypeReference> types = ReadMap(static (ref ScriptCacheReader r) => r.ReadInt64(), static (ref ScriptCacheReader r) =>
+        Dictionary<long, ScriptTypeReference> types = ReadMap(static (ref r) => r.ReadInt64(), static (ref r) =>
         {
             string name = r.ReadString();
             r.ReadString(); // module
             r.ReadString(); // namespace
             return new ScriptTypeReference(name, r.ReadArray(ReadDataType));
         });
-        Dictionary<int, long> typeIds = ReadMap(static (ref ScriptCacheReader r) => r._reader.ReadInt32(), static (ref ScriptCacheReader r) => r.ReadInt64());
-        Dictionary<long, ScriptFunctionReference> functions = ReadMap(static (ref ScriptCacheReader r) => r.ReadInt64(), ReadFunctionReference);
-        Dictionary<int, long> functionIds = ReadMap(static (ref ScriptCacheReader r) => r._reader.ReadInt32(), static (ref ScriptCacheReader r) => r.ReadInt64());
-        Dictionary<long, string> globals = ReadMap(static (ref ScriptCacheReader r) => r.ReadInt64(), static (ref ScriptCacheReader r) =>
+        Dictionary<int, long> typeIds = ReadMap(static (ref r) => r._reader.ReadInt32(), static (ref r) => r.ReadInt64());
+        Dictionary<long, ScriptFunctionReference> functions = ReadMap(static (ref r) => r.ReadInt64(), ReadFunctionReference);
+        Dictionary<int, long> functionIds = ReadMap(static (ref r) => r._reader.ReadInt32(), static (ref r) => r.ReadInt64());
+        Dictionary<long, string> globals = ReadMap(static (ref r) => r.ReadInt64(), static (ref r) =>
         {
             string name = r.ReadString();
             r.ReadString(); // module
@@ -79,18 +79,15 @@ internal ref struct ScriptCacheReader
             return name;
         });
         SkipStrings(); // names used by the bytecode
-        List<ScriptPropertyReference> properties = ReadArray(static (ref ScriptCacheReader r) =>
+        List<ScriptPropertyReference> properties = ReadArray(static (ref r) =>
         {
             // Key: 2 * (offset << 32 | declaring type id) + 1.
             long key = r.ReadInt64();
             return new ScriptPropertyReference(r.ReadString(), r._reader.ReadInt32(), (int)(key >> 33));
         });
-        if (_reader.Remaining != 0)
-        {
-            throw new InvalidDataException($"Script cache has {_reader.Remaining} bytes after its reference tables");
-        }
-
-        return new ScriptCache(modules, new ScriptReferences(types, typeIds, functions, functionIds, globals, properties));
+        return _reader.Remaining == 0
+            ? new ScriptCache(modules, new ScriptReferences(types, typeIds, functions, functionIds, globals, properties))
+            : throw new InvalidDataException($"Script cache has {_reader.Remaining} bytes after its reference tables");
     }
 
     private ScriptModule ReadModule()
@@ -98,12 +95,12 @@ internal ref struct ScriptCacheReader
         string name = ReadString();
         ReadArray(ReadFunction); // free functions
         List<ScriptClass> classes = ReadArray(ReadClass);
-        List<ScriptEnum> enums = ReadArray(static (ref ScriptCacheReader r) =>
+        List<ScriptEnum> enums = ReadArray(static (ref r) =>
         {
             string enumName = r.ReadString();
             r.ReadString(); // namespace
-            return new ScriptEnum(enumName, r.ReadArray(static (ref ScriptCacheReader s) => s.ReadString()),
-                r.ReadArray(static (ref ScriptCacheReader s) => s._reader.ReadInt32()));
+            return new ScriptEnum(enumName, r.ReadArray(static (ref s) => s.ReadString()),
+                r.ReadArray(static (ref s) => s._reader.ReadInt32()));
         });
         List<ScriptGlobal> globals = ReadArray(ReadGlobal);
         ReadString(); // static class name
@@ -121,30 +118,31 @@ internal ref struct ScriptCacheReader
         ReadDataType(ref r); // return type
         r.ReadArray(ReadDataType); // parameter types
         r.SkipStrings(); // parameter names
-        r.SkipInt32s(); // parameter flags
+        r.SkipInt32Values(); // parameter flags
         r.SkipStrings(); // parameter default expressions
         r._reader.ReadInt32(); // traits
-        uint[] bytecode = [.. r.ReadArray(static (ref ScriptCacheReader s) => s._reader.ReadUInt32())];
-        r.SkipInt32s(); // object variable positions in the bytecode
+        uint[] bytecode = [.. r.ReadArray(static (ref s) => s._reader.ReadUInt32())];
+        r.SkipInt32Values(); // object variable positions in the bytecode
         r._reader.ReadInt32(); // virtual function table slot
-        r.SkipInt64s(); // object variable types
-        r.SkipInt32s(); // object variable offsets
+        r.SkipInt64Values(); // object variable types
+        r.SkipInt32Values(); // object variable offsets
         r._reader.ReadInt32(); // object variables on the heap
-        r.SkipInt32s(); // variable positions
-        r.SkipInt32s(); // variable offsets
-        r.SkipInt32s(); // optional variable info
+        r.SkipInt32Values(); // variable positions
+        r.SkipInt32Values(); // variable offsets
+        r.SkipInt32Values(); // optional variable info
         r._reader.ReadInt32(); // stack needed
         r._reader.ReadUInt32(); // function id
         r._reader.ReadInt32(); // declaration position
-        r.SkipInt32s(); // line numbers
-        if (r.ReadBoolean())
+        r.SkipInt32Values(); // line numbers
+        if (!r.ReadBoolean())
         {
-            r.ReadString(); // engine name
-            r.SkipStrings(); // metadata keys
-            r.SkipStrings(); // metadata values
-            r._reader.ReadUInt32(); // engine function flags
+            return new ScriptFunction(name, bytecode);
         }
 
+        r.ReadString(); // engine name
+        r.SkipStrings(); // metadata keys
+        r.SkipStrings(); // metadata values
+        r._reader.ReadUInt32(); // engine function flags
         return new ScriptFunction(name, bytecode);
     }
 
@@ -155,28 +153,28 @@ internal ref struct ScriptCacheReader
         r._reader.ReadUInt32(); // class flags
         List<ScriptProperty> properties = r.ReadArray(ReadProperty);
         List<ScriptFunction> methods = r.ReadArray(ReadFunction);
-        r.SkipInt32s(); // method table
+        r.SkipInt32Values(); // method table
         r.ReadInt64(); // base type
         r.ReadInt64(); // shadow type
         List<ScriptFunction> constructors = r.ReadArray(ReadFunction);
-        r.SkipInt64s(); // factories
-        r.SkipInt64s(); // behaviour keys
+        r.SkipInt64Values(); // factories
+        r.SkipInt64Values(); // behaviour keys
         r.ReadArray(ReadFunction); // behaviours
-        r.SkipInt32s(); // behaviour kinds
-        string? unrealSuper = null;
-        if (r._reader.ReadInt32() != 0)
+        r.SkipInt32Values(); // behaviour kinds
+        if (r._reader.ReadInt32() == 0)
         {
-            unrealSuper = r.ReadString();
-            r.ReadString(); // code superclass
-            r._reader.Skip(UnrealClassFlagCount * sizeof(int));
-            r.ReadString(); // config name
-            r.ReadString(); // static class name
-            r._reader.ReadInt32(); // placeable
-            r.SkipStrings(); // metadata keys
-            r.SkipStrings(); // metadata values
-            r.ReadString(); // composed onto
+            return new ScriptClass(name, properties, methods, constructors, null);
         }
 
+        string unrealSuper = r.ReadString();
+        r.ReadString(); // code superclass
+        r._reader.Skip(UnrealClassFlagCount * sizeof(int));
+        r.ReadString(); // config name
+        r.ReadString(); // static class name
+        r._reader.ReadInt32(); // placeable
+        r.SkipStrings(); // metadata keys
+        r.SkipStrings(); // metadata values
+        r.ReadString(); // composed onto
         return new ScriptClass(name, properties, methods, constructors, unrealSuper);
     }
 
@@ -185,14 +183,16 @@ internal ref struct ScriptCacheReader
         string name = r.ReadString();
         ScriptDataType type = ReadDataType(ref r);
         uint flags = r._reader.ReadUInt32();
-        if ((flags & ScriptProperty.ReflectedFlag) != 0)
+        if ((flags & ScriptProperty.ReflectedFlag) == 0)
         {
-            r.SkipStrings(); // metadata keys
-            r.SkipStrings(); // metadata values
-            if ((flags & ScriptProperty.ReplicatedFlag) != 0)
-            {
-                r._reader.ReadByte(); // replication condition
-            }
+            return new ScriptProperty(name, type, flags);
+        }
+
+        r.SkipStrings(); // metadata keys
+        r.SkipStrings(); // metadata values
+        if ((flags & ScriptProperty.ReplicatedFlag) != 0)
+        {
+            r._reader.ReadByte(); // replication condition
         }
 
         return new ScriptProperty(name, type, flags);
@@ -267,9 +267,9 @@ internal ref struct ScriptCacheReader
         return map;
     }
 
-    private void SkipInt32s() => _reader.Skip(checked(_reader.ReadCount(Math.Min(MaxCount, _reader.Remaining)) * sizeof(int)));
+    private void SkipInt32Values() => _reader.Skip(checked(_reader.ReadCount(Math.Min(MaxCount, _reader.Remaining)) * sizeof(int)));
 
-    private void SkipInt64s() => _reader.Skip(checked(_reader.ReadCount(Math.Min(MaxCount, _reader.Remaining)) * sizeof(long)));
+    private void SkipInt64Values() => _reader.Skip(checked(_reader.ReadCount(Math.Min(MaxCount, _reader.Remaining)) * sizeof(long)));
 
     private void SkipStrings()
     {

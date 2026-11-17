@@ -1,6 +1,6 @@
 using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
 using Ares.Raid.World.Movement;
-using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
@@ -10,11 +10,16 @@ namespace Ares.Raid.World.Inventory;
 /// <summary>
 /// Server-owned choice of the item in hand, plus Ferro chambers, fire cadence, reload transfers and gadget power.
 /// </summary>
-public sealed class RaidWeapons(RaidInventory inventory)
+/// <param name="inventory">The player's inventory, with the raid's item rules.</param>
+/// <param name="data">The game data: the snap hook item's activation cost.</param>
+public sealed class RaidWeapons(RaidInventory inventory, GameDataSet data)
 {
     // A hook that comes back within its flight (out and back) hit nothing or was called back, and gives its power back.
     private static readonly uint s_flightFrames = Frames(SnapHookParameters.ExtendSeconds + SnapHookParameters.PullbackSeconds);
     private static readonly uint s_rechargePauseFrames = Frames(QuickItemProtocol.PowerRechargePauseSeconds);
+
+    private readonly GameDataSet _data = data ?? throw new ArgumentNullException(nameof(data));
+    private readonly RaidItems _items = inventory.Items;
 
     private sealed class Gun(Guid id)
     {
@@ -113,7 +118,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
             HeldItemInput held = new(Armed ? HeldItemMovementParameters.Default : HeldItemMovementParameters.Unarmed)
             {
                 Changing = _switching,
-                SnapHookReady = hand.Current.Node is { Asset: GadgetItems.SnapHookUsableIndex } && hand.Phase != WeaponProtocol.EquipPhaseUnequipping,
+                SnapHookReady = hand.Current.Node?.Asset == _items.SnapHookIndex && hand.Phase != WeaponProtocol.EquipPhaseUnequipping,
             };
             if (_active is not { } active || !_guns.TryGetValue(active, out Gun? gun))
             {
@@ -203,7 +208,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
             if (gun.State == WeaponProtocol.ReloadingState && frame >= gun.ReadyAt)
             {
                 ContainerItem loading = Equipped().First(item => item?.Id == gun.Id)!;
-                if (inventory.SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, loading.AmmoInClip + inventory.HeavyAmmo), consumeReserve: true))
+                if (inventory.SetChamber(gun.Id, Math.Min(_items.FerroClipSize, loading.AmmoInClip + inventory.HeavyAmmo), consumeReserve: true))
                 {
                     ReloadsCompleted++;
                 }
@@ -219,7 +224,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
                 if (trigger && current is { Durability: > 0, AmmoInClip: > 0 })
                 {
                     inventory.SetChamber(gun.Id, 0);
-                    gun.ReadyAt = frame + Frames(60 / FerroDefaults.FireRate);
+                    gun.ReadyAt = frame + Frames(60 / _items.FerroIFirearm.FireRate);
                     gun.Shots++;
                     gun.State = WeaponProtocol.FiringState;
                     gun.AutoReload = true;
@@ -231,7 +236,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
                     && ((input.ReloadDown && !_reloadDown) || trigger || gun.AutoReload))
                 {
                     gun.State = WeaponProtocol.ReloadingState;
-                    gun.ReadyAt = frame + Frames(FerroDefaults.ReloadSeconds);
+                    gun.ReadyAt = frame + Frames(_items.FerroReloadSeconds);
                     gun.AutoReload = false;
                     Version++;
                 }
@@ -319,8 +324,8 @@ public sealed class RaidWeapons(RaidInventory inventory)
                 [new PendulumIntegerValue(0, Signed(index == WeaponProtocol.HeavyAmmoIndex ? inventory.HeavyAmmo : 0))]))]));
         List<PendulumVariable> result = [template with { Values = values }];
         // The Raider Tool and empty hands nodes link their item objects once the client knows them.
-        foreach ((int slot, int handle, int field) in ((int, int, int)[])[(InventoryBlackboard.MeleeSlot, HandItems.RaiderToolHandle, HandItems.RaiderToolItemInstanceField),
-            (InventoryBlackboard.UnarmedSlot, WeaponProtocol.UnarmedHandle, HandItems.UnarmedItemInstanceField)])
+        foreach ((int slot, int handle, int field) in ((int, int, int)[])[(InventoryBlackboard.MeleeSlot, HandItemFields.RaiderToolHandle, HandItemFields.RaiderToolItemInstanceField),
+            (InventoryBlackboard.UnarmedSlot, WeaponProtocol.UnarmedHandle, HandItemFields.UnarmedItemInstanceField)])
         {
             if (Hand(slot) is not { } item || itemObjects?.GetValueOrDefault(item.Id) is not { } link || link == 0)
             {
@@ -351,26 +356,26 @@ public sealed class RaidWeapons(RaidInventory inventory)
                 new PendulumIntegerValue(WeaponProtocol.WeaponItemCountField, Signed(1)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponDurabilityField, (ulong)(item.Durability * WeaponProtocol.DurabilityMaximum)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponFlagsField, WeaponProtocol.ConsumeAmmoMask | WeaponProtocol.BlockSprintMask | WeaponProtocol.PlayFiringEffectsMask),
-                new PendulumIntegerValue(WeaponProtocol.WeaponEquipTimeField, Units(FerroDefaults.EquipSeconds)),
-                new PendulumIntegerValue(WeaponProtocol.WeaponUnequipTimeField, Units(FerroDefaults.UnequipSeconds)),
-                new PendulumIntegerValue(WeaponProtocol.WeaponOffhandEquipTimeField, Units(FerroDefaults.ReEquipFromItemSeconds)),
-                new PendulumIntegerValue(WeaponProtocol.WeaponOffhandUnequipTimeField, Units(FerroDefaults.UnequipToItemsSeconds)),
-                new PendulumIntegerValue(WeaponProtocol.WeaponReloadTimeField, Units(FerroDefaults.ReloadSeconds)),
-                new PendulumIntegerValue(WeaponProtocol.WeaponZoomTimeField, Units(FerroDefaults.ZoomSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponEquipTimeField, Units(_items.FerroI.EquipSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponUnequipTimeField, Units(_items.FerroI.UnequipSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponOffhandEquipTimeField, Units(_items.FerroI.ReEquipFromItemSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponOffhandUnequipTimeField, Units(_items.FerroI.UnequipToItemsSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponReloadTimeField, Units(_items.FerroReloadSeconds)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponZoomTimeField, Units(_items.FerroIFirearm.ZoomSeconds)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponAmmoField, (ulong)item.AmmoInClip),
                 new PendulumIntegerValue(WeaponProtocol.WeaponReadyTimeField, Signed(checked(remaining * PawnBlackboard.TimePerTick))),
                 new PendulumIntegerValue(WeaponProtocol.WeaponShotCountField, Signed(gun.Shots)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponAmmoIndexField, WeaponProtocol.HeavyAmmoIndex),
-                new PendulumIntegerValue(WeaponProtocol.WeaponClipSizeField, FerroDefaults.ClipSize),
+                new PendulumIntegerValue(WeaponProtocol.WeaponClipSizeField, checked((ulong)_items.FerroClipSize)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponStateField, (ulong)gun.State),
-                new PendulumIntegerValue(WeaponProtocol.WeaponFiringModeField, FerroDefaults.FiringMode),
+                new PendulumIntegerValue(WeaponProtocol.WeaponFiringModeField, FerroProtocol.FiringMode),
                 new PendulumIntegerValue(WeaponProtocol.WeaponReloadStepField, WeaponProtocol.NoReloadStep),
-                new PendulumIntegerValue(WeaponProtocol.WeaponFireRateField, (ulong)Math.Round(FerroDefaults.FireRate * WeaponProtocol.FireRateSteps / WeaponProtocol.FireRateMaximum)),
+                new PendulumIntegerValue(WeaponProtocol.WeaponFireRateField, (ulong)Math.Round(_items.FerroIFirearm.FireRate * WeaponProtocol.FireRateSteps / WeaponProtocol.FireRateMaximum)),
                 new PendulumIntegerValue(WeaponProtocol.WeaponQualityField, WeaponProtocol.QualityBias),
                 // The client indexes one state per authored mod slot of the linked item.
-                new PendulumIntegerValue(WeaponProtocol.WeaponModSlotCountField, FerroDefaults.ModSlotCount),
+                new PendulumIntegerValue(WeaponProtocol.WeaponModSlotCountField, checked((ulong)_items.FerroModSlotCount)),
                 new PendulumArrayValue(WeaponProtocol.WeaponModSlotStatesField,
-                    [.. Enumerable.Range(0, FerroDefaults.ModSlotCount).Select(entry => new PendulumArrayElement(entry,
+                    [.. Enumerable.Range(0, _items.FerroModSlotCount).Select(entry => new PendulumArrayElement(entry,
                         [new PendulumIntegerValue(0, WeaponProtocol.EmptyModSlot)]))]),
             ]));
         }
@@ -384,7 +389,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
                 new PendulumIntegerValue(QuickItemProtocol.ItemNodeDurabilityField,
                     (ulong)((Belt(node.Item)?.Durability ?? 1) * WeaponProtocol.DurabilityMaximum)),
                 new PendulumIntegerValue(QuickItemProtocol.ItemNodeItemInstanceField, itemObjects?.GetValueOrDefault(node.Item) ?? 0),
-                .. hook is { } use && node.Asset == GadgetItems.SnapHookUsableIndex ? use.ItemNodeValues(node.From) : [],
+                .. hook is { } use && node.Asset == _items.SnapHookIndex ? use.ItemNodeValues(node.From) : [],
             ])));
 
         return result;
@@ -516,7 +521,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
     /// <summary>One leg from a firearm or hand item to the wanted item; a quick-use item gets a new node.</summary>
     private Leg Draw(Guid from, Guid wanted, uint start)
     {
-        if (Belt(wanted) is not { } quick || ItemTraitsTable.Generated.Of(quick.AssetIndex).QuickUse is not { } times)
+        if (Belt(wanted) is not { } quick || _items.Traits.Of(quick.AssetIndex).QuickUse is not { } times)
         {
             return new Leg(start, new Held(from), new Held(wanted), new Held(wanted), Units(Times(from).Unequip), Units(Times(wanted).Equip), null, null, from);
         }
@@ -616,7 +621,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
         if (_hookOut is { Released: null } hook && frame > hook.Thrown && (input.AllowPrimary || hand.Current.Node is null))
         {
             GadgetPower = frame - 1 - hook.Thrown <= s_flightFrames
-                ? Math.Min(SnapHookParameters.PowerMaximum, GadgetPower + SnapHookItem.ActivationCost)
+                ? Math.Min(SnapHookParameters.PowerMaximum, GadgetPower + _data.Movement.SnapHookItem.ActivationCost)
                 : PowerWhenUsableAgain(_unpausedPower);
             _unpausedPower = GadgetPower;
             _powerByFrame[frame - 1] = GadgetPower;
@@ -625,9 +630,9 @@ public sealed class RaidWeapons(RaidInventory inventory)
         }
 
         if (_hookOut is not { Released: null } && hand.Current.Node is not null && hand.Phase != WeaponProtocol.EquipPhaseUnequipping
-            && input is { FirePressed: true, AllowPrimary: true, FireBlocked: false } && SnapHookThrow.CanThrow(SnapHookHook.Stowed, GadgetPower))
+            && input is { FirePressed: true, AllowPrimary: true, FireBlocked: false } && SnapHookThrow.CanThrow(_data, SnapHookHook.Stowed, GadgetPower))
         {
-            GadgetPower = SnapHookThrow.PowerAfterThrow(GadgetPower);
+            GadgetPower = SnapHookThrow.PowerAfterThrow(_data, GadgetPower);
             _unpausedPower = GadgetPower;
             _hookOut = (frame, null);
             HookThrows++;
@@ -642,11 +647,12 @@ public sealed class RaidWeapons(RaidInventory inventory)
     /// recharge at or above the cost. Raid's recharge, which does not know when the hook stopped recharging, is ahead by
     /// whole frames of it; much further ahead, the hook was cleared after power was already back.
     /// </summary>
-    private static double PowerWhenUsableAgain(double unpaused)
+    private double PowerWhenUsableAgain(double unpaused)
     {
         const double Step = SnapHookParameters.PowerRechargePerSecond * PawnBlackboard.TickSeconds;
-        double excess = unpaused - SnapHookItem.ActivationCost;
-        return excess < 0 ? SnapHookItem.ActivationCost : excess > Step * s_flightFrames ? unpaused : SnapHookItem.ActivationCost + (excess % Step);
+        double cost = _data.Movement.SnapHookItem.ActivationCost;
+        double excess = unpaused - cost;
+        return excess < 0 ? cost : excess > Step * s_flightFrames ? unpaused : cost + (excess % Step);
     }
 
     /// <summary>One frame of gadget power recharge, paused for a thrown hook from the pause time on.</summary>
@@ -704,35 +710,38 @@ public sealed class RaidWeapons(RaidInventory inventory)
         ContainerItem?[] equipped = Equipped();
         int held = Active(equipped, item) is { } gun ? Array.IndexOf(equipped, gun) : -1;
         return held >= 0 ? WeaponProtocol.FirstWeaponSlot + held
-            : item is { } chosen && Hand(InventoryBlackboard.MeleeSlot)?.Id == chosen ? HandItems.RaiderToolHandle
+            : item is { } chosen && Hand(InventoryBlackboard.MeleeSlot)?.Id == chosen ? HandItemFields.RaiderToolHandle
             : WeaponProtocol.UnarmedHandle;
     }
 
     /// <summary>Authored put-away and draw durations of a firearm or hand item.</summary>
     private (double Unequip, double Equip) Times(Guid item) => Handle(item) switch
     {
-        HandItems.RaiderToolHandle => (HandItems.RaiderToolUnequipSeconds, HandItems.RaiderToolEquipSeconds),
-        WeaponProtocol.UnarmedHandle => (HandItems.UnarmedUnequipSeconds, HandItems.UnarmedEquipSeconds),
-        _ => (FerroDefaults.UnequipSeconds, FerroDefaults.EquipSeconds),
+        HandItemFields.RaiderToolHandle => (_items.RaiderTool.UnequipSeconds, _items.RaiderTool.EquipSeconds),
+        WeaponProtocol.UnarmedHandle => (_items.Unarmed.UnequipSeconds, _items.Unarmed.EquipSeconds),
+        _ => (_items.FerroI.UnequipSeconds, _items.FerroI.EquipSeconds),
     };
 
     /// <summary>Time to put a firearm or hand item away for a quick-use item (a firearm's from its node's offhand unequip time).</summary>
     private double UnequipToItemsSeconds(Guid item) => Handle(item) switch
     {
-        HandItems.RaiderToolHandle => HandItems.RaiderToolUnequipToItemsSeconds,
-        WeaponProtocol.UnarmedHandle => HandItems.UnarmedUnequipToItemsSeconds,
-        _ => FerroDefaults.UnequipToItemsSeconds,
+        HandItemFields.RaiderToolHandle => _items.RaiderTool.UnequipToItemsSeconds,
+        WeaponProtocol.UnarmedHandle => _items.Unarmed.UnequipToItemsSeconds,
+        _ => _items.FerroI.UnequipToItemsSeconds,
     };
 
     /// <summary>Time to draw a firearm or hand item back after a quick-use item (a firearm's from its node's offhand equip time).</summary>
-    private double ReEquipSeconds(Guid item) => Handle(item) is HandItems.RaiderToolHandle or WeaponProtocol.UnarmedHandle
-        ? HandItems.ReEquipFromItemSeconds
-        : FerroDefaults.ReEquipFromItemSeconds;
+    private double ReEquipSeconds(Guid item) => Handle(item) switch
+    {
+        HandItemFields.RaiderToolHandle => _items.RaiderTool.ReEquipFromItemSeconds,
+        WeaponProtocol.UnarmedHandle => _items.Unarmed.ReEquipFromItemSeconds,
+        _ => _items.FerroI.ReEquipFromItemSeconds,
+    };
 
     /// <summary>Whether the item is a quick-use item in the belt.</summary>
-    private bool IsQuick(Guid item) => Belt(item) is { } carried && ItemTraitsTable.Generated.Of(carried.AssetIndex).QuickUse is not null;
+    private bool IsQuick(Guid item) => Belt(item) is { } carried && _items.Traits.Of(carried.AssetIndex).QuickUse is not null;
 
-    private static QuickUseTimes QuickUse(int asset) => ItemTraitsTable.Generated.Of(asset).QuickUse ?? throw new InvalidOperationException("Not a quick-use item");
+    private QuickUseTimes QuickUse(int asset) => _items.Traits.Of(asset).QuickUse ?? throw new InvalidOperationException("Not a quick-use item");
 
     private Guid DefaultItem() => Active(Equipped(), null)?.Id ?? DefaultUnarmed();
 
@@ -754,7 +763,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
     private ContainerItem? Belt(Guid item) => inventory.Containers[inventory.Belt].Items.FirstOrDefault(entry => entry?.Id == item);
 
     private ContainerItem?[] Equipped() => [.. inventory.Containers[inventory.Loadout].Items.Take(2)
-        .Select(item => item?.AssetIndex == WeaponItems.FerroIUsableIndex ? item : null)];
+        .Select(item => item?.AssetIndex == _items.FerroIIndex ? item : null)];
 
     private Gun Get(Guid id)
     {

@@ -5,6 +5,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Ares.Common.Tests" />
+  </ItemGroup>
+
+  <!-- The default ARES content, read by AresContent; ARES-Host also ships copies in default-content/. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Content/Defaults/*.json" LogicalName="Ares.Common.Game.Content.Defaults.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Ares.Common/Ares.Common.csproj" />
     <ProjectReference Include="../Ares.Common.GameData/Ares.Common.GameData.csproj" />
     <ProjectReference Include="../../../Structs/src/Ares.Structs.Game/Ares.Structs.Game.csproj" />

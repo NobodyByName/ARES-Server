@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.Raid.World.Movement;
@@ -88,9 +89,14 @@ public static class StaminaSimulation
     public static int RechargePeriodTicks { get; } = (int)Math.Round(StaminaParameters.RechargePeriodSeconds / PawnBlackboard.TickSeconds);
 
     /// <summary>Stamina a dodge roll of this kind costs when it starts.</summary>
+    /// <param name="data">The game data: the dodge-roll sequences.</param>
     /// <param name="kind">Roll variant.</param>
     /// <returns>The cost.</returns>
-    public static double DodgeRollCost(DodgeRollKind kind) => GeneratedMovementData.DodgeRoll(kind).StaminaCost;
+    public static double DodgeRollCost(GameDataSet data, DodgeRollKind kind)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        return data.Movement.DodgeRoll(kind).StaminaCost;
+    }
 
     /// <summary>Stamina a vault costs when it starts.</summary>
     /// <param name="verticalDistance">Vertical vault distance of the vault query.</param>
@@ -149,9 +155,14 @@ public static class StaminaSimulation
     }
 
     /// <summary>Graph upper tags a stamina state sets in the pawn frame.</summary>
+    /// <param name="data">The game data: the graph state tag bits.</param>
     /// <param name="exhausted">Whether the character is exhausted.</param>
-    /// <returns><see cref="GraphStateUpperTags.StatusExhausted"/> while exhausted, else zero.</returns>
-    public static ulong UpperGraphTags(bool exhausted) => exhausted ? GraphStateUpperTags.StatusExhausted : 0;
+    /// <returns><see cref="GraphTagBits.StatusExhausted"/> while exhausted, else zero.</returns>
+    public static ulong UpperGraphTags(GameDataSet data, bool exhausted)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        return exhausted ? data.Names.GraphTags.StatusExhausted.Mask : 0;
+    }
 
     /// <summary>Advances stamina by one tick: costs, then the drain, then the recharge rate and the recharge.</summary>
     /// <param name="state">State before the tick.</param>

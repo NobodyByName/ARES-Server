@@ -52,6 +52,8 @@ internal static class HostOptions
     internal static HostOption RaidLighting { get; } = new("raid-lighting", "<tag>", "Lighting of every raid", DefaultNote: "picked by the map's weights");
     internal static HostOption GameDataDirectory { get; } = new("game-data-dir", "<dir>",
         "Folder with the game data written by ARES-GameDataExtract; required, Host and every raid load it");
+    internal static HostOption ContentDirectory { get; } = new("content-dir", "<dir>",
+        "Folder whose ARES content files replace the built-in defaults of the same name, passed to every raid", DefaultNote: "the built-in defaults");
     internal static HostOption StashUpgradeCoins { get; } = new("stash-upgrade-coins", "<list>", "Coin price of each stash upgrade, comma-separated from the first",
         DefaultNote: "the game's prices");
     internal static HostOption AuthKeyFile { get; } = new("auth-key-file", "<f>", "Identity signing key, 32-4096 bytes", DefaultNote: "none; tokens are not checked");
@@ -71,7 +73,7 @@ internal static class HostOptions
     internal static IReadOnlyList<HostOption> Settings { get; } =
     [
         Port, Bind, PublicOrigin, AllowNetworkClients, MongoDbUri, MongoDbUriFile, MongoDbDatabase, RaidExecutable, SessionControlTokenFile,
-        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, GameDataDirectory, StashUpgradeCoins, AuthKeyFile,
+        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, GameDataDirectory, ContentDirectory, StashUpgradeCoins, AuthKeyFile,
         ArchiveKeysFile, ServerName, Motd, GameBuildId, RaidCapacity, LogFile, Console,
     ];
 

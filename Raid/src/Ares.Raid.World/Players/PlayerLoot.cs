@@ -1,9 +1,9 @@
 using Ares.Raid.Transport;
+using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
-using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
@@ -25,9 +25,6 @@ internal sealed class PlayerLoot : IPlayerFamily
     private const int MaxDeliveries = 24;
     private const int RequestLog = 40;
     private const int FailureLog = 16;
-
-    // Longest time to put the held item away and draw the raider tool.
-    private const double ToolDrawSeconds = FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds;
 
     private readonly ChannelRange _channels;
     private byte[] _known = [];
@@ -301,6 +298,9 @@ internal sealed class PlayerLoot : IPlayerFamily
     private static LootKnowledge DefaultKnowledge(RaidWorld raid, LootContainer container) =>
         raid.LootStates.OpenedAt(container.Index) is null ? LootKnowledge.Closed : LootKnowledge.Opened;
 
+    // Longest time to put the held item away and draw the raider tool.
+    private static double ToolDrawSeconds(RaidItems items) => items.FerroI.UnequipSeconds + items.RaiderTool.EquipSeconds;
+
     // Runs this player's search: names the character's interactor once, starts a requested search (the client
     // lines up, then holds), cancels it on movement, opens the container when the hold ends, and closes it when
     // the player closes the looting menu or walks away. What the player leaves inside stays in the raid's loot state.
@@ -316,7 +316,7 @@ internal sealed class PlayerLoot : IPlayerFamily
             // An opened container has no breach left: it opens again once the character is lined up. A press
             // that takes the raider tool out first lines up only once the held item is put away and the tool drawn.
             double? opened = raid.LootStates.OpenedAt(pressed.Index);
-            double draw = drawsTool && type.EquipsRaiderTool && opened is null ? ToolDrawSeconds : 0;
+            double draw = drawsTool && type.EquipsRaiderTool && opened is null ? ToolDrawSeconds(raid.GameData.Items) : 0;
             double requested = raid.WorldSeconds(now) + draw;
             _search = (pressed, player.InputFrame ?? 0, requested, requested + type.AlignmentSeconds,
                 now + draw + type.AlignmentSeconds + (opened is null ? type.HoldSeconds : LootInteractions.OpenedHoldSeconds));
@@ -336,7 +336,7 @@ internal sealed class PlayerLoot : IPlayerFamily
             }
             else if (now >= opensAt && player.InteractorExported)
             {
-                int id = player.Member.Inventory.OpenWorldContainer(raid.LootStates.Items(container.Index), LootStates.UnitWeights);
+                int id = player.Member.Inventory.OpenWorldContainer(raid.LootStates.Items(container.Index), raid.GameData.Items.UnitWeights);
                 raid.LootStates.Open(container.Index, raid.WorldSeconds(now));
                 _search = null;
                 _open = (container, id);

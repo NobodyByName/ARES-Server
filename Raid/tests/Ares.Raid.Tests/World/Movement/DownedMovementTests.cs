@@ -16,7 +16,7 @@ public sealed class DownedMovementTests
     private static DownedInput Downed(MovementInput movement) => new(movement, 0, true, false, true, s_up);
 
     private static DownedStep Step(DownedState state, DownedInput input, Vector3D previous = default) =>
-        DownedMovement.Step(state, input, previous, Tick, steerAboveMaximum: true, fixBrakingOvershoot: true);
+        DownedMovement.Step(TestGameData.Data, state, input, previous, Tick, steerAboveMaximum: true, fixBrakingOvershoot: true);
 
     [Fact]
     public void Going_down_holds_the_character_for_one_and_a_half_seconds()
@@ -28,14 +28,14 @@ public sealed class DownedMovementTests
             DownedStep held = Step(state, Downed(s_forward), velocity);
             Assert.Equal(DownedPhase.GoingDown, held.Phase);
             Assert.Equal(default, held.Velocity);
-            Assert.NotEqual(0UL, held.GraphTags & GraphStateTags.AnimationPendulumStateDeathToDbno);
+            Assert.NotEqual(0UL, held.GraphTags & TestGameData.Tags.AnimationPendulumStateDeathToDbno.Mask);
             (state, velocity) = (held.State, held.Velocity);
         }
 
         DownedStep crawling = Step(state, Downed(s_forward), velocity);
         Assert.Equal(DownedPhase.Crawling, crawling.Phase);
-        Assert.Equal(0UL, crawling.GraphTags & GraphStateTags.AnimationPendulumStateDeathToDbno);
-        Assert.Equal(GeneratedGraphStateFlags.DownedNodeTags, crawling.GraphTags);
+        Assert.Equal(0UL, crawling.GraphTags & TestGameData.Tags.AnimationPendulumStateDeathToDbno.Mask);
+        Assert.Equal(TestGameData.Flags.DownedNodeTags, crawling.GraphTags);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public sealed class DownedMovementTests
         DownedStep step = Step(state, revived);
         Assert.Equal(DownedPhase.StandingUp, step.Phase);
         Assert.Equal(50, step.State.OutOfDownedTick);
-        Assert.NotEqual(0UL, step.GraphTags & GraphStateTags.AnimationPendulumStateDbnoToBaseMove);
+        Assert.NotEqual(0UL, step.GraphTags & TestGameData.Tags.AnimationPendulumStateDbnoToBaseMove.Mask);
         for (int tick = 51; tick <= 110; tick++)
         {
             step = Step(step.State, revived);
@@ -139,7 +139,7 @@ public sealed class DownedMovementTests
         step = Step(step.State, revived);
         Assert.Equal(DownedExit.StoodUp, step.Exit);
         Assert.True(step.Raises(DownedTransientState.Finished));
-        Assert.Equal(0UL, step.GraphTags & GraphStateTags.AnimationPendulumStateDbnoToBaseMove);
+        Assert.Equal(0UL, step.GraphTags & TestGameData.Tags.AnimationPendulumStateDbnoToBaseMove.Mask);
     }
 
     [Fact]

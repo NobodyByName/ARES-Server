@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Ares.Common.Game.Content;
 using Ares.Common.Game.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
@@ -17,35 +18,22 @@ public sealed class RaidInventory
     private readonly Dictionary<Guid, InventoryItem> _brought = [];
     private readonly ContainerItem? _augment;
 
-    // Each loadout slot filled from an equipment branch.
-    private static readonly (int Slot, long Branch)[] s_loadoutBranches =
-    [
-        (InventoryBlackboard.Firearm1Slot, LoadoutItems.Firearm1SlotAssetId),
-        (InventoryBlackboard.Firearm2Slot, LoadoutItems.Firearm2SlotAssetId),
-        (InventoryBlackboard.ArmorSlot, LoadoutItems.ArmorSlotAssetId),
-        (InventoryBlackboard.MeleeSlot, LoadoutItems.MeleeSlotAssetId),
-    ];
-
-    // Maximum stack size of each supported item; items without one, such as hand items, never stack.
-    private static readonly Dictionary<ushort, int> s_maxAmounts = LoadoutDefinitions.Generated.All
-        .Where(item => LoadoutDefinitions.Generated.SupportsCarriedItem(item.GameAssetId))
-        .ToDictionary(item => checked((ushort)LoadoutDefinitions.Generated.UsableIndex(item.GameAssetId)), item => checked((int)item.MaxAmount));
-
-    // Asset id of each supported item by its usable index, for reporting carried items as Host item records.
-    private static readonly Dictionary<ushort, long> s_assetIds = LoadoutDefinitions.Generated.All
-        .Where(item => LoadoutDefinitions.Generated.SupportsCarriedItem(item.GameAssetId))
-        .ToDictionary(item => checked((ushort)LoadoutDefinitions.Generated.UsableIndex(item.GameAssetId)), item => item.GameAssetId);
+    // Maximum durability of an item new in this raid: Host stores durability as a fraction of a maximum of 1.
+    private const double NewItemMaxDurability = 1.0;
 
     /// <summary>Prepares the selected frame, preserving carried item identities and amounts.</summary>
+    /// <param name="items">The raid's item rules.</param>
     /// <param name="loadout">The frozen loadout accepted by this raid.</param>
-    public RaidInventory(PlayerLoadout loadout)
+    public RaidInventory(RaidItems items, PlayerLoadout loadout)
     {
+        Items = items ?? throw new ArgumentNullException(nameof(items));
         ArgumentNullException.ThrowIfNull(loadout);
-        IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.Generated.ByAsset;
+        LoadoutDefinitions rules = items.Definitions;
+        IReadOnlyDictionary<long, ItemDescription> definitions = rules.ByAsset;
         LoadoutContents parsed;
         try
         {
-            parsed = LoadoutTree.Parse(LoadoutDefinitions.Generated, loadout);
+            parsed = LoadoutTree.Parse(rules, loadout);
         }
         catch (InvalidDataException error)
         {
@@ -53,33 +41,42 @@ public sealed class RaidInventory
         }
 
         AugmentAssetId = parsed.Augment?.GameAssetId;
-        FrameAssetId = parsed.FrameAssetId(LoadoutDefinitions.Generated);
+        FrameAssetId = parsed.FrameAssetId(rules);
         _augment = parsed.Augment is { } augment ? Carry(augment) : null;
         Dictionary<long, ReadOnlyCollection<ContainerItem?>> branches = parsed.Branches.ToDictionary(branch => branch.Key,
             branch => Array.AsReadOnly<ContainerItem?>([.. branch.Value.Select(item => item is null ? null : Carry(item))]));
 
+        // Each loadout slot filled from an equipment branch.
+        LoadoutBranches places = items.LoadoutBranches;
+        (int Slot, long Branch)[] loadoutBranches =
+        [
+            (InventoryBlackboard.Firearm1Slot, places.MainWeapon),
+            (InventoryBlackboard.Firearm2Slot, places.SecondaryWeapon),
+            (InventoryBlackboard.ArmorSlot, places.Shield),
+            (InventoryBlackboard.MeleeSlot, places.Melee),
+        ];
         List<ItemContainerState> containers = [];
         ContainerItem?[] equipped = new ContainerItem?[InventoryBlackboard.LoadoutSlotCount];
-        foreach ((int slot, long branch) in s_loadoutBranches)
+        foreach ((int slot, long branch) in loadoutBranches)
         {
             equipped[slot] = Branch(branch).Single();
         }
 
         // Every raider also holds the Raider Tool and empty hands. The client draws them by item (keys 3 and 7),
         // so both exist as raid-only items in their loadout slots; they cannot be moved and add no weight.
-        equipped[InventoryBlackboard.MeleeSlot] ??= new ContainerItem(HandItems.RaiderToolUsableIndex, Guid.NewGuid(), 1, 1);
-        equipped[InventoryBlackboard.UnarmedSlot] = new ContainerItem(HandItems.UnarmedUsableIndex, Guid.NewGuid(), 1, 1);
-        _unitWeights.TryAdd(HandItems.RaiderToolUsableIndex, 0);
-        _unitWeights.TryAdd(HandItems.UnarmedUsableIndex, 0);
+        equipped[InventoryBlackboard.MeleeSlot] ??= new ContainerItem(items.RaiderToolIndex, Guid.NewGuid(), 1, 1);
+        equipped[InventoryBlackboard.UnarmedSlot] = new ContainerItem(items.UnarmedIndex, Guid.NewGuid(), 1, 1);
+        _unitWeights.TryAdd(items.RaiderToolIndex, 0);
+        _unitWeights.TryAdd(items.UnarmedIndex, 0);
         Add(nameof(Loadout), equipped);
-        foreach ((int slot, long branch) in s_loadoutBranches)
+        foreach ((int slot, long branch) in loadoutBranches)
         {
             Allow(Loadout, slot, branch);
         }
 
-        Add(nameof(Backpack), Branch(LoadoutItems.BackpackSlotAssetId), LoadoutItems.BackpackSlotAssetId);
-        Add(nameof(Belt), Branch(LoadoutItems.BeltSlotAssetId), LoadoutItems.BeltSlotAssetId);
-        Add(nameof(SafePouch), Branch(LoadoutItems.SafePocketSlotAssetId), LoadoutItems.SafePocketSlotAssetId);
+        Add(nameof(Backpack), Branch(places.Backpack), places.Backpack);
+        Add(nameof(Belt), Branch(places.QuickUse), places.QuickUse);
+        Add(nameof(SafePouch), Branch(places.SafePockets), places.SafePockets);
         Add(nameof(Auxiliary), []);
         // The client indexes the container list with every weapon's and armor item's mod container and stops
         // its whole character tick when the index is invalid. Each such item gets its own empty mod container,
@@ -89,7 +86,7 @@ public sealed class RaidInventory
             ContainerItem?[] contents = [.. containers[container].Items];
             for (int slot = 0; slot < contents.Length; slot++)
             {
-                if (contents[slot] is not { } item || ItemTraitsTable.Generated.Of(item.AssetIndex).ModSlotCount is not { } modSlots)
+                if (contents[slot] is not { } item || items.Traits.Of(item.AssetIndex).ModSlotCount is not { } modSlots)
                 {
                     continue;
                 }
@@ -108,10 +105,10 @@ public sealed class RaidInventory
             foreach (int slot in (int[])[InventoryBlackboard.Firearm1Slot, InventoryBlackboard.Firearm2Slot])
             {
                 // With fewer rounds than the magazine holds, the gun takes them all.
-                if (Containers[Loadout].Items[slot] is { AmmoInClip: 0 } gun && ItemTraitsTable.Generated.Of(gun.AssetIndex).Ammunition is { } ammo
+                if (Containers[Loadout].Items[slot] is { AmmoInClip: 0 } gun && items.Traits.Of(gun.AssetIndex).Ammunition is { } ammo
                     && Rounds(ammo) > 0)
                 {
-                    SetChamber(gun.Id, Math.Min(FerroDefaults.ClipSize, Rounds(ammo)), consumeReserve: true);
+                    SetChamber(gun.Id, Math.Min(items.FerroClipSize, Rounds(ammo)), consumeReserve: true);
                 }
             }
 
@@ -146,9 +143,9 @@ public sealed class RaidInventory
         // A slot holds the carried items its equipment branch's content slots allow.
         void Allow(int handle, int index, long branchAsset)
         {
-            if (definitions[LoadoutDefinitions.Generated.Container(FrameAssetId, branchAsset).SlotAssetId].SlotConfig is SingleItemSlot slot)
+            if (definitions[rules.Container(FrameAssetId, branchAsset).SlotAssetId].SlotConfig is SingleItemSlot slot)
             {
-                _allowedSlots.Add((handle, index), [.. slot.AllowedSlotAssetIds.Where(LoadoutDefinitions.Generated.SupportsCarriedItem).Select(LoadoutDefinitions.Generated.UsableIndex)]);
+                _allowedSlots.Add((handle, index), [.. slot.AllowedSlotAssetIds.Where(rules.SupportsCarriedItem).Select(rules.UsableIndex)]);
             }
         }
 
@@ -159,7 +156,7 @@ public sealed class RaidInventory
                 return contents;
             }
 
-            ItemSlotArray slots = LoadoutDefinitions.Generated.Container(FrameAssetId, asset);
+            ItemSlotArray slots = rules.Container(FrameAssetId, asset);
             return Array.AsReadOnly(new ContainerItem?[checked((int)slots.NumberOfSlots)]);
         }
 
@@ -171,11 +168,14 @@ public sealed class RaidInventory
                 throw new WorldPreparationException("Unsupported carried inventory item");
             }
 
-            ushort usableIndex = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(item.GameAssetId));
-            _unitWeights[usableIndex] = LoadoutDefinitions.Generated.ItemWeight(item.GameAssetId);
+            ushort usableIndex = checked((ushort)rules.UsableIndex(item.GameAssetId));
+            _unitWeights[usableIndex] = rules.ItemWeight(item.GameAssetId);
             return new ContainerItem(usableIndex, guid, checked((int)item.Amount), DurabilityFraction(item));
         }
     }
+
+    /// <summary>The raid's item rules.</summary>
+    public RaidItems Items { get; }
 
     /// <summary>The equipped augment, or null for the standard frame.</summary>
     public long? AugmentAssetId { get; }
@@ -184,20 +184,20 @@ public sealed class RaidInventory
     public long FrameAssetId { get; }
 
     /// <summary>The carrying-weight limit selected by the equipped augment.</summary>
-    public double MaxWeight => LoadoutDefinitions.Generated.MaximumWeight(AugmentAssetId);
+    public double MaxWeight => Items.Definitions.MaximumWeight(AugmentAssetId);
 
     /// <summary>Current carried weight, counting stack amounts and excluding the equipped augment.</summary>
     public double Weight => Carried.SelectMany(container => container.Items).OfType<ContainerItem>()
-        .Sum(item => (_unitWeights[item.AssetIndex] * item.Amount) + (item.AmmoInClip * WeaponItems.HeavyAmmoWeight));
+        .Sum(item => (_unitWeights[item.AssetIndex] * item.Amount) + (item.AmmoInClip * Items.HeavyAmmo.Weight));
 
     /// <summary>Heavy Ammo available in carried containers, excluding rounds already chambered.</summary>
-    public int HeavyAmmo => Rounds(WeaponItems.HeavyAmmoUsableIndex);
+    public int HeavyAmmo => Rounds(Items.HeavyAmmoIndex);
 
     /// <summary>Changes a Ferro chamber, optionally loading the added rounds from carried ammunition of the gun atomically.</summary>
     /// <remarks>Loading takes from the first carried stacks and fails when they hold too few rounds.</remarks>
     public bool SetChamber(Guid id, int amount, bool consumeReserve = false)
     {
-        if (amount is < 0 or > FerroDefaults.ClipSize)
+        if (amount < 0 || amount > Items.FerroClipSize)
         {
             return false;
         }
@@ -206,7 +206,7 @@ public sealed class RaidInventory
         (int Container, int Slot)[] carried = [.. Enumerable.Range(0, Containers.Count).Where(container => container != OpenLoot)
             .SelectMany(container => Enumerable.Range(0, Containers[container].Items.Count), (container, slot) => (Container: container, Slot: slot))];
         int found = Array.FindIndex(carried, position => Item(position)?.Id == id);
-        if (found < 0 || Item(carried[found]) is not { } gun || ItemTraitsTable.Generated.Of(gun.AssetIndex).Ammunition is not { } ammunition
+        if (found < 0 || Item(carried[found]) is not { } gun || Items.Traits.Of(gun.AssetIndex).Ammunition is not { } ammunition
             || gun.AmmoInClip == amount)
         {
             return false;
@@ -254,7 +254,7 @@ public sealed class RaidInventory
     public ContainerItem? Shield => Containers[Loadout].Items[InventoryBlackboard.ArmorSlot];
 
     /// <summary>Available shield capacity. Positive item durability permits the full authored capacity.</summary>
-    public double ShieldHealth => Shield is { Durability: > 0 } ? ShieldDefaults.MaxHealth : 0;
+    public double ShieldHealth => Shield is { Durability: > 0 } ? Items.ShieldMaxHealth : 0;
 
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];
@@ -368,7 +368,7 @@ public sealed class RaidInventory
         }
 
         int remaining = item.Amount;
-        int maximum = s_maxAmounts.GetValueOrDefault(item.AssetIndex);
+        int maximum = Items.MaxAmounts.GetValueOrDefault(item.AssetIndex);
         ItemContainerState[] updated = [.. Containers];
         foreach (int handle in (int[])[Backpack, Belt, SafePouch])
         {
@@ -501,7 +501,7 @@ public sealed class RaidInventory
         void Carry(string place, int slot, ContainerItem item)
         {
             carried.Add(new CarriedItem(place, slot, Record(item)));
-            if (!extracted || item.AmmoInClip <= 0 || ItemTraitsTable.Generated.Of(item.AssetIndex).Ammunition is not { } ammo)
+            if (!extracted || item.AmmoInClip <= 0 || Items.Traits.Of(item.AssetIndex).Ammunition is not { } ammo)
             {
                 return;
             }
@@ -510,11 +510,6 @@ public sealed class RaidInventory
             unloaded[index] = unloaded.GetValueOrDefault(index) + item.AmmoInClip;
         }
     }
-
-    /// <summary>The maximum stack size of an item; 0 for items that never stack or leave the inventory, such as hand items.</summary>
-    /// <param name="assetIndex">Index of the item in the usable item table.</param>
-    /// <returns>The maximum amount of one stack.</returns>
-    public static int MaxAmount(ushort assetIndex) => s_maxAmounts.GetValueOrDefault(assetIndex);
 
     private IEnumerable<ItemContainerState> Carried => Containers.Where(container => container.Id != OpenLoot);
 
@@ -561,7 +556,7 @@ public sealed class RaidInventory
             return "empty source";
         }
 
-        if (!s_maxAmounts.ContainsKey(source.AssetIndex))
+        if (!Items.MaxAmounts.ContainsKey(source.AssetIndex))
         {
             return "not droppable";
         }
@@ -621,7 +616,7 @@ public sealed class RaidInventory
             return "different item";
         }
 
-        int moved = Math.Min(amount, s_maxAmounts.GetValueOrDefault(source.AssetIndex) - destination.Amount);
+        int moved = Math.Min(amount, Items.MaxAmounts.GetValueOrDefault(source.AssetIndex) - destination.Amount);
         if (moved <= 0)
         {
             return "stack full";
@@ -648,15 +643,15 @@ public sealed class RaidInventory
     // stamps; new items get Host's initial maximum durability and are stamped by Host.
     private InventoryItem Record(ContainerItem item)
     {
-        if (!s_assetIds.TryGetValue(item.AssetIndex, out long asset))
+        if (!Items.AssetIds.TryGetValue(item.AssetIndex, out long asset))
         {
             throw new InvalidOperationException("Unsupported carried item");
         }
 
         if (!_brought.TryGetValue(item.Id, out InventoryItem? original))
         {
-            return new InventoryItem(item.Id.ToString("D"), asset, item.Amount, [], item.Durability * StorageItems.InitialMaxDurability,
-                StorageItems.InitialMaxDurability, "", "", 0);
+            return new InventoryItem(item.Id.ToString("D"), asset, item.Amount, [], item.Durability * NewItemMaxDurability,
+                NewItemMaxDurability, "", "", 0);
         }
 
         return original with
@@ -674,8 +669,8 @@ public sealed class RaidInventory
     // quick-use slots that allow it with new stacks. Returns the rounds that found no room.
     private int Unload(List<CarriedItem> carried, ushort ammo, int rounds)
     {
-        long asset = s_assetIds[ammo];
-        int maximum = s_maxAmounts[ammo];
+        long asset = Items.AssetIds[ammo];
+        int maximum = Items.MaxAmounts[ammo];
         foreach (string place in (string[])[CarriedPlaces.Backpack, CarriedPlaces.QuickUse, CarriedPlaces.SafePockets])
         {
             for (int index = 0; index < carried.Count && rounds > 0; index++)

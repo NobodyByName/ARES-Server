@@ -9,7 +9,7 @@ namespace Ares.Host.Tests;
 
 public sealed class HostRouteTests : IAsyncLifetime
 {
-    private readonly HostHarness _host = new();
+    private readonly HostHarness _host = HostHarness.Synthetic();
 
     public ValueTask InitializeAsync() => _host.InitializeAsync();
 

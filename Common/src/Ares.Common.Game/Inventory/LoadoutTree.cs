@@ -68,9 +68,9 @@ public sealed class LoadoutTree
         List<InventoryItem> items = [];
         Dictionary<string, LoadoutSlot> slots = new(StringComparer.Ordinal);
         Dictionary<long, string> frames = [];
-        foreach (long frame in definitions.AugmentFrames.Prepend(LoadoutItems.StandardFrameAssetId))
+        foreach (long frame in definitions.AugmentFrames.Prepend(definitions.StandardFrameAssetId))
         {
-            string path = frame == LoadoutItems.StandardFrameAssetId ? "carried/container" : "frames/" + Text(frame);
+            string path = frame == definitions.StandardFrameAssetId ? "carried/container" : "frames/" + Text(frame);
             if (descriptions[frame].SlotConfig is not StructuralItemSlots branches)
             {
                 throw new InvalidDataException("Unsupported inventory structure");
@@ -84,7 +84,7 @@ public sealed class LoadoutTree
             })]));
         }
 
-        string carried = Node(LoadoutItems.FrameSlotAssetId, "carried", [frames[selected]]);
+        string carried = Node(definitions.FrameSlotAssetId, "carried", [frames[selected]]);
         string augment = Branch(definitions.AugmentSlotAssetId, "augment", definitions.AugmentSlotAssetId, null, [contents.Augment]);
         return new LoadoutTree(items.AsReadOnly(), [carried, augment], slots.AsReadOnly());
 
@@ -159,9 +159,9 @@ public sealed class LoadoutTree
         HashSet<string> visited = new(StringComparer.Ordinal);
         HashSet<string> children = [.. items.Values.SelectMany(item => item.Slots)];
         InventoryItem[] roots = [.. items.Values.Where(item => !children.Contains(item.InstanceId))];
-        if (roots.Count(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId) != 1
+        if (roots.Count(item => item.GameAssetId == definitions.FrameSlotAssetId) != 1
             || roots.Count(item => item.GameAssetId == augmentSlot) > 1
-            || roots.Any(item => item.GameAssetId != LoadoutItems.FrameSlotAssetId && item.GameAssetId != augmentSlot))
+            || roots.Any(item => item.GameAssetId != definitions.FrameSlotAssetId && item.GameAssetId != augmentSlot))
         {
             throw new InvalidDataException("Player loadout requires a frame and an optional augment structure");
         }
@@ -174,7 +174,7 @@ public sealed class LoadoutTree
             throw new InvalidDataException("Unsupported equipped augment");
         }
 
-        InventoryItem frame = Child(roots.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId), definitions.FrameAssetId(augment?.GameAssetId));
+        InventoryItem frame = Child(roots.Single(item => item.GameAssetId == definitions.FrameSlotAssetId), definitions.FrameAssetId(augment?.GameAssetId));
         if (descriptions[frame.GameAssetId].SlotConfig is not StructuralItemSlots frameSlots || frame.Slots.Count != frameSlots.SlotAssetIds.Count)
         {
             throw new InvalidDataException("Invalid player frame branches");

@@ -17,7 +17,7 @@ public sealed class VaultFollowingTests
     {
         CollisionWorld world = ScriptedClient.World((new Vector3D(0, 0, -10), new Vector3(4000, 4000, 10)));
         Vector3D here = new(0, 0, 0);
-        PlayerMovement movement = new(Start, here, 0, world);
+        PlayerMovement movement = new(TestGameData.Data, Start, here, 0, world);
         Dictionary<uint, CharacterState> states = ScriptedClient.Deliver(movement,
             frame => new ScriptedFrame(here, Claims: frame == Request ? RequestClaim : 0, FireBlocked: frame is > Request and <= Request + 12),
             ScriptedClient.InOrder(Start + 3, Request + 30)).ToDictionary(state => state.Frame);
@@ -25,7 +25,7 @@ public sealed class VaultFollowingTests
         Assert.Equal(1, states[Request].VaultFollowedTicks);
         Assert.Equal(12, states.Values.Max(state => state.VaultFollowedTicks));
         Assert.All(states.Values.Where(state => state.VaultFollowedTicks > 0),
-            state => Assert.Equal(GeneratedGraphStateFlags.Vaulting, state.GraphFlags & GeneratedGraphStateFlags.Vaulting));
+            state => Assert.Equal(TestGameData.Flags.Vaulting, state.GraphFlags(TestGameData.Data) & TestGameData.Flags.Vaulting));
         Assert.False(states[Request + 20].Vaulting);
         Assert.Equal(1, movement.Reseeds);
     }
@@ -40,7 +40,7 @@ public sealed class VaultFollowingTests
             frame => ReferenceRun.Input(frame, Input(frame), Input(frame - 1)));
         Assert.NotNull(reference[Request].Vault);
 
-        PlayerMovement movement = new(Start, start, 0, world);
+        PlayerMovement movement = new(TestGameData.Data, Start, start, 0, world);
         Dictionary<uint, int> reseeds = [];
         Dictionary<uint, CharacterState> states = ScriptedClient.Deliver(movement, Script, ScriptedClient.InOrder(Start + 3, Request + 27),
             packet => reseeds[packet] = movement.Reseeds).ToDictionary(state => state.Frame);

@@ -56,7 +56,7 @@ internal sealed class ScriptMemberChain
 
     /// <summary>Checks that the members script class or struct <paramref name="name"/> declares (reflected or not) start with <paramref name="expected"/>.</summary>
     /// <exception cref="InvalidDataException">The class is missing or ambiguous, or its first members differ.</exception>
-    public static void ExpectLeading(ScriptCache cache, string name, params IReadOnlyList<string> expected)
+    private static void ExpectLeading(ScriptCache cache, string name, params IReadOnlyList<string> expected)
     {
         string[] found = [.. cache.Class(name).Properties.Take(expected.Count).Select(member => member.Name)];
         if (!found.SequenceEqual(expected, StringComparer.Ordinal))

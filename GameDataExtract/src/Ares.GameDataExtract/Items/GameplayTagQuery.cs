@@ -64,13 +64,11 @@ internal sealed class GameplayTagQuery
 
     private static bool Holds(string own, string tag, bool exact) => own == tag || (!exact && own.StartsWith(tag + ".", StringComparison.Ordinal));
 
+    // The depth of a nested expression, refused past MaxDepth.
+    private static int Deeper(int depth) => depth < MaxDepth ? depth + 1 : throw new InvalidDataException("A gameplay tag query nests too deeply");
+
     private bool Evaluate(IReadOnlyCollection<string> tags, ref int at, int depth)
     {
-        if (depth > MaxDepth)
-        {
-            throw new InvalidDataException("A gameplay tag query nests too deeply");
-        }
-
         byte type = Token(ref at);
         int count = Token(ref at);
         switch (type)
@@ -95,7 +93,7 @@ internal sealed class GameplayTagQuery
                 bool[] results = new bool[count];
                 for (int i = 0; i < count; i++)
                 {
-                    results[i] = Evaluate(tags, ref at, depth + 1);
+                    results[i] = Evaluate(tags, ref at, Deeper(depth));
                 }
 
                 return type switch

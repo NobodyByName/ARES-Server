@@ -20,8 +20,8 @@ public static class ItemAssetSchemas
     /// <summary>Script path of <see cref="WeaponRedirectorAsset"/>.</summary>
     public const string WeaponRedirectorAssetClass = "/Script/Angelscript.WeaponRedirectorAsset";
 
-    /// <summary>Script path of <see cref="UIGameplayItemMetaDataItem"/>.</summary>
-    public const string UIGameplayItemMetaDataItemClass = "/Script/Angelscript.UIGameplayItemMetaDataItem";
+    /// <summary>Script path of <see cref="UiGameplayItemMetaDataItem"/>.</summary>
+    public const string UiGameplayItemMetaDataItemClass = "/Script/Angelscript.UIGameplayItemMetaDataItem";
 
     /// <summary><c>FPickupAmountSettings</c>: how many items a pickup gives.</summary>
     public static StructSchema PickupAmountSettings { get; } = new("PickupAmountSettings",
@@ -197,7 +197,7 @@ public static class ItemAssetSchemas
     /// <c>UUIGameplayItemMetaDataItem</c> (script): an item's menu metadata. Only its first members are known; read it
     /// up to the first unknown one.
     /// </summary>
-    public static StructSchema UIGameplayItemMetaDataItem { get; } = new("UIGameplayItemMetaDataItem",
+    public static StructSchema UiGameplayItemMetaDataItem { get; } = new("UIGameplayItemMetaDataItem",
     [
         new PropertyField("PersistenceDataAsset", PropertyType.Object),
         new PropertyField("bOverrideAssetId", PropertyType.Bool),
@@ -226,6 +226,6 @@ public static class ItemAssetSchemas
         [AugmentItemDataAssetClass] = AugmentItemDataAsset,
         [ItemWithQualityRedirectorAssetClass] = ItemWithQualityRedirectorAsset,
         [WeaponRedirectorAssetClass] = WeaponRedirectorAsset,
-        [UIGameplayItemMetaDataItemClass] = UIGameplayItemMetaDataItem,
+        [UiGameplayItemMetaDataItemClass] = UiGameplayItemMetaDataItem,
     };
 }

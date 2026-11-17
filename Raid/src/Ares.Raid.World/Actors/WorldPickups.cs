@@ -1,5 +1,4 @@
 using System.Globalization;
-using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
@@ -63,11 +62,8 @@ public sealed class WorldPickups
     private const ulong FirstGuid = 0x400000;
     private const ulong GuidStride = 6;
 
-    // Data asset of every item a player can carry (and so drop), by usable index.
-    private static readonly Dictionary<ushort, string> s_dataAssets = LoadoutDefinitions.Generated.CarriedItems
-        .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.DataAsset);
-
     private readonly ReplicationContext _replication;
+    private readonly RaidItems _items;
     private readonly WorldState _state;
     private readonly ulong _firstGuid;
     private readonly ObjectExports _exports;
@@ -78,11 +74,13 @@ public sealed class WorldPickups
     /// <summary>Creates the raid's empty set of pickups.</summary>
     /// <param name="replication">Replication context.</param>
     /// <param name="state">The raid's actors (the characters that pick items up).</param>
+    /// <param name="items">The raid's item rules: the items a player can carry (and so drop) and their data assets.</param>
     /// <param name="firstFreeGuid">First dynamic id no other actor of the raid uses.</param>
-    public WorldPickups(ReplicationContext replication, WorldState state, ulong firstFreeGuid)
+    public WorldPickups(ReplicationContext replication, WorldState state, RaidItems items, ulong firstFreeGuid)
     {
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
         _state = state ?? throw new ArgumentNullException(nameof(state));
+        _items = items ?? throw new ArgumentNullException(nameof(items));
         if (NetGuid.IsStatic(firstFreeGuid))
         {
             throw new ArgumentOutOfRangeException(nameof(firstFreeGuid), "Dynamic ids are even.");
@@ -91,9 +89,9 @@ public sealed class WorldPickups
         _firstGuid = Math.Max(FirstGuid, firstFreeGuid);
         List<StaticObjectExport> records = [];
         Archetype = Export(Pickups.Class.Archetype);
-        foreach ((ushort index, string path) in s_dataAssets)
+        foreach ((ushort index, ItemDefinition item) in items.Carried)
         {
-            _dataAssets[index] = Export(path);
+            _dataAssets[index] = Export(item.DataAsset);
         }
 
         _exports = new ObjectExports(records);
@@ -119,11 +117,6 @@ public sealed class WorldPickups
 
     /// <summary>What happened to the pickups, oldest first, one line each.</summary>
     public IReadOnlyList<string> Events => _events;
-
-    /// <summary>Whether an item can lie in the world: it has a data asset.</summary>
-    /// <param name="assetIndex">Index of the item in the usable item table.</param>
-    /// <returns>True when the item can be dropped.</returns>
-    public static bool Supports(ushort assetIndex) => s_dataAssets.ContainsKey(assetIndex);
 
     /// <summary>The pickup an interaction target names: the pickup's interaction component or the actor itself.</summary>
     /// <param name="target">Object id.</param>
@@ -160,7 +153,7 @@ public sealed class WorldPickups
             throw new InvalidOperationException("The item has no data asset to show in the world");
         }
 
-        int maximum = RaidInventory.MaxAmount(item.AssetIndex);
+        int maximum = _items.MaxAmount(item.AssetIndex);
         if (maximum > Pickups.MergeStackSizeThreshold
             && _pickups.Find(pickup => pickup is { PickedUpBy: null, Destroyed: false } && pickup.DroppedBy == player
                 && pickup.Item.AssetIndex == item.AssetIndex && pickup.Item.Amount + item.Amount <= maximum

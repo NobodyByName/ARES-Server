@@ -84,7 +84,7 @@ public sealed class GameDataRealTests
             (Names.MuzzleModSlotAssetId, Names.UnderBarrelModSlotAssetId, Names.StockModSlotAssetId));
         Assert.Equal((AugmentItems.AugmentSlotAssetId, AugmentItems.AugmentContainerAssetId, AugmentItems.AugmentContentSlotAssetId),
             (Names.AugmentSlotAssetId, Names.AugmentContainerAssetId, Names.AugmentContentSlotAssetId));
-        Assert.Contains(Names.StandardLoadoutFrame.Containers, container => AugmentItems.BranchAssetIds.Values.Contains(container.ContainerSlotAssetId));
+        Assert.NotEmpty(Names.StandardLoadoutFrame.Containers.Select(container => container.ContainerSlotAssetId).Intersect(AugmentItems.BranchAssetIds.Values));
         Assert.Equal(Data.Items.FirearmsByClass[FerroDefaults.ItemClass], Names.FerroIFirearm);
         Assert.Equal(Data.Items.ShieldsByClass[Names.LightShield.ItemClass], Names.LightShieldClass);
         Assert.Equal(Data.Items.AugmentsByTechnicalName[Names.CombatMk1.TechnicalName].FrameAssetId,

@@ -78,6 +78,8 @@ public sealed class WorldState
 {
     private readonly Lock _lock = new();
     private readonly WorldImports _imports;
+    private readonly MapGameMode _gameMode;
+    private readonly double _shieldHealthPerPlate;
     private readonly Dictionary<ulong, WorldActor> _actors = [];
     private readonly Dictionary<long, WorldPlayer> _players = [];
     private ulong _nextGuid = 2;
@@ -85,22 +87,26 @@ public sealed class WorldState
     /// <summary>Creates the world with its game state: begun play, match in progress, raid in its first phase.</summary>
     /// <param name="replication">Replication context of the world.</param>
     /// <param name="imports">The world's static exports.</param>
+    /// <param name="gameData">The game data: the map's game mode and the shield's health.</param>
     /// <param name="matchId">Match id of the reservation.</param>
     /// <param name="sessionSeed">Session seed (0 to 2^31 - 1).</param>
-    public WorldState(ReplicationContext replication, WorldImports imports, string matchId, int sessionSeed)
+    public WorldState(ReplicationContext replication, WorldImports imports, RaidGameData gameData, string matchId, int sessionSeed)
     {
         Replication = replication ?? throw new ArgumentNullException(nameof(replication));
         _imports = imports ?? throw new ArgumentNullException(nameof(imports));
+        ArgumentNullException.ThrowIfNull(gameData);
+        _gameMode = gameData.Map.GameMode;
+        _shieldHealthPerPlate = gameData.Items.ShieldHealthPerPlate;
         MatchId = matchId ?? throw new ArgumentNullException(nameof(matchId));
         ArgumentOutOfRangeException.ThrowIfNegative(sessionSeed);
-        WorldActor state = Add(DamMap.GameState.Class, default, new Dictionary<string, object?>
+        WorldActor state = Add(_gameMode.GameState.Class, default, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
-            [PropertyNames.GameModeClass] = imports.Classes[DamMap.GameModeClass],
+            [PropertyNames.GameModeClass] = imports.Classes[_gameMode.GameModeClass],
             [PropertyNames.ReplicatedHasBegunPlay] = true,
             [PropertyNames.SessionSeed] = sessionSeed,
-            [PropertyNames.LocationTag] = new GameplayTag(DamMap.LocationTag),
+            [PropertyNames.LocationTag] = new GameplayTag(_gameMode.LocationTag),
             [PropertyNames.MatchState] = new NetworkName(MatchStates.InProgress, 0),
             [PropertyNames.GamePhase] = (ulong)GamePhase.PreGame,
         });
@@ -132,7 +138,7 @@ public sealed class WorldState
             channel,
             GameState.Guid,
             _imports.Archetypes[GameState.ClassPath],
-            [.. _imports.Classes.Where(item => !WorldImports.HeldItemClasses.Values.Contains(item.Key)).Select(item => item.Value)],
+            [.. _imports.Classes.Where(item => !_imports.HeldItemClasses.Values.Contains(item.Key)).Select(item => item.Value)],
             [Replication.Encode(GameState.ClassPath, properties, Objects([GameState.Guid]))]);
     }
 
@@ -175,8 +181,8 @@ public sealed class WorldState
                 [PropertyNames.Pawn] = pawn,
                 [PropertyNames.PlayerState] = playerState,
                 [PropertyNames.SpawnLocation] = spawn,
-                [$"{PropertyNames.GameModeInfo}.{PropertyNames.Identifier}"] = new GameplayTag(DamMap.GameModeTag),
-                [$"{PropertyNames.GameModeInfo}.{PropertyNames.Location}"] = new GameplayTag(DamMap.LocationTag),
+                [$"{PropertyNames.GameModeInfo}.{PropertyNames.Identifier}"] = new GameplayTag(DamProtocol.GameModeTag),
+                [$"{PropertyNames.GameModeInfo}.{PropertyNames.Location}"] = new GameplayTag(_gameMode.LocationTag),
                 [PropertyNames.IsServerReady] = true,
             };
             Dictionary<string, object?> stateValues = new()
@@ -232,7 +238,7 @@ public sealed class WorldState
                 Inventory = Next(),
                 Health = Next(),
                 HeldItems = inventory?.Containers.SelectMany(container => container.Items)
-                    .OfType<ContainerItem>().Where(item => WorldImports.HeldItemClasses.ContainsKey(item.AssetIndex))
+                    .OfType<ContainerItem>().Where(item => _imports.HeldItemClasses.ContainsKey(item.AssetIndex))
                     .ToDictionary(item => item.Id, _ => Next()) ?? [],
             };
             player = player with { Interactor = Next(), EndOfRound = Next() };
@@ -570,7 +576,7 @@ public sealed class WorldState
     public ObjectExports InventoryExports(WorldPlayer player) => new([
         new DynamicActorExport(player.Pawn),
         new StableSubobjectExport(player.Inventory, player.Pawn, InventoryBlackboard.ComponentName, Replication.Catalog.Class(ClassPaths.InventoryComponent).Checksum),
-        new StableSubobjectExport(player.Health, player.Pawn, ShieldDefaults.ComponentName, Replication.Catalog.Class(ClassPaths.HealthComponent).Checksum),
+        new StableSubobjectExport(player.Health, player.Pawn, ShieldProtocol.ComponentName, Replication.Catalog.Class(ClassPaths.HealthComponent).Checksum),
     ]);
 
     /// <summary>Names the character's interactor component.</summary>
@@ -640,7 +646,7 @@ public sealed class WorldState
             [PropertyNames.IsActive] = true,
             [$"{PropertyNames.Armor}.{PropertyNames.Health}"] = inventory.ShieldHealth,
             [$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"] = inventory.ShieldHealth,
-            [$"{PropertyNames.Armor}.{PropertyNames.HealthPerPlate}"] = equipped ? ShieldDefaults.HealthPerPlate : 0.0,
+            [$"{PropertyNames.Armor}.{PropertyNames.HealthPerPlate}"] = equipped ? _shieldHealthPerPlate : 0.0,
         }, Objects([])));
     }
 
@@ -693,7 +699,7 @@ public sealed class WorldState
                     values[$"{PropertyNames.Id}.{name}"] = unchecked((int)uint.Parse(id.AsSpan(index * 8, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture));
                 }
 
-                return new DynamicSubobjectContent(player.HeldItems[item.Id], _imports.Classes[WorldImports.HeldItemClasses[item.AssetIndex]],
+                return new DynamicSubobjectContent(player.HeldItems[item.Id], _imports.Classes[_imports.HeldItemClasses[item.AssetIndex]],
                     Replication.Encode(ClassPaths.ItemBase, values, Objects([])), player.Inventory);
             })];
     }

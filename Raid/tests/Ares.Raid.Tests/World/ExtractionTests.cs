@@ -17,10 +17,10 @@ public sealed class ExtractionTests
     {
         ScriptedPlayer session = new();
         ExtractionCatalog catalog = session.Raid.Extraction;
-        Assert.Equal(DamExtraction.All.Select(placement => placement.Actor), catalog.Points.Select(point => point.Name));
+        Assert.Equal(TestGameData.Dam.ExtractionPoints.Select(placement => placement.Actor), catalog.Points.Select(point => point.Name));
         ExtractionPoint point = catalog.Points[1];
-        Assert.Equal(DamExtraction.Buttons.Count, point.Buttons.Count);
-        Assert.Equal((point, DamExtraction.Buttons[0]), catalog.ByButton(point.Buttons[0]));
+        Assert.Equal(TestGameData.Dam.ExtractionButtons.Length, point.Buttons.Count);
+        Assert.Equal((point, TestGameData.Dam.ExtractionButtons[0]), catalog.ByButton(point.Buttons[0]));
         Assert.Null(catalog.ByButton(point.Guid));
 
         // The buttons, the elevator, the persistent level, the world and the map package, then the descend switches'
@@ -34,19 +34,19 @@ public sealed class ExtractionTests
         (ObjectExports animations, _) = ObjectExports.Read(new BitReader(bunches[^1].Payload, bunches[^1].PayloadBits));
         StaticObjectExport set = Assert.IsType<StaticObjectExport>(animations.Records[animation]);
         StaticObjectExport setPackage = Assert.IsType<StaticObjectExport>(animations.Records[set.OuterGuid]);
-        Assert.Equal(DamExtraction.Buttons[descend].AnimationContainer, $"{setPackage.Path}/{set.Path}"[..setPackage.Path.Length]);
+        Assert.Equal(TestGameData.Dam.ExtractionButtons[descend].AnimationContainer, $"{setPackage.Path}/{set.Path}"[..setPackage.Path.Length]);
         Assert.EndsWith($"/{set.Path}", setPackage.Path, StringComparison.Ordinal);
         Assert.True(set.NoLoad && setPackage.NoLoad);
         ChannelBunch first = bunches[0];
         (ObjectExports exports, _) = ObjectExports.Read(new BitReader(first.Payload, first.PayloadBits));
         StaticObjectExport button = Assert.IsType<StaticObjectExport>(exports.Records[point.Buttons[0]]);
-        Assert.Equal((DamExtraction.Buttons[0].Component, point.Guid), (button.Path, button.OuterGuid));
+        Assert.Equal((TestGameData.Dam.ExtractionButtons[0].Component, point.Guid), (button.Path, button.OuterGuid));
         StaticObjectExport actor = Assert.IsType<StaticObjectExport>(exports.Records[point.Guid]);
         StaticObjectExport level = Assert.IsType<StaticObjectExport>(exports.Records[actor.OuterGuid]);
         StaticObjectExport world = Assert.IsType<StaticObjectExport>(exports.Records[level.OuterGuid]);
         StaticObjectExport package = Assert.IsType<StaticObjectExport>(exports.Records[world.OuterGuid]);
         Assert.Equal(
-            (DamExtraction.All[1].Actor, DamMap.PersistentLevelName, DamMap.WorldName, DamMap.MapPackage, 0UL),
+            (TestGameData.Dam.ExtractionPoints[1].Actor, TestGameData.Dam.World.PersistentLevelName, TestGameData.Dam.WorldName, TestGameData.Dam.MapPackage, 0UL),
             (actor.Path, level.Path, world.Path, package.Path, package.OuterGuid));
         Assert.All(exports.Records.Values.OfType<StaticObjectExport>(), record => Assert.True(record.NoLoad, record.Path));
     }
@@ -59,17 +59,17 @@ public sealed class ExtractionTests
         ExtractionPointState start = session.Raid.ExtractionStates.Get(point.Index);
         Assert.Equal(new ExtractionPointState(ExtractionState.Closed, null, null), start);
         IReadOnlyList<CurrentInteractionState> buttons = session.Raid.ExtractionStates.Buttons(point.Index);
-        Assert.Equal(DamExtraction.Buttons.Select(button => button.StartEnabled ? CurrentInteractionState.Idle : CurrentInteractionState.Disabled), buttons);
-        Assert.Equal(CurrentInteractionState.Idle, buttons[DamExtraction.Buttons.ToList().FindIndex(button => button.Role == ExtractionButtonRole.Summon)]);
+        Assert.Equal(TestGameData.Dam.ExtractionButtons.Select(button => button.StartEnabled ? CurrentInteractionState.Idle : CurrentInteractionState.Disabled), buttons);
+        Assert.Equal(CurrentInteractionState.Idle, buttons[TestGameData.Dam.ExtractionButtons.ToList().FindIndex(button => button.Role == ExtractionButtonRole.Summon)]);
 
         ChannelBunch bunch = session.Raid.Extraction.OpenBunch(point, 300, 1, start, 42.5);
         Assert.True(bunch is { Opened: true, MustBeMapped: false, Channel: 300 });
         BitReader reader = new(bunch.Payload, bunch.PayloadBits);
         Assert.Equal(point.Guid, NetGuid.Read(reader));
 
-        ValueCodec values = new(GameReplication.Catalog, [KnownEnums.NetRole, DamDoors.InteractionState, DamExtraction.StateEnum]);
+        ValueCodec values = new(GameReplication.Catalog, [KnownEnums.NetRole, DoorClasses.InteractionState, ExtractionClasses.StateEnum]);
         PropertyCodec codec = new(values);
-        Dictionary<string, object?> content = codec.Decode(new PropertyLayout(GameReplication.Catalog, DamExtraction.ActorClass), ActorContentBlock.Read(reader), swapActorRoles: false);
+        Dictionary<string, object?> content = codec.Decode(new PropertyLayout(GameReplication.Catalog, ExtractionClasses.ActorClass), ActorContentBlock.Read(reader), swapActorRoles: false);
         Assert.Equal((ulong)ExtractionState.Closed, content[PropertyNames.State]);
         Assert.Equal(42.5, content[PropertyNames.StateChangeTimestamp]);
         Assert.Equal(true, content[PropertyNames.IsEnabled]);
@@ -85,7 +85,7 @@ public sealed class ExtractionTests
             Assert.True(reader.ReadBit());
             uint size = reader.ReadPacked();
             ActorContentBlock block = new(reader.ReadBitArray(size), size, layout);
-            Dictionary<string, object?> button = codec.Decode(new PropertyLayout(GameReplication.Catalog, DamExtraction.Buttons[index].Class), block, swapActorRoles: false);
+            Dictionary<string, object?> button = codec.Decode(new PropertyLayout(GameReplication.Catalog, TestGameData.Dam.ExtractionButtons[index].Class), block, swapActorRoles: false);
             Assert.Equal((ulong)buttons[index], button[PropertyNames.CurrentInteractionState]);
         }
 
@@ -104,7 +104,7 @@ public sealed class ExtractionTests
 
         int first = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels;
         int count = session.Raid.Extraction.Points.Count;
-        Assert.Equal(DamExtraction.All.Count, session.Channels.ElevatorsReady);
+        Assert.Equal(TestGameData.Dam.ExtractionPoints.Length, session.Channels.ElevatorsReady);
         Assert.Equal(Enumerable.Range(first, count), session.Sent.Where(bunch => bunch is { Opened: true } && bunch.Channel >= first && bunch.Channel < first + count)
             .Select(bunch => bunch.Channel).Order());
         Assert.DoesNotContain(session.Sent, bunch => bunch.CloseReason is not null && bunch.Channel >= first && bunch.Channel < first + count);
@@ -132,7 +132,7 @@ public sealed class ExtractionTests
         session.Input(36, 39, 0x7fff0001);
         session.Input(39, 42, session.Door.Buttons[0]);
 
-        Assert.Equal([$"{point.Name}/{DamExtraction.Buttons[0].Component} {PendulumInput.PressRequest}@36"], session.Channels.ElevatorRequests);
+        Assert.Equal([$"{point.Name}/{TestGameData.Dam.ExtractionButtons[0].Component} {PendulumInput.PressRequest}@36"], session.Channels.ElevatorRequests);
         Assert.Equal([$"0x0 {PendulumInput.PressRequest}@33", $"0x7fff0001 {PendulumInput.PressRequest}@39"], session.Channels.UnknownInteractionRequests);
     }
 
@@ -144,44 +144,44 @@ public sealed class ExtractionTests
     [Fact]
     public void A_call_runs_the_press_then_the_elevator_arrives_and_is_ready_after_the_settings_times()
     {
-        ExtractionStates states = new(2);
+        ExtractionStates states = new(TestGameData.Dam, 2);
         const double Pressed = 512.666;
         Assert.True(states.Call(0, 42, Pressed));
         Assert.False(states.Call(0, 43, Pressed + 0.05));
         ExtractionPointState called = states.Get(0);
         Assert.Equal(new ExtractionPointState(ExtractionState.Closed, null, 42, Pressed), called);
-        Assert.Equal(ByRole(CurrentInteractionState.Ongoing, CurrentInteractionState.Disabled), called.Buttons);
+        Assert.Equal(ByRole(CurrentInteractionState.Ongoing, CurrentInteractionState.Disabled), called.Buttons(TestGameData.Dam));
         Assert.False(called.CanExtract);
 
         // Arriving once the press has run: the call button's alignment plus the settings' summon hold.
-        double arriving = Pressed + DamExtraction.Buttons[s_summon].AlignmentSeconds + DamExtraction.Settings.SummonHoldSeconds;
-        Assert.Equal(arriving, Pressed + ExtractionStates.CallSeconds);
+        double arriving = Pressed + TestGameData.Dam.ExtractionButtons[s_summon].AlignmentSeconds + TestGameData.Dam.ExtractionElevator.Settings.SummonHoldSeconds;
+        Assert.Equal(arriving, Pressed + TestGameData.CallSeconds);
         states.Advance(arriving - 0.01);
         Assert.Equal(called, states.Get(0));
         states.Advance(arriving + 0.02);
         ExtractionPointState arrived = states.Get(0);
         Assert.Equal(new ExtractionPointState(ExtractionState.Arriving, arriving, 42), arrived);
-        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), arrived.Buttons);
-        Assert.Equal((false, (ExtractionTimer?)null), (arrived.CanExtract, arrived.Timer));
+        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), arrived.Buttons(TestGameData.Dam));
+        Assert.Equal((false, (ExtractionTimer?)null), (arrived.CanExtract, arrived.Timer(TestGameData.Dam)));
         Assert.False(states.Call(0, 43, arriving + 1));
 
         // Ready exactly the time to extract ready later, whenever the server looks.
-        double ready = arriving + DamExtraction.Settings.TimeToExtractReadySeconds;
+        double ready = arriving + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
         states.Advance(ready - 0.01);
         Assert.Equal(arrived, states.Get(0));
         states.Advance(ready + 3);
         ExtractionPointState open = states.Get(0);
         Assert.Equal(new ExtractionPointState(ExtractionState.Ready, ready, 42), open);
-        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Idle), open.Buttons);
-        Assert.Equal((true, new ExtractionTimer(ready, DamExtraction.Settings.DefaultExtractionSeconds + DamExtraction.DoorsSeconds)), (open.CanExtract, open.Timer));
+        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Idle), open.Buttons(TestGameData.Dam));
+        Assert.Equal((true, new ExtractionTimer(ready, TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (open.CanExtract, open.Timer(TestGameData.Dam)));
         Assert.False(states.Call(0, 43, ready + 4));
         Assert.Equal(new ExtractionPointState(ExtractionState.Closed, null, null), states.Get(1));
 
         // A late look passes both changes at once with their exact times.
-        ExtractionStates late = new(1);
+        ExtractionStates late = new(TestGameData.Dam, 1);
         Assert.True(late.Call(0, 42, 10.0));
         late.Advance(100.0);
-        Assert.Equal(new ExtractionPointState(ExtractionState.Ready, 10.0 + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds, 42), late.Get(0));
+        Assert.Equal(new ExtractionPointState(ExtractionState.Ready, 10.0 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds, 42), late.Get(0));
     }
 
     [Fact]
@@ -210,13 +210,13 @@ public sealed class ExtractionTests
         {
             [PropertyNames.CanExtract] = true,
             [StartedAtPath] = 55.2,
-            [ExtractionTimePath] = DamExtraction.Settings.DefaultExtractionSeconds + DamExtraction.DoorsSeconds,
+            [ExtractionTimePath] = TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds,
             [PropertyNames.State] = (ulong)ExtractionState.Ready,
             [PropertyNames.StateChangeTimestamp] = 55.2,
         };
         (actor, buttons) = Read(catalog.UpdateBunch(point, 300, arriving, ready)!);
         Assert.Equal(readyValues, actor);
-        int[] descends = [.. Enumerable.Range(0, DamExtraction.Buttons.Count).Where(index => DamExtraction.Buttons[index].Role == ExtractionButtonRole.Descend)];
+        int[] descends = [.. Enumerable.Range(0, TestGameData.Dam.ExtractionButtons.Length).Where(index => TestGameData.Dam.ExtractionButtons[index].Role == ExtractionButtonRole.Descend)];
         Assert.Equal(descends.ToDictionary(index => point.Buttons[index], _ => (ulong)CurrentInteractionState.Idle), buttons);
 
         // A client that gets the elevator later opens it ready, with the time it became ready.
@@ -257,10 +257,10 @@ public sealed class ExtractionTests
         Assert.Equal(new Dictionary<ulong, ulong> { [summon] = (ulong)CurrentInteractionState.Ongoing }, buttons);
 
         session.Sent.Clear();
-        session.Service(123.5 + ExtractionStates.CallSeconds + 0.05);
+        session.Service(123.5 + TestGameData.CallSeconds + 0.05);
         (actor, buttons) = Read(Assert.Single(session.Sent, bunch => bunch.Channel == channel));
         Assert.Equal((ulong)ExtractionState.Arriving, actor![PropertyNames.State]);
-        Assert.Equal(pressed + ExtractionStates.CallSeconds, actor[PropertyNames.StateChangeTimestamp]);
+        Assert.Equal(pressed + TestGameData.CallSeconds, actor[PropertyNames.StateChangeTimestamp]);
         Assert.Equal(new Dictionary<ulong, ulong> { [summon] = (ulong)CurrentInteractionState.SuccessDisabled }, buttons);
         Assert.StartsWith("0:Arriving@", session.Channels.ElevatorStates, StringComparison.Ordinal);
 
@@ -271,7 +271,7 @@ public sealed class ExtractionTests
         Assert.Equal(ExtractionState.Arriving, session.Raid.ExtractionStates.Get(point.Index).State);
 
         // A second raider gets the elevator ready, with the time it became ready.
-        double readyAt = 123.5 + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds;
+        double readyAt = 123.5 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
         ScriptedPlayer second = new(session, 43);
         second.Possess();
         foreach (double at in (double[])[readyAt, readyAt + 6, readyAt + 21, readyAt + 21.5, readyAt + 22, readyAt + 22.5, readyAt + 23])
@@ -284,7 +284,7 @@ public sealed class ExtractionTests
         Assert.Equal(point.Guid, NetGuid.Read(reader));
         Dictionary<string, object?> content = Codec.Decode(ActorLayout, ActorContentBlock.Read(reader), swapActorRoles: false);
         Assert.Equal((ulong)ExtractionState.Ready, content[PropertyNames.State]);
-        Assert.Equal(pressed + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds, content[PropertyNames.StateChangeTimestamp]);
+        Assert.Equal(pressed + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds, content[PropertyNames.StateChangeTimestamp]);
 
         // The first raider gets the change on its open channel.
         session.Sent.Clear();
@@ -316,11 +316,11 @@ public sealed class ExtractionTests
         session.Input(33, 36, summon, focus: summon, position: reported);
         session.Service(124.0);
         session.Input(36, 39, focus: summon, position: reported);
-        session.Service(123.5 + ExtractionStates.CallSeconds + 1);
+        session.Service(123.5 + TestGameData.CallSeconds + 1);
         Assert.Equal(frames + 1, session.Channels.BlackboardFrames);
 
         session.Input(39, 42, focus: summon, position: reported);
-        session.Service(123.5 + ExtractionStates.CallSeconds + 3);
+        session.Service(123.5 + TestGameData.CallSeconds + 3);
         Assert.Equal(frames + 2, session.Channels.BlackboardFrames);
     }
 
@@ -330,9 +330,9 @@ public sealed class ExtractionTests
         const double Ready = 557.9;
         ExtractionStates states = ReadyStates(Ready);
         int a = IndexOf(ExtractionButtonRole.Descend);
-        int b = DamExtraction.Buttons.ToList().FindIndex(a + 1, button => button.Role == ExtractionButtonRole.Descend);
-        ExtractionButton descend = DamExtraction.Buttons[a];
-        Assert.Null(states.Get(0).HoldStarts[a]);
+        int b = TestGameData.Dam.ExtractionButtons.ToList().FindIndex(a + 1, button => button.Role == ExtractionButtonRole.Descend);
+        ExtractionButton descend = TestGameData.Dam.ExtractionButtons[a];
+        Assert.Null(states.Get(0).HoldStarts(TestGameData.Dam)[a]);
 
         // The press: the switch runs while the character lines up; nobody else can start a hold.
         const double Pressed = 562.666;
@@ -340,53 +340,53 @@ public sealed class ExtractionTests
         Assert.True(states.Descend(0, a, 42, Pressed));
         Assert.False(states.Descend(0, b, 43, Pressed + 0.1));
         ExtractionPointState aligning = states.Get(0);
-        Assert.Equal((CurrentInteractionState.Ongoing, CurrentInteractionState.Idle), (aligning.Buttons[a], aligning.Buttons[b]));
-        Assert.Equal((DamExtraction.NoHoldStartedTime, DamExtraction.NoHoldStartedTime), (aligning.HoldStarts[a], aligning.HoldStarts[b]));
-        Assert.All(DamExtraction.Buttons.Select((button, index) => (button, index)).Where(entry => entry.button.Role != ExtractionButtonRole.Descend),
-            entry => Assert.Null(aligning.HoldStarts[entry.index]));
+        Assert.Equal((CurrentInteractionState.Ongoing, CurrentInteractionState.Idle), (aligning.Buttons(TestGameData.Dam)[a], aligning.Buttons(TestGameData.Dam)[b]));
+        Assert.Equal((TestGameData.Dam.ExtractionElevator.NoHoldStartedTime, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), (aligning.HoldStarts(TestGameData.Dam)[a], aligning.HoldStarts(TestGameData.Dam)[b]));
+        Assert.All(TestGameData.Dam.ExtractionButtons.Select((button, index) => (button, index)).Where(entry => entry.button.Role != ExtractionButtonRole.Descend),
+            entry => Assert.Null(aligning.HoldStarts(TestGameData.Dam)[entry.index]));
 
         // The hold starts after the switch's alignment.
         double holdStart = Pressed + descend.AlignmentSeconds;
         states.Advance(holdStart - 0.01);
         Assert.Equal(aligning, states.Get(0));
         states.Advance(holdStart);
-        Assert.Equal(holdStart, states.Get(0).HoldStarts[a]);
+        Assert.Equal(holdStart, states.Get(0).HoldStarts(TestGameData.Dam)[a]);
 
         // The doors start closing when the settings' extraction hold is over.
-        double closing = holdStart + DamExtraction.Settings.ExtractionHoldSeconds;
+        double closing = holdStart + TestGameData.Dam.ExtractionElevator.Settings.ExtractionHoldSeconds;
         states.Advance(closing - 0.01, _ => [7]);
         Assert.Equal(ExtractionState.Ready, states.Get(0).State);
         Assert.Null(states.Departure(0));
         states.Advance(closing + 0.02, index => index == 0 ? [42, 43] : []);
         ExtractionPointState doors = states.Get(0);
         Assert.Equal((ExtractionState.Closing, (double?)closing, true), (doors.State, doors.ChangedAt, doors.CanExtract));
-        Assert.Equal(new ExtractionTimer(Ready, closing - Ready + DamExtraction.DoorsSeconds), doors.Timer);
+        Assert.Equal(new ExtractionTimer(Ready, closing - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam));
         Assert.Equal((CurrentInteractionState.SuccessDisabled, CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled),
-            (doors.Buttons[s_summon], doors.Buttons[a], doors.Buttons[b]));
-        Assert.Equal((DamExtraction.NoHoldStartedTime, DamExtraction.NoHoldStartedTime), (doors.HoldStarts[a], doors.HoldStarts[b]));
+            (doors.Buttons(TestGameData.Dam)[s_summon], doors.Buttons(TestGameData.Dam)[a], doors.Buttons(TestGameData.Dam)[b]));
+        Assert.Equal((TestGameData.Dam.ExtractionElevator.NoHoldStartedTime, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), (doors.HoldStarts(TestGameData.Dam)[a], doors.HoldStarts(TestGameData.Dam)[b]));
         Assert.Equal(new ExtractionDescent(a, 42, Pressed, Holding: true), doors.Departed);
         Assert.Null(states.Departure(0));
 
         // It has left once the doors are closed, with the players inside then (one stepped out while they closed):
         // callable again, the used switch stays succeeded until the next arrival.
-        states.Advance(closing + DamExtraction.DoorsSeconds - 0.01, index => index == 0 ? [42, 43] : []);
+        states.Advance(closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds - 0.01, index => index == 0 ? [42, 43] : []);
         Assert.Equal(ExtractionState.Closing, states.Get(0).State);
         Assert.Null(states.Departure(0));
-        states.Advance(closing + DamExtraction.DoorsSeconds, index => index == 0 ? [43] : []);
+        states.Advance(closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds, index => index == 0 ? [43] : []);
         Assert.Equal(new ExtractionDeparture(closing, [43]), states.Departure(0), new DepartureComparer());
         ExtractionPointState left = states.Get(0);
-        Assert.Equal((ExtractionState.Closed, (double?)(closing + DamExtraction.DoorsSeconds), (long?)null, false), (left.State, left.ChangedAt, left.CalledBy, left.CanExtract));
-        Assert.Equal(new ExtractionTimer(DamExtraction.NoExtractionStartedTime, doors.Timer!.Value.Seconds), left.Timer);
+        Assert.Equal((ExtractionState.Closed, (double?)(closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds), (long?)null, false), (left.State, left.ChangedAt, left.CalledBy, left.CanExtract));
+        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam)!.Value.Seconds), left.Timer(TestGameData.Dam));
         Assert.Equal((CurrentInteractionState.Idle, CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled),
-            (left.Buttons[s_summon], left.Buttons[a], left.Buttons[b]));
+            (left.Buttons(TestGameData.Dam)[s_summon], left.Buttons(TestGameData.Dam)[a], left.Buttons(TestGameData.Dam)[b]));
 
         // The next cycle starts over: both switches usable again, no hold running.
         Assert.True(states.Call(0, 43, 600.0));
-        states.Advance(600.0 + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds);
+        states.Advance(600.0 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds);
         ExtractionPointState again = states.Get(0);
-        Assert.Equal((ExtractionState.Ready, CurrentInteractionState.Idle, CurrentInteractionState.Idle), (again.State, again.Buttons[a], again.Buttons[b]));
-        Assert.Equal((DamExtraction.NoHoldStartedTime, DamExtraction.NoHoldStartedTime), (again.HoldStarts[a], again.HoldStarts[b]));
-        Assert.Equal(new ExtractionTimer(again.ChangedAt!.Value, DamExtraction.Settings.DefaultExtractionSeconds + DamExtraction.DoorsSeconds), again.Timer);
+        Assert.Equal((ExtractionState.Ready, CurrentInteractionState.Idle, CurrentInteractionState.Idle), (again.State, again.Buttons(TestGameData.Dam)[a], again.Buttons(TestGameData.Dam)[b]));
+        Assert.Equal((TestGameData.Dam.ExtractionElevator.NoHoldStartedTime, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), (again.HoldStarts(TestGameData.Dam)[a], again.HoldStarts(TestGameData.Dam)[b]));
+        Assert.Equal(new ExtractionTimer(again.ChangedAt!.Value, TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds), again.Timer(TestGameData.Dam));
     }
 
     [Fact]
@@ -395,7 +395,7 @@ public sealed class ExtractionTests
         const double Ready = 175.716;
         ExtractionStates states = ReadyStates(Ready);
         int a = IndexOf(ExtractionButtonRole.Descend);
-        double timeout = Ready + DamExtraction.Settings.DefaultExtractionSeconds;
+        double timeout = Ready + TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds;
 
         // A hold that would end after the extraction time does not keep the elevator: the doors close on time.
         Assert.True(states.Descend(0, a, 42, timeout - 2));
@@ -404,21 +404,21 @@ public sealed class ExtractionTests
         states.Advance(timeout + 1, _ => []);
         ExtractionPointState doors = states.Get(0);
         Assert.Equal((ExtractionState.Closing, (double?)timeout, (ExtractionDescent?)null, (ExtractionDescent?)null), (doors.State, doors.ChangedAt, doors.Descent, doors.Departed));
-        Assert.Equal(new ExtractionTimer(Ready, timeout - Ready + DamExtraction.DoorsSeconds), doors.Timer);
-        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), doors.Buttons);
+        Assert.Equal(new ExtractionTimer(Ready, timeout - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam));
+        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), doors.Buttons(TestGameData.Dam));
         Assert.Null(states.Departure(0));
 
-        states.Advance(timeout + DamExtraction.DoorsSeconds, _ => []);
+        states.Advance(timeout + TestGameData.Dam.ExtractionElevator.DoorsSeconds, _ => []);
         Assert.Equal(new ExtractionDeparture(timeout, []), states.Departure(0), new DepartureComparer());
         ExtractionPointState left = states.Get(0);
-        Assert.Equal((ExtractionState.Closed, (double?)(timeout + DamExtraction.DoorsSeconds)), (left.State, left.ChangedAt));
-        Assert.Equal(ByRole(CurrentInteractionState.Idle, CurrentInteractionState.Disabled), left.Buttons);
-        Assert.Equal(new ExtractionTimer(DamExtraction.NoExtractionStartedTime, doors.Timer!.Value.Seconds), left.Timer);
+        Assert.Equal((ExtractionState.Closed, (double?)(timeout + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (left.State, left.ChangedAt));
+        Assert.Equal(ByRole(CurrentInteractionState.Idle, CurrentInteractionState.Disabled), left.Buttons(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam)!.Value.Seconds), left.Timer(TestGameData.Dam));
 
         // A late look passes Closing and Closed at once with their exact times.
         ExtractionStates late = ReadyStates(Ready);
         late.Advance(timeout + 100);
-        Assert.Equal((ExtractionState.Closed, (double?)(timeout + DamExtraction.DoorsSeconds)), (late.Get(0).State, late.Get(0).ChangedAt));
+        Assert.Equal((ExtractionState.Closed, (double?)(timeout + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (late.Get(0).State, late.Get(0).ChangedAt));
         Assert.Equal(timeout, late.Departure(0)!.At);
     }
 
@@ -432,7 +432,7 @@ public sealed class ExtractionTests
         Assert.True(states.CancelDescent(0, 42));
         ExtractionPointState state = states.Get(0);
         Assert.Equal((ExtractionState.Ready, (ExtractionDescent?)null, true), (state.State, state.Descent, state.HoldRan));
-        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Idle), state.Buttons);
+        Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Idle), state.Buttons(TestGameData.Dam));
         states.Advance(30.0);
         Assert.Equal(ExtractionState.Ready, states.Get(0).State);
     }
@@ -444,47 +444,47 @@ public sealed class ExtractionTests
         ExtractionCatalog catalog = session.Raid.Extraction;
         ExtractionPoint point = catalog.Points[0];
         int a = IndexOf(ExtractionButtonRole.Descend);
-        int b = DamExtraction.Buttons.ToList().FindIndex(a + 1, button => button.Role == ExtractionButtonRole.Descend);
+        int b = TestGameData.Dam.ExtractionButtons.ToList().FindIndex(a + 1, button => button.Role == ExtractionButtonRole.Descend);
         ExtractionPointState ready = new(ExtractionState.Ready, 55.2, 42);
         ExtractionDescent pressed = new(a, 42, 60.0);
         ExtractionPointState aligning = ready with { Descent = pressed, HoldRan = true };
         ExtractionPointState holding = aligning with { Descent = pressed with { Holding = true } };
-        double closing = pressed.EndsAt;
+        double closing = pressed.EndsAt(TestGameData.Dam);
         ExtractionPointState doors = new(ExtractionState.Closing, closing, 42) { ReadyAt = 55.2, ClosingAt = closing, Departed = holding.Descent, HoldRan = true };
 
         (Dictionary<string, object?>? actor, Dictionary<ulong, (ulong State, double? Hold)> buttons) = ReadHolds(catalog.UpdateBunch(point, 300, ready, aligning)!);
         Assert.Null(actor);
         Assert.Equal(new Dictionary<ulong, (ulong, double?)>
         {
-            [point.Buttons[a]] = ((ulong)CurrentInteractionState.Ongoing, DamExtraction.NoHoldStartedTime),
-            [point.Buttons[b]] = ((ulong)CurrentInteractionState.Idle, DamExtraction.NoHoldStartedTime),
+            [point.Buttons[a]] = ((ulong)CurrentInteractionState.Ongoing, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime),
+            [point.Buttons[b]] = ((ulong)CurrentInteractionState.Idle, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime),
         }, buttons);
 
         (actor, buttons) = ReadHolds(catalog.UpdateBunch(point, 300, aligning, holding)!);
         Assert.Null(actor);
-        Assert.Equal(new Dictionary<ulong, (ulong, double?)> { [point.Buttons[a]] = ((ulong)CurrentInteractionState.Ongoing, pressed.HoldStartsAt) }, buttons);
+        Assert.Equal(new Dictionary<ulong, (ulong, double?)> { [point.Buttons[a]] = ((ulong)CurrentInteractionState.Ongoing, pressed.HoldStartsAt(TestGameData.Dam)) }, buttons);
 
         (actor, buttons) = ReadHolds(catalog.UpdateBunch(point, 300, holding, doors)!);
         Assert.Equal(new Dictionary<string, object?>
         {
             [PropertyNames.State] = (ulong)ExtractionState.Closing,
             [PropertyNames.StateChangeTimestamp] = closing,
-            [ExtractionTimePath] = closing - 55.2 + DamExtraction.DoorsSeconds,
+            [ExtractionTimePath] = closing - 55.2 + TestGameData.Dam.ExtractionElevator.DoorsSeconds,
         }, actor);
         Assert.Equal(new Dictionary<ulong, (ulong, double?)>
         {
-            [point.Buttons[a]] = ((ulong)CurrentInteractionState.SuccessDisabled, DamExtraction.NoHoldStartedTime),
-            [point.Buttons[b]] = ((ulong)CurrentInteractionState.Disabled, DamExtraction.NoHoldStartedTime),
+            [point.Buttons[a]] = ((ulong)CurrentInteractionState.SuccessDisabled, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime),
+            [point.Buttons[b]] = ((ulong)CurrentInteractionState.Disabled, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime),
         }, buttons);
 
-        ExtractionPointState left = doors with { State = ExtractionState.Closed, ChangedAt = closing + DamExtraction.DoorsSeconds, CalledBy = null };
+        ExtractionPointState left = doors with { State = ExtractionState.Closed, ChangedAt = closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds, CalledBy = null };
         (actor, buttons) = ReadHolds(catalog.UpdateBunch(point, 300, doors, left)!);
         Assert.Equal(new Dictionary<string, object?>
         {
             [PropertyNames.CanExtract] = false,
-            [StartedAtPath] = DamExtraction.NoExtractionStartedTime,
+            [StartedAtPath] = TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime,
             [PropertyNames.State] = (ulong)ExtractionState.Closed,
-            [PropertyNames.StateChangeTimestamp] = closing + DamExtraction.DoorsSeconds,
+            [PropertyNames.StateChangeTimestamp] = closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds,
         }, actor);
         Assert.Equal(new Dictionary<ulong, (ulong, double?)> { [point.Buttons[s_summon]] = ((ulong)CurrentInteractionState.Idle, null) }, buttons);
     }
@@ -495,9 +495,9 @@ public sealed class ExtractionTests
         ScriptedPlayer session = new();
         foreach (ExtractionPoint point in session.Raid.Extraction.Points)
         {
-            ExtractionPointPlacement placement = DamExtraction.All[point.Index];
-            Vector3D half = DamExtraction.ZoneHalfExtent;
-            Vector3D centre = Add(placement.Location, placement.Rotation.Rotate(DamExtraction.ZoneLocation));
+            ExtractionPointPlacement placement = TestGameData.Dam.ExtractionPoints[point.Index];
+            Vector3D half = TestGameData.Dam.ExtractionElevator.ZoneHalfExtent;
+            Vector3D centre = Add(placement.Location, placement.Rotation.Rotate(TestGameData.Dam.ExtractionElevator.ZoneLocation));
             Assert.True(point.Contains(centre));
             Assert.True(point.Contains(Add(centre, placement.Rotation.Rotate(new Vector3D(half.X - 1, half.Y - 1, half.Z - 1)))));
             Assert.False(point.Contains(Add(centre, placement.Rotation.Rotate(new Vector3D(half.X + 1, 0, 0)))));
@@ -521,14 +521,14 @@ public sealed class ExtractionTests
         int a = IndexOf(ExtractionButtonRole.Descend);
         ulong descend = point.Buttons[a];
         int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels + point.Index;
-        double ready = 123.5 + ExtractionStates.CallSeconds + DamExtraction.Settings.TimeToExtractReadySeconds;
+        double ready = 123.5 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
         Assert.True(session.Raid.ExtractionStates.Call(point.Index, 43, session.Raid.WorldSeconds(123.5)));
         session.Service(ready + 0.1);
         Assert.Equal(ExtractionState.Ready, session.Raid.ExtractionStates.Get(point.Index).State);
 
         // Standing inside the zone, one press starts the hold; no pawn frame is sent while the client runs it.
-        ExtractionPointPlacement placement = DamExtraction.All[point.Index];
-        Vector3D inside = Add(placement.Location, placement.Rotation.Rotate(DamExtraction.ZoneLocation));
+        ExtractionPointPlacement placement = TestGameData.Dam.ExtractionPoints[point.Index];
+        Vector3D inside = Add(placement.Location, placement.Rotation.Rotate(TestGameData.Dam.ExtractionElevator.ZoneLocation));
         session.Input(30, 33, focus: descend, position: inside);
         session.Service(ready + 0.5);
         double pressedAt = ready + 1;
@@ -540,15 +540,15 @@ public sealed class ExtractionTests
         session.Sent.Clear();
         session.Service(pressedAt + 0.2);
         (_, Dictionary<ulong, (ulong State, double? Hold)> buttons) = ReadHolds(Assert.Single(session.Sent, bunch => bunch.Channel == channel));
-        Assert.Equal(((ulong)CurrentInteractionState.Ongoing, (double?)DamExtraction.NoHoldStartedTime), buttons[descend]);
+        Assert.Equal(((ulong)CurrentInteractionState.Ongoing, (double?)TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), buttons[descend]);
 
-        double holdAt = pressedAt + DamExtraction.Buttons[a].AlignmentSeconds;
-        double endAt = holdAt + DamExtraction.Settings.ExtractionHoldSeconds;
+        double holdAt = pressedAt + TestGameData.Dam.ExtractionButtons[a].AlignmentSeconds;
+        double endAt = holdAt + TestGameData.Dam.ExtractionElevator.Settings.ExtractionHoldSeconds;
         session.Input(36, 39, focus: descend, position: inside);
         session.Service(holdAt + 0.1);
-        Assert.Equal(session.Raid.WorldSeconds(holdAt), session.Raid.ExtractionStates.Get(point.Index).HoldStarts[a]!.Value, 6);
+        Assert.Equal(session.Raid.WorldSeconds(holdAt), session.Raid.ExtractionStates.Get(point.Index).HoldStarts(TestGameData.Dam)[a]!.Value, 6);
         Assert.Contains("0:Ready@", session.Channels.ElevatorStates, StringComparison.Ordinal);
-        Assert.Contains($"+{DamExtraction.Buttons[a].Component}@", session.Channels.ElevatorStates, StringComparison.Ordinal);
+        Assert.Contains($"+{TestGameData.Dam.ExtractionButtons[a].Component}@", session.Channels.ElevatorStates, StringComparison.Ordinal);
         Assert.Contains("~hold@", session.Channels.ElevatorStates, StringComparison.Ordinal);
 
         // The hold succeeds: the doors close, and the character's interactor ends the
@@ -565,22 +565,22 @@ public sealed class ExtractionTests
 
         // The elevator leaves with this player still inside once the doors have closed.
         session.Input(42, 45, focus: descend, position: inside);
-        session.Service(endAt + DamExtraction.DoorsSeconds + 0.05);
+        session.Service(endAt + TestGameData.Dam.ExtractionElevator.DoorsSeconds + 0.05);
         Assert.Equal([session.Principal.UserId], session.Raid.ExtractionStates.Departure(point.Index)!.Players);
         Assert.Matches(@"^0@\d+\.\d{3}:42$", session.Channels.ElevatorDepartures);
-        Assert.Contains(session.Channels.ElevatorChanges, change => change.StartsWith("0:Closing@", StringComparison.Ordinal) && change.EndsWith($"^{DamExtraction.Buttons[a].Component}", StringComparison.Ordinal));
+        Assert.Contains(session.Channels.ElevatorChanges, change => change.StartsWith("0:Closing@", StringComparison.Ordinal) && change.EndsWith($"^{TestGameData.Dam.ExtractionButtons[a].Component}", StringComparison.Ordinal));
         Assert.Contains(session.Channels.ElevatorChanges, change => change.StartsWith("0:Closed@", StringComparison.Ordinal));
 
         // Frames resume after the ending; the switch is no longer focused.
         session.Input(45, 48, focus: descend, position: inside);
-        session.Service(endAt + DamExtraction.DoorsSeconds + 1);
+        session.Service(endAt + TestGameData.Dam.ExtractionElevator.DoorsSeconds + 1);
         Assert.Equal(frames + 1, session.Channels.BlackboardFrames);
     }
 
     private static ExtractionStates ReadyStates(double ready)
     {
-        ExtractionStates states = new(2);
-        double called = ready - DamExtraction.Settings.TimeToExtractReadySeconds - ExtractionStates.CallSeconds;
+        ExtractionStates states = new(TestGameData.Dam, 2);
+        double called = ready - TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds - TestGameData.CallSeconds;
         Assert.True(states.Call(0, 42, called));
         states.Advance(ready);
         Assert.Equal(new ExtractionPointState(ExtractionState.Ready, ready, 42), states.Get(0));
@@ -589,16 +589,16 @@ public sealed class ExtractionTests
 
     private static Vector3D Add(Vector3D a, Vector3D b) => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 
-    private static ValueCodec Values { get; } = new(GameReplication.Catalog, [KnownEnums.NetRole, DamDoors.InteractionState, DamExtraction.StateEnum]);
+    private static ValueCodec Values { get; } = new(GameReplication.Catalog, [KnownEnums.NetRole, DoorClasses.InteractionState, ExtractionClasses.StateEnum]);
 
     private static PropertyCodec Codec { get; } = new(Values);
 
-    private static PropertyLayout ActorLayout { get; } = new(GameReplication.Catalog, DamExtraction.ActorClass);
+    private static PropertyLayout ActorLayout { get; } = new(GameReplication.Catalog, ExtractionClasses.ActorClass);
 
-    private static int IndexOf(ExtractionButtonRole role) => DamExtraction.Buttons.ToList().FindIndex(button => button.Role == role);
+    private static int IndexOf(ExtractionButtonRole role) => TestGameData.Dam.ExtractionButtons.ToList().FindIndex(button => button.Role == role);
 
     private static CurrentInteractionState[] ByRole(CurrentInteractionState summon, CurrentInteractionState descend) =>
-        [.. DamExtraction.Buttons.Select(button => button.Role switch
+        [.. TestGameData.Dam.ExtractionButtons.Select(button => button.Role switch
         {
             ExtractionButtonRole.Summon => summon,
             ExtractionButtonRole.Descend => descend,
@@ -611,7 +611,7 @@ public sealed class ExtractionTests
         BitReader reader = new(bunch.Payload, bunch.PayloadBits);
         Dictionary<string, object?>? actor = null;
         Dictionary<ulong, (ulong, double?)> buttons = [];
-        PropertyLayout button = new(GameReplication.Catalog, DamExtraction.Buttons[0].Class);
+        PropertyLayout button = new(GameReplication.Catalog, TestGameData.Dam.ExtractionButtons[0].Class);
         while (reader.Remaining > 0)
         {
             bool layout = reader.ReadBit();
@@ -646,7 +646,7 @@ public sealed class ExtractionTests
         BitReader reader = new(bunch.Payload, bunch.PayloadBits);
         Dictionary<string, object?>? actor = null;
         Dictionary<ulong, ulong> buttons = [];
-        PropertyLayout button = new(GameReplication.Catalog, DamExtraction.Buttons[0].Class);
+        PropertyLayout button = new(GameReplication.Catalog, TestGameData.Dam.ExtractionButtons[0].Class);
         while (reader.Remaining > 0)
         {
             bool layout = reader.ReadBit();

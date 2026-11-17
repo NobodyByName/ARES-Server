@@ -35,7 +35,7 @@ public sealed class InputHistoryTests
         uint current = quantized;
         for (uint frame = 30; frame < 50; frame++)
         {
-            PendulumSlot movement = PawnBlackboardFrames.State(frame, new PawnMotion(ReadPosition(current)), 0)[PawnBlackboard.MovementStateSlot];
+            PendulumSlot movement = PawnBlackboardFrames.State(TestGameData.Data, frame, new PawnMotion(ReadPosition(current)), 0)[PawnBlackboard.MovementStateSlot];
             IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[movement.DescriptorId!.Value].Fields;
             foreach (int field in (int[])[PawnBlackboard.PositionXField, PawnBlackboard.PositionYField, PawnBlackboard.PositionZField])
             {

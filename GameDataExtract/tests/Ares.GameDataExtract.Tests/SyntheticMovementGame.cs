@@ -41,9 +41,9 @@ internal static class SyntheticMovementGame
             Constructors = [new TestFunction("FDodgeRollSequenceData", constructor)],
         });
         cache.Classes.Add(Class("UHeavyLandingAnimations", MovementAssetSchemas.HeavyLandingAnimations.Members));
-        cache.Classes.Add(Class("UVaultDefinitionsDataAsset", [.. MovementAssetSchemas.VaultDefinitionsDataAsset.Members.Select(member => member ?? new("AllAnimSequences", PropertyType.Object))]));
+        cache.Classes.Add(Class("UVaultDefinitionsDataAsset", [.. MovementAssetSchemas.VaultDefinitionsDataAsset.Members.Select(member => member ?? new PropertyField("AllAnimSequences", PropertyType.Object))]));
         cache.Classes.Add(Class("USnaphookItem",
-            [.. Enumerable.Range(0, MovementAssetSchemas.SnaphookItemChain.ChainLength).Select(i => MovementAssetSchemas.SnaphookItemChain.At(i).Field ?? new($"Unknown{i}", PropertyType.Int32))]));
+            [.. Enumerable.Range(0, MovementAssetSchemas.SnaphookItemChain.ChainLength).Select(i => MovementAssetSchemas.SnaphookItemChain.At(i).Field ?? new PropertyField($"Unknown{i}", PropertyType.Int32))]));
     }
 
     /// <summary>The movement packages by path.</summary>
@@ -107,24 +107,25 @@ internal static class SyntheticMovementGame
             }),
         ];
         const int FirstTagName = 2;
-        byte[] Names(int count) => [.. BitConverter.GetBytes(count), .. Enumerable.Range(0, count).SelectMany(i => PropertyBlocks.Name(FirstTagName + i))];
         byte[] settings = [.. BitConverter.GetBytes(TagCount), .. Enumerable.Repeat<byte[]>([0x00, 0x07, 0, 0, 0], TagCount).SelectMany(item => item)];
-        string path = MovementAssets.SimulationLogicPackage;
-        return SyntheticArchives.Package(path, [(ShortName(path), PackageObjectIndex.Null, PackageObjectIndex.Null, 0, [.. Names(TagCount), .. settings, .. Names(InputTags), 0, 0, 0, 0])],
+        const string PackagePath = MovementAssets.SimulationLogicPackage;
+        return SyntheticArchives.Package(PackagePath, [(ShortName(PackagePath), PackageObjectIndex.Null, PackageObjectIndex.Null, 0, [.. Names(TagCount), .. settings, .. Names(InputTags), 0, 0, 0, 0])],
             extraNames: tags);
+
+        byte[] Names(int count) => [.. BitConverter.GetBytes(count), .. Enumerable.Range(0, count).SelectMany(i => PropertyBlocks.Name(FirstTagName + i))];
     }
 
     /// <summary>The snap hook class default: range 1800, cost 60, the data asset, a zero member, zoom time 0.2 and a flag.</summary>
     private static byte[] SnapHook()
     {
-        string path = MovementAssets.SnapHookBlueprint;
+        const string PackagePath = MovementAssets.SnapHookBlueprint;
         byte[] header =
         [
             .. PropertyBlocks.Fragment(0, 1), .. PropertyBlocks.Fragment(9, 1), .. PropertyBlocks.Fragment(11, 1),
             .. PropertyBlocks.Fragment(7, 2, zeroes: true), .. PropertyBlocks.Fragment(17, 1, last: true), 0x01,
         ];
         byte[] values = [.. BitConverter.GetBytes(1800.0), .. BitConverter.GetBytes(60.0), .. BitConverter.GetBytes(-1), .. BitConverter.GetBytes(0.2), 1, 0, 0, 0, 0];
-        return SyntheticArchives.Package(path, [($"Default__{ShortName(path)}_C", PackageObjectIndex.Null, PackageObjectIndex.Null, 0, [.. header, .. values])],
+        return SyntheticArchives.Package(PackagePath, [($"Default__{ShortName(PackagePath)}_C", PackageObjectIndex.Null, PackageObjectIndex.Null, 0, [.. header, .. values])],
             importedPackages: [MovementAssets.SnapHookDataAsset], importedHashes: [1], imports: [s_firstImport]);
     }
 

@@ -24,7 +24,7 @@ public sealed class RaidIntegrationTests
     [Fact]
     public void A_reserved_player_logs_in_joins_the_dam_and_possesses_its_character()
     {
-        DamWorlds worlds = new(() => _now[0], ScriptedLighting, () => 7);
+        DamWorlds worlds = new(TestGameData.Raid, () => _now[0], ScriptedLighting, () => 7);
         RaidAllocations allocations = new(new GameServerEndpoint("ares-raid", "127.0.0.1", 7777, "", "", false, "LOCAL"), worlds, () => _now[0]);
         Allocation allocation = allocations.Reserve(new AllocationRequest(Ticket, ScenarioNames.TheDam, [42])).Allocation!;
         HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: () => _now[0]);
@@ -34,7 +34,7 @@ public sealed class RaidIntegrationTests
         client.Handshake();
         Assert.IsType<ControlChallenge>(Assert.Single(client.SendControl(new ControlHello(GameBuild.NetworkChecksum, "42", 0))));
         ControlMessage welcome = Assert.Single(client.SendControl(new ControlLogin("0", "/Game/Map?EncryptionToken=42?HandshakeId=7", new UniqueNetId(5, "42", "", false, false), "WIN")));
-        Assert.Equal(RaidWorld.Welcome, welcome);
+        Assert.Equal(worlds.Current!.Welcome, welcome);
         client.SendControl(new ControlNetspeed(50000), new ControlJoin());
 
         PlayerChannels player = Assert.IsType<PlayerChannels>(Assert.Single(connections.Players).Player);
@@ -68,7 +68,7 @@ public sealed class RaidIntegrationTests
     [Fact]
     public void Datagrams_without_the_reservation_credential_are_rejected()
     {
-        DamWorlds worlds = new(() => _now[0]);
+        DamWorlds worlds = new(TestGameData.Raid, () => _now[0]);
         RaidAllocations allocations = new(new GameServerEndpoint("ares-raid", "127.0.0.1", 7777, "", "", false, "LOCAL"), worlds, () => _now[0]);
         allocations.Reserve(new AllocationRequest(Ticket, ScenarioNames.TheDam, [42]));
         HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: () => _now[0]);

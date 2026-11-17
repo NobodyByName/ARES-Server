@@ -1,8 +1,10 @@
+using Ares.Common.Game.Content;
 using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
 using Ares.Host.Services.Identity;
+using Ares.Host.Services.Inventory;
 using Ares.Host.Services.Matchmaking;
 using Ares.Host.Services.Persistence;
 using Ares.Host.Services.Players;
@@ -16,20 +18,22 @@ public static class HostApplication
     /// <summary>Builds the Host web application for <paramref name="configuration"/>.</summary>
     /// <param name="configuration">Validated configuration.</param>
     /// <param name="log">Structured event output.</param>
+    /// <param name="gameData">
+    /// The game data Host loaded at startup. The inventory catalogue is built from it and the configuration's content
+    /// (<see cref="HostConfiguration.Content"/>); the three are registered as services.
+    /// </param>
     /// <param name="time">Clock; the system clock by default.</param>
     /// <param name="raidStarter">Optional Raid server starter (tests); by default Host starts the configured ARES-Raid.</param>
     /// <param name="configureBuilder">Optional builder customisation (tests use an in-memory server).</param>
     /// <param name="loggerProvider">Optional framework log destination.</param>
-    /// <param name="gameData">
-    /// The game data Host loaded at startup, registered as a service; the services do not read it yet (null in tests that
-    /// predate it).
-    /// </param>
-    public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, TimeProvider? time = null,
-        IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null,
-        GameDataSet? gameData = null)
+    /// <exception cref="AresContentException">The content does not fit the game data or the stash upgrade prices.</exception>
+    public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, GameDataSet gameData, TimeProvider? time = null,
+        IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null)
     {
+        ArgumentNullException.ThrowIfNull(gameData);
         time ??= TimeProvider.System;
         HostSettings settings = configuration.Settings;
+        InventoryCatalog catalog = new(gameData, configuration.Content, settings.StashUpgrades);
 
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders();
@@ -55,7 +59,7 @@ public static class HostApplication
         raidStarter ??= configuration.Raids is { } launch ? new RaidProcesses(launch, log) : null;
         RaidFleet? raids = raidStarter is null ? null : new RaidFleet(raidStarter, settings.RaidCapacity, configuration.Raids?.Players ?? 1, time);
         AccountDirectory accounts = new(database, time);
-        PlayerRegistry players = new(database, accounts, raids, log, time, settings.StashUpgrades);
+        PlayerRegistry players = new(database, accounts, catalog, raids, log, time);
         try
         {
             database.Initialize();
@@ -70,10 +74,10 @@ public static class HostApplication
         }
 
         builder.Services.AddSingleton<HostDatabase>(_ => database);
-        if (gameData is not null)
-        {
-            builder.Services.AddSingleton(gameData);
-        }
+        builder.Services.AddSingleton(gameData);
+        builder.Services.AddSingleton(configuration.Content);
+        builder.Services.AddSingleton(catalog);
+        builder.Services.AddSingleton(catalog.Items);
 
         builder.Services.AddSingleton(accounts);
         builder.Services.AddSingleton(players);

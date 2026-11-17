@@ -1,8 +1,7 @@
+using Ares.Common.GameData;
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Replication;
-using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.Tests.World;
@@ -38,8 +37,8 @@ public sealed class WorldItemClassTests
     [InlineData("/BP_SocketContainer_Wrh_Machine_M_02_DoorLeft.BP_SocketContainer_Wrh_Machine_M_02_DoorLeft_C")]
     public void A_dam_raid_flags_its_free_standing_container_classes(string classSuffix)
     {
-        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Dam).Raid.Loot;
-        string path = Assert.Single(WorldItemList.Classes, item => item.EndsWith(classSuffix, StringComparison.Ordinal));
+        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam)).Raid.Loot;
+        string path = Assert.Single(TestGameData.Data.WorldItems.Classes, item => item.EndsWith(classSuffix, StringComparison.Ordinal));
 
         Assert.True(IsFlagged(catalog.WorldItemClassBits, path));
     }
@@ -47,14 +46,14 @@ public sealed class WorldItemClassTests
     [Fact]
     public void Every_container_class_the_raid_can_spawn_is_flagged()
     {
-        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Dam).Raid.Loot;
+        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam)).Raid.Loot;
 
-        Assert.Equal(WorldItemList.WordCount, catalog.WorldItemClassBits.Count);
-        Assert.Equal(12, WorldItemList.WordCount);
+        Assert.Equal(TestGameData.Data.WorldItems.WordCount, catalog.WorldItemClassBits.Count);
+        Assert.Equal(12, TestGameData.Data.WorldItems.WordCount);
         Assert.All(catalog.Containers, container => Assert.True(IsFlagged(catalog.WorldItemClassBits, container.Class.Container.Class)));
         Assert.Contains(catalog.Containers, container => container.Source == LootContainerSource.Spawner);
-        Assert.All(DamPlacedLoot.Containers.Where(placed => LootContainerClasses.Find(placed.Class) is not null), placed => Assert.True(IsFlagged(catalog.WorldItemClassBits, placed.Class)));
-        Assert.Equal(LootContainerClasses.All.Count, catalog.WorldItemClassBits.Sum(word => (int)ulong.PopCount(word)));
+        Assert.All(TestGameData.Dam.PlacedLoot.Where(placed => LootSocketClasses.Served(TestGameData.Loot, placed.Class) is not null), placed => Assert.True(IsFlagged(catalog.WorldItemClassBits, placed.Class)));
+        Assert.Equal(LootSocketClasses.ServedClasses(TestGameData.Loot).Count, catalog.WorldItemClassBits.Sum(word => (int)ulong.PopCount(word)));
     }
 
     [Fact]
@@ -64,7 +63,7 @@ public sealed class WorldItemClassTests
         SpawnedWorldActor gameState = Assert.Single(session.Raid.SpawnedActors);
         Dictionary<ulong, string> classes = session.Raid.Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key);
         ValueCodec values = new(GameReplication.Catalog, [KnownEnums.NetRole, KnownEnums.GamePhase], session.Raid.State.Objects([]), classes);
-        Dictionary<string, object?> content = new PropertyCodec(values).Decode(new PropertyLayout(GameReplication.Catalog, DamMap.GameState.Class), Assert.Single(gameState.Content));
+        Dictionary<string, object?> content = new PropertyCodec(values).Decode(new PropertyLayout(GameReplication.Catalog, TestGameData.Dam.GameMode.GameState.Class), Assert.Single(gameState.Content));
 
         IReadOnlyList<object?> words = Assert.IsType<IReadOnlyList<object?>>(content[PropertyNames.PossibleWorldItemClassIndexBitFields], exactMatch: false);
         Assert.Equal(session.Raid.Loot.WorldItemClassBits, words.Cast<ulong>());
@@ -74,19 +73,19 @@ public sealed class WorldItemClassTests
     public void The_bitfield_encodes_like_the_reference()
     {
         ActorContentBlock block = new ScriptedPlayer().Raid.State.Replication.Encode(
-            DamMap.GameState.Class,
+            TestGameData.Dam.GameMode.GameState.Class,
             new Dictionary<string, object?> { [PropertyNames.PossibleWorldItemClassIndexBitFields] = s_referenceWords.Select(word => (object?)word).ToArray() });
 
         Assert.Equal(ReferenceBits, block.PayloadBits);
         Assert.Equal(ReferenceEncoding, Convert.ToHexString(block.Payload));
         Dictionary<string, object?> decoded = new PropertyCodec(new ValueCodec(GameReplication.Catalog, []))
-            .Decode(new PropertyLayout(GameReplication.Catalog, DamMap.GameState.Class), block);
+            .Decode(new PropertyLayout(GameReplication.Catalog, TestGameData.Dam.GameMode.GameState.Class), block);
         Assert.Equal(s_referenceWords, Assert.IsType<IReadOnlyList<object?>>(decoded[PropertyNames.PossibleWorldItemClassIndexBitFields], exactMatch: false).Cast<ulong>());
     }
 
     private static bool IsFlagged(IReadOnlyList<ulong> words, string classPath)
     {
-        int index = WorldItemList.IndexOf(classPath) ?? throw new ArgumentException($"{classPath} is not listed", nameof(classPath));
-        return ((words[index / WorldItemList.WordBits] >> (index % WorldItemList.WordBits)) & 1) != 0;
+        int index = TestGameData.Data.WorldItems.IndexOf(classPath) ?? throw new ArgumentException($"{classPath} is not listed", nameof(classPath));
+        return ((words[index / WorldItemClasses.WordBits] >> (index % WorldItemClasses.WordBits)) & 1) != 0;
     }
 }

@@ -137,7 +137,7 @@ internal static class SyntheticLootScripts
         foreach (LootTargetStacks stack in TargetStacks)
         {
             stacks.AddRange([Op("PshC8", 0, Quad(stack.Weight)), Op("PshC4", 0, (uint)stack.Target), Op("PSF", 4), Op("CALL", 0, StackWeightFunction),
-                Op("PSF", 4), Op("PshThisMemRef", 0x48, ContainerId), Op("CALLSYS", 0, Quad((ulong)AddKey))]);
+                Op("PSF", 4), Op("PshThisMemRef", 0x48, ContainerId), Op("CALLSYS", 0, Quad(AddKey))]);
         }
 
         stacks.Add(Op("RET"));
@@ -170,10 +170,10 @@ internal static class SyntheticLootScripts
     private static void Actor(SyntheticScriptCache cache)
     {
         uint[] defaults = Code(
-            Op("SetV1", 2, B.NetDormancyInitial), Op("PshV1", 2), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad((ulong)DormancyKey)),
-            Op("SetV1", 2, 0), Op("PshV1", 2), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad((ulong)RelevantKey)),
-            Op("PshC4", 0, (uint)CullDistance), Op("CALLSYS", 0, Quad((ulong)SquareKey)), Op("CpyRtoV4", 3), Op("iTOf", 3, 3), Op("PshV4", 3), Op("PshVPtr", 0),
-            Op("CALLSYS", 0, Quad((ulong)CullKey)),
+            Op("SetV1", 2, B.NetDormancyInitial), Op("PshV1", 2), Op("PshVPtr"), Op("CALLSYS", 0, Quad(DormancyKey)),
+            Op("SetV1", 2, 0), Op("PshV1", 2), Op("PshVPtr"), Op("CALLSYS", 0, Quad(RelevantKey)),
+            Op("PshC4", 0, (uint)CullDistance), Op("CALLSYS", 0, Quad(SquareKey)), Op("CpyRtoV4", 3), Op("iTOf", 3, 3), Op("PshV4", 3), Op("PshVPtr"),
+            Op("CALLSYS", 0, Quad(CullKey)),
             Op("RET"));
         cache.Classes.Add(new TestClass(B.ScriptActor, "ALootContainerSingle", [new TestProperty("Unused", s_bool, Reflected)]));
         cache.Classes.Add(new TestClass("ALootContainerSingle", "AActor",

@@ -68,7 +68,7 @@ public sealed class ScriptStatementsTests
     {
         ScriptCache cache = Cache();
         uint[] code = Code(Op("PGA", 0, Quad(0x6000UL)), Op("PshC8", 0, Quad(375.0)), Op("PshC8", 0, Quad(250.0)), Op("PshC8", 0, Quad(135.0)),
-            Op("ALLOC", 0, [.. Quad((ulong)ConfigType), 78]), Op("RET"));
+            Op("ALLOC", 0, [.. Quad(ConfigType), 78]), Op("RET"));
 
         ScriptCall call = Assert.Single(Evaluate(cache, code).Calls);
 
@@ -82,9 +82,9 @@ public sealed class ScriptStatementsTests
     {
         ScriptCache cache = Cache();
         uint[] code = Code(
-            Op("PshC4", 0, 20000), Op("CALLSYS", 0, Quad(0x9500UL)), Op("CpyRtoV4", 2), Op("iTOf", 2, 2), Op("PshV4", 2), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad(0x9600UL)),
-            Op("SetV4", 3, 3), Op("iTOf", 3, 3), Op("PshV4", 3), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad(0x9600UL)),
-            Op("SetV1", 5, 4), Op("PshV1", 5), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad(0x9700UL)),
+            Op("PshC4", 0, 20000), Op("CALLSYS", 0, Quad(0x9500UL)), Op("CpyRtoV4", 2), Op("iTOf", 2, 2), Op("PshV4", 2), Op("PshVPtr"), Op("CALLSYS", 0, Quad(0x9600UL)),
+            Op("SetV4", 3, 3), Op("iTOf", 3, 3), Op("PshV4", 3), Op("PshVPtr"), Op("CALLSYS", 0, Quad(0x9600UL)),
+            Op("SetV1", 5, 4), Op("PshV1", 5), Op("PshVPtr"), Op("CALLSYS", 0, Quad(0x9700UL)),
             Op("RET"));
 
         ScriptStatements statements = Evaluate(cache, code);
@@ -106,7 +106,7 @@ public sealed class ScriptStatementsTests
         ScriptCache cache = Cache();
 
         ScriptStatements lost = Evaluate(cache, Code(Op("PshC4", 0, 1), Op("CALLSYS", 0, Quad(0xDEADUL)), Op("RET")));
-        ScriptStatements branching = Evaluate(cache, Code(Op("JMP", 0, 0), Op("PshNull"), Op("PshVPtr", 0), Op("CALLSYS", 0, Quad(0x9600UL)), Op("RET")));
+        ScriptStatements branching = Evaluate(cache, Code(Op("JMP", 0, 0), Op("PshNull"), Op("PshVPtr"), Op("CALLSYS", 0, Quad(0x9600UL)), Op("RET")));
 
         Assert.False(lost.IsComplete);
         Assert.Null(Assert.Single(lost.Calls).Function);
@@ -143,18 +143,29 @@ public sealed class ScriptStatementsTests
 
     private static ScriptCache Cache()
     {
-        SyntheticScriptCache cache = new();
-        cache.Types[WeightType] = ("FWeight", []);
-        cache.Types[ConfigType] = ("FPromptConfig", []);
-        cache.Functions[0x9100] = ("FWeight", true, WeightType, 2);
-        cache.Functions[0x9200] = ("FPromptConfig", true, ConfigType, 3);
-        cache.Functions[0x9300] = ("Add", true, ArrayType, 1);
-        cache.Functions[0x9500] = ("Square", false, 0, 1);
-        cache.Functions[0x9600] = ("SetDistance", true, 0x7600, 1);
-        cache.Functions[0x9700] = ("SetDormancy", true, 0x7600, 1);
-        cache.FunctionIds[77] = 0x9100;
-        cache.FunctionIds[78] = 0x9200;
-        cache.GlobalNames[0x6000] = "Standard";
+        SyntheticScriptCache cache = new()
+        {
+            Types =
+            {
+                [WeightType] = ("FWeight", []),
+                [ConfigType] = ("FPromptConfig", []),
+            },
+            Functions =
+            {
+                [0x9100] = ("FWeight", true, WeightType, 2),
+                [0x9200] = ("FPromptConfig", true, ConfigType, 3),
+                [0x9300] = ("Add", true, ArrayType, 1),
+                [0x9500] = ("Square", false, 0, 1),
+                [0x9600] = ("SetDistance", true, 0x7600, 1),
+                [0x9700] = ("SetDormancy", true, 0x7600, 1),
+            },
+            FunctionIds =
+            {
+                [77] = 0x9100,
+                [78] = 0x9200,
+            },
+            GlobalNames = { [0x6000] = "Standard" },
+        };
         return cache.Parse();
     }
 }

@@ -110,9 +110,6 @@ public sealed class AnimationReaderTests
     [Fact]
     public void The_latest_key_time_spans_every_rich_curve_of_the_asset()
     {
-        static byte[] Key(float time) => [1, 0, 0, .. Floats(time, 0f, 0f, 0f, 0f, 0f)];
-        static CookedPackage Curves(byte[] first, byte[] trailer) => CookedPackage.Parse(SyntheticArchives.Package("/Game/Curves", [("Curves", PackageObjectIndex.Null, PackageObjectIndex.Null, 0,
-            [0x00, 0x05, 0x00, 0x03, .. BitConverter.GetBytes(2), .. first, 0x00, 0x03, .. BitConverter.GetBytes(1), .. Key(3.5f), .. trailer])]));
         CookedPackage package = Curves([.. Key(0.5f), .. Key(2f)], new byte[8]);
         CookedPackage unordered = Curves([.. Key(2f), .. Key(0.5f)], new byte[8]);
         CookedPackage unread = Curves([.. Key(0.5f), .. Key(2f)], [0, 0, 0, 1]);
@@ -120,6 +117,12 @@ public sealed class AnimationReaderTests
         Assert.Equal(3.5f, CurveKeyReader.LatestKeyTime(package, package.Exports[0], 8));
         Assert.Throws<InvalidDataException>(() => CurveKeyReader.LatestKeyTime(unordered, unordered.Exports[0], 8));
         Assert.Throws<InvalidDataException>(() => CurveKeyReader.LatestKeyTime(unread, unread.Exports[0], 8));
+
+        return;
+
+        static byte[] Key(float time) => [1, 0, 0, .. Floats(time, 0f, 0f, 0f, 0f, 0f)];
+        static CookedPackage Curves(byte[] first, byte[] trailer) => CookedPackage.Parse(SyntheticArchives.Package("/Game/Curves", [("Curves", PackageObjectIndex.Null, PackageObjectIndex.Null, 0,
+            [0x00, 0x05, 0x00, 0x03, .. BitConverter.GetBytes(2), .. first, 0x00, 0x03, .. BitConverter.GetBytes(1), .. Key(3.5f), .. trailer])]));
     }
 
     /// <summary>
@@ -157,10 +160,10 @@ public sealed class AnimationReaderTests
     internal static byte[] NotifyEvent(int stateClass, float start, float duration)
     {
         const uint Stored = (1u << 5) | (1u << 6) | (1u << 7) | (1u << 24);
-        uint zeroMask = ((1u << 26) - 1) & ~Stored;
+        const uint ZeroMask = ((1u << 26) - 1) & ~Stored;
         return
         [
-            0x80, 0x35, .. BitConverter.GetBytes(zeroMask),
+            0x80, 0x35, .. BitConverter.GetBytes(ZeroMask),
             .. BitConverter.GetBytes(stateClass), .. BitConverter.GetBytes(duration),
             .. PropertyBlocks.Header(7), .. BitConverter.GetBytes(start + duration),
             .. BitConverter.GetBytes(start),
@@ -177,11 +180,13 @@ public sealed class AnimationReaderTests
         {
             for (int at = 0; at + 2 <= sequence.Length; at++)
             {
-                if (sequence[at] == 0x80 && sequence[at + 1] == 0x35)
+                if (sequence[at] != 0x80 || sequence[at + 1] != 0x35)
                 {
-                    int link = at + 2 + 4 + 4 + 4 + 2;
-                    BitConverter.TryWriteBytes(sequence.AsSpan(link), BitConverter.ToSingle(sequence, link) + 0.01f);
+                    continue;
                 }
+
+                int link = at + 2 + 4 + 4 + 4 + 2;
+                BitConverter.TryWriteBytes(sequence.AsSpan(link), BitConverter.ToSingle(sequence, link) + 0.01f);
             }
         }
 

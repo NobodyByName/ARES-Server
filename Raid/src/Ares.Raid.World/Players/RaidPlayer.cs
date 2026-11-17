@@ -16,14 +16,14 @@ public sealed class RaidPlayer
     private PlayerMotion? _motion;
     private PlayerRaidEnd? _end;
 
-    internal RaidPlayer(long id, PlayerLoadout loadout, IReadOnlyList<CompactPlayerProfile> profiles, SpawnPlacement spawn)
+    internal RaidPlayer(RaidGameData gameData, long id, PlayerLoadout loadout, IReadOnlyList<CompactPlayerProfile> profiles, SpawnPlacement spawn)
     {
         Id = id;
         Loadout = loadout;
         Profiles = profiles;
         Spawn = spawn;
-        Inventory = new RaidInventory(loadout);
-        Weapons = new RaidWeapons(Inventory);
+        Inventory = new RaidInventory(gameData.Items, loadout);
+        Weapons = new RaidWeapons(Inventory, gameData.Data);
     }
 
     /// <summary>The player's user id.</summary>

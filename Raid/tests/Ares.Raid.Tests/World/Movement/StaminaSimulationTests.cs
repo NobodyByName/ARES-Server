@@ -76,9 +76,9 @@ public sealed class StaminaSimulationTests
     [Fact]
     public void Rolls_jumps_slides_and_vaults_cost_their_amounts()
     {
-        Assert.Equal(20, StaminaSimulation.DodgeRollCost(DodgeRollKind.Standard));
-        Assert.Equal(40, StaminaSimulation.DodgeRollCost(DodgeRollKind.Sprint));
-        Assert.Equal(20, StaminaSimulation.DodgeRollCost(DodgeRollKind.Exhausted));
+        Assert.Equal(20, StaminaSimulation.DodgeRollCost(TestGameData.Data, DodgeRollKind.Standard));
+        Assert.Equal(40, StaminaSimulation.DodgeRollCost(TestGameData.Data, DodgeRollKind.Sprint));
+        Assert.Equal(20, StaminaSimulation.DodgeRollCost(TestGameData.Data, DodgeRollKind.Exhausted));
         Assert.Equal(5, StaminaParameters.JumpCost);
         Assert.Equal(5, StaminaParameters.SlideCost);
         Assert.Equal(7.5, StaminaSimulation.VaultCost(175));
@@ -90,7 +90,7 @@ public sealed class StaminaSimulationTests
     public void A_cost_never_takes_stamina_below_zero_and_the_recharge_never_above_the_maximum()
     {
         StaminaState low = StaminaState.Initial with { Stamina = 30 };
-        Assert.Equal(0f, StaminaSimulation.Step(low, s_still with { Cost = StaminaSimulation.DodgeRollCost(DodgeRollKind.Sprint) }).State.Stamina);
+        Assert.Equal(0f, StaminaSimulation.Step(low, s_still with { Cost = StaminaSimulation.DodgeRollCost(TestGameData.Data, DodgeRollKind.Sprint) }).State.Stamina);
 
         StaminaState nearlyFull = StaminaState.Initial with { Stamina = 99.5f, RechargeTicks = 5 };
         Assert.Equal(100f, StaminaSimulation.Step(nearlyFull, s_still).State.Stamina);
@@ -146,8 +146,8 @@ public sealed class StaminaSimulationTests
     [Fact]
     public void Exhaustion_sets_its_upper_graph_tag()
     {
-        Assert.Equal(GraphStateUpperTags.StatusExhausted, StaminaSimulation.UpperGraphTags(exhausted: true));
-        Assert.Equal(0UL, StaminaSimulation.UpperGraphTags(exhausted: false));
+        Assert.Equal(TestGameData.Tags.StatusExhausted.Mask, StaminaSimulation.UpperGraphTags(TestGameData.Data, exhausted: true));
+        Assert.Equal(0UL, StaminaSimulation.UpperGraphTags(TestGameData.Data, exhausted: false));
         Assert.Equal(20, StaminaParameters.ExhaustedStateExitThreshold);
     }
 }

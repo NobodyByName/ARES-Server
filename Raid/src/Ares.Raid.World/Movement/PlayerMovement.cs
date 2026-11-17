@@ -1,9 +1,9 @@
+using Ares.Common.GameData;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Movement;
 
@@ -62,6 +62,7 @@ public sealed class PlayerMovement
     private uint _start;
     private Dictionary<uint, LadderStart> _ladderStarts = [];
     private uint? _revisedFrom;
+    private readonly GameDataSet _data;
     private readonly CollisionWorld? _collision;
     private readonly double _tolerance;
     private CharacterSimulation _simulation;
@@ -72,21 +73,23 @@ public sealed class PlayerMovement
     private double _yaw;
 
     /// <summary>Starts the simulation at rest.</summary>
+    /// <param name="data">The game data the character moves by.</param>
     /// <param name="frame">Input frame of the reset frame; simulation starts with the next one.</param>
     /// <param name="position">Spawn position.</param>
     /// <param name="yaw">Spawn facing in radians.</param>
     /// <param name="collision">The level's collision, or null to keep the reported positions.</param>
     /// <param name="tolerance">See <see cref="PositionTolerance"/>; infinite never follows the reports.</param>
-    public PlayerMovement(uint frame, Vector3D position, double yaw, CollisionWorld? collision = null, double tolerance = PositionTolerance)
-        : this(frame, new CharacterState(0, position, false), yaw, collision, tolerance)
+    public PlayerMovement(GameDataSet data, uint frame, Vector3D position, double yaw, CollisionWorld? collision = null, double tolerance = PositionTolerance)
+        : this(data, frame, new CharacterState(0, position, false), yaw, collision, tolerance)
     {
     }
 
-    private PlayerMovement(uint frame, CharacterState state, double yaw, CollisionWorld? collision, double tolerance)
+    private PlayerMovement(GameDataSet data, uint frame, CharacterState state, double yaw, CollisionWorld? collision, double tolerance)
     {
+        _data = data ?? throw new ArgumentNullException(nameof(data));
         _collision = collision;
         _tolerance = tolerance;
-        _simulation = CharacterSimulation.From(state, collision);
+        _simulation = CharacterSimulation.From(data, state, collision);
         (_start, Frame, _yaw) = (frame, frame, yaw);
         _ticks[frame] = new Tick(_simulation.Copy(), default, default, default, yaw, false, false, false, Inputs.None);
     }
@@ -109,7 +112,7 @@ public sealed class PlayerMovement
             (LastReseed, WorstReseed) = (kept.LastReseed, kept.WorstReseed);
         }
 
-        _simulation = CharacterSimulation.From(new CharacterState(0, position, _simulation.State.Flashlight) { Yaw = yaw }, _collision);
+        _simulation = CharacterSimulation.From(_data, new CharacterState(0, position, _simulation.State.Flashlight) { Yaw = yaw }, _collision);
         (_start, Frame, _yaw, _air, _revisedFrom) = (frame, frame, yaw, default, null);
         _ladderStarts.Clear();
         _ticks = new Dictionary<uint, Tick>
@@ -123,14 +126,16 @@ public sealed class PlayerMovement
     }
 
     /// <summary>Starts the simulation in a given character state.</summary>
+    /// <param name="data">The game data the character moves by.</param>
     /// <param name="frame">Input frame of the state; simulation starts with the next one.</param>
     /// <param name="state">The character's state at that frame.</param>
     /// <param name="yaw">Facing in radians.</param>
     /// <param name="collision">The level's collision, or null to keep the reported positions.</param>
     /// <param name="tolerance">See <see cref="PositionTolerance"/>; infinite never follows the reports.</param>
     /// <returns>The simulation.</returns>
-    public static PlayerMovement From(uint frame, CharacterState state, double yaw, CollisionWorld? collision = null, double tolerance = PositionTolerance) =>
-        new(frame, state, yaw, collision, tolerance);
+    public static PlayerMovement From(GameDataSet data, uint frame, CharacterState state, double yaw, CollisionWorld? collision = null,
+        double tolerance = PositionTolerance) =>
+        new(data, frame, state, yaw, collision, tolerance);
 
     // Input frames a tick reads besides its own: the reported positions around it and the next frame's weapon controls.
     [Flags]
@@ -179,13 +184,13 @@ public sealed class PlayerMovement
     /// ladder (<see cref="CharacterSimulation.StepOnLadder"/>) until it leaves it.
     /// </summary>
     /// <param name="frame">Input frame of the climb request.</param>
-    /// <param name="ladder">Index of the ladder in <see cref="DamLadders.All"/>.</param>
+    /// <param name="ladder">Index of the ladder in the map's ladders (<see cref="MapData.Ladders"/>).</param>
     /// <param name="topEntry">Whether the press was on the ladder's top entry.</param>
     /// <param name="attached">Whether the character is already on the ladder's line, past getting onto it.</param>
     public void Climb(uint frame, int ladder, bool topEntry, bool attached = false)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(ladder);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(ladder, DamLadders.All.Count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(ladder, _data.Names.Dam.Ladders.Length);
         if (!_ladderStarts.TryAdd(frame, new LadderStart(ladder, topEntry, attached)) || frame > Frame || frame <= _start)
         {
             return;
@@ -315,7 +320,7 @@ public sealed class PlayerMovement
             input.CameraOffset(frame)), frame);
         bool locked = _air.Unsettled || (input.Weapon(frame + 1)?.FireBlocked ?? false);
         LadderState? start = _ladderStarts.TryGetValue(frame, out LadderStart begun)
-            ? LadderMovement.Begin(LadderLine.From(DamLadders.All[begun.Ladder]), begun.TopEntry) with { Ticks = begun.Attached ? s_attachedLadderTicks : 0 }
+            ? LadderMovement.Begin(LadderLine.From(_data.Names.Dam.Ladders[begun.Ladder]), begun.TopEntry) with { Ticks = begun.Attached ? s_attachedLadderTicks : 0 }
             : null;
         bool followingLadder = start is null && previous.Ladder is null && previous.LadderFollowedTicks is > 0 and < MostFollowedTicks && locked;
         bool followingVault = start is null && previous.Ladder is null && !followingLadder && previous.VaultFollowedTicks is > 0 and < MostFollowedTicks
@@ -341,7 +346,7 @@ public sealed class PlayerMovement
                 armed ? GroundMovementParameters.Armed : GroundMovementParameters.Unarmed, SteerAboveMaximum, FixBrakingOvershoot,
                 input.Position(frame), sprint: armed ? SprintMovementParameters.Armed : SprintMovementParameters.Unarmed,
                 slide: SlideMovementParameters.ForSurface(_simulation.State.Body?.Ground.Surface ?? default), unsettled: _air.Unsettled,
-                vaults: GeneratedMovementData.Vaults(armed, exhausted: false), pitch: input.Pitch(frame) ?? 0,
+                vaults: _data.Movement.Vaults(armed, exhausted: false), pitch: input.Pitch(frame) ?? 0,
                 heldItem: HeldControls(heldItem, input.Weapon(frame)));
         }
 

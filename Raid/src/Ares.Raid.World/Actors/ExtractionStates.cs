@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Actors;
@@ -17,36 +18,41 @@ public sealed record ExtractionDeparture(double At, IReadOnlyList<long> Players)
 /// </summary>
 public sealed class ExtractionStates
 {
-    private static readonly ExtractionButton s_summon = DamExtraction.Buttons.Single(button => button.Role == ExtractionButtonRole.Summon);
-
+    private readonly MapData _map;
+    private readonly ExtractionSettings _settings;
     private readonly ExtractionPointState[] _states;
     private readonly ExtractionDeparture?[] _departures;
 
     /// <summary>Sets each elevator to its start state.</summary>
+    /// <param name="map">The map's data: its elevator buttons and what its elevators share.</param>
     /// <param name="count">Number of elevators.</param>
-    public ExtractionStates(int count)
+    public ExtractionStates(MapData map, int count)
     {
+        _map = map ?? throw new ArgumentNullException(nameof(map));
         ArgumentOutOfRangeException.ThrowIfNegative(count);
+        _settings = map.ExtractionElevator.Settings;
+        ExtractionButton summon = map.ExtractionButtons.Single(button => button.Role == ExtractionButtonRole.Summon);
+        CallSeconds = summon.AlignmentSeconds + _settings.SummonHoldSeconds;
         _states = [.. Enumerable.Repeat(new ExtractionPointState(ExtractionState.Closed, null, null), count)];
         _departures = new ExtractionDeparture?[count];
     }
 
     /// <summary>Seconds from a press on the call button to the elevator's arrival.</summary>
-    public static double CallSeconds => s_summon.AlignmentSeconds + DamExtraction.Settings.SummonHoldSeconds;
+    public double CallSeconds { get; }
 
     /// <summary>An elevator's state.</summary>
     /// <param name="index">Elevator index.</param>
     /// <returns>The state.</returns>
     public ExtractionPointState Get(int index) => _states[index];
 
-    /// <summary>States of an elevator's buttons, in <see cref="DamExtraction.Buttons"/> order.</summary>
+    /// <summary>States of an elevator's buttons, in <see cref="MapData.ExtractionButtons"/> order.</summary>
     /// <param name="index">Elevator index.</param>
     /// <returns>The button states.</returns>
     public IReadOnlyList<CurrentInteractionState> Buttons(int index)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _states.Length);
-        return _states[index].Buttons;
+        return _states[index].Buttons(_map);
     }
 
     /// <summary>The players inside an elevator when it last left.</summary>
@@ -73,14 +79,14 @@ public sealed class ExtractionStates
 
     /// <summary>Starts a hold on a descend switch of a ready elevator; ignored while another hold runs.</summary>
     /// <param name="index">Elevator index.</param>
-    /// <param name="button">The switch, as an index in <see cref="DamExtraction.Buttons"/>.</param>
+    /// <param name="button">The switch, as an index in <see cref="MapData.ExtractionButtons"/>.</param>
     /// <param name="player">User id of the player.</param>
     /// <param name="at">Server world time of the press, in seconds.</param>
     /// <returns>Whether the hold started.</returns>
     public bool Descend(int index, int button, long player, double at)
     {
         ExtractionPointState state = _states[index];
-        if (state.State != ExtractionState.Ready || state.Descent is not null || DamExtraction.Buttons[button].Role != ExtractionButtonRole.Descend)
+        if (state.State != ExtractionState.Ready || state.Descent is not null || _map.ExtractionButtons[button].Role != ExtractionButtonRole.Descend)
         {
             return false;
         }
@@ -123,16 +129,16 @@ public sealed class ExtractionStates
                 state = state with { State = ExtractionState.Arriving, ChangedAt = called + CallSeconds, CalledAt = null, ReadyAt = null, ClosingAt = null };
             }
 
-            if (state is { State: ExtractionState.Arriving, ChangedAt: { } arriving } && at >= arriving + DamExtraction.Settings.TimeToExtractReadySeconds)
+            if (state is { State: ExtractionState.Arriving, ChangedAt: { } arriving } && at >= arriving + _settings.TimeToExtractReadySeconds)
             {
-                state = state with { State = ExtractionState.Ready, ChangedAt = arriving + DamExtraction.Settings.TimeToExtractReadySeconds, Departed = null };
+                state = state with { State = ExtractionState.Ready, ChangedAt = arriving + _settings.TimeToExtractReadySeconds, Departed = null };
             }
 
             if (state is { State: ExtractionState.Ready, ChangedAt: { } ready })
             {
-                double timeout = ready + DamExtraction.Settings.DefaultExtractionSeconds;
+                double timeout = ready + _settings.DefaultExtractionSeconds;
                 ExtractionDescent? descent = state.Descent;
-                double closing = descent is { } held && held.EndsAt < timeout ? held.EndsAt : timeout;
+                double closing = descent is { } held && held.EndsAt(_map) < timeout ? held.EndsAt(_map) : timeout;
                 if (at >= closing)
                 {
                     state = state with
@@ -142,18 +148,18 @@ public sealed class ExtractionStates
                         ReadyAt = ready,
                         ClosingAt = closing,
                         Descent = null,
-                        Departed = descent is { } done && done.EndsAt.Equals(closing) ? done : null,
+                        Departed = descent is { } done && done.EndsAt(_map).Equals(closing) ? done : null,
                     };
                 }
-                else if (descent is { Holding: false } aligning && at >= aligning.HoldStartsAt)
+                else if (descent is { Holding: false } aligning && at >= aligning.HoldStartsAt(_map))
                 {
                     state = state with { Descent = aligning with { Holding = true } };
                 }
             }
 
-            if (state is { State: ExtractionState.Closing, ChangedAt: { } closingAt } && at >= closingAt + DamExtraction.DoorsSeconds)
+            if (state is { State: ExtractionState.Closing, ChangedAt: { } closingAt } && at >= closingAt + _map.ExtractionElevator.DoorsSeconds)
             {
-                state = state with { State = ExtractionState.Closed, ChangedAt = closingAt + DamExtraction.DoorsSeconds, CalledBy = null };
+                state = state with { State = ExtractionState.Closed, ChangedAt = closingAt + _map.ExtractionElevator.DoorsSeconds, CalledBy = null };
                 _departures[index] = new ExtractionDeparture(closingAt, inside?.Invoke(index) ?? []);
             }
 

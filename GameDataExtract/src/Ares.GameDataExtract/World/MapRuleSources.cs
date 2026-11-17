@@ -17,7 +17,6 @@ internal sealed class MapRuleSources
 {
     private const int MaxClassDepth = 32;
 
-    private readonly ScriptSchemas _schemas;
     private readonly ClassSchemas _classes;
     private readonly ObjectDefaults _defaults;
 
@@ -26,12 +25,12 @@ internal sealed class MapRuleSources
     {
         Packages = packages;
         Scripts = scripts;
-        _schemas = new ScriptSchemas(scripts, new Dictionary<string, StructSchema>(StringComparer.Ordinal)
+        ScriptSchemas schemas = new(scripts, new Dictionary<string, StructSchema>(StringComparer.Ordinal)
         {
             [RoundConfigurationMembers.NativeBase] = RoundConfigurationMembers.PersistenceDataAsset,
             [WorldSettingsMembers.NativeBase] = WorldSettingsMembers.Schema,
         });
-        _classes = new ClassSchemas(packages, path => path == LevelScriptMembers.TimerHandlePath ? LevelScriptMembers.TimerHandle : _schemas.ForPath(path));
+        _classes = new ClassSchemas(packages, path => path == LevelScriptMembers.TimerHandlePath ? LevelScriptMembers.TimerHandle : schemas.ForPath(path));
         _defaults = new ObjectDefaults(packages, _classes.ForObject);
     }
 

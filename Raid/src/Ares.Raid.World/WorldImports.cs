@@ -1,4 +1,4 @@
-using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
 using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -19,15 +19,15 @@ public sealed class WorldImports
     private readonly Dictionary<string, ulong> _classes = new(StringComparer.Ordinal);
     private readonly List<(GlobalActor Actor, ulong Guid)> _globalActors = [];
 
-    /// <summary>Gameplay classes of the items a character can hold, by usable-item index.</summary>
-    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = ItemTraitsTable.Generated.All
-        .Where(traits => traits.HeldClass is not null).ToDictionary(traits => checked((ushort)traits.UsableIndex), traits => traits.HeldClass!);
-
     /// <summary>Builds the exports.</summary>
     /// <param name="catalog">Replication schemas.</param>
-    public WorldImports(ReplicationCatalog catalog)
+    /// <param name="gameData">The game data: the map and the items a character can hold.</param>
+    public WorldImports(ReplicationCatalog catalog, RaidGameData gameData)
     {
         ArgumentNullException.ThrowIfNull(catalog);
+        ArgumentNullException.ThrowIfNull(gameData);
+        MapData dam = gameData.Map;
+        HeldItemClasses = gameData.Items.HeldItemClasses;
         uint package = catalog.Class(ClassPaths.Package).Checksum;
         foreach (ArchetypeClass player in (ArchetypeClass[])[PlayerClasses.PlayerController, PlayerClasses.PlayerState, PlayerClasses.Pawn])
         {
@@ -35,18 +35,20 @@ public sealed class WorldImports
             _archetypes[player.Class] = Add(Add(0, archetypePackage, package), name, catalog.Class(player.Class).Checksum);
         }
 
-        ulong map = Add(0, DamMap.MapPackage, package, noLoad: true);
-        ulong world = Add(map, DamMap.WorldName, catalog.Class(ClassPaths.World).Checksum, noLoad: true);
-        ulong level = Add(world, DamMap.PersistentLevelName, catalog.Class(ClassPaths.Level).Checksum, noLoad: true);
-        LevelScriptGuid = Add(level, DamMap.LevelScriptActorName, catalog.Class(DamMap.LevelScriptClass).Checksum, noLoad: true);
+        ulong map = Add(0, dam.MapPackage, package, noLoad: true);
+        ulong world = Add(map, dam.WorldName, catalog.Class(ClassPaths.World).Checksum, noLoad: true);
+        ulong level = Add(world, dam.World.PersistentLevelName, catalog.Class(ClassPaths.Level).Checksum, noLoad: true);
+        LevelScriptGuid = Add(level, dam.World.LevelScriptActorName, catalog.Class(dam.World.LevelScriptClass).Checksum, noLoad: true);
 
-        (string statePackage, string stateName) = Split(DamMap.GameState.Archetype);
-        _archetypes[DamMap.GameState.Class] = Add(Add(0, statePackage, package), stateName, catalog.Class(DamMap.GameState.Class).Checksum);
-        (string modePackage, string modeName) = Split(DamMap.GameModeClass);
-        _classes[DamMap.GameModeClass] = Add(Add(0, modePackage, package), modeName, catalog.Class(DamMap.GameModeClass).Checksum);
+        ArchetypeClass gameState = dam.GameMode.GameState;
+        string gameMode = dam.GameMode.GameModeClass;
+        (string statePackage, string stateName) = Split(gameState.Archetype);
+        _archetypes[gameState.Class] = Add(Add(0, statePackage, package), stateName, catalog.Class(gameState.Class).Checksum);
+        (string modePackage, string modeName) = Split(gameMode);
+        _classes[gameMode] = Add(Add(0, modePackage, package), modeName, catalog.Class(gameMode).Checksum);
 
-        DataLayersGuid = Add(level, DamMap.WorldDataLayersActorName, catalog.Class(DamMap.WorldDataLayersClass).Checksum, noLoad: true);
-        foreach (GlobalActor actor in DamMap.GlobalActors)
+        DataLayersGuid = Add(level, dam.World.WorldDataLayersActorName, catalog.Class(MapWorldClasses.WorldDataLayers).Checksum, noLoad: true);
+        foreach (GlobalActor actor in DamProtocol.GlobalActors)
         {
             _globalActors.Add((actor, Add(level, actor.Name, catalog.Class(actor.Class).Checksum, noLoad: true)));
         }
@@ -81,6 +83,9 @@ public sealed class WorldImports
 
     /// <summary>All export records.</summary>
     public ObjectExports Exports { get; }
+
+    /// <summary>Gameplay classes of the items a character can hold, by usable-item index.</summary>
+    public IReadOnlyDictionary<ushort, string> HeldItemClasses { get; }
 
     /// <summary>The level script actor.</summary>
     public ulong LevelScriptGuid { get; }

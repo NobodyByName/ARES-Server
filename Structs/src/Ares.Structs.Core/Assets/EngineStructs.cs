@@ -7,7 +7,7 @@ public static class EngineStructs
     public static StructSchema Vector { get; } = StructSchema.NativeStruct("Vector", NativeLayout.Vector);
 
     /// <summary><c>FVector3f</c>: three floats.</summary>
-    public static StructSchema Vector3f { get; } = StructSchema.NativeStruct("Vector3f", NativeLayout.Vector3f);
+    public static StructSchema Vector3F { get; } = StructSchema.NativeStruct("Vector3f", NativeLayout.Vector3F);
 
     /// <summary><c>FVector2D</c>: two doubles.</summary>
     public static StructSchema Vector2D { get; } = StructSchema.NativeStruct("Vector2D", NativeLayout.Vector2D);
@@ -74,7 +74,7 @@ public static class EngineStructs
     public static IReadOnlyDictionary<string, StructSchema> ByPath { get; } = new Dictionary<string, StructSchema>(StringComparer.Ordinal)
     {
         ["/Script/CoreUObject.Vector"] = Vector,
-        ["/Script/CoreUObject.Vector3f"] = Vector3f,
+        ["/Script/CoreUObject.Vector3f"] = Vector3F,
         ["/Script/CoreUObject.Vector2D"] = Vector2D,
         ["/Script/CoreUObject.Rotator"] = Rotator,
         ["/Script/CoreUObject.Quat"] = Quat,

@@ -3,7 +3,6 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -12,7 +11,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void Flashlight_press_hold_and_release_match_the_character_rules()
     {
-        CharacterSimulation simulation = new(new Vector3D(100, 200, 300));
+        CharacterSimulation simulation = new(TestGameData.Data, new Vector3D(100, 200, 300));
         (ulong Flags, bool Enabled)[] sequence = [(0, false), (512, true), (1536, true), (1024, true), (0, true), (512, false)];
         uint frame = 1;
         foreach ((ulong flags, bool enabled) in sequence)
@@ -26,7 +25,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void Electrification_switches_the_light_off_and_a_held_button_does_not_reenable_it()
     {
-        CharacterSimulation simulation = new(default, true);
+        CharacterSimulation simulation = new(TestGameData.Data, default, true);
         Assert.False(simulation.Step(Claims(1, 512), electrified: true).Flashlight);
         Assert.False(simulation.Step(Claims(2, 1536)).Flashlight);
         Assert.False(simulation.Step(Claims(3, 1024)).Flashlight);
@@ -36,7 +35,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void A_speculative_simulation_does_not_change_the_original()
     {
-        CharacterSimulation original = new(new Vector3D(100, 200, 300));
+        CharacterSimulation original = new(TestGameData.Data, new Vector3D(100, 200, 300));
         CharacterSimulation copy = original.Copy();
         copy.Step(Claims(1, 512), new Vector3D(400, 500, 600));
 
@@ -57,7 +56,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void Crouch_shuffle_expires_and_ground_steps_preserve_the_flashlight()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         for (uint frame = 1; frame <= 14; frame++)
         {
             CharacterState state = GroundStep(simulation, frame, crouch: true, moving: true, frame == 1 ? 512UL : 0);
@@ -76,7 +75,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void Stopping_resets_the_crouch_shuffle_timer_for_the_next_walk()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         for (uint frame = 1; frame <= 20; frame++)
         {
             GroundStep(simulation, frame, crouch: true, moving: true);
@@ -96,7 +95,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void Running_mode_survives_braking_until_the_character_has_stopped()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         for (uint frame = 1; frame <= 20; frame++)
         {
             GroundStep(simulation, frame, crouch: false, moving: true);
@@ -223,7 +222,7 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void A_roll_press_with_input_rolls_from_the_next_tick_and_blends_back_into_ground_movement()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         uint frame = 1;
         for (; frame <= 20; frame++)
         {
@@ -231,7 +230,7 @@ public sealed class CharacterSimulationTests
         }
 
         CharacterState pressed = SlideStep(simulation, frame++, 126, MovementButtons.DodgeRoll);
-        int duration = DodgeRollMovement.Duration(DodgeRollKind.Standard);
+        int duration = DodgeRollMovement.Duration(TestGameData.Data, DodgeRollKind.Standard);
         Assert.Equal(CharacterStance.Stand, pressed.Stance);
         Assert.False(pressed.Rolling);
         Assert.NotNull(pressed.Roll);
@@ -249,14 +248,14 @@ public sealed class CharacterSimulationTests
             Assert.Equal(CharacterStance.Uncontrolled, state.Stance);
             Assert.Equal(LocoMode.Running, state.Locomotion);
             Assert.Equal(pressed.MovementLocomotion, state.MovementLocomotion);
-            Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, state.GraphFlags & GeneratedGraphStateFlags.DodgeRolling);
+            Assert.Equal(TestGameData.Flags.DodgeRolling, state.GraphFlags(TestGameData.Data) & TestGameData.Flags.DodgeRolling);
         }
 
         // The tick after the last step still moves with the animation; then ground movement takes over in equal steps.
         CharacterState exit = roll[duration];
         Assert.False(exit.Rolling);
         Assert.Equal(1, exit.RollExitTicks);
-        Assert.Equal(0UL, exit.GraphFlags & GeneratedGraphStateFlags.DodgeRolling);
+        Assert.Equal(0UL, exit.GraphFlags(TestGameData.Data) & TestGameData.Flags.DodgeRolling);
         Assert.Equal(2, roll[duration + 1].RollExitTicks);
         Assert.Null(roll[^1].Roll);
         Assert.Equal(CharacterStance.Stand, roll[^1].Stance);
@@ -272,9 +271,9 @@ public sealed class CharacterSimulationTests
     [Fact]
     public void A_climb_moves_up_the_ladder_line_and_a_crouch_drops_off_keeping_the_crouch_block_for_a_while()
     {
-        LadderLine line = LadderLine.From(DamLadders.All[0]);
+        LadderLine line = LadderLine.From(TestGameData.Dam.Ladders[0]);
         Vector3D feet = line.Origin with { Z = line.Origin.Z + LadderParameters.LineStartHeight + 100 };
-        CharacterSimulation simulation = new(feet);
+        CharacterSimulation simulation = new(TestGameData.Data, feet);
         LadderState attached = LadderMovement.Begin(line, topEntry: false) with { Ticks = (int)Math.Ceiling(LadderParameters.AlignmentSeconds * 30) + 1 };
         CharacterState state = Ladder(simulation, 1, 126, 0, attached);
         for (uint frame = 2; frame <= 30; frame++)
@@ -284,8 +283,8 @@ public sealed class CharacterSimulationTests
 
         Assert.True(state.OnLadder);
         Assert.Equal(CharacterStance.Ladder, state.Stance);
-        Assert.Equal(GeneratedGraphStateFlags.LadderState | GeneratedGraphStateFlags.LadderCrouchInputBlocked,
-            state.GraphFlags & (GeneratedGraphStateFlags.LadderState | GeneratedGraphStateFlags.LadderCrouchInputBlocked));
+        Assert.Equal(TestGameData.Flags.LadderState | TestGameData.Flags.LadderCrouchInputBlocked,
+            state.GraphFlags(TestGameData.Data) & (TestGameData.Flags.LadderState | TestGameData.Flags.LadderCrouchInputBlocked));
         Assert.True(state.Position.Z > feet.Z + 100);
 
         // Holding crouch drops off the ladder; the crouch input stays blocked a few ticks longer.
@@ -293,8 +292,8 @@ public sealed class CharacterSimulationTests
         Assert.Null(dropped.Ladder);
         CharacterState after = GroundStep(simulation, 32, crouch: false, moving: false);
         Assert.False(after.OnLadder);
-        Assert.Equal(0UL, after.GraphFlags & GeneratedGraphStateFlags.LadderState);
-        Assert.Equal(GeneratedGraphStateFlags.LadderCrouchInputBlocked, after.GraphFlags & GeneratedGraphStateFlags.LadderCrouchInputBlocked);
+        Assert.Equal(0UL, after.GraphFlags(TestGameData.Data) & TestGameData.Flags.LadderState);
+        Assert.Equal(TestGameData.Flags.LadderCrouchInputBlocked, after.GraphFlags(TestGameData.Data) & TestGameData.Flags.LadderCrouchInputBlocked);
     }
 
     private static CharacterState Ladder(CharacterSimulation simulation, uint frame, sbyte forward, ulong claims, LadderState? start = null) =>
@@ -302,7 +301,7 @@ public sealed class CharacterSimulationTests
 
     private static CharacterSimulation Sprinting(out uint frame)
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         for (frame = 1; frame <= 45; frame++)
         {
             SlideStep(simulation, frame, 126, MovementButtons.Sprint);

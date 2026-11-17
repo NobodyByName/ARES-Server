@@ -22,6 +22,7 @@ namespace Ares.Host;
 /// <param name="FillSeconds">Seconds after a raid's first party during which other parties may join.</param>
 /// <param name="Lighting">Lighting of every raid, or null for the map's weighted pick.</param>
 /// <param name="GameDataDirectory">Absolute path of the game data folder, or null when none is configured.</param>
+/// <param name="ContentDirectory">Absolute path of the operator's ARES content folder, or null when only the built-in defaults are used.</param>
 public sealed record RaidLaunch(
     string Executable,
     string TokenFile,
@@ -33,7 +34,8 @@ public sealed record RaidLaunch(
     int Players,
     int FillSeconds,
     string? Lighting,
-    string? GameDataDirectory);
+    string? GameDataDirectory,
+    string? ContentDirectory);
 
 /// <summary>Starts ARES-Raid as child processes and forwards their events to the Host log.</summary>
 internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaidStarter
@@ -73,6 +75,12 @@ internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaid
         {
             info.ArgumentList.Add("--game-data-dir");
             info.ArgumentList.Add(launch.GameDataDirectory);
+        }
+
+        if (launch.ContentDirectory is not null)
+        {
+            info.ArgumentList.Add("--content-dir");
+            info.ArgumentList.Add(launch.ContentDirectory);
         }
 
         Process process = new() { StartInfo = info, EnableRaisingEvents = true };

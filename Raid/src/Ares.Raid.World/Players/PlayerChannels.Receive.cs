@@ -234,7 +234,7 @@ public sealed partial class PlayerChannels
         foreach (object? item in reports)
         {
             if (item is not LevelVisibility report || !PackagePattern().IsMatch(report.Package) || report.File != report.Package
-                || !RaidWorld.LevelPackages.Contains(report.Package))
+                || !_raid.LevelPackages.Contains(report.Package))
             {
                 throw new InvalidPacketException("Visibility report outside the map");
             }

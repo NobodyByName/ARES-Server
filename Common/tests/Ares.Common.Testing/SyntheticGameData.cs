@@ -89,7 +89,6 @@ public sealed class SyntheticGameData
         ItemDefinition[] made = [.. _items.Select((entry, index) => entry.Configure(Item(entry.Name, FirstAssetId + index)))];
         ImmutableArray<ItemDefinition> items = [.. made.OrderBy(item => item.TechnicalName, StringComparer.OrdinalIgnoreCase).Select((item, index) => item with { UsableIndex = index })];
         Dictionary<string, ItemDefinition> byName = items.ToDictionary(item => item.TechnicalName, StringComparer.Ordinal);
-        ItemDefinition Named(string name) => byName[name];
 
         LoadoutFrameDefinition standard = Frame(GameNames.ItemStructures.StandardLoadoutFrame, 2_000_001);
         AugmentDefinition[] augments =
@@ -147,6 +146,8 @@ public sealed class SyntheticGameData
             Maps = [_map(DefaultMap())],
         };
         return _content(content);
+
+        ItemDefinition Named(string name) => byName[name];
     }
 
     /// <summary>The checked and indexed data.</summary>
@@ -190,8 +191,8 @@ public sealed class SyntheticGameData
                 new ArchetypeClass("/Script/Angelscript.SyntheticGameState", "/Script/Angelscript.Default__SyntheticGameState"), "GameMode.Location.Synthetic"),
             StreamingCells = [Cell],
             LootSocketMeshes = [new LootSocketMesh("/Game/Synthetic/SM_Shelf.SM_Shelf", [null])],
-            LootSockets = [new LootSocket(Cell, "Shelf_1", "StaticMeshComponent0", "LootSocket_1", ContainerTag, new Vector3D(100, 0, 0), new Rotator(0, 0, 0), Vector3D.One, 0, [])],
-            PlacedLoot = [new PlacedLootContainer(Cell, "Container_1", ContainerClass, new Vector3D(200, 0, 0), new Rotator(0, 90, 0), Vector3D.One)],
+            LootSockets = [new LootSocket(Cell, "Shelf_1", "StaticMeshComponent0", "LootSocket_1", ContainerTag, new Vector3D(100, 0, 0), new Rotator(0, 0, 0), Vector3D.One, 0, [], null)],
+            PlacedLoot = [new PlacedLootContainer(Cell, "Container_1", ContainerClass, new Vector3D(200, 0, 0), new Rotator(0, 90, 0), Vector3D.One, null)],
             PlayerStarts = [new PlayerStart("PlayerStart_1", "PlayerStart", [], "CollisionCapsule", new Vector3D(0, 0, 100), new Rotator(0, 0, 0), [])],
             PlayerStartCapsule = new PlayerStartCapsule(92, 40),
             Ladders = [new LadderPlacement(Cell, "Ladder_1", 400, new Vector3D(300, 0, 0), 180)],

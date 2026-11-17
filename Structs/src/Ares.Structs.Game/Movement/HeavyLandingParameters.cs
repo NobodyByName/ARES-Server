@@ -42,10 +42,10 @@ public sealed record HeavyLandingClip(string Name, double SampleRate, IReadOnlyL
 public sealed record HeavyLandingLevel(
     double Height,
     HeavyLandingClip NoDirection,
-    HeavyLandingClip? Forward = null,
-    HeavyLandingClip? Left = null,
-    HeavyLandingClip? Right = null,
-    HeavyLandingClip? Backward = null);
+    HeavyLandingClip? Forward,
+    HeavyLandingClip? Left,
+    HeavyLandingClip? Right,
+    HeavyLandingClip? Backward);
 
 /// <summary>
 /// When a landing is heavy and how long its recovery holds the character. Just before touching down, the game turns

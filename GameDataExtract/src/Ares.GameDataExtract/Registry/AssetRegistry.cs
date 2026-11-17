@@ -136,8 +136,8 @@ internal sealed class AssetRegistry
         int count = (int)((handle >> TagCountShift) & TagCountMask);
         long start = (uint)handle;
         bool numberless = (handle >> NumberlessTagsBit) != 0;
-        IReadOnlyList<(string Key, uint Value)> pairs = numberless ? _store.NumberlessPairs : _store.NumberedPairs;
-        if (start + count > pairs.Count)
+        (string Key, uint Value)[] pairs = numberless ? _store.NumberlessPairs : _store.NumberedPairs;
+        if (start + count > pairs.Length)
         {
             throw new InvalidDataException($"{asset.ObjectPath}: tag map outside the tag store");
         }
@@ -171,7 +171,7 @@ internal sealed class AssetRegistry
     private static T At<T>(IReadOnlyList<T> values, int index) =>
         index < values.Count ? values[index] : throw new InvalidDataException($"Tag value {index} is outside the tag store");
 
-    private static string ExportPath(IReadOnlyList<string> path)
+    private static string ExportPath(string[] path)
     {
         (string cls, string obj, string package) = (path[1], path[2], path[3]);
         string text = obj == CookedPackage.NoneName ? package : $"{package}.{obj}";
@@ -263,8 +263,8 @@ internal sealed class AssetRegistry
 
             uint[] ansiOffsets = ReadWords(ref reader, counts[5]);
             uint[] wideOffsets = ReadWords(ref reader, counts[6]);
-            byte[] ansi = reader.ReadBytes(counts[7]).ToArray();
-            byte[] wide = reader.ReadBytes(counts[8] * sizeof(char)).ToArray();
+            byte[] ansi = [.. reader.ReadBytes(counts[7])];
+            byte[] wide = [.. reader.ReadBytes(counts[8] * sizeof(char))];
             (string, uint)[] numberlessPairs = new (string, uint)[counts[9]];
             for (int i = 0; i < numberlessPairs.Length; i++)
             {

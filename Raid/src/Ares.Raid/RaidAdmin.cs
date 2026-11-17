@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Loot;
@@ -35,16 +36,19 @@ public sealed class RaidAdmin : IAdminService
     private const int ListedClasses = 10;
 
     private readonly ConcurrentQueue<Action> _pending = new();
+    private readonly LootData _loot;
     private readonly Func<IEnumerable<PlayerChannels>> _players;
     private readonly JsonEventLog? _log;
     private readonly TimeSpan _timeout;
 
     /// <summary>Creates the service.</summary>
+    /// <param name="loot">The loot definitions: the container classes a command may spawn.</param>
     /// <param name="players">The connected players; called on the game loop only.</param>
     /// <param name="log">Where commands and their outcomes are logged, or null.</param>
     /// <param name="timeout">How long a command waits for the game loop; 2 seconds by default.</param>
-    public RaidAdmin(Func<IEnumerable<PlayerChannels>> players, JsonEventLog? log = null, TimeSpan? timeout = null)
+    public RaidAdmin(LootData loot, Func<IEnumerable<PlayerChannels>> players, JsonEventLog? log = null, TimeSpan? timeout = null)
     {
+        _loot = loot ?? throw new ArgumentNullException(nameof(loot));
         _players = players ?? throw new ArgumentNullException(nameof(players));
         _log = log;
         _timeout = timeout ?? TimeSpan.FromSeconds(2);
@@ -54,7 +58,7 @@ public sealed class RaidAdmin : IAdminService
     public async Task<AdminResult> RunAsync(AdminCommand command, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        (AdminRequest? request, IReadOnlyList<string> problem) = Parse(command);
+        (AdminRequest? request, IReadOnlyList<string> problem) = Parse(_loot, command);
         AdminResult result;
         if (request is null)
         {
@@ -102,10 +106,12 @@ public sealed class RaidAdmin : IAdminService
     }
 
     /// <summary>Reads a command's arguments.</summary>
+    /// <param name="loot">The loot definitions: the container classes a command may spawn.</param>
     /// <param name="command">The command.</param>
     /// <returns>The request, or null and the lines explaining why it is not one.</returns>
-    public static (AdminRequest? Request, IReadOnlyList<string> Problem) Parse(AdminCommand command)
+    public static (AdminRequest? Request, IReadOnlyList<string> Problem) Parse(LootData loot, AdminCommand command)
     {
+        ArgumentNullException.ThrowIfNull(loot);
         ArgumentNullException.ThrowIfNull(command);
         string[] words = [.. command.Arguments];
         if (HasNull(words))
@@ -127,7 +133,7 @@ public sealed class RaidAdmin : IAdminService
             case (AdminApi.TeleportToLoot, 3) when words[1].Equals(FreeStandingWord, StringComparison.OrdinalIgnoreCase) && Count(words[2]) is { } number:
                 return (new AdminRequest(AdminApi.TeleportToLoot, words[0], FreeStanding: number), []);
             case (AdminApi.SpawnLoot, 2):
-                IReadOnlyList<LootContainerClass> classes = Classes(words[1]);
+                IReadOnlyList<LootContainerClass> classes = Classes(loot, words[1]);
                 return classes.Count == 1
                     ? (new AdminRequest(AdminApi.SpawnLoot, words[0], Class: classes[0]), [])
                     : (null, classes.Count == 0
@@ -154,14 +160,16 @@ public sealed class RaidAdmin : IAdminService
     private static bool HasNull(IEnumerable<string?> words) => words.Any(word => word is null);
 
     /// <summary>The supported container classes a name picks: an exact class path or name (with or without its <c>_C</c>), else every name containing it.</summary>
+    /// <param name="loot">The loot definitions.</param>
     /// <param name="name">Class path, class name or part of a name.</param>
     /// <returns>The classes.</returns>
-    public static IReadOnlyList<LootContainerClass> Classes(string name)
+    public static IReadOnlyList<LootContainerClass> Classes(LootData loot, string name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        LootContainerClass[] exact = [.. LootContainerClasses.All.Where(type => type.Container.Class.Equals(name, StringComparison.OrdinalIgnoreCase)
+        LootContainerClass[] supported = [.. LootSocketClasses.ServedClasses(loot)];
+        LootContainerClass[] exact = [.. supported.Where(type => type.Container.Class.Equals(name, StringComparison.OrdinalIgnoreCase)
             || ShortName(type).Equals(name, StringComparison.OrdinalIgnoreCase) || (ShortName(type) + "_C").Equals(name, StringComparison.OrdinalIgnoreCase))];
-        return exact.Length > 0 ? exact : [.. LootContainerClasses.All.Where(type => ShortName(type).Contains(name, StringComparison.OrdinalIgnoreCase))];
+        return exact.Length > 0 ? exact : [.. supported.Where(type => ShortName(type).Contains(name, StringComparison.OrdinalIgnoreCase))];
     }
 
     private static string ShortName(LootContainerClass type)

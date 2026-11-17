@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -7,13 +8,14 @@ using Ares.Structs.Net.Session;
 namespace Ares.Raid.World.Actors;
 
 /// <summary>
-/// The Dam extraction elevators. They are actors of the map's persistent level, loaded with the map; their
+/// The map's extraction elevators. They are actors of the map's persistent level, loaded with the map; their
 /// buttons start as the Blueprint sets them until the server replicates their state, so the server references
 /// each elevator by its map path (map package, world, persistent level, actor and its named buttons).
 /// </summary>
 public sealed class ExtractionCatalog
 {
     private readonly ReplicationContext _replication;
+    private readonly MapData _map;
     private readonly ObjectExports _exports;
     private readonly Dictionary<ulong, (ExtractionPoint Point, ExtractionButton Button)> _buttons = [];
     private readonly ulong[] _animations;
@@ -21,30 +23,39 @@ public sealed class ExtractionCatalog
     /// <summary>Names the elevators.</summary>
     /// <param name="replication">Replication context (knows the extraction and interaction-state enums).</param>
     /// <param name="paths">Map path ids.</param>
-    public ExtractionCatalog(ReplicationContext replication, MapPaths paths)
+    /// <param name="map">The map's data: its elevators and their buttons.</param>
+    public ExtractionCatalog(ReplicationContext replication, MapPaths paths, MapData map)
     {
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
         ArgumentNullException.ThrowIfNull(paths);
-        ulong level = paths.Level(DamMap.MapPackage);
+        _map = map ?? throw new ArgumentNullException(nameof(map));
+        ulong level = paths.Level(map.MapPackage);
         List<ExtractionPoint> points = [];
-        foreach (ExtractionPointPlacement placement in DamExtraction.All)
+        foreach (ExtractionPoint point in map.ExtractionPoints.Select((placement, index) => Create(index, placement)))
         {
-            ulong actor = paths.MapObject(level, placement.Actor);
-            ExtractionPoint point = new(points.Count, actor, [.. DamExtraction.Buttons.Select(button => paths.MapObject(actor, button.Component))]);
             points.Add(point);
             for (int index = 0; index < point.Buttons.Count; index++)
             {
-                _buttons[point.Buttons[index]] = (point, DamExtraction.Buttons[index]);
+                _buttons[point.Buttons[index]] = (point, map.ExtractionButtons[index]);
             }
         }
 
         // The animation sets of the buttons, which the character's interactor state names. The elevator Blueprint keeps
         // them loaded, so the client finds them like the map objects.
-        _animations = [.. DamExtraction.Buttons.Select(button => button.AnimationContainer is { } container
+        _animations = [.. map.ExtractionButtons.Select(button => button.AnimationContainer is { } container
             ? paths.MapObject(paths.MapObject(0, container), container[(container.LastIndexOf('/') + 1)..])
             : 0UL)];
         _exports = paths.Exports();
         Points = points;
+
+        return;
+
+        ExtractionPoint Create(int index, ExtractionPointPlacement placement)
+        {
+            ulong actor = paths.MapObject(level, placement.Actor);
+            return new ExtractionPoint(index, actor, [.. map.ExtractionButtons.Select(button => paths.MapObject(actor, button.Component))], placement,
+                map.ExtractionElevator);
+        }
     }
 
     /// <summary>All elevators.</summary>
@@ -57,7 +68,7 @@ public sealed class ExtractionCatalog
         _buttons.TryGetValue(button, out (ExtractionPoint, ExtractionButton) found) ? found : null;
 
     /// <summary>Id of the animation set a button's interaction plays.</summary>
-    /// <param name="button">Index in <see cref="DamExtraction.Buttons"/>.</param>
+    /// <param name="button">Index in <see cref="MapData.ExtractionButtons"/>.</param>
     /// <returns>The id, or 0 when the button has none.</returns>
     public ulong Animation(int button) => _animations[button];
 
@@ -88,9 +99,9 @@ public sealed class ExtractionCatalog
         values[PropertyNames.Role] = (ulong)NetRole.Authority;
         values[PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy;
         values[PropertyNames.IsEnabled] = true;
-        ActorContentBlock actor = _replication.Encode(DamExtraction.ActorClass, values);
-        IReadOnlyList<CurrentInteractionState> buttons = state.Buttons;
-        IReadOnlyList<double?> holds = state.HoldStarts;
+        ActorContentBlock actor = _replication.Encode(ExtractionClasses.ActorClass, values);
+        IReadOnlyList<CurrentInteractionState> buttons = state.Buttons(_map);
+        IReadOnlyList<double?> holds = state.HoldStarts(_map);
         StaticSubobjectContent[] components = [.. point.Buttons.Select((_, index) => Button(point, index, buttons[index], holds[index]))];
         return new StaticActorInitialization(new StaticActorReference(point.Guid), [actor]) { Components = components }.ToBunch(channel, sequence);
     }
@@ -108,10 +119,10 @@ public sealed class ExtractionCatalog
         Dictionary<string, object?> changes = ActorValues(state, state.ChangedAt, opening: false)
             .Where(entry => !before.TryGetValue(entry.Key, out object? value) || !Equals(value, entry.Value))
             .ToDictionary();
-        IReadOnlyList<CurrentInteractionState> was = previous.Buttons;
-        IReadOnlyList<CurrentInteractionState> buttons = state.Buttons;
-        IReadOnlyList<double?> held = previous.HoldStarts;
-        IReadOnlyList<double?> holds = state.HoldStarts;
+        IReadOnlyList<CurrentInteractionState> was = previous.Buttons(_map);
+        IReadOnlyList<CurrentInteractionState> buttons = state.Buttons(_map);
+        IReadOnlyList<double?> held = previous.HoldStarts(_map);
+        IReadOnlyList<double?> holds = state.HoldStarts(_map);
         StaticSubobjectContent[] components = [.. Enumerable.Range(0, point.Buttons.Count)
             .Where(index => was[index] != buttons[index] || !Nullable.Equals(held[index], holds[index]))
             .Select(index => Button(point, index, buttons[index], holds[index]))];
@@ -120,7 +131,7 @@ public sealed class ExtractionCatalog
             return null;
         }
 
-        ActorContentBlock? actor = changes.Count == 0 ? null : _replication.Encode(DamExtraction.ActorClass, changes);
+        ActorContentBlock? actor = changes.Count == 0 ? null : _replication.Encode(ExtractionClasses.ActorClass, changes);
         return Bunches.Actor(channel, writer =>
         {
             actor?.Write(writer);
@@ -133,7 +144,7 @@ public sealed class ExtractionCatalog
 
     // Replicated members of the elevator for a state. bCanExtract is first sent once it is true; the extraction
     // timer while it is set (between two cycles the client keeps the last one).
-    private static Dictionary<string, object?> ActorValues(ExtractionPointState state, double? changedAt, bool opening)
+    private Dictionary<string, object?> ActorValues(ExtractionPointState state, double? changedAt, bool opening)
     {
         Dictionary<string, object?> values = new() { [PropertyNames.State] = (ulong)state.State };
         if (changedAt is { } at)
@@ -146,7 +157,7 @@ public sealed class ExtractionCatalog
             values[PropertyNames.CanExtract] = state.CanExtract;
         }
 
-        if (state.Timer is not { } timer)
+        if (state.Timer(_map) is not { } timer)
         {
             return values;
         }
@@ -165,6 +176,6 @@ public sealed class ExtractionCatalog
             values[PropertyNames.InteractionServerHoldStartedTime] = hold;
         }
 
-        return new StaticSubobjectContent(point.Buttons[index], _replication.Encode(DamExtraction.Buttons[index].Class, values));
+        return new StaticSubobjectContent(point.Buttons[index], _replication.Encode(_map.ExtractionButtons[index].Class, values));
     }
 }

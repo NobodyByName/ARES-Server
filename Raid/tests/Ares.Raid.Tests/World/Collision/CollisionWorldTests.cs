@@ -189,7 +189,7 @@ public sealed class CollisionWorldTests
     [Fact]
     public void Each_raid_indexes_the_map_with_its_own_active_data_layers()
     {
-        DamWorlds withoutCollision = new(() => 0, null, () => 7);
+        DamWorlds withoutCollision = new(TestGameData.Raid, () => 0, null, () => 7);
         withoutCollision.Prepare("a", [1]);
         Assert.Null(withoutCollision.Current!.Collision);
         string activeLayer = withoutCollision.Current.ActiveDataLayers[0];
@@ -199,7 +199,7 @@ public sealed class CollisionWorldTests
         builder.AddPlacement(body, builder.AddCell("/Game/Base", []), At(0, 0, 0), Pawn);
         builder.AddPlacement(body, builder.AddCell("/Game/Active", [activeLayer]), At(100, 0, 0), Pawn);
         builder.AddPlacement(body, builder.AddCell("/Game/Inactive", ["Layer_Inactive"]), At(200, 0, 0), Pawn);
-        DamWorlds worlds = new(() => 0, null, () => 7, collision: builder.Build());
+        DamWorlds worlds = new(TestGameData.Raid, () => 0, null, () => 7, collision: builder.Build());
         worlds.Prepare("a", [1]);
 
         Assert.Equal(2, worlds.Current!.Collision!.PlacementCount);

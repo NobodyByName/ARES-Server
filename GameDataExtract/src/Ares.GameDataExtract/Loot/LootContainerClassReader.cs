@@ -71,7 +71,7 @@ internal sealed class LootContainerClassReader
     }
 
     /// <summary>The replication layout every container actor uses.</summary>
-    public string ActorClass { get; }
+    private string ActorClass { get; }
 
     /// <summary>Reads the container class at <paramref name="classPath"/> (<c>Package.Name_C</c>).</summary>
     /// <exception cref="InvalidDataException">The class is not a container Blueprint, or a template the row needs does not decode.</exception>
@@ -129,7 +129,7 @@ internal sealed class LootContainerClassReader
 
         foreach (string part in (string[])[B.InteractionComponent, B.ItemContainerComponent])
         {
-            if (values[part].GetValueOrDefault(ScriptSchemas.AttachSocketName) is string socket && socket.Length > 0 && socket != CookedPackage.NoneName)
+            if (values[part].GetValueOrDefault(ScriptSchemas.AttachSocketName) is string { Length: > 0 } socket && socket != CookedPackage.NoneName)
             {
                 throw new InvalidDataException($"{classPath}: {part} is attached to a socket");
             }
@@ -139,12 +139,12 @@ internal sealed class LootContainerClassReader
         string? parent = parents[B.InteractionComponent];
         while (parent is not null && parent != B.RootComponent)
         {
-            if (!values.ContainsKey(parent) || templates.Unreadable.Contains(parent))
+            if (!values.TryGetValue(parent, out Dictionary<string, object?>? parentValues) || templates.Unreadable.Contains(parent))
             {
                 throw new InvalidDataException($"{classPath}: the interaction is attached to {parent}");
             }
 
-            point = TransformPoint(Relative(values[parent]), point);
+            point = TransformPoint(Relative(parentValues), point);
             parent = parents[parent];
         }
 
@@ -331,8 +331,9 @@ internal sealed class LootContainerClassReader
         double py = point.Y * transform.Scale.Y;
         double pz = point.Z * transform.Scale.Z;
         double[] location = [transform.Location.X, transform.Location.Y, transform.Location.Z];
-        double At(int i) => location[i] + (px * x[i]) + (py * y[i]) + (pz * z[i]);
         return new Vector3D(At(0), At(1), At(2));
+
+        double At(int i) => location[i] + (px * x[i]) + (py * y[i]) + (pz * z[i]);
     }
 
     private static double Floor(double value) => PositiveZero(Math.Floor(value / B.SearchLocationStep) * B.SearchLocationStep);
@@ -368,8 +369,8 @@ internal sealed class LootContainerClassReader
 
         public Dictionary<string, Dictionary<string, object?>> Meshes { get; } = new(StringComparer.Ordinal)
         {
-            [B.RootComponent] = new(StringComparer.Ordinal),
-            [B.SocketMeshComponent] = new(StringComparer.Ordinal),
+            [B.RootComponent] = new Dictionary<string, object?>(StringComparer.Ordinal),
+            [B.SocketMeshComponent] = new Dictionary<string, object?>(StringComparer.Ordinal),
         };
 
         public HashSet<string> Unreadable { get; } = new(StringComparer.Ordinal);

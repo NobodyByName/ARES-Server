@@ -114,7 +114,7 @@ public sealed class HeldItemMovementTests
     [Fact]
     public void Aiming_with_a_walking_item_walks_at_aiming_speed_refuses_sprint_and_sets_the_tags()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         HeldItemInput aim = s_rifle with { Item = HeldItemMovementParameters.Default with { WalkOnSecondaryUse = true }, SecondaryDown = true };
         MovementInput movement = new(1, 126, 0, MovementButtons.Sprint);
         CharacterState state = default;
@@ -127,17 +127,17 @@ public sealed class HeldItemMovementTests
 
         Assert.NotEqual(LocoMode.Sprinting, state.Locomotion);
         Assert.Equal(GroundMovementParameters.Aiming.MaximumSpeed, state.Velocity.X, 0);
-        Assert.NotEqual(0UL, state.GraphFlags & GraphStateTags.AbilityZooming);
+        Assert.NotEqual(0UL, state.GraphFlags(TestGameData.Data) & TestGameData.Tags.AbilityZooming.Mask);
     }
 
     [Fact]
     public void Without_a_held_item_the_ground_step_keeps_no_held_item_state()
     {
-        CharacterSimulation simulation = new(default);
+        CharacterSimulation simulation = new(TestGameData.Data, default);
         CharacterState state = simulation.StepOnGround(new CharacterInput(1, 0), new MovementInput(1, 126, 0, MovementButtons.Sprint), 0, Tick,
             GroundMovementParameters.Armed, steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Armed);
         Assert.Null(state.HeldItem);
         Assert.Equal(LocoMode.Sprinting, state.Locomotion);
-        Assert.Equal(0UL, state.GraphFlags & GeneratedGraphStateFlags.HeldItem);
+        Assert.Equal(0UL, state.GraphFlags(TestGameData.Data) & TestGameData.Flags.HeldItem);
     }
 }

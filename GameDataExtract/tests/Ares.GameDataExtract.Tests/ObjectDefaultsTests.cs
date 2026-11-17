@@ -47,7 +47,7 @@ public sealed class ObjectDefaultsTests
             supers: new Dictionary<int, PackageObjectIndex> { [0] = PackageObjectIndex.FromScriptPath(ParentClass) }));
         Dictionary<PackageObjectIndex, string> scripts = new[] { ParentClass, ParentDefaults, VectorStruct, GeneratedClass }
             .ToDictionary(PackageObjectIndex.FromScriptPath);
-        _packages = new PackageCache(path => path == PackagePath ? _package : null, index => scripts.GetValueOrDefault(index));
+        _packages = new PackageCache(path => path == PackagePath ? _package : null, scripts.GetValueOrDefault);
     }
 
     [Fact]

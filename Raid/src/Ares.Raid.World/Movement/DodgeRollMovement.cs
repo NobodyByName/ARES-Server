@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
@@ -119,12 +120,14 @@ public static class DodgeRollMovement
     }
 
     /// <summary>Roll steps before the roll hands over to ground movement, when nothing ends it early.</summary>
+    /// <param name="data">The game data: the dodge-roll sequences.</param>
     /// <param name="kind">Roll variant.</param>
     /// <returns>Number of roll steps.</returns>
-    public static int Duration(DodgeRollKind kind)
+    public static int Duration(GameDataSet data, DodgeRollKind kind)
     {
+        ArgumentNullException.ThrowIfNull(data);
         int ticks = 1;
-        while (!EndsAt(kind, ticks))
+        while (!EndsAt(data, kind, ticks))
         {
             ticks++;
         }
@@ -133,6 +136,7 @@ public static class DodgeRollMovement
     }
 
     /// <summary>Advances a running roll by one simulation tick.</summary>
+    /// <param name="data">The game data: the dodge-roll sequences.</param>
     /// <param name="state">Roll state.</param>
     /// <param name="previous">World velocity before the step.</param>
     /// <param name="onGround">Whether the character stands on walkable ground.</param>
@@ -142,15 +146,16 @@ public static class DodgeRollMovement
     /// <param name="collided">Whether the roll's movement hit an obstacle.</param>
     /// <param name="crouchExitDisabled">Whether the game's crouch-exit fix keeps crouch from ending the roll.</param>
     /// <returns>Velocity, action posture and whether the roll ends.</returns>
-    public static DodgeRollStep Step(DodgeRollState state, Vector3D previous, bool onGround, double gravity, double seconds,
+    public static DodgeRollStep Step(GameDataSet data, DodgeRollState state, Vector3D previous, bool onGround, double gravity, double seconds,
         bool crouch = false, bool collided = false, bool crouchExitDisabled = false)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
         }
 
-        DodgeRollSequence sequence = GeneratedMovementData.DodgeRoll(state.Kind);
+        DodgeRollSequence sequence = data.Movement.DodgeRoll(state.Kind);
         int tick = state.Ticks + 1;
         double travelled = Root(sequence, AnimationTick(sequence, tick)) - Root(sequence, AnimationTick(sequence, tick - 1));
         double speed = travelled * sequence.Distance / DodgeRollParameters.AuthoredDistance(state.Kind) / seconds;
@@ -158,7 +163,7 @@ public static class DodgeRollMovement
         Vector3D velocity = new(state.Direction.X * speed, state.Direction.Y * speed, vertical);
         double animationSeconds = AnimationTick(sequence, tick) / sequence.SampleRate;
         bool crouchExit = Active(sequence, DodgeRollTransientState.CrouchExit, animationSeconds);
-        bool finished = EndsAt(state.Kind, tick);
+        bool finished = EndsAt(data, state.Kind, tick);
         CharacterStance stance = onGround ? CharacterStance.Uncontrolled : CharacterStance.InAir;
         if (crouch && crouchExit)
         {
@@ -179,10 +184,10 @@ public static class DodgeRollMovement
         return new DodgeRollStep(state with { Ticks = tick }, velocity, stance, LocoMode.Running, !onGround, finished);
     }
 
-    private static bool EndsAt(DodgeRollKind kind, int tick)
+    private static bool EndsAt(GameDataSet data, DodgeRollKind kind, int tick)
     {
         // The roll hands over once the rest of its animation fits in the exit blend.
-        DodgeRollSequence sequence = GeneratedMovementData.DodgeRoll(kind);
+        DodgeRollSequence sequence = data.Movement.DodgeRoll(kind);
         double remaining = (sequence.RootForward.Count - 1 - AnimationTick(sequence, tick)) / sequence.SampleRate;
         return remaining <= DodgeRollParameters.ExitBlendSeconds;
     }

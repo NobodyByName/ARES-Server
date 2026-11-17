@@ -19,7 +19,7 @@ namespace Ares.GameDataExtract.World;
 internal sealed class LootSocketReader
 {
     /// <summary>Gameplay tag family of container sockets (gameplay tag names compare without case).</summary>
-    public const string ContainerTagFamily = "Socket.LootContainer.";
+    private const string ContainerTagFamily = "Socket.LootContainer.";
 
     private const int LocationDigits = 2;
     private const int RotationDigits = 3;

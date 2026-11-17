@@ -6,6 +6,7 @@ using Ares.Common;
 using Ares.Common.CommandLine;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.Game.Content;
 using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Common.Maps;
@@ -15,7 +16,6 @@ using Ares.Raid.World;
 using Ares.Raid.World.Collision;
 using Ares.Raid.World.Players;
 using Ares.Structs.Core;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.Session;
 
 RaidConfiguration configuration;
@@ -42,13 +42,25 @@ catch (CommandLineException error)
 
 GameDataSet gameData;
 JsonObject gameDataLoaded;
+RaidGameData raidData;
+AresContent content;
 try
 {
     gameData = GameDataStartup.Load(configuration.GameDataDirectory, out gameDataLoaded);
+    content = AresContent.Load(configuration.ContentDirectory);
+    raidData = new RaidGameData(gameData, content);
 }
-catch (GameDataException error)
+catch (Exception error) when (error is GameDataException or AresContentException)
 {
     Console.Error.WriteLine($"ARES-Raid: cannot start: {error.Message}");
+    return 2;
+}
+
+// The lightings a raid can use come from the map's data, so the option is checked once the data is loaded.
+if (configuration.Lighting is { } lighting && !DamWorlds.LightingsOf(raidData.Map).Contains(lighting))
+{
+    Console.Error.WriteLine(RaidConfiguration.Usage);
+    Console.Error.WriteLine($"ARES-Raid: error: --lighting must be one of: {string.Join(", ", DamWorlds.LightingsOf(raidData.Map))}");
     return 2;
 }
 
@@ -61,11 +73,11 @@ socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
 int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
 
 log.Write(gameDataLoaded);
-MapCollision? collision = MapCollisionLoader.Load(configuration.GameDataDirectory, DamMap.WorldName, out string? collisionProblem);
+MapCollision? collision = MapCollisionLoader.Load(configuration.GameDataDirectory, raidData.Map.WorldName, out string? collisionProblem);
 log.Write(collision is null
     ? new JsonObject { ["map_collision"] = "unavailable", ["warning"] = collisionProblem }
     : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });
-DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision, gameData: gameData);
+DamWorlds worlds = new(raidData, Clock, configuration.Lighting, collision: collision);
 RaidAllocations allocations = new(new GameServerEndpoint("", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
     configuration.MaxPlayers, fillWindow: configuration.FillSeconds, log: log);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);
@@ -82,7 +94,7 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 await using WebApplication app = builder.Build();
 app.MapAllocationApi(allocations, configuration.OperatorToken);
-RaidAdmin admin = new(() => connections.Players.Select(entry => entry.Player).OfType<PlayerChannels>(), log);
+RaidAdmin admin = new(gameData.Loot, () => connections.Players.Select(entry => entry.Player).OfType<PlayerChannels>(), log);
 app.MapAdminApi(admin, configuration.OperatorToken);
 await app.StartAsync().ConfigureAwait(false);
 
@@ -97,6 +109,7 @@ log.Write(new JsonObject
     ["lighting"] = configuration.Lighting ?? "weighted",
     ["max_players"] = configuration.MaxPlayers,
     ["fill_seconds"] = configuration.FillSeconds,
+    ["content"] = content.Source,
 });
 
 RaidServer server = new(socket, connections, log, Clock, admin, () => worlds.Current);

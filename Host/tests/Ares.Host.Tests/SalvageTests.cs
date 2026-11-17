@@ -33,7 +33,7 @@ public sealed class SalvageTests : IDisposable
     public void The_operator_adds_a_full_salvage_stack_to_the_stash_and_game_data_describes_it(string type, long maxStack)
     {
         InventoryStore store = Create();
-        long assetId = LoadoutDefinitions.Generated.AssetIds[type];
+        long assetId = TestCatalog.Definitions.AssetIds[type];
         store.AddItem(type, DateTimeOffset.UnixEpoch, maxStack);
         OwnedItem stack = Assert.Single(store.Inventory.Stash.Items, item => item.Type == type);
         Assert.Equal(maxStack, stack.Quantity);
@@ -41,9 +41,9 @@ public sealed class SalvageTests : IDisposable
         Assert.Equal((assetId, maxStack), (owned.GameAssetId, owned.Amount));
         ItemDescription description = Assert.Single(store.GameData().ItemDescriptions.ItemDescriptions, item => item.GameAssetId == assetId);
         Assert.Equal((maxStack, true), (description.MaxAmount, description.Stackable));
-        Assert.True(LoadoutDefinitions.Generated.SupportsCarriedItem(assetId));
-        Assert.Equal(SalvageItems.ItemWeights[assetId], LoadoutDefinitions.Generated.ItemWeight(assetId));
-        Assert.Equal(SalvageItems.UsableIndices[assetId], LoadoutDefinitions.Generated.UsableIndex(assetId));
+        Assert.True(TestCatalog.Definitions.SupportsCarriedItem(assetId));
+        Assert.Equal(TestCatalog.Data.Menu.Salvage.ItemWeights[assetId], TestCatalog.Definitions.ItemWeight(assetId));
+        Assert.Equal(TestCatalog.Data.Menu.Salvage.UsableIndices[assetId], TestCatalog.Definitions.UsableIndex(assetId));
         Assert.Equal(type, ItemTechnicalNames.DataAssets[type].Split('.')[^1]);
     }
 
@@ -70,7 +70,7 @@ public sealed class SalvageTests : IDisposable
         InventoryStore store = Create();
         store.AddItem(type, DateTimeOffset.UnixEpoch, 5);
         OwnedItem stack = store.Inventory.Stash.Items.Single(item => item.Type == type);
-        Assert.Equal(status, store.Commit(Move(stack.InstanceId, Slots(store, LoadoutItems.BeltSlotAssetId)[0], "quick-use"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(status, store.Commit(Move(stack.InstanceId, Slots(store, TestCatalog.Branches.QuickUse)[0], "quick-use"), DateTimeOffset.UnixEpoch).StatusCode);
     }
 
     [Fact]
@@ -79,16 +79,16 @@ public sealed class SalvageTests : IDisposable
         InventoryStore store = Create();
         store.AddItem(ItemTechnicalNames.Planks, DateTimeOffset.UnixEpoch, 30);
         OwnedItem planks = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.Planks);
-        Assert.Equal(200, store.Commit(Move(planks.InstanceId, Slots(store, LoadoutItems.BackpackSlotAssetId)[0], "backpack"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, store.Commit(Move(planks.InstanceId, Slots(store, TestCatalog.Branches.Backpack)[0], "backpack"), DateTimeOffset.UnixEpoch).StatusCode);
         string ticket = Guid.NewGuid().ToString("D");
-        InventoryItem carried = Assert.Single(store.Reserve(ticket).Items, item => item.GameAssetId == SalvageItems.ItemAssetIds[ItemTechnicalNames.Planks]);
+        InventoryItem carried = Assert.Single(store.Reserve(ticket).Items, item => item.GameAssetId == TestCatalog.Data.Menu.Salvage.ItemAssetIds[ItemTechnicalNames.Planks]);
         Assert.Equal((planks.InstanceId, 30L), (carried.InstanceId, carried.Amount));
         store.Release(ticket);
     }
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }
@@ -96,9 +96,9 @@ public sealed class SalvageTests : IDisposable
     private static List<string> Slots(InventoryStore store, long branchAsset)
     {
         InventorySnapshot snapshot = store.Snapshot;
-        string frameId = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId).Slots[0];
+        string frameId = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.FrameSlot).Slots[0];
         InventoryItem frame = snapshot.Items.Single(item => item.InstanceId == frameId);
-        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && TestCatalog.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
         return [.. snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots];
     }
 

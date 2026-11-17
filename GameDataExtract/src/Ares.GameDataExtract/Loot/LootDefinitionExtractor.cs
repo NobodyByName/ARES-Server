@@ -72,19 +72,9 @@ internal static class LootDefinitionExtractor
     }
 
     /// <summary>The container Blueprint classes (<see cref="LootContainerBlueprintMembers.BlueprintPrefixes"/>) the packages import.</summary>
-    private static IEnumerable<string> MapContainerClasses(PackageCache packages, IEnumerable<string> mapPackages)
-    {
-        foreach (string name in mapPackages)
-        {
-            CookedPackage package = packages.Load(name) ?? throw new InvalidDataException($"{name} is not in the game archives");
-            foreach (string imported in package.Header.ImportedPackageNames)
-            {
-                string leaf = imported[(imported.LastIndexOf('/') + 1)..];
-                if (LootContainerBlueprintMembers.BlueprintPrefixes.Any(prefix => leaf.StartsWith(prefix, StringComparison.Ordinal)))
-                {
-                    yield return $"{imported}.{leaf}_C";
-                }
-            }
-        }
-    }
+    private static IEnumerable<string> MapContainerClasses(PackageCache packages, IEnumerable<string> mapPackages) => mapPackages
+        .SelectMany(name => (packages.Load(name) ?? throw new InvalidDataException($"{name} is not in the game archives")).Header.ImportedPackageNames)
+        .Select(imported => (Imported: imported, Leaf: imported[(imported.LastIndexOf('/') + 1)..]))
+        .Where(entry => LootContainerBlueprintMembers.BlueprintPrefixes.Any(prefix => entry.Leaf.StartsWith(prefix, StringComparison.Ordinal)))
+        .Select(entry => $"{entry.Imported}.{entry.Leaf}_C");
 }

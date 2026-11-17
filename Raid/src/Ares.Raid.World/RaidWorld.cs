@@ -1,4 +1,5 @@
 using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Collision;
 using Ares.Raid.World.Loot;
@@ -23,9 +24,14 @@ public sealed class RaidWorld
     {
         MatchId = matchId;
         Seed = seed;
-        RoundConfiguration round = DamRounds.All[seed % DamRounds.All.Count];
+        GameData = worlds.GameData;
+        MapData map = GameData.Map;
+        RoundConfiguration round = map.Rounds[seed % map.Rounds.Length];
         Lighting = lighting;
-        _starts = Spawns.Eligible(round);
+        Welcome = new ControlWelcome(map.MapPackage, map.GameMode.GameModeClass, "");
+        LevelPackages = new HashSet<string>([map.MapPackage, .. map.StreamingCells], StringComparer.Ordinal);
+        DoorStates = new DoorStates(map.Doors);
+        _starts = Spawns.Eligible(map, round);
         if (_starts.Count == 0)
         {
             throw new WorldPreparationException("The round has no eligible player start");
@@ -35,22 +41,22 @@ public sealed class RaidWorld
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
         Extraction = worlds.Extraction;
-        ExtractionStates = new ExtractionStates(Extraction.Points.Count);
+        ExtractionStates = new ExtractionStates(map, Extraction.Points.Count);
         Clock = worlds.Clock;
         StartedAt = Clock();
-        State = new WorldState(worlds.Replication, Imports, matchId, seed);
+        State = new WorldState(worlds.Replication, Imports, GameData, matchId, seed);
         ReplicationContext replication = worlds.Replication;
-        (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(lighting, round);
-        Loot = new LootCatalog(replication, round.Name, ActiveDataLayers, seed, worlds.LootRules);
-        LootStates = new LootStates(Loot);
+        (ActiveDataLayers, IReadOnlyList<string> loadedLayers) = DataLayerNames(map, lighting, round);
+        Loot = new LootCatalog(GameData, replication, round.Name, ActiveDataLayers, seed, worlds.LootRules);
+        LootStates = new LootStates(Loot, GameData.Items);
         ulong lootEnd = Loot.Containers.Count == 0 ? 0 : Loot.Containers.Max(container => container.Components.Append(container.Guid).Max());
-        Pickups = new WorldPickups(replication, State, lootEnd + 2);
+        Pickups = new WorldPickups(replication, State, GameData.Items, lootEnd + 2);
         Arcs = new WorldArcs(replication, Imports);
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
         Channels = new ChannelLayout(Imports.GlobalActors.Count, Doors.Doors.Count, Ladders.Ladders.Count, Extraction.Points.Count, MaxPlayers);
         StaticActors =
         [
-            new StaticWorldActor(ChannelLayout.LevelScript, Imports.LevelScriptGuid, DamMap.LevelScriptClass, [replication.Encode(DamMap.LevelScriptClass, new Dictionary<string, object?>
+            new StaticWorldActor(ChannelLayout.LevelScript, Imports.LevelScriptGuid, map.World.LevelScriptClass, [replication.Encode(map.World.LevelScriptClass, new Dictionary<string, object?>
             {
                 [PropertyNames.Role] = (ulong)NetRole.Authority,
                 [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
@@ -71,6 +77,9 @@ public sealed class RaidWorld
 
     /// <summary>Match id of the reservation.</summary>
     public string MatchId { get; }
+
+    /// <summary>The game data the raid runs on.</summary>
+    public RaidGameData GameData { get; }
 
     /// <summary>Every player of the raid has left it.</summary>
     public bool Ended
@@ -150,7 +159,7 @@ public sealed class RaidWorld
     }
 
     /// <summary>Door state of this raid.</summary>
-    public DoorStates DoorStates { get; } = new(DamDoors.All);
+    public DoorStates DoorStates { get; }
 
     /// <summary>Loot container contents of this raid.</summary>
     public LootStates LootStates { get; }
@@ -197,7 +206,7 @@ public sealed class RaidWorld
                 throw new WorldPreparationException("The shared player start has no free spawn point");
             }
 
-            _players.AddRange(players.Select((id, slot) => new RaidPlayer(id, loadouts[slot], profiles, Spawns.Place(start, firstSlot + slot))));
+            _players.AddRange(players.Select((id, slot) => new RaidPlayer(GameData, id, loadouts[slot], profiles, Spawns.Place(GameData.Map, start, firstSlot + slot))));
         }
     }
 
@@ -207,7 +216,7 @@ public sealed class RaidWorld
             && InventorySnapshots.Same(player.Loadout, pair.Second) && player.Profiles.SequenceEqual(profiles));
 
     /// <summary>Level packages the client may report: the map and its streaming cells.</summary>
-    public static IReadOnlySet<string> LevelPackages { get; } = new HashSet<string>([DamMap.MapPackage, .. DamStreamingCells.Packages], StringComparer.Ordinal);
+    public IReadOnlySet<string> LevelPackages { get; }
 
     /// <summary>Monotonic clock in seconds.</summary>
     public Func<double> Clock { get; }
@@ -221,13 +230,13 @@ public sealed class RaidWorld
     private double StartedAt { get; }
 
     /// <summary>The Welcome that sends a client to this world.</summary>
-    public static ControlWelcome Welcome { get; } = new(DamMap.MapPackage, DamMap.GameModeClass, "");
+    public ControlWelcome Welcome { get; }
 
     // The selected lighting layer, the round's layers present on this map (locked doors, toxic swamp…) and
     // the layers active from the start are active; the other layers that start loaded stay loaded.
-    private static (string[] Active, string[] Loaded) DataLayerNames(string lighting, RoundConfiguration round)
+    private static (string[] Active, string[] Loaded) DataLayerNames(MapData map, string lighting, RoundConfiguration round)
     {
-        LightingScenario scenario = DamLighting.Scenarios.Single(row => row.Tag == lighting);
+        LightingScenario scenario = map.LightingScenarios.Single(row => row.Tag == lighting);
         string[] lightingLayers = [.. DamDataLayers.All.Where(layer => Package(layer) == scenario.DataLayerPackage).Select(layer => layer.Name)];
         if (lightingLayers.Length != 1)
         {
@@ -250,7 +259,7 @@ public sealed class RaidWorld
     {
         object?[] active = [.. activeNames.Select(object? (name) => new NetworkName(name, 0))];
         object?[] loaded = [.. loadedNames.Select(object? (name) => new NetworkName(name, 0))];
-        return new StaticWorldActor(ChannelLayout.DataLayers, guid, DamMap.WorldDataLayersClass, [replication.Encode(DamMap.WorldDataLayersClass, new Dictionary<string, object?>
+        return new StaticWorldActor(ChannelLayout.DataLayers, guid, MapWorldClasses.WorldDataLayers, [replication.Encode(MapWorldClasses.WorldDataLayers, new Dictionary<string, object?>
         {
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,

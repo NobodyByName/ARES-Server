@@ -61,7 +61,6 @@ internal static class LootScriptDefaults
     {
         const string Class = StaticLootSpawnManagerTweakablesMembers.ScriptClass;
         ScriptClassDefaults defaults = Straight(cache, Class);
-        double Weight(string member) => Stored(cache, defaults, Class, member, DoubleSize).AsDouble;
         int map = Offset(cache, Class, StaticLootSpawnManagerTweakablesMembers.ContainerContentsWeightMap);
         SortedDictionary<int, double> weights = [];
         foreach (ScriptCall call in MemberCalls(defaults, map, StaticLootSpawnManagerTweakablesMembers.AddMethod))
@@ -80,6 +79,8 @@ internal static class LootScriptDefaults
             Weight(StaticLootSpawnManagerTweakablesMembers.NumStacksWeight),
             Weight(StaticLootSpawnManagerTweakablesMembers.NumItemsWeight),
             weights.Count > 0 ? weights : throw new InvalidDataException($"{Class}: no {StaticLootSpawnManagerTweakablesMembers.ContainerContentsWeightMap} entries"));
+
+        double Weight(string member) => Stored(cache, defaults, Class, member, DoubleSize).AsDouble;
     }
 
     /// <summary>The weighted target stack counts every item container component starts with, in code order.</summary>
@@ -133,21 +134,21 @@ internal static class LootScriptDefaults
     {
         const string Class = LootContainerBlueprintMembers.ScriptActor;
         ScriptClassDefaults defaults = Straight(cache, Class);
-        ScriptCall Setter(string name) => defaults.Calls.SingleOrDefault(call => call.Name == name && call.Object is ScriptThis)
-            ?? throw new InvalidDataException($"{Class}: the default statements do not call {name} once");
-
         if (Setter(LootContainerBlueprintMembers.SetDefaultNetDormancy).Constant(0)?.AsByte != LootContainerBlueprintMembers.NetDormancyInitial
             || Setter(LootContainerBlueprintMembers.SetAlwaysRelevant).Constant(0) is not { AsByte: 0 })
         {
             throw new InvalidDataException($"{Class}: container actors are no longer initially dormant and culled by distance");
         }
 
-        ScriptValue squared = Setter(LootContainerBlueprintMembers.SetNetCullDistanceSquared).Arguments.FirstOrDefault() ?? new ScriptUnknown("no argument");
+        ScriptValue squared = Setter(LootContainerBlueprintMembers.SetNetCullDistanceSquared).Arguments is [{ } first, ..] ? first : new ScriptUnknown("no argument");
         return squared switch
         {
             ScriptConverted { Value: ScriptReturned { Call: { Name: LootContainerBlueprintMembers.Square } square } } when square.Constant(0) is { Size: Int32Size } distance => distance.AsInt32,
             _ => throw new InvalidDataException($"{Class}: {LootContainerBlueprintMembers.SetNetCullDistanceSquared} is not called with a literal distance"),
         };
+
+        ScriptCall Setter(string name) => defaults.Calls.SingleOrDefault(call => call.Name == name && call.Object is ScriptThis)
+            ?? throw new InvalidDataException($"{Class}: the default statements do not call {name} once");
     }
 
     /// <summary><see cref="LootContainerBlueprintMembers.PromptDistance"/> of the prompt distance config global <paramref name="preset"/>.</summary>

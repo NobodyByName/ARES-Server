@@ -33,25 +33,29 @@ public sealed partial class InventoryStore
     private readonly Lock _lock = new();
     private readonly HostDatabase _database;
     private readonly long _userId;
-    private readonly StashUpgradePrices _stashUpgrades;
+    private readonly InventoryRules _rules;
     private long _version;
     private PlayerInventory _state;
     private InventoryProjection _projection;
 
-    /// <summary>Opens the inventory of player <paramref name="userId"/>, with the default stash upgrade prices unless given others.</summary>
-    public InventoryStore(HostDatabase database, long userId, StashUpgradePrices? stashUpgrades = null)
+    /// <summary>Opens the inventory of player <paramref name="userId"/>, served with the definitions and stash upgrade prices of <paramref name="catalog"/>.</summary>
+    public InventoryStore(HostDatabase database, long userId, InventoryCatalog catalog)
     {
         _database = database;
         _userId = userId;
-        _stashUpgrades = stashUpgrades ?? StashUpgradePrices.Default;
+        Catalog = catalog;
+        _rules = new InventoryRules(catalog);
         (_state, _version) = _database.Read<PlayerInventory>(_userId, "inventory", SerializationOptions);
-        _projection = InventoryProjection.Create(_userId, _state);
+        _projection = InventoryProjection.Create(Catalog, _userId, _state);
     }
+
+    /// <summary>The definitions the inventory is served with.</summary>
+    public InventoryCatalog Catalog { get; }
 
     private void Refresh()
     {
         (_state, _version) = _database.Read<PlayerInventory>(_userId, "inventory", SerializationOptions);
-        _projection = InventoryProjection.Create(_userId, _state);
+        _projection = InventoryProjection.Create(Catalog, _userId, _state);
     }
 
     /// <summary>Gives a missing stash its first container tier once. The tier survives emptying the inventory.</summary>
@@ -65,9 +69,9 @@ public sealed partial class InventoryStore
             {
                 IReadOnlyList<OwnedItem> contents = candidate.Stash.Items.Count == 0
                     ? [new OwnedItem(Guid.NewGuid().ToString("D"), ItemTechnicalNames.RubberDuck, 1,
-                        StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-initial", now.ToUnixTimeMilliseconds())]
+                        OwnedItem.FullDurability, OwnedItem.FullDurability, "ares-initial", now.ToUnixTimeMilliseconds())]
                     : candidate.Stash.Items;
-                candidate = candidate with { Stash = new PlayerStash(StorageItems.StashContainerAssetId, contents) };
+                candidate = candidate with { Stash = new PlayerStash(Catalog.FirstStashContainerAssetId, contents) };
             }
 
             if (candidate != _state)
@@ -116,9 +120,9 @@ public sealed partial class InventoryStore
     }
 
     /// <summary>Shared definition tables, including every supported item and stash tier with its upgrade price.</summary>
-    public GameDataResponse GameData() => _stashUpgrades.GameData;
+    public GameDataResponse GameData() => Catalog.GameData;
 
-    public string DefinitionHash() => DefinitionHashOf(_stashUpgrades.GameData);
+    public string DefinitionHash() => DefinitionHashOf(Catalog.GameData);
 
     private static string DefinitionHashOf(GameDataResponse data) =>
         "ares-host-" + Convert.ToHexStringLower(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(data, BackendJson.Options)));
@@ -141,12 +145,7 @@ public sealed partial class InventoryStore
     /// </summary>
     public void AddItem(string technicalName, DateTimeOffset now, long quantity = 1)
     {
-        if (!LoadoutDefinitions.Generated.AssetIds.ContainsKey(technicalName))
-        {
-            throw new InvalidDataException("Unknown inventory item technical name");
-        }
-
-        ItemDescription definition = InventoryCatalog.ByAsset[InventoryCatalog.AssetId(technicalName)];
+        ItemDescription definition = Catalog.ByAsset[Catalog.AssetId(technicalName)];
         if (quantity <= 0 || quantity > definition.MaxAmount || !definition.Stackable && quantity != 1)
         {
             throw new InvalidDataException("Invalid item quantity");
@@ -161,8 +160,8 @@ public sealed partial class InventoryStore
             }
 
             OwnedItem item = new(Guid.NewGuid().ToString("D"), technicalName, quantity,
-                StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "ares-operator", now.ToUnixTimeMilliseconds());
-            if (InventoryCatalog.IsCurrency(technicalName))
+                OwnedItem.FullDurability, OwnedItem.FullDurability, "ares-operator", now.ToUnixTimeMilliseconds());
+            if (Catalog.IsCurrency(technicalName))
             {
                 // A currency has one stack, which the added amount joins.
                 OwnedItem? owned = _state.Wallet.SingleOrDefault(stack => stack.Type == technicalName);
@@ -225,7 +224,7 @@ public sealed partial class InventoryStore
             Refresh();
             if (_state.RaidTicketId is { } existing)
             {
-                return existing == ticketId ? _database.ReadReservation(_userId, existing)!.Loadout
+                return existing == ticketId ? _database.ReadReservation(Catalog, _userId, existing)!.Loadout
                     : throw new InvalidOperationException("The inventory is reserved for another ticket");
             }
 
@@ -250,13 +249,13 @@ public sealed partial class InventoryStore
 
     private void Save(PlayerInventory candidate, InventoryReservation? reservation = null)
     {
-        InventoryProjection projection = InventoryProjection.Create(_userId, candidate);
+        InventoryProjection projection = InventoryProjection.Create(Catalog, _userId, candidate);
         if (JsonSerializer.SerializeToUtf8Bytes(candidate, SerializationOptions).Length > 1048576)
         {
             throw new InvalidDataException("Inventory save is too large");
         }
 
-        _database.SaveInventory(_userId, candidate, _version, reservation, _state.RaidTicketId);
+        _database.SaveInventory(Catalog, _userId, candidate, _version, reservation, _state.RaidTicketId);
         _version = checked(_version + 1);
         _state = candidate;
         _projection = projection;

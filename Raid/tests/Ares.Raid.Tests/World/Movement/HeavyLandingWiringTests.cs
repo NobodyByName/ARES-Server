@@ -18,14 +18,14 @@ public sealed class HeavyLandingWiringTests
     [InlineData(1500.0, 1)]
     public void A_fall_lands_at_the_level_its_height_is_worth_and_ignores_all_input_until_it_hands_over(double height, int level)
     {
-        CharacterSimulation pressing = new(new Vector3D(0, 0, height), world: s_floor);
-        CharacterSimulation idle = new(new Vector3D(0, 0, height), world: s_floor);
+        CharacterSimulation pressing = new(TestGameData.Data, new Vector3D(0, 0, height), world: s_floor);
+        CharacterSimulation idle = new(TestGameData.Data, new Vector3D(0, 0, height), world: s_floor);
         (CharacterState before, CharacterState landed, uint frame) = FallUntilLanding(pressing, idle);
 
         double fall = HeavyLandingParameters.FallHeight(before.Body!.Value.Position.Z - before.Body.Value.Ground.Height, before.Body.Value.Velocity.Z,
             AirMovementParameters.FallAcceleration);
         Assert.Equal(level, landed.Landing!.Value.Level);
-        Assert.Equal(HeavyLandingMovement.Level(fall, HeavyLandingAnimations.Heavy), landed.Landing.Value.Level);
+        Assert.Equal(HeavyLandingMovement.Level(fall, TestGameData.Data.Movement.HeavyLandingLevels), landed.Landing.Value.Level);
         int duration = HeavyLandingMovement.Duration(landed.Landing.Value.Clip);
 
         // Every button pressed and the stick pushed: nothing starts, and the character moves as it would without input.
@@ -36,7 +36,7 @@ public sealed class HeavyLandingWiringTests
             CharacterState reference = Step(idle, frame, 0, MovementButtons.None);
             if (state.HeavyLandingTicks == 0)
             {
-                Assert.Equal(0UL, state.GraphFlags & GraphStateTags.AbilityLandingHeavy);
+                Assert.Equal(0UL, state.GraphFlags(TestGameData.Data) & TestGameData.Tags.AbilityLandingHeavy.Mask);
                 continue;
             }
 
@@ -45,7 +45,7 @@ public sealed class HeavyLandingWiringTests
             Assert.Null(state.Roll);
             Assert.Null(state.Vault);
             Assert.Null(state.Body!.Value.JumpRequestedAt);
-            Assert.Equal(GeneratedGraphStateFlags.HeavyLandingRecovery, state.GraphFlags & GeneratedGraphStateFlags.HeavyLandingRecovery);
+            Assert.Equal(TestGameData.Flags.HeavyLandingRecovery, state.GraphFlags(TestGameData.Data) & TestGameData.Flags.HeavyLandingRecovery);
             Assert.Equal(LocoMode.Still, state.Locomotion);
             Assert.Equal(reference.Position, state.Position);
             Assert.Equal(reference.Stance, state.Stance);
@@ -58,8 +58,8 @@ public sealed class HeavyLandingWiringTests
     [Fact]
     public void A_roll_press_shortly_before_the_landing_turns_it_into_a_recovery_roll_whose_tag_stays()
     {
-        CharacterSimulation pressed = new(new Vector3D(0, 0, 700), world: s_floor);
-        CharacterSimulation plain = new(new Vector3D(0, 0, 700), world: s_floor);
+        CharacterSimulation pressed = new(TestGameData.Data, new Vector3D(0, 0, 700), world: s_floor);
+        CharacterSimulation plain = new(TestGameData.Data, new Vector3D(0, 0, 700), world: s_floor);
         uint frame = 1;
         double seconds = Math.Sqrt(2 * 700 / AirMovementParameters.FallAcceleration);
         uint press = (uint)(seconds / Tick) - 5;
@@ -79,8 +79,8 @@ public sealed class HeavyLandingWiringTests
         }
 
         Assert.Null(rolled.Landing);
-        Assert.Equal(GraphStateTags.AbilityLandingRecovery, rolled.GraphFlags & GraphStateTags.AbilityLandingRecovery);
-        Assert.Equal(0UL, plain.State.GraphFlags & GraphStateTags.AbilityLandingRecovery);
+        Assert.Equal(TestGameData.Tags.AbilityLandingRecovery.Mask, rolled.GraphFlags(TestGameData.Data) & TestGameData.Tags.AbilityLandingRecovery.Mask);
+        Assert.Equal(0UL, plain.State.GraphFlags(TestGameData.Data) & TestGameData.Tags.AbilityLandingRecovery.Mask);
     }
 
     [Fact]
@@ -88,8 +88,8 @@ public sealed class HeavyLandingWiringTests
     {
         Vector3D high = new(0, 0, 2000);
         Vector3D falling = new(0, 0, -1500);
-        HeavyLandingState landing = HeavyLandingMovement.Begin(700, falling, falling, 0) with { Ticks = 2 };
-        CharacterSimulation simulation = CharacterSimulation.From(new CharacterState(5, high, false)
+        HeavyLandingState landing = HeavyLandingMovement.Begin(TestGameData.Data, 700, falling, falling, 0) with { Ticks = 2 };
+        CharacterSimulation simulation = CharacterSimulation.From(TestGameData.Data, new CharacterState(5, high, false)
         {
             Velocity = falling,
             Body = BodyMotion.Start(s_floor, high, falling),
@@ -114,7 +114,7 @@ public sealed class HeavyLandingWiringTests
         Dictionary<uint, CharacterState> reference = ReferenceRun.Run(s_floor, top, Start + 2, Last, frame => Input(frame, MovementButtons.None));
         uint landed = reference.First(entry => entry.Value.Landing is not null).Key;
 
-        PlayerMovement movement = new(Start, top, 0, s_floor);
+        PlayerMovement movement = new(TestGameData.Data, Start, top, 0, s_floor);
         List<CharacterState> states = ScriptedClient.Deliver(movement, Script, ScriptedClient.InOrder(Start + 3, Last));
 
         Assert.Equal(1, movement.Reseeds);
@@ -152,5 +152,5 @@ public sealed class HeavyLandingWiringTests
     private static CharacterState Step(CharacterSimulation simulation, uint frame, sbyte forward, MovementButtons buttons) =>
         simulation.StepOnGround(new CharacterInput(frame, 0), new MovementInput(frame, forward, 0, buttons), 0, Tick, GroundMovementParameters.Unarmed,
             steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Unarmed, slide: SlideMovementParameters.Default,
-            vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
+            vaults: TestGameData.Data.Movement.Vaults(armed: false, exhausted: false));
 }

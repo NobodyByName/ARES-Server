@@ -19,7 +19,7 @@ public sealed class FrameHoldTests
     public void Reports_of_a_fall_hold_frames_while_the_simulated_body_still_stands()
     {
         const uint Edge = Start + 10;
-        PlayerMovement movement = new(Start, default, 0, s_floor, double.PositiveInfinity);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0, s_floor, double.PositiveInfinity);
         Dictionary<uint, CharacterState> states = ScriptedClient.Deliver(movement, Script, ScriptedClient.InOrder(Start + 3, Edge + 15))
             .ToDictionary(state => state.Frame);
 
@@ -43,7 +43,7 @@ public sealed class FrameHoldTests
     public void A_reseed_into_the_air_holds_the_frame_of_that_tick()
     {
         const uint Lift = Start + 10;
-        PlayerMovement movement = new(Start, default, 0, s_floor);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0, s_floor);
         Dictionary<uint, CharacterState> states = ScriptedClient.Deliver(movement,
             frame => new ScriptedFrame(new Vector3D(0, 0, frame > Lift ? 150 : 0)), ScriptedClient.InOrder(Start + 3, Lift + 3)).ToDictionary(state => state.Frame);
 
@@ -66,7 +66,7 @@ public sealed class FrameHoldTests
         int landed = -1;
         for (int tick = 0; tick < 40; tick++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, (uint)tick, false), walk, Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, (uint)tick, false), walk, Tick);
             landed = landed < 0 && body is { Airborne: false, Landing: true } ? tick : landed;
             if (landed < 0 || body.Landing)
             {
@@ -101,7 +101,7 @@ public sealed class FrameHoldTests
         CollisionWorld world = ScriptedClient.World(
             (new Vector3D(-2000, 0, -10), new Vector3(2000, 2000, 10)),
             (new Vector3D(2000, 0, -drop - 10), new Vector3(2000, 2000, 10)));
-        BodyState body = BodyMotion.Move(world, BodyMotion.Begin(BodyMotion.Start(world, new Vector3D(-20, 0, 0)), 0, false), new Vector3D(3000, 0, 0), Tick);
+        BodyState body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(BodyMotion.Start(world, new Vector3D(-20, 0, 0)), 0, false), new Vector3D(3000, 0, 0), Tick);
 
         Assert.Equal(falls, BodyMotion.Begin(body, 1, false).Airborne);
     }
@@ -111,7 +111,7 @@ public sealed class FrameHoldTests
     {
         const uint Teleport = Start + 10;
         Vector3D far = new(3000, 0, 0);
-        PlayerMovement movement = new(Start, default, 0, s_floor);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0, s_floor);
         bool restarted = false;
         ScriptedClient.Deliver(movement, Script, ScriptedClient.InOrder(Start + 3, Teleport + 10), packet =>
         {

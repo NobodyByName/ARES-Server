@@ -65,14 +65,15 @@ internal sealed class ActivityTreeReader
         foreach (ZenExport export in level.Exports)
         {
             IReadOnlyList<string> chain = ExportChains.Chain(level, export);
-            if (chain.Count == NodeChainLength && chain[2].StartsWith(AreaPrefix, StringComparison.Ordinal) && export.Class == s_node)
+            switch (chain.Count)
             {
-                nodes[export.Index] = (chain[2], chain[3], ReadNode(level, export));
-            }
-            else if (chain.Count == ContainerChainLength && chain[2].StartsWith(AreaPrefix, StringComparison.Ordinal) && export.Class == s_container)
-            {
-                (int min, int max, string[] names) = ReadContainer(level, export);
-                containers[export.Index] = (chain[2], chain[3], min, max, names);
+                case NodeChainLength when chain[2].StartsWith(AreaPrefix, StringComparison.Ordinal) && export.Class == s_node:
+                    nodes[export.Index] = (chain[2], chain[3], ReadNode(level, export));
+                    break;
+                case ContainerChainLength when chain[2].StartsWith(AreaPrefix, StringComparison.Ordinal) && export.Class == s_container:
+                    (int min, int max, string[] names) = ReadContainer(level, export);
+                    containers[export.Index] = (chain[2], chain[3], min, max, names);
+                    break;
             }
         }
 
@@ -191,10 +192,9 @@ internal sealed class ActivityTreeReader
         PlacedActorValues values = new(level, export, header);
         Node node = new();
         HashSet<int> flags = [_node.Index("bInheritParentNodeLocationTags"), _node.Index("bForceNoDelayedActivation"), _node.Index("bUseWeightingForChildNodeSelection")];
-        foreach (UnversionedMember member in header.Members)
+        foreach ((int index, bool isNonZero) in header.Members)
         {
-            int index = member.Index;
-            if (index == _node.Index("DelayedActivationEvent") || (index == _node.Index("LocationTags") && member.IsNonZero))
+            if (index == _node.Index("DelayedActivationEvent") || (index == _node.Index("LocationTags") && isNonZero))
             {
                 node.Partial = true;
                 break;
@@ -202,40 +202,42 @@ internal sealed class ActivityTreeReader
 
             if (index == _node.Index("Title"))
             {
-                node.Title = member.IsNonZero ? values.Name() : node.Title;
+                node.Title = isNonZero ? values.Name() : node.Title;
             }
             else if (index == _node.Index("ContentTags"))
             {
-                node.Content = member.IsNonZero ? values.GameplayTags(MaxTags) : node.Content;
+                node.Content = isNonZero ? values.GameplayTags(MaxTags) : node.Content;
             }
             else if (flags.Contains(index))
             {
-                bool set = member.IsNonZero && values.Byte() != 0;
+                bool set = isNonZero && values.Byte() != 0;
                 node.Weighted |= set && index == _node.Index("bUseWeightingForChildNodeSelection");
             }
             else if (index == _node.Index("SubnodesMin"))
             {
-                node.SubnodesMin = member.IsNonZero ? values.Int32() : 0;
+                node.SubnodesMin = isNonZero ? values.Int32() : 0;
             }
             else if (index == _node.Index("SubnodesMax"))
             {
-                node.SubnodesMax = member.IsNonZero ? values.Int32() : 0;
+                node.SubnodesMax = isNonZero ? values.Int32() : 0;
             }
             else if (index == _node.Index("Weight"))
             {
-                if (member.IsNonZero)
+                if (isNonZero)
                 {
                     values.Skip(sizeof(double));
                 }
             }
             else if (index == _node.Index("Subnodes") || index == _node.Index("Activities"))
             {
-                if (member.IsNonZero)
+                if (!isNonZero)
                 {
-                    int[] references = [.. values.References(MaxReferences).Select(reference => reference - 1)];
-                    node.Subnodes = index == _node.Index("Subnodes") ? references : node.Subnodes;
-                    node.Activities = index == _node.Index("Activities") ? references : node.Activities;
+                    continue;
                 }
+
+                int[] references = [.. values.References(MaxReferences).Select(reference => reference - 1)];
+                node.Subnodes = index == _node.Index("Subnodes") ? references : node.Subnodes;
+                node.Activities = index == _node.Index("Activities") ? references : node.Activities;
             }
             else if (index != _node.Index("LocationTags"))
             {

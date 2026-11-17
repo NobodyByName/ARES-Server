@@ -15,8 +15,8 @@ public sealed class LadderTests
     {
         ScriptedPlayer session = new();
         LadderCatalog catalog = session.Raid.Ladders;
-        Ladder ladder = catalog.Ladders.Single(item => DamLadders.All[item.Index].Actor == "BP_Ladder_WallEnd_01_C_1");
-        Assert.Equal(DamLadders.All.Count, catalog.Ladders.Count);
+        Ladder ladder = catalog.Ladders.Single(item => TestGameData.Dam.Ladders[item.Index].Actor == "BP_Ladder_WallEnd_01_C_1");
+        Assert.Equal(TestGameData.Dam.Ladders.Length, catalog.Ladders.Count);
         Assert.Equal(824.0, ladder.Height, 9);
 
         ChannelBunch bunch = catalog.OpenBunch(ladder, 300, 1);
@@ -30,7 +30,7 @@ public sealed class LadderTests
         Assert.Equal((false, 0UL), (reader.ReadBit(), reader.ReadBits(3)));
 
         ValueCodec values = new(GameReplication.Catalog, [KnownEnums.NetRole], new Dictionary<ulong, string> { [ladder.Parent] = ClassPaths.Actor });
-        Dictionary<string, object?> content = new PropertyCodec(values).Decode(new PropertyLayout(GameReplication.Catalog, DamLadders.ActorClass), ActorContentBlock.Read(reader), swapActorRoles: false);
+        Dictionary<string, object?> content = new PropertyCodec(values).Decode(new PropertyLayout(GameReplication.Catalog, LadderLogic.ActorClass), ActorContentBlock.Read(reader), swapActorRoles: false);
         Assert.Equal(0, reader.Remaining);
         Assert.Equal(ladder.Parent, content[$"{PropertyNames.AttachmentReplication}.{PropertyNames.AttachParent}"]);
         Assert.Equal(Vector3D.One, content[$"{PropertyNames.AttachmentReplication}.{PropertyNames.RelativeScale3D}"]);
@@ -48,7 +48,7 @@ public sealed class LadderTests
         (ObjectExports exports, IReadOnlyList<ulong> roots) = ObjectExports.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
         Assert.Contains(ladder.Parent, roots);
         StaticObjectExport[] records = [.. exports.Records.Values.OfType<StaticObjectExport>()];
-        Assert.Contains(records, record => record.Path == DamLadders.Logic.Archetype.Split('.')[1]);
+        Assert.Contains(records, record => record.Path == TestGameData.Dam.LadderLogic!.Value.Archetype.Split('.')[1]);
         Assert.All(records, record => Assert.True(record.NoLoad, record.Path));
     }
 

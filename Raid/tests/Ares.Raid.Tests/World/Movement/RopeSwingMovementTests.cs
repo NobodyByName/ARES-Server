@@ -1,14 +1,13 @@
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
 public sealed class RopeSwingMovementTests
 {
     private const double Tick = 1.0 / 30;
-    private static readonly double s_halfHeight = DamPlayerStarts.Capsule.HalfHeight;
+    private static readonly Lazy<double> s_halfHeight = new(() => TestGameData.Dam.PlayerStartCapsule.HalfHeight);
     private static readonly Vector3D s_pivot = new(0, 0, 3000);
     private static readonly RopeSwingInput s_idle = new(0, 0, 0);
 
@@ -17,15 +16,15 @@ public sealed class RopeSwingMovementTests
     {
         GrappleRope rope = new(s_pivot, 1000);
         Vector3D falling = new(0, 0, -400);
-        Assert.True(RopeSwingMovement.CanStart(rope, Feet(At(45, 1001)), s_halfHeight, falling, RopeSwingGround.None, RoughMovementMode.Air, false));
-        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(75, 1001)), s_halfHeight, falling, RopeSwingGround.None, RoughMovementMode.Air, true));
-        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(45, 1001)), s_halfHeight, falling, RopeSwingGround.None, RoughMovementMode.Air, true, 0));
-        Assert.False(RopeSwingMovement.CanStart(rope.End(SwingParameters.ReleasedEndReason), Feet(At(45, 1001)), s_halfHeight, falling,
+        Assert.True(RopeSwingMovement.CanStart(rope, Feet(At(45, 1001)), s_halfHeight.Value, falling, RopeSwingGround.None, RoughMovementMode.Air, false));
+        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(75, 1001)), s_halfHeight.Value, falling, RopeSwingGround.None, RoughMovementMode.Air, true));
+        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(45, 1001)), s_halfHeight.Value, falling, RopeSwingGround.None, RoughMovementMode.Air, true, 0));
+        Assert.False(RopeSwingMovement.CanStart(rope.End(SwingParameters.ReleasedEndReason), Feet(At(45, 1001)), s_halfHeight.Value, falling,
             RopeSwingGround.None, RoughMovementMode.Air, true));
 
         RopeSwingGround floor = new(0, true, new Vector3D(0, 0, 1));
-        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(30, 900)), s_halfHeight, default, floor, RoughMovementMode.Ground, true));
-        Assert.True(RopeSwingMovement.CanStart(rope, Feet(At(5, 900)), s_halfHeight, default, floor, RoughMovementMode.Ground, true));
+        Assert.False(RopeSwingMovement.CanStart(rope, Feet(At(30, 900)), s_halfHeight.Value, default, floor, RoughMovementMode.Ground, true));
+        Assert.True(RopeSwingMovement.CanStart(rope, Feet(At(5, 900)), s_halfHeight.Value, default, floor, RoughMovementMode.Ground, true));
     }
 
     [Fact]
@@ -35,9 +34,9 @@ public sealed class RopeSwingMovementTests
         Vector3D feet = Feet(At(30, 600));
         Vector3D falling = new(0, 0, -100);
         double drop = Math.Max(600, 200) - (600 * Math.Cos(30 * Math.PI / 180)) + 50;
-        Assert.True(RopeSwingMovement.CanStart(rope, feet, s_halfHeight, falling, new RopeSwingGround(drop + 1, false, default), RoughMovementMode.Air, false));
-        Assert.False(RopeSwingMovement.CanStart(rope, feet, s_halfHeight, falling, new RopeSwingGround(drop - 1, false, default), RoughMovementMode.Air, false));
-        Assert.False(RopeSwingMovement.CanStart(rope, feet, s_halfHeight, new Vector3D(0, 0, 10), RopeSwingGround.None, RoughMovementMode.Air, false));
+        Assert.True(RopeSwingMovement.CanStart(rope, feet, s_halfHeight.Value, falling, new RopeSwingGround(drop + 1, false, default), RoughMovementMode.Air, false));
+        Assert.False(RopeSwingMovement.CanStart(rope, feet, s_halfHeight.Value, falling, new RopeSwingGround(drop - 1, false, default), RoughMovementMode.Air, false));
+        Assert.False(RopeSwingMovement.CanStart(rope, feet, s_halfHeight.Value, new Vector3D(0, 0, 10), RopeSwingGround.None, RoughMovementMode.Air, false));
     }
 
     [Fact]
@@ -45,7 +44,7 @@ public sealed class RopeSwingMovementTests
     {
         Vector3D velocity = new(0, 0, -800);
         RoughMovementMode mode = RoughMovementMode.Air;
-        (RopeSwingState state, GrappleRope rope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, 2000), Feet(At(0, 700)), s_halfHeight, ref velocity,
+        (RopeSwingState state, GrappleRope rope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, 2000), Feet(At(0, 700)), s_halfHeight.Value, ref velocity,
             ref mode, false, false, out double cost);
         Assert.Equal(700, state.RopeLength, 3);
         Assert.Equal(700, rope.WorkingLength, 3);
@@ -56,7 +55,7 @@ public sealed class RopeSwingMovementTests
 
         Vector3D still = default;
         RoughMovementMode ground = RoughMovementMode.Ground;
-        (RopeSwingState climb, GrappleRope shortRope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, 2000), Feet(At(0, 100)), s_halfHeight, ref still,
+        (RopeSwingState climb, GrappleRope shortRope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, 2000), Feet(At(0, 100)), s_halfHeight.Value, ref still,
             ref ground, true, true, out double free);
         Assert.Equal(150, shortRope.WorkingLength);
         Assert.True(climb.GroundClimbEntry);
@@ -75,7 +74,7 @@ public sealed class RopeSwingMovementTests
         HashSet<SwingPhase> phases = [];
         for (int tick = 0; tick < 600; tick++)
         {
-            RopeSwingStep step = RopeSwingMovement.Step(state, rope, s_idle, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+            RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope, s_idle, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
             Assert.Equal(RopeSwingExit.None, step.Exit);
             (state, rope, feet, velocity) = (step.State, step.Rope, step.Position, step.Velocity);
             heights.Add(RopeEnd(feet).Z);
@@ -107,10 +106,10 @@ public sealed class RopeSwingMovementTests
         bool kicked = false;
         for (int tick = 0; tick < 12; tick++)
         {
-            RopeSwingStep idle = RopeSwingMovement.Step(idleState, idleRope, s_idle, idleFeet, idleVelocity, s_halfHeight, RopeSwingGround.None, Tick);
+            RopeSwingStep idle = RopeSwingMovement.Step(TestGameData.Data, idleState, idleRope, s_idle, idleFeet, idleVelocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
             (idleState, idleRope, idleFeet, idleVelocity) = (idle.State, idle.Rope, idle.Position, idle.Velocity);
             RopeSwingInput towardsBottom = new(-1, 0, 0);
-            RopeSwingStep pumped = RopeSwingMovement.Step(state, rope, towardsBottom, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+            RopeSwingStep pumped = RopeSwingMovement.Step(TestGameData.Data, state, rope, towardsBottom, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
             (state, rope, feet, velocity) = (pumped.State, pumped.Rope, pumped.Position, pumped.Velocity);
             kicked |= state.Kicking;
         }
@@ -124,17 +123,17 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope rope, Vector3D feet, Vector3D velocity) = Released(0, 600);
         RopeSwingInput climb = new(0, 0, 0, FireDown: true);
-        RopeSwingStep first = RopeSwingMovement.Step(state, rope, climb, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+        RopeSwingStep first = RopeSwingMovement.Step(TestGameData.Data, state, rope, climb, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
         Assert.True(first.State.ClimbingUpRope);
         Assert.Equal(-1200 * Tick, first.State.CurrentReelSpeed, 4);
         Assert.Equal(600 - (1200 * Tick * Tick), first.State.RopeLength, 3);
-        Assert.NotEqual(0UL, first.Flags & GeneratedGraphStateFlags.SwingStaminaBlock);
+        Assert.NotEqual(0UL, first.Flags & TestGameData.Flags.SwingStaminaBlock);
         Assert.Equal(SwingParameters.ClimbStaminaCostPerSecond * Tick, first.StaminaCost, 9);
 
         (state, rope, feet, velocity) = (first.State, first.Rope, first.Position, first.Velocity);
         for (int tick = 0; tick < 60; tick++)
         {
-            RopeSwingStep step = RopeSwingMovement.Step(state, rope, climb, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+            RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope, climb, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
             (state, rope, feet, velocity) = (step.State, step.Rope, step.Position, step.Velocity);
         }
 
@@ -148,15 +147,15 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope rope, Vector3D feet, Vector3D velocity) = Released(0, 600);
         RopeSwingInput rappel = new(0, 0, 0, CrouchDown: true);
-        RopeSwingStep first = RopeSwingMovement.Step(state, rope, rappel, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+        RopeSwingStep first = RopeSwingMovement.Step(TestGameData.Data, state, rope, rappel, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
         Assert.True(first.State.Rappelling);
         Assert.Equal(1500 * Tick, first.State.CurrentReelSpeed, 4);
         Assert.Equal(9, first.CrouchBlockTicks);
-        Assert.NotEqual(0UL, first.Flags & GeneratedGraphStateFlags.SwingStaminaBlock);
+        Assert.NotEqual(0UL, first.Flags & TestGameData.Flags.SwingStaminaBlock);
         (state, rope, feet, velocity) = (first.State, first.Rope, first.Position, first.Velocity);
         for (int tick = 0; tick < 30; tick++)
         {
-            RopeSwingStep step = RopeSwingMovement.Step(state, rope, rappel, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+            RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope, rappel, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
             (state, rope, feet, velocity) = (step.State, step.Rope, step.Position, step.Velocity);
         }
 
@@ -169,14 +168,14 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope rope, Vector3D feet, Vector3D velocity) = Released(0, 600);
         RopeSwingInput jump = new(1, 0, Math.PI / 2, JumpPressed: true);
-        RopeSwingStep plain = RopeSwingMovement.Step(state, rope, new RopeSwingInput(1, 0, Math.PI / 2), feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
-        RopeSwingStep step = RopeSwingMovement.Step(state, rope, jump, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+        RopeSwingStep plain = RopeSwingMovement.Step(TestGameData.Data, state, rope, new RopeSwingInput(1, 0, Math.PI / 2), feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
+        RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope, jump, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
         Assert.Equal(RopeSwingExit.JumpOff, step.Exit);
         Assert.True(step.Finished);
         Assert.False(step.Rope.Anchored);
         Assert.Equal(SwingParameters.ReleasedEndReason, step.Rope.EndReason);
         Assert.Equal(SwingPhase.Detaching, step.State.Phase);
-        Assert.NotEqual(0UL, step.Flags & GeneratedGraphStateFlags.SwingJumpStarted);
+        Assert.NotEqual(0UL, step.Flags & TestGameData.Flags.SwingJumpStarted);
         Assert.Equal(plain.Velocity.Y + 200, step.Velocity.Y, 9);
         Assert.Equal(plain.Velocity.Z + 500, step.Velocity.Z, 9);
         Assert.Equal(Math.PI / 2, step.Yaw);
@@ -187,7 +186,7 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope rope, Vector3D feet, Vector3D velocity) = Released(10, 800);
         RopeSwingGround floor = new(20, true, new Vector3D(0, 0, 1));
-        RopeSwingStep step = RopeSwingMovement.Step(state, rope, s_idle, feet, velocity, s_halfHeight, floor, Tick);
+        RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope, s_idle, feet, velocity, s_halfHeight.Value, floor, Tick);
         Assert.Equal(RopeSwingExit.Landed, step.Exit);
         Assert.True(step.Finished);
         Assert.False(step.ActionLayerWritten);
@@ -196,7 +195,7 @@ public sealed class RopeSwingMovementTests
         Assert.True(step.Rope.Anchored);
 
         RopeSwingGround steep = new(20, true, new Vector3D(0.8, 0, 0.6));
-        Assert.Equal(RopeSwingExit.None, RopeSwingMovement.Step(state, rope, s_idle, feet, velocity, s_halfHeight, steep, Tick).Exit);
+        Assert.Equal(RopeSwingExit.None, RopeSwingMovement.Step(TestGameData.Data, state, rope, s_idle, feet, velocity, s_halfHeight.Value, steep, Tick).Exit);
     }
 
     [Fact]
@@ -204,7 +203,7 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope _, Vector3D feet, Vector3D velocity) = Released(0, 1000);
         GrappleRope shortened = new(s_pivot, 100);
-        RopeSwingStep step = RopeSwingMovement.Step(state with { RopeLength = 100 }, shortened, s_idle, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+        RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state with { RopeLength = 100 }, shortened, s_idle, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
         Assert.Equal(RopeSwingExit.RopeBroke, step.Exit);
         Assert.Equal(SwingParameters.BrokenEndReason, step.Rope.EndReason);
         Assert.False(step.Rope.Anchored);
@@ -216,7 +215,7 @@ public sealed class RopeSwingMovementTests
     {
         (RopeSwingState state, GrappleRope rope, Vector3D feet, _) = Released(30, 1000);
         Vector3D velocity = new(300, 0, -50);
-        RopeSwingStep step = RopeSwingMovement.Step(state, rope.End(SwingParameters.ReleasedEndReason), s_idle, feet, velocity, s_halfHeight, RopeSwingGround.None, Tick);
+        RopeSwingStep step = RopeSwingMovement.Step(TestGameData.Data, state, rope.End(SwingParameters.ReleasedEndReason), s_idle, feet, velocity, s_halfHeight.Value, RopeSwingGround.None, Tick);
         Assert.Equal(RopeSwingExit.Unanchored, step.Exit);
         Assert.Equal(velocity, step.Velocity);
         Assert.True(step.Finished);
@@ -240,7 +239,7 @@ public sealed class RopeSwingMovementTests
         Vector3D velocity = default;
         RoughMovementMode mode = RoughMovementMode.Air;
         Vector3D feet = Feet(At(degrees, length));
-        (RopeSwingState state, GrappleRope rope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, length), feet, s_halfHeight, ref velocity, ref mode, false,
+        (RopeSwingState state, GrappleRope rope) = RopeSwingMovement.Begin(new GrappleRope(s_pivot, length), feet, s_halfHeight.Value, ref velocity, ref mode, false,
             false, out _);
         return (state, rope, feet, velocity);
     }
@@ -252,9 +251,9 @@ public sealed class RopeSwingMovementTests
         return new Vector3D(s_pivot.X + (length * Math.Sin(radians)), s_pivot.Y, s_pivot.Z - (length * Math.Cos(radians)));
     }
 
-    private static Vector3D Feet(Vector3D ropeEnd) => ropeEnd with { Z = ropeEnd.Z - (2 * s_halfHeight) };
+    private static Vector3D Feet(Vector3D ropeEnd) => ropeEnd with { Z = ropeEnd.Z - (2 * s_halfHeight.Value) };
 
-    private static Vector3D RopeEnd(Vector3D feet) => RopeSwingMovement.RopeEnd(feet, s_halfHeight);
+    private static Vector3D RopeEnd(Vector3D feet) => RopeSwingMovement.RopeEnd(feet, s_halfHeight.Value);
 
     private static double Distance(Vector3D a, Vector3D b) =>
         Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)) + ((a.Z - b.Z) * (a.Z - b.Z)));

@@ -102,7 +102,7 @@ internal sealed class PlacedActorValues
     public string String()
     {
         int length = _package.ReadInt32(Advance(sizeof(int)));
-        if (length == 0 || length == int.MinValue)
+        if (length is 0 or int.MinValue)
         {
             throw new InvalidDataException($"Unsupported string length {length} at offset {Offset - sizeof(int)}");
         }

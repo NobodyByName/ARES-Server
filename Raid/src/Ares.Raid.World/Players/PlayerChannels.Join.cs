@@ -122,7 +122,7 @@ public sealed partial class PlayerChannels
             .Concat(_bindings.Select(binding => _raid.Imports.Archetypes[_raid.State.Actor(binding.Guid).ClassPath]))
             .Append(_raid.Imports.Archetypes[PlayerClasses.Squad.Class]);
         roots = roots.Concat(_member.Inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>()
-            .Where(item => _player.HeldItems.ContainsKey(item.Id)).Select(item => _raid.Imports.Classes[WorldImports.HeldItemClasses[item.AssetIndex]]));
+            .Where(item => _player.HeldItems.ContainsKey(item.Id)).Select(item => _raid.Imports.Classes[_raid.Imports.HeldItemClasses[item.AssetIndex]]));
 
         _keys = [.. roots.Distinct().Select(root => io.Sender.Queue(Bunches.Exports(_raid.Imports.Exports, [root])))];
         Phase = DeliveryPhase.ExportsPending;

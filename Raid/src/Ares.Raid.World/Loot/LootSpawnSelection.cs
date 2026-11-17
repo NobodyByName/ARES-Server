@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
@@ -68,8 +69,14 @@ public static class LootLimiterRules
 /// </param>
 public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls, FreeStandingLoot? FreeStanding = null)
 {
-    /// <summary>The Dam's limiters and free-standing containers with ARES's default chances.</summary>
-    public static LootSpawnRules Dam { get; } = new(DamLootLimiters.All, DamPointsOfInterest.All, LootSpawnDefaults.Chance, true, FreeStandingLoot.Dam);
+    /// <summary>A map's limiters and free-standing containers with ARES's default chances.</summary>
+    /// <param name="map">The map's data.</param>
+    /// <returns>The rules.</returns>
+    public static LootSpawnRules Of(MapData map)
+    {
+        ArgumentNullException.ThrowIfNull(map);
+        return new LootSpawnRules(map.LootLimiters, map.PointsOfInterest, LootSpawnDefaults.Chance, true, FreeStandingLoot.Of(map));
+    }
 
     /// <summary>A container on every socket, and none off the sockets.</summary>
     public static LootSpawnRules EverySocket { get; } = new([], [], (_, _) => 1, false);
@@ -91,13 +98,16 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
     /// layer that covers the socket has reached the cap of a limited entry matching its tag. A spawn counts towards
     /// every such entry.
     /// </summary>
+    /// <param name="loot">The loot definitions: the container types and their group caps.</param>
     /// <param name="sockets">The sockets that may get a container.</param>
     /// <param name="rules">Chances and limiters.</param>
     /// <param name="activeDataLayers">Names of the raid's active data layers.</param>
     /// <param name="random">The raid's random numbers.</param>
     /// <returns>The selection.</returns>
-    public static LootSpawnSelection Select(IReadOnlyList<LootSocket> sockets, LootSpawnRules rules, IReadOnlyCollection<string> activeDataLayers, Random random)
+    public static LootSpawnSelection Select(LootData loot, IReadOnlyList<LootSocket> sockets, LootSpawnRules rules, IReadOnlyCollection<string> activeDataLayers,
+        Random random)
     {
+        ArgumentNullException.ThrowIfNull(loot);
         ArgumentNullException.ThrowIfNull(sockets);
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(activeDataLayers);
@@ -129,7 +139,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
 
             (string, string, string, string) group = (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant());
             int inGroup = groups.GetValueOrDefault(group);
-            if (inGroup >= (LootContainerTypes.Find(socket.ContainerTag)?.MaxPerGroup ?? int.MaxValue))
+            if (inGroup >= (loot.FindContainerType(socket.ContainerTag)?.MaxPerGroup ?? int.MaxValue))
             {
                 groupCaps++;
                 continue;

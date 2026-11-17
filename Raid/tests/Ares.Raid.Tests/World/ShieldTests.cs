@@ -3,6 +3,7 @@ using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
@@ -15,11 +16,12 @@ public sealed class ShieldTests
 {
     [Theory]
     [InlineData(null)]
-    [InlineData(AugmentItems.CombatMk1AssetId)]
-    [InlineData(AugmentItems.LootingMk1AssetId)]
-    [InlineData(AugmentItems.TacticalMk1AssetId)]
-    public void Container_creation_is_acknowledged_before_the_initial_armor_contents_are_sent(long? augment)
+    [InlineData(GameNames.Items.CombatMk1)]
+    [InlineData(GameNames.Items.LootingMk1)]
+    [InlineData(GameNames.Items.TacticalMk1)]
+    public void Container_creation_is_acknowledged_before_the_initial_armor_contents_are_sent(string? augmentName)
     {
+        long? augment = TestGameData.AssetId(augmentName);
         ScriptedPlayer session = new(loadout: WithShield(augment));
         session.Possess();
         session.Sent.Clear();
@@ -34,7 +36,7 @@ public sealed class ShieldTests
         session.Sent.Clear();
         session.Service(100.1);
         Dictionary<int, PendulumSlot> second = session.PawnFrame(first);
-        Assert.Equal(ShieldItems.LightShieldUsableIndex, AssetIndex(second, InventoryBlackboard.ArmorSlot));
+        Assert.Equal(TestGameData.Data.Names.LightShield.UsableIndex, AssetIndex(second, InventoryBlackboard.ArmorSlot));
         Assert.Equal(InventoryBlackboard.RubberDuckIndex, AssetIndex(second, InventoryBlackboard.LoadoutSlotCount + 3));
         Assert.Equal(3, session.Channels.BlackboardFrames);
         session.Input(36, 39, position: session.Member.Spawn.Location);
@@ -44,13 +46,14 @@ public sealed class ShieldTests
 
     [Theory]
     [InlineData(null)]
-    [InlineData(AugmentItems.CombatMk1AssetId)]
-    [InlineData(AugmentItems.LootingMk1AssetId)]
-    [InlineData(AugmentItems.TacticalMk1AssetId)]
-    public void An_equipped_light_shield_keeps_its_identity_and_initializes_the_raid_hud(long? augment)
+    [InlineData(GameNames.Items.CombatMk1)]
+    [InlineData(GameNames.Items.LootingMk1)]
+    [InlineData(GameNames.Items.TacticalMk1)]
+    public void An_equipped_light_shield_keeps_its_identity_and_initializes_the_raid_hud(string? augmentName)
     {
+        long? augment = TestGameData.AssetId(augmentName);
         PlayerLoadout loadout = WithShield(augment);
-        InventoryItem selected = loadout.Items.Single(item => item.GameAssetId == ShieldItems.LightShieldAssetId);
+        InventoryItem selected = loadout.Items.Single(item => item.GameAssetId == TestGameData.Data.Names.LightShield.AssetId);
         ScriptedPlayer session = new(loadout: loadout);
         session.Possess();
         RaidInventory inventory = session.Member.Inventory;
@@ -72,8 +75,8 @@ public sealed class ShieldTests
     public void Broken_shields_have_no_available_capacity_and_positive_durability_keeps_full_capacity(double durability, double health)
     {
         PlayerLoadout loadout = WithShield();
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == ShieldItems.LightShieldAssetId ? item with { Durability = durability } : item)] };
-        RaidInventory inventory = new(loadout);
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.Data.Names.LightShield.AssetId ? item with { Durability = durability } : item)] };
+        RaidInventory inventory = new(TestGameData.Items, loadout);
         Assert.NotNull(inventory.Shield);
         Assert.Equal(health, inventory.ShieldHealth);
     }
@@ -81,7 +84,7 @@ public sealed class ShieldTests
     [Fact]
     public void Carried_shields_can_be_equipped_and_removed_but_cannot_enter_other_equipment_or_quick_use_slots()
     {
-        RaidInventory inventory = new(WithShield(inBackpack: true));
+        RaidInventory inventory = new(TestGameData.Items, WithShield(inBackpack: true));
         ContainerItem shield = inventory.Containers[inventory.Backpack].Items[5]!;
         Assert.Null(inventory.Shield);
         Assert.Equal(0, inventory.ShieldHealth);
@@ -124,8 +127,8 @@ public sealed class ShieldTests
     public void Unsupported_shields_are_rejected_before_world_preparation(long asset)
     {
         PlayerLoadout loadout = WithShield();
-        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == ShieldItems.LightShieldAssetId ? item with { GameAssetId = asset } : item)] };
-        Assert.Throws<WorldPreparationException>(() => new RaidInventory(loadout));
+        loadout = loadout with { Items = [.. loadout.Items.Select(item => item.GameAssetId == TestGameData.Data.Names.LightShield.AssetId ? item with { GameAssetId = asset } : item)] };
+        Assert.Throws<WorldPreparationException>(() => new RaidInventory(TestGameData.Items, loadout));
     }
 
     private static List<StableSubobjectContent> ShieldDeliveries(ScriptedPlayer session)
@@ -161,10 +164,10 @@ public sealed class ShieldTests
     private static PlayerLoadout WithShield(long? augment = null, bool inBackpack = false)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout(augment);
-        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == (inBackpack ? LoadoutItems.BackpackSlotAssetId : LoadoutItems.ArmorSlotAssetId));
+        InventoryItem branch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == (inBackpack ? LoadoutItems.BackpackSlotAssetId : LoadoutItems.ArmorSlotAssetId));
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branch.Slots[0]);
         string slot = container.Slots[inBackpack ? 5 : 0];
-        InventoryItem shield = new(Guid.NewGuid().ToString("D"), ShieldItems.LightShieldAssetId, 1, [], 50, 100, "", "shield", 0);
+        InventoryItem shield = new(Guid.NewGuid().ToString("D"), TestGameData.Data.Names.LightShield.AssetId, 1, [], 50, 100, "", "shield", 0);
         return loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == slot ? item with { Slots = [shield.InstanceId] } : item), shield] };
     }
 

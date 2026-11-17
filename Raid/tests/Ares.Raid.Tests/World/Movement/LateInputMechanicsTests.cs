@@ -3,7 +3,6 @@ using Ares.Raid.World.Collision;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World.Movement;
 
@@ -38,8 +37,8 @@ public sealed class LateInputMechanicsTests
     [MemberData(nameof(Deliveries))]
     public void A_ladder_climb_resimulated_from_late_input_ends_in_the_in_order_state(string delivery)
     {
-        int ladder = Enumerable.Range(0, DamLadders.All.Count).MaxBy(index => LadderLine.From(DamLadders.All[index]).Height);
-        LadderLine line = LadderLine.From(DamLadders.All[ladder]);
+        int ladder = Enumerable.Range(0, TestGameData.Dam.Ladders.Length).MaxBy(index => LadderLine.From(TestGameData.Dam.Ladders[index]).Height);
+        LadderLine line = LadderLine.From(TestGameData.Dam.Ladders[ladder]);
         CollisionWorld world = ScriptedClient.World((line.Origin with { Z = line.Origin.Z - 10 }, new Vector3(600, 600, 10)));
         const uint Climb = Start + 10;
 
@@ -121,7 +120,7 @@ public sealed class LateInputMechanicsTests
     private static List<CharacterState> Run(CollisionWorld world, Vector3D start, Func<uint, ScriptedFrame> script, IEnumerable<uint> packets,
         int? ladder = null, uint climb = 0)
     {
-        PlayerMovement movement = new(Start, start, 0, world);
+        PlayerMovement movement = new(TestGameData.Data, Start, start, 0, world);
         bool climbed = false;
         List<CharacterState> states = ScriptedClient.Deliver(movement, script, packets, packet =>
         {

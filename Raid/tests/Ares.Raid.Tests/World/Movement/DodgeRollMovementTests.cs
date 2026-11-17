@@ -66,9 +66,9 @@ public sealed class DodgeRollMovementTests
     [Fact]
     public void Each_step_moves_by_the_root_motion_of_one_animation_frame()
     {
-        IReadOnlyList<float> root = DodgeRollSequences.Standard.RootForward;
+        IReadOnlyList<float> root = TestGameData.Data.Movement.DodgeRoll(DodgeRollKind.Standard).RootForward;
         DodgeRollState state = DodgeRollMovement.Begin(DodgeRollKind.Standard, s_press, 0, default, 0);
-        DodgeRollStep first = DodgeRollMovement.Step(state, default, onGround: true, 0, Tick);
+        DodgeRollStep first = DodgeRollMovement.Step(TestGameData.Data, state, default, onGround: true, 0, Tick);
         Assert.Equal(((double)root[1] - root[0]) * 30, first.Velocity.X, 9);
         Assert.Equal(0, first.Velocity.Y);
         Assert.Equal(CharacterStance.Uncontrolled, first.ActionStance);
@@ -78,7 +78,7 @@ public sealed class DodgeRollMovementTests
         DodgeRollStep step = first;
         while (!step.Finished)
         {
-            step = DodgeRollMovement.Step(step.State, step.Velocity, onGround: true, 0, Tick);
+            step = DodgeRollMovement.Step(TestGameData.Data, step.State, step.Velocity, onGround: true, 0, Tick);
             travelled += step.Velocity.X * Tick;
         }
 
@@ -89,8 +89,8 @@ public sealed class DodgeRollMovementTests
     [Fact]
     public void A_sprint_roll_scales_its_root_motion_to_its_distance()
     {
-        IReadOnlyList<float> root = DodgeRollSequences.Sprint.RootForward;
-        DodgeRollStep step = DodgeRollMovement.Step(new DodgeRollState(DodgeRollKind.Sprint, new Vector3D(0, 1, 0), 3), default, onGround: true, 0, Tick);
+        IReadOnlyList<float> root = TestGameData.Data.Movement.DodgeRoll(DodgeRollKind.Sprint).RootForward;
+        DodgeRollStep step = DodgeRollMovement.Step(TestGameData.Data, new DodgeRollState(DodgeRollKind.Sprint, new Vector3D(0, 1, 0), 3), default, onGround: true, 0, Tick);
         Assert.Equal(((double)root[4] - root[3]) * 30 * 545 / 600, step.Velocity.Y, 9);
         Assert.InRange(step.Velocity.Y, 1000, 1030);
     }
@@ -98,46 +98,46 @@ public sealed class DodgeRollMovementTests
     [Fact]
     public void The_variants_hand_over_three_frames_before_their_animation_ends()
     {
-        Assert.Equal(29, DodgeRollMovement.Duration(DodgeRollKind.Standard));
-        Assert.Equal(29, DodgeRollMovement.Duration(DodgeRollKind.Sprint));
-        Assert.Equal(43, DodgeRollMovement.Duration(DodgeRollKind.Exhausted));
-        Assert.Equal(23, DodgeRollMovement.Duration(DodgeRollKind.Ninja));
+        Assert.Equal(29, DodgeRollMovement.Duration(TestGameData.Data, DodgeRollKind.Standard));
+        Assert.Equal(29, DodgeRollMovement.Duration(TestGameData.Data, DodgeRollKind.Sprint));
+        Assert.Equal(43, DodgeRollMovement.Duration(TestGameData.Data, DodgeRollKind.Exhausted));
+        Assert.Equal(23, DodgeRollMovement.Duration(TestGameData.Data, DodgeRollKind.Ninja));
     }
 
     [Fact]
     public void Off_the_ground_the_roll_keeps_falling()
     {
         DodgeRollState state = new(DodgeRollKind.Standard, new Vector3D(1, 0, 0), 5);
-        DodgeRollStep step = DodgeRollMovement.Step(state, new Vector3D(300, 0, -50), onGround: false, -AirMovementParameters.FallAcceleration, Tick);
+        DodgeRollStep step = DodgeRollMovement.Step(TestGameData.Data, state, new Vector3D(300, 0, -50), onGround: false, -AirMovementParameters.FallAcceleration, Tick);
         Assert.Equal(-50 - (AirMovementParameters.FallAcceleration * Tick), step.Velocity.Z, 9);
         Assert.Equal(CharacterStance.InAir, step.ActionStance);
         Assert.True(step.InAir);
-        Assert.Equal(-50, DodgeRollMovement.Step(state, new Vector3D(300, 0, -50), onGround: true, -AirMovementParameters.FallAcceleration, Tick).Velocity.Z);
+        Assert.Equal(-50, DodgeRollMovement.Step(TestGameData.Data, state, new Vector3D(300, 0, -50), onGround: true, -AirMovementParameters.FallAcceleration, Tick).Velocity.Z);
     }
 
     [Fact]
     public void A_collision_stops_the_roll_and_ends_it_outside_the_grace_windows()
     {
         DodgeRollState start = new(DodgeRollKind.Standard, new Vector3D(1, 0, 0));
-        DodgeRollStep early = DodgeRollMovement.Step(start, default, onGround: true, 0, Tick, collided: true);
+        DodgeRollStep early = DodgeRollMovement.Step(TestGameData.Data, start, default, onGround: true, 0, Tick, collided: true);
         Assert.Equal(default, early.Velocity);
         Assert.False(early.Finished);
-        Assert.False(DodgeRollMovement.Step(start with { Ticks = 3 }, default, true, 0, Tick, collided: true).Finished);
-        Assert.True(DodgeRollMovement.Step(start with { Ticks = 10 }, default, true, 0, Tick, collided: true).Finished);
-        Assert.False(DodgeRollMovement.Step(start with { Ticks = 24 }, default, true, 0, Tick, collided: true).Finished);
+        Assert.False(DodgeRollMovement.Step(TestGameData.Data, start with { Ticks = 3 }, default, true, 0, Tick, collided: true).Finished);
+        Assert.True(DodgeRollMovement.Step(TestGameData.Data, start with { Ticks = 10 }, default, true, 0, Tick, collided: true).Finished);
+        Assert.False(DodgeRollMovement.Step(TestGameData.Data, start with { Ticks = 24 }, default, true, 0, Tick, collided: true).Finished);
     }
 
     [Fact]
     public void Crouch_ends_the_roll_in_a_crouch_late_in_the_animation()
     {
         DodgeRollState state = new(DodgeRollKind.Standard, new Vector3D(1, 0, 0), 22);
-        DodgeRollStep late = DodgeRollMovement.Step(state, default, true, 0, Tick, crouch: true);
+        DodgeRollStep late = DodgeRollMovement.Step(TestGameData.Data, state, default, true, 0, Tick, crouch: true);
         Assert.True(late.Finished);
         Assert.Equal(CharacterStance.Crouch, late.ActionStance);
-        DodgeRollStep disabled = DodgeRollMovement.Step(state, default, true, 0, Tick, crouch: true, crouchExitDisabled: true);
+        DodgeRollStep disabled = DodgeRollMovement.Step(TestGameData.Data, state, default, true, 0, Tick, crouch: true, crouchExitDisabled: true);
         Assert.False(disabled.Finished);
         Assert.Equal(CharacterStance.Crouch, disabled.ActionStance);
-        DodgeRollStep early = DodgeRollMovement.Step(state with { Ticks = 10 }, default, true, 0, Tick, crouch: true);
+        DodgeRollStep early = DodgeRollMovement.Step(TestGameData.Data, state with { Ticks = 10 }, default, true, 0, Tick, crouch: true);
         Assert.False(early.Finished);
         Assert.Equal(CharacterStance.Uncontrolled, early.ActionStance);
     }

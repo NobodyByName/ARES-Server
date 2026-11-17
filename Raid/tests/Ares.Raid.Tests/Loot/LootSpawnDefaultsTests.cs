@@ -59,7 +59,7 @@ public sealed class LootSpawnDefaultsTests
     [Fact]
     public void Spawners_place_only_the_enabled_classes_and_each_is_a_class_the_dam_spawners_draw()
     {
-        HashSet<string> drawn = [.. DamDynamicLoot.Spawners.SelectMany(spawner => spawner.Classes).Select(entry => entry.Class)];
+        HashSet<string> drawn = [.. TestGameData.Dam.DynamicLootSpawners.SelectMany(spawner => spawner.Classes).Select(entry => entry.Class)];
         Assert.All(DynamicLootDefaults.EnabledClasses, path => Assert.Contains(path, drawn));
         Assert.All(DynamicLootDefaults.EnabledClasses, path => Assert.True(DynamicLootDefaults.Enabled(path)));
         Assert.Equal(DynamicLootDefaults.EnabledClasses.Count, drawn.Count(DynamicLootDefaults.Enabled));

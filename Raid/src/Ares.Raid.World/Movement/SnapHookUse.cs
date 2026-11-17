@@ -1,11 +1,11 @@
 using System.Numerics;
+using Ares.Common.GameData;
 using Ares.Raid.World.Collision;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Movement;
 
@@ -73,14 +73,16 @@ public readonly record struct SnapHookUse(
     /// secondary use (which removes its move target), a thrown one flies, attaches or clears; then, with no hook out, a
     /// primary press throws a new one along the aim.
     /// </summary>
+    /// <param name="data">The game data: the snap hook item, the character's capsule and the graph state flags.</param>
     /// <param name="controls">The tick's controls.</param>
     /// <param name="frame">Input frame of the tick.</param>
     /// <param name="feet">The character's feet before the tick.</param>
     /// <param name="previousFlags">Graph state flags of the previous tick.</param>
     /// <param name="world">The level's collision, or null when the hook hits nothing.</param>
     /// <returns>The use after the tick.</returns>
-    public SnapHookUse StepItem(SnapHookControls controls, uint frame, Vector3D feet, ulong previousFlags, CollisionWorld? world)
+    public SnapHookUse StepItem(GameDataSet data, SnapHookControls controls, uint frame, Vector3D feet, ulong previousFlags, CollisionWorld? world)
     {
+        ArgumentNullException.ThrowIfNull(data);
         int time = Time(frame);
         SnapHookUse next = this with
         {
@@ -89,10 +91,10 @@ public readonly record struct SnapHookUse(
         };
         if (Hook.Thrown)
         {
-            Vector3D start = feet with { Z = feet.Z + DamPlayerStarts.Capsule.HalfHeight + SnapHookParameters.ThrowHeight };
+            Vector3D start = feet with { Z = feet.Z + data.Names.Dam.PlayerStartCapsule.HalfHeight + SnapHookParameters.ThrowHeight };
             SnapHookHookStep step = controls.SecondaryPressed
-                ? SnapHookThrow.Cancel(Hook)
-                : SnapHookThrow.Tick(Hook, time, start, PawnBlackboard.TickSeconds, previousFlags, Target, SnapHookPullEnd.World);
+                ? SnapHookThrow.Cancel(data, Hook)
+                : SnapHookThrow.Tick(data, Hook, time, start, PawnBlackboard.TickSeconds, previousFlags, Target, SnapHookPullEnd.World);
             SnapHookTarget? target = step.Target ?? Target;
             if (step.Event == SnapHookHookEvent.Cancelled && target is { IsActive: true } removed)
             {
@@ -107,7 +109,7 @@ public readonly record struct SnapHookUse(
             return next;
         }
 
-        SnapHookHook thrown = SnapHookAim.Throw(time, feet, controls.Yaw, controls.Pitch, controls.Camera, world);
+        SnapHookHook thrown = SnapHookAim.Throw(data, time, feet, controls.Yaw, controls.Pitch, controls.Camera, world);
         return next with
         {
             Hook = thrown,
@@ -220,6 +222,7 @@ public readonly record struct SnapHookUse(
 public static class SnapHookAim
 {
     /// <summary>Throws the hook from the character's feet along its control rotation.</summary>
+    /// <param name="data">The game data: the snap hook item and the character's capsule.</param>
     /// <param name="time">Simulation time of the throw.</param>
     /// <param name="feet">The character's feet.</param>
     /// <param name="yaw">Control heading in radians.</param>
@@ -227,19 +230,21 @@ public static class SnapHookAim
     /// <param name="camera">Where the camera is relative to the feet in the control heading's frame; unknown, the view starts at the capsule centre.</param>
     /// <param name="world">The level's collision, or null when nothing is hit.</param>
     /// <returns>The thrown hook.</returns>
-    public static SnapHookHook Throw(int time, Vector3D feet, double yaw, double pitch, Vector3D? camera, CollisionWorld? world)
+    public static SnapHookHook Throw(GameDataSet data, int time, Vector3D feet, double yaw, double pitch, Vector3D? camera, CollisionWorld? world)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        double halfHeight = data.Names.Dam.PlayerStartCapsule.HalfHeight;
         (double sinYaw, double cosYaw) = Math.SinCos(yaw);
         (double sinPitch, double cosPitch) = Math.SinCos(pitch);
         Vector3D forward = new(cosPitch * cosYaw, cosPitch * sinYaw, sinPitch);
-        Vector3D centre = feet with { Z = feet.Z + DamPlayerStarts.Capsule.HalfHeight };
-        Vector3D local = camera ?? new Vector3D(0, 0, DamPlayerStarts.Capsule.HalfHeight);
+        Vector3D centre = feet with { Z = feet.Z + halfHeight };
+        Vector3D local = camera ?? new Vector3D(0, 0, halfHeight);
         Vector3D eye = Add(feet, Heading(local, sinYaw, cosYaw));
         Vector3D origin = Add(eye, Scale(forward, Math.Max(0, Dot(Subtract(centre, eye), forward))));
         Vector3D aim = Hit(world, origin, forward, SnapHookParameters.AimTraceLength, SnapHookParameters.AimTraceChannel)?.Point
             ?? Add(origin, Scale(forward, SnapHookParameters.AimTraceLength));
         Vector3D shoot = Add(centre, Heading(new Vector3D(0, SnapHookParameters.ShootRight, SnapHookParameters.ShootHeight), sinYaw, cosYaw));
-        return SnapHookThrow.Throw(time, shoot, aim, (from, to) =>
+        return SnapHookThrow.Throw(data, time, shoot, aim, (from, to) =>
         {
             Vector3D along = Subtract(to, from);
             double length = Math.Sqrt(Dot(along, along));

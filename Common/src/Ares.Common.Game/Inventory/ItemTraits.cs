@@ -33,7 +33,7 @@ public sealed record ItemTraits(int UsableIndex)
 /// The traits of every item the servers handle: carried items, hand items and held gadgets. Built from the game data once
 /// at startup and passed to what needs it.
 /// </summary>
-public sealed partial class ItemTraitsTable
+public sealed class ItemTraitsTable
 {
     private readonly Dictionary<int, ItemTraits> _byUsableIndex;
 
@@ -41,7 +41,7 @@ public sealed partial class ItemTraitsTable
     /// <param name="data">The game data.</param>
     /// <param name="definitions">The shared item definitions built from the same data.</param>
     public ItemTraitsTable(GameDataSet data, LoadoutDefinitions definitions)
-        : this(ItemDataSources.From(data), definitions)
+        : this(ItemDataSources.From(data, (definitions ?? throw new ArgumentNullException(nameof(definitions))).Content), definitions)
     {
     }
 

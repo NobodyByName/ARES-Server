@@ -49,16 +49,18 @@ internal sealed class ZiplineReader
         Dictionary<int, Dictionary<string, ZenExport>> parts = [];
         foreach (ZenExport export in package.Exports)
         {
-            if (PlacedActors.ActorOf(package, export, levels) is { } actor)
+            if (PlacedActors.ActorOf(package, export, levels) is not { } actor)
             {
-                if (!parts.TryGetValue(actor.Index, out Dictionary<string, ZenExport>? components))
-                {
-                    components = new Dictionary<string, ZenExport>(StringComparer.Ordinal);
-                    parts[actor.Index] = components;
-                }
-
-                components[export.Name] = export;
+                continue;
             }
+
+            if (!parts.TryGetValue(actor.Index, out Dictionary<string, ZenExport>? components))
+            {
+                components = new Dictionary<string, ZenExport>(StringComparer.Ordinal);
+                parts[actor.Index] = components;
+            }
+
+            components[export.Name] = export;
         }
 
         foreach (ZenExport actor in PlacedActors.Actors(package))
@@ -199,17 +201,16 @@ internal sealed class ZiplineReader
             UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(actor));
             PlacedActorValues reader = new(package, actor, header);
             ZiplineValues values = new();
-            foreach (UnversionedMember member in header.Members)
+            foreach ((int index, bool stored) in header.Members)
             {
-                Kind kind = line ? LineMember(member.Index) : LauncherMember(member.Index);
-                bool stored = member.IsNonZero;
+                Kind kind = line ? LineMember(index) : LauncherMember(index);
                 switch (kind)
                 {
                     case Kind.Reference:
-                        values._references[member.Index] = stored ? reader.Reference() : 0;
+                        values._references[index] = stored ? reader.Reference() : 0;
                         break;
                     case Kind.Byte:
-                        values._bytes[member.Index] = stored ? reader.Byte() : (byte)0;
+                        values._bytes[index] = stored ? reader.Byte() : (byte)0;
                         break;
                     case Kind.Double when stored:
                         _ = reader.Double();
@@ -220,14 +221,14 @@ internal sealed class ZiplineReader
                     case Kind.Double or Kind.References:
                         break;
                     case Kind.Vector:
-                        values._vectors[member.Index] = stored ? reader.Vector() : default;
+                        values._vectors[index] = stored ? reader.Vector() : default;
                         break;
                     case Kind.ExitPoints:
                         values.ExitPoints = stored ? ReadExitPoints(reader) : [];
                         break;
                     case Kind.Unknown:
                     default:
-                        throw new InvalidDataException($"unexpected member {member.Index}");
+                        throw new InvalidDataException($"unexpected member {index}");
                 }
             }
 

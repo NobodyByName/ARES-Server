@@ -13,8 +13,17 @@ public static class ItemRewardPackages
     /// <param name="assetId">Item asset id.</param>
     /// <returns>The item's recycle package, or null when it cannot be recycled.</returns>
     public static OfferRewardPackage? Recycle(long assetId) => ItemRecycling.Outputs.TryGetValue(assetId, out IReadOnlyList<ItemAssetAmount>? outputs)
-        ? new OfferRewardPackage([.. outputs.Select(output => new OfferRewardedItem(output.GameAssetId, output.Amount, FullDurability, [], "", 0, HideInUi: false))])
+        ? Recycle(outputs)
         : null;
+
+    /// <summary>The items one recycled item gives, as the item description's recycle package.</summary>
+    /// <param name="outputs">The items one recycled item gives, in package order.</param>
+    /// <returns>The recycle package.</returns>
+    public static OfferRewardPackage Recycle(IReadOnlyList<ItemAssetAmount> outputs)
+    {
+        ArgumentNullException.ThrowIfNull(outputs);
+        return new OfferRewardPackage([.. outputs.Select(output => new OfferRewardedItem(output.GameAssetId, output.Amount, FullDurability, [], "", 0, HideInUi: false))]);
+    }
 
     /// <summary>The coins an item sells for at full durability, or null when it has no scrap value.</summary>
     /// <param name="scrapValue">The item's scrap value (the game data's item values), 0 when it has none.</param>

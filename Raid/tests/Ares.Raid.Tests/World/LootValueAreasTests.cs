@@ -8,21 +8,21 @@ public sealed class LootValueAreasTests
 {
     private const string Tag = "Socket.LootContainer.Commercial.Centerbench.Drawers";
 
-    private static readonly LootValueAreas s_dam = new(DamPointsOfInterest.All);
+    private static readonly Lazy<LootValueAreas> s_dam = new(() => new LootValueAreas(TestGameData.Dam.PointsOfInterest));
 
     [Fact]
     public void A_socket_inside_the_testing_annex_is_medium_and_one_inside_research_and_administration_is_high()
     {
-        Assert.Equal(PointOfInterestLootValue.Medium, s_dam.At(SocketIn("ID_LOCATION_DAM_TESTINGANNEX").Location));
-        Assert.Equal(PointOfInterestLootValue.High, s_dam.At(SocketIn("ID_LOCATION_DAM_ADMIN").Location));
+        Assert.Equal(PointOfInterestLootValue.Medium, s_dam.Value.At(SocketIn("ID_LOCATION_DAM_TESTINGANNEX").Location));
+        Assert.Equal(PointOfInterestLootValue.High, s_dam.Value.At(SocketIn("ID_LOCATION_DAM_ADMIN").Location));
     }
 
     [Fact]
     public void A_point_outside_every_area_with_a_loot_value_has_none()
     {
-        Assert.Equal(PointOfInterestLootValue.Unknown, s_dam.At(new Vector3D(1e7, 1e7, 1e7)));
-        Assert.Equal(PointOfInterestLootValue.Unknown, s_dam.At(new Vector3D(double.NaN, 0, 0)));
-        Assert.Contains(DamLootSockets.All, socket => s_dam.At(socket.Location) == PointOfInterestLootValue.Unknown);
+        Assert.Equal(PointOfInterestLootValue.Unknown, s_dam.Value.At(new Vector3D(1e7, 1e7, 1e7)));
+        Assert.Equal(PointOfInterestLootValue.Unknown, s_dam.Value.At(new Vector3D(double.NaN, 0, 0)));
+        Assert.Contains(TestGameData.Dam.LootSockets, socket => s_dam.Value.At(socket.Location) == PointOfInterestLootValue.Unknown);
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class LootValueAreasTests
         LootSocket[] outside = [.. Enumerable.Range(0, 20).Select(index => Socket($"Out{index}", new Vector3D(5000, 50, 50)))];
         LootSpawnRules rules = new([], [high], (_, value) => value == PointOfInterestLootValue.High ? 1 : 0, true);
 
-        LootSpawnSelection selection = LootSpawnSelection.Select([.. inside, .. outside], rules, [], new Random(1));
+        LootSpawnSelection selection = LootSpawnSelection.Select(TestGameData.Loot, [.. inside, .. outside], rules, [], new Random(1));
         Assert.All(selection.Spawns.Take(inside.Length), Assert.True);
         Assert.All(selection.Spawns.Skip(inside.Length), Assert.False);
         Assert.Equal(inside.Length, selection.Spawned(PointOfInterestLootValue.High));
@@ -65,7 +65,7 @@ public sealed class LootValueAreasTests
         LootSocket[] middle = [.. Enumerable.Range(0, 100).Select(index => Socket($"Middle{index}", new Vector3D(50, 50, 50)))];
         LootSocket[] best = [.. Enumerable.Range(0, 100).Select(index => Socket($"Best{index}", new Vector3D(250, 250, 250)))];
         LootSpawnRules rules = new([], [medium, high], LootSpawnDefaults.Chance, true);
-        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select([.. plain, .. middle, .. best], rules, [], new Random(seed)))];
+        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, [.. plain, .. middle, .. best], rules, [], new Random(seed)))];
 
         (double untiered, double mediumShare, double highShare) = (Share(selections, PointOfInterestLootValue.Unknown, 100), Share(selections, PointOfInterestLootValue.Medium, 100), Share(selections, PointOfInterestLootValue.High, 100));
         Assert.InRange(untiered, 0.094 * 0.9, 0.094 * 1.1);
@@ -78,8 +78,8 @@ public sealed class LootValueAreasTests
     [Fact]
     public void Dam_raids_fill_a_loot_value_area_more_than_the_open_map_without_breaking_a_cap()
     {
-        LootSocket[] sockets = [.. DamLootSockets.All.Where(socket => socket.DataLayer is null && LootSocketClasses.Supported(socket).Count > 0)];
-        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(sockets, LootSpawnRules.Dam, [], new Random(seed)))];
+        LootSocket[] sockets = [.. TestGameData.Dam.LootSockets.Where(socket => socket.DataLayer is null && LootSocketClasses.Supported(TestGameData.Data, socket).Count > 0)];
+        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, sockets, LootSpawnRules.Of(TestGameData.Dam), [], new Random(seed)))];
         double untiered = Share(selections, PointOfInterestLootValue.Unknown, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.Unknown));
         double medium = Share(selections, PointOfInterestLootValue.Medium, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.Medium));
         double high = Share(selections, PointOfInterestLootValue.High, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.High));
@@ -96,8 +96,8 @@ public sealed class LootValueAreasTests
 
     private static LootSocket SocketIn(string areaName)
     {
-        PointOfInterest area = DamPointsOfInterest.All.Single(candidate => candidate.Name == areaName);
-        return DamLootSockets.All.First(socket => LootVolumeRules.Contains(area.Hulls, socket.Location));
+        PointOfInterest area = TestGameData.Dam.PointsOfInterest.Single(candidate => candidate.Name == areaName);
+        return TestGameData.Dam.LootSockets.First(socket => LootVolumeRules.Contains(area.Hulls, socket.Location));
     }
 
     private static LootSocket Socket(string actor, Vector3D location) =>

@@ -188,7 +188,7 @@ public sealed class HostDatabase : IDisposable
         return (userId, AccountDirectory.Validate(Decode<AccountRecord>(fields, AccountDirectory.SerializationOptions)));
     }
 
-    internal InventoryReservation? ReadReservation(long userId, string? ticketId)
+    internal InventoryReservation? ReadReservation(InventoryCatalog catalog, long userId, string? ticketId)
     {
         if (ticketId is null)
         {
@@ -197,10 +197,10 @@ public sealed class HostDatabase : IDisposable
 
         BsonDocument record = Execute(() => _reservations.Find(new BsonDocument("_id", ticketId)).FirstOrDefault())
             ?? throw new InvalidDataException("Referenced raid reservation is missing");
-        return new InventoryReservation(ticketId, ReservationLoadout(userId, record));
+        return new InventoryReservation(ticketId, ReservationLoadout(catalog, userId, record));
     }
 
-    private static PlayerLoadout ReservationLoadout(long userId, BsonDocument record)
+    private static PlayerLoadout ReservationLoadout(InventoryCatalog catalog, long userId, BsonDocument record)
     {
         if (record["playerId"] != PlayerId(userId))
         {
@@ -209,10 +209,10 @@ public sealed class HostDatabase : IDisposable
 
         PlayerLoadoutState loadout = Decode<PlayerLoadoutState>(record["loadout"], InventoryStore.SerializationOptions);
         PlayerInventory inventory = new(record["inventoryRevision"].AsInt64, new PlayerStash(0, []), loadout);
-        return InventorySnapshots.Loadout(InventoryProjection.Create(userId, inventory).Snapshot);
+        return InventorySnapshots.Loadout(InventoryProjection.Create(catalog, userId, inventory).Snapshot);
     }
 
-    internal void SaveInventory(long userId, PlayerInventory inventory, long version, InventoryReservation? reservation, string? previousTicket)
+    internal void SaveInventory(InventoryCatalog catalog, long userId, PlayerInventory inventory, long version, InventoryReservation? reservation, string? previousTicket)
     {
         if (inventory.RaidTicketId == previousTicket)
         {
@@ -228,7 +228,7 @@ public sealed class HostDatabase : IDisposable
                 string playerId = PlayerId(userId);
                 if (reservation is not null)
                 {
-                    StoreReservation(transaction, userId, reservation, inventory, cancellationToken);
+                    StoreReservation(transaction, catalog, userId, reservation, inventory, cancellationToken);
                 }
 
                 FilterDefinition<BsonDocument> filter = Builders<BsonDocument>.Filter.Eq("_id", playerId)
@@ -250,14 +250,15 @@ public sealed class HostDatabase : IDisposable
         });
     }
 
-    private void StoreReservation(IClientSessionHandle session, long userId, InventoryReservation reservation, PlayerInventory inventory, CancellationToken cancellationToken)
+    private void StoreReservation(IClientSessionHandle session, InventoryCatalog catalog, long userId, InventoryReservation reservation, PlayerInventory inventory,
+        CancellationToken cancellationToken)
     {
         string playerId = PlayerId(userId);
         BsonDocument? existing = _reservations.Find(session, new BsonDocument("_id", reservation.TicketId)).FirstOrDefault(cancellationToken);
         if (existing is not null)
         {
             if (existing["playerId"] != playerId || !InventorySnapshots.Same(reservation.Loadout,
-                    ReservationLoadout(userId, existing)))
+                    ReservationLoadout(catalog, userId, existing)))
             {
                 throw new PersistenceConflictException();
             }

@@ -124,7 +124,7 @@ internal static class LootAssets
         GameplayTagQuery result = new(tags, tokens);
         HashSet<int> used = [];
         int at = 2;
-        bool valid = query.Get("TokenStreamVersion", 0) == tokens[0] && tokens[0] == 0 && tokens.Length >= 2 && tokens[1] is 0 or 1
+        bool valid = tokens is [0, 0 or 1, ..] && query.Get("TokenStreamVersion", 0) == tokens[0]
             && (tokens[1] == 0 || Expression(tokens, tags.Length, ref at, used, 0)) && at == tokens.Length && used.Count == tags.Length;
         return valid ? result : throw new InvalidDataException($"{where}: the query token stream does not parse or does not use exactly its {tags.Length} tags");
     }

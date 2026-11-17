@@ -83,7 +83,7 @@ internal static class ItemDefinitionReaders
     /// <summary>Asset ids of the mod slot assets a firearm's <c>ModSlots</c> name, in slot order.</summary>
     private static long[] ModSlots(ItemSources sources, InventoryStructures structures, ItemClass type)
     {
-        return sources.Holder(type.DefaultObject, ModSlotsMember) is (PropertyBag own, CookedPackage package)
+        return sources.Holder(type.DefaultObject, ModSlotsMember) is ({ } own, { } package)
             ? [.. own.Get<object[]>(ModSlotsMember).Cast<PropertyBag>().Select(slot => structures.Referenced(package, slot, "ModSlotAsset").AssetId)]
             : [];
     }
@@ -91,7 +91,7 @@ internal static class ItemDefinitionReaders
     /// <summary>The <c>Reload Time Modifier Set</c> of a firearm's fixed quality set (a Blueprint class's default object), or none.</summary>
     private static double[] ReloadModifiers(ItemSources sources, ItemClass type)
     {
-        if (sources.Holder(type.DefaultObject, QualitySetMember) is not (PropertyBag own, CookedPackage package)
+        if (sources.Holder(type.DefaultObject, QualitySetMember) is not ({ } own, { } package)
             || sources.Packages.Reference(package, own.Get<ObjectReference>(QualitySetMember).Value) is not { } set)
         {
             return [];

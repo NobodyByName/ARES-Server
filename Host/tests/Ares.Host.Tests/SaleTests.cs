@@ -1,4 +1,3 @@
-using Ares.Common.Game.Inventory;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -18,13 +17,13 @@ public sealed class SaleTests : IDisposable
         Assert.All(descriptions.Where(item => item.Scrap is not null), item =>
         {
             OfferRewardedItem reward = Assert.Single(item.Scrap!.RewardPackage.RewardedItems);
-            Assert.Equal((CurrencyItems.CoinsAssetId, (long)ItemValues.ScrapValues[item.GameAssetId]), (reward.GameAssetId, reward.Amount));
+            Assert.Equal((TestCatalog.Asset(ItemTechnicalNames.Coins), (long)TestCatalog.Data.Items.ScrapValues[item.GameAssetId]), (reward.GameAssetId, reward.Amount));
         });
         Assert.Equal(75, Value(descriptions, ItemTechnicalNames.MetalParts));
         Assert.Equal(475, Value(descriptions, ItemTechnicalNames.FerroI));
         Assert.Equal(1000, Value(descriptions, ItemTechnicalNames.RubberDuck));
-        Assert.Null(descriptions.Single(item => item.GameAssetId == StorageItems.StashSlotAssetId).Scrap);
-        ItemDescription coins = descriptions.Single(item => item.GameAssetId == CurrencyItems.CoinsAssetId);
+        Assert.Null(descriptions.Single(item => item.GameAssetId == TestCatalog.StashSlot).Scrap);
+        ItemDescription coins = descriptions.Single(item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.Coins));
         Assert.Null(coins.Scrap);
         Assert.True(coins.Stackable);
     }
@@ -43,7 +42,7 @@ public sealed class SaleTests : IDisposable
         ItemChanges changes = Changes(reply);
         Assert.Equal([stack], changes.Deleted);
         InventoryItem coins = Assert.Single(changes.Created);
-        Assert.Equal((CurrencyItems.CoinsAssetId, 3 * 75L), (coins.GameAssetId, coins.Amount));
+        Assert.Equal((TestCatalog.Asset(ItemTechnicalNames.Coins), 3 * 75L), (coins.GameAssetId, coins.Amount));
         Assert.Empty(coins.Slots);
         Assert.DoesNotContain(store.Snapshot.Items, item => item.Slots.Contains(coins.InstanceId));
         Assert.Equal(coins, store.Snapshot.Items.Single(item => item.InstanceId == coins.InstanceId));
@@ -57,7 +56,7 @@ public sealed class SaleTests : IDisposable
         InventoryStore store = Create();
         string ducks = Add(store, ItemTechnicalNames.RubberDuck, 3);
         const string SplitId = "0f6c2a1e-7b3d-4c5a-9e8f-1a2b3c4d5e6f";
-        string slot = store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[5];
+        string slot = store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[5];
 
         ServiceReply reply = store.Commit(new InventoryOperationsRequest(
             [new MoveItemAmount(ducks, SplitId, 1), new SetItemParents(SplitId, [slot]), new ScrapItem(SplitId, 1)], ""), DateTimeOffset.UnixEpoch);
@@ -132,7 +131,7 @@ public sealed class SaleTests : IDisposable
     public void Sales_that_cannot_complete_change_nothing()
     {
         InventoryStore store = Create();
-        long maximum = CurrencyItems.Definitions.Single().MaxAmount;
+        long maximum = TestCatalog.Data.Menu.Currency.Definitions.Single().MaxAmount;
         store.AddItem(ItemTechnicalNames.Coins, DateTimeOffset.UnixEpoch, maximum - 100);
         string metal = Add(store, ItemTechnicalNames.MetalParts, 2);
         string coins = Assert.Single(store.Inventory.Wallet).InstanceId;
@@ -175,7 +174,7 @@ public sealed class SaleTests : IDisposable
     }
 
     private static long Value(IReadOnlyList<ItemDescription> descriptions, string type) =>
-        descriptions.Single(item => item.GameAssetId == LoadoutDefinitions.Generated.AssetIds[type]).Scrap!.RewardPackage.RewardedItems.Single().Amount;
+        descriptions.Single(item => item.GameAssetId == TestCatalog.Definitions.AssetIds[type]).Scrap!.RewardPackage.RewardedItems.Single().Amount;
 
     private static InventoryOperationsRequest Sell(string itemId, long? amount = null) => new([new ScrapItem(itemId, amount)], "");
 
@@ -192,7 +191,7 @@ public sealed class SaleTests : IDisposable
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         return store;
     }

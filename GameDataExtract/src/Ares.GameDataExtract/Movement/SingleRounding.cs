@@ -12,7 +12,7 @@ namespace Ares.GameDataExtract.Movement;
 internal static class SingleRounding
 {
     /// <summary>Significant digits kept, enough to tell every float apart.</summary>
-    public const int SignificantDigits = 9;
+    private const int SignificantDigits = 9;
 
     /// <summary><paramref name="value"/> rounded to <see cref="SignificantDigits"/> significant digits, as a float.</summary>
     /// <exception cref="InvalidDataException">The value is not finite.</exception>

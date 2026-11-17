@@ -15,8 +15,8 @@ public sealed class PlayerMovementTests
     {
         InputHistory history = new();
         Send(history, 0, Start + 3, _ => (PendulumInput.MovementAxisMaximum, MovementButtons.None, 0));
-        PlayerMovement movement = new(Start, default, 0);
-        CharacterSimulation expected = new(default);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0);
+        CharacterSimulation expected = new(TestGameData.Data, default);
 
         for (uint frame = Start + 1; frame <= Start + 3; frame++)
         {
@@ -38,7 +38,7 @@ public sealed class PlayerMovementTests
         InputHistory history = new();
         Send(history, 0, Start + 1, _ => (0, MovementButtons.Crouch, FlashlightDown));
         Send(history, Start + 1, Start + 5, _ => (0, MovementButtons.Crouch | MovementButtons.PreviousCrouch, 0));
-        PlayerMovement movement = new(Start, default, 0);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0);
 
         Assert.True(movement.Advance(history, armed: true).Flashlight);
         CharacterState missing = movement.Advance(history, armed: true);
@@ -52,8 +52,8 @@ public sealed class PlayerMovementTests
     public void Armed_characters_run_slower_than_unarmed_ones()
     {
         InputHistory history = new();
-        PlayerMovement armed = new(Start, default, 0);
-        PlayerMovement unarmed = new(Start, default, 0);
+        PlayerMovement armed = new(TestGameData.Data, Start, default, 0);
+        PlayerMovement unarmed = new(TestGameData.Data, Start, default, 0);
         for (uint latest = Start + 3; latest <= Start + 60; latest += 3)
         {
             Send(history, latest == Start + 3 ? 0 : latest - 3, latest, _ => (PendulumInput.MovementAxisMaximum, MovementButtons.None, 0));
@@ -78,7 +78,7 @@ public sealed class PlayerMovementTests
             Start + 3 => MovementButtons.Jump | MovementButtons.PreviousJump,
             _ => MovementButtons.None,
         }, 0));
-        PlayerMovement movement = new(Start, default, 0);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0);
 
         Assert.False(movement.Advance(history, armed: true).Unsettled);
         Assert.True(movement.Advance(history, armed: true).Unsettled);
@@ -91,7 +91,7 @@ public sealed class PlayerMovementTests
     {
         InputHistory history = new();
         Send(history, 0, Start + 2, _ => (PendulumInput.MovementAxisMaximum, MovementButtons.None, 0));
-        PlayerMovement movement = new(Start, default, 0);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0);
         movement.Advance(history, armed: true);
 
         PlayerMovement copy = movement.Copy();

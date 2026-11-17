@@ -94,7 +94,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _loot = new PlayerLoot(raid.Channels.Loot);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcs = new PlayerArcs(raid.Channels.Arcs);
-        _elevators = new PlayerElevators(raid.Channels.Elevators);
+        _elevators = new PlayerElevators(raid.Channels.Elevators, raid.GameData.Map);
     }
 
     /// <summary>Latest client input frame received.</summary>

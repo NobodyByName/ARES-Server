@@ -57,9 +57,6 @@ internal static class MenuItems
     {
         Dictionary<string, ItemAsset> byName = items.ToDictionary(item => item.Row.TechnicalName, StringComparer.Ordinal);
         Dictionary<string, FirearmDefinition> firearmsByClass = firearms.ToDictionary(firearm => firearm.ItemClass, StringComparer.Ordinal);
-        ItemAsset Item(string name) => byName.TryGetValue(name, out ItemAsset? item) ? item : throw new InvalidDataException($"The usable-item catalogue has no {name}");
-        ImmutableArray<MenuItem> Items(IEnumerable<string> names) => [.. names.Select(Item).OrderBy(item => item.Row.UsableIndex).Select(item => GameItem(item, firearmsByClass))];
-
         ItemAsset[] weapons = [.. s_weapons.Select(Item).OrderBy(item => item.Row.UsableIndex)];
         ImmutableArray<MenuItem> weaponRows =
         [
@@ -77,6 +74,9 @@ internal static class MenuItems
             Items(s_salvage.Select(name => "DA_Item_Salvage_" + name)),
             Items(s_shields),
             weaponRows);
+
+        ItemAsset Item(string name) => byName.TryGetValue(name, out ItemAsset? item) ? item : throw new InvalidDataException($"The usable-item catalogue has no {name}");
+        ImmutableArray<MenuItem> Items(IEnumerable<string> names) => [.. names.Select(Item).OrderBy(item => item.Row.UsableIndex).Select(item => GameItem(item, firearmsByClass))];
     }
 
     /// <summary>
@@ -89,12 +89,14 @@ internal static class MenuItems
         Queue<InventoryStructure> pending = new([structures.Named(StandardFrame)]);
         while (pending.TryDequeue(out InventoryStructure? structure))
         {
-            if (standard.Add(structure.AssetId))
+            if (!standard.Add(structure.AssetId))
             {
-                foreach (InventoryStructure child in structures.Children(structure))
-                {
-                    pending.Enqueue(child);
-                }
+                continue;
+            }
+
+            foreach (InventoryStructure child in structures.Children(structure))
+            {
+                pending.Enqueue(child);
             }
         }
 
@@ -108,19 +110,21 @@ internal static class MenuItems
         pending.Enqueue(structures.Named(AugmentSlot));
         while (pending.TryDequeue(out InventoryStructure? structure))
         {
-            if (!standard.Contains(structure.AssetId) && rows.TryAdd(structure.AssetId, Structure(structure, structures)))
+            if (standard.Contains(structure.AssetId) || !rows.TryAdd(structure.AssetId, Structure(structure, structures)))
             {
-                foreach (InventoryStructure child in structures.Children(structure))
-                {
-                    pending.Enqueue(child);
-                }
+                continue;
+            }
+
+            foreach (InventoryStructure child in structures.Children(structure))
+            {
+                pending.Enqueue(child);
             }
         }
 
         return [.. rows.Values];
     }
 
-    private static MenuItem GameItem(ItemAsset item, IReadOnlyDictionary<string, FirearmDefinition> firearms)
+    private static MenuItem GameItem(ItemAsset item, Dictionary<string, FirearmDefinition> firearms)
     {
         ItemDefinition row = item.Row;
         ItemSlotConfiguration slots = row.HasChildSlots && firearms.TryGetValue(row.ItemClass, out FirearmDefinition? firearm)

@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
@@ -44,52 +45,61 @@ public sealed record InteractionSettings(
     public bool RootMotion => OwnContainer is { Alignment: not InteractionAlignment.None };
 
     /// <summary>A loot container's search.</summary>
+    /// <param name="data">The game data: the interaction animation containers.</param>
     /// <param name="type">The container class.</param>
     /// <param name="opened">Whether the container has been opened before (no hold, no tool).</param>
     /// <param name="semanticTags">Semantic tags of the search, which pick the fallback container; the first-search tag when null.</param>
     /// <returns>The settings.</returns>
-    public static InteractionSettings ForLootContainer(LootContainerClass type, bool opened, IReadOnlyCollection<string>? semanticTags = null)
+    public static InteractionSettings ForLootContainer(GameDataSet data, LootContainerClass type, bool opened, IReadOnlyCollection<string>? semanticTags = null)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(type);
-        InteractionAnimationContainer? own = type.SearchAnimation is { } path ? InteractionAnimationContainers.Find(path) : null;
+        InteractionAnimationContainer? own = type.SearchAnimation is { } path ? data.Movement.FindInteractionAnimation(path) : null;
         return new InteractionSettings(StandardInteractionType.Press, opened ? LootInteractions.OpenedHoldSeconds : type.HoldSeconds,
             type.AlignmentSeconds, InteractionMovementParameters.LootSearchImmobilizes, true,
             InteractionMovementParameters.DefaultDesiredCharacterDistance, InteractionMovementParameters.DefaultDesiredCharacterDistanceTolerance,
             opened ? type.OpenedPromptDistance : type.PromptDistance, type.EquipsRaiderTool && !opened, true, true, own,
-            own ?? InteractionMovement.FallbackContainer(semanticTags ?? [InteractionMovementParameters.LootSearchSemanticTag]));
+            own ?? InteractionMovement.FallbackContainer(data, semanticTags ?? [InteractionMovementParameters.LootSearchSemanticTag]));
     }
 
     /// <summary>A door's open or close button.</summary>
+    /// <param name="data">The game data: the interaction animation containers.</param>
     /// <returns>The settings.</returns>
-    public static InteractionSettings ForDoorButton() =>
+    public static InteractionSettings ForDoorButton(GameDataSet data) =>
         new(StandardInteractionType.Press, 0, InteractionMovementParameters.DoorButtonAlignmentSeconds, false, true,
             InteractionMovementParameters.DefaultDesiredCharacterDistance, InteractionMovementParameters.DefaultDesiredCharacterDistanceTolerance,
-            InteractionMovementParameters.StandardPromptDistance, false, false, false, null, InteractionMovement.FallbackContainer([]));
+            InteractionMovementParameters.StandardPromptDistance, false, false, false, null, InteractionMovement.FallbackContainer(data, []));
 
     /// <summary>A door's breach button.</summary>
+    /// <param name="data">The game data: the door breach animation container.</param>
     /// <returns>The settings.</returns>
-    public static InteractionSettings ForDoorBreach() =>
-        new(StandardInteractionType.Hold, DamDoors.BreachHoldSeconds, DamDoors.BreachAlignmentSeconds, false, true,
+    public static InteractionSettings ForDoorBreach(GameDataSet data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        InteractionAnimationContainer breach = data.Names.DoorBreachAnimation;
+        return new InteractionSettings(StandardInteractionType.Hold, DoorClasses.BreachHoldSeconds, DoorClasses.BreachAlignmentSeconds, false, true,
             InteractionMovementParameters.DefaultDesiredCharacterDistance, InteractionMovementParameters.DefaultDesiredCharacterDistanceTolerance,
-            InteractionMovementParameters.StationaryPromptDistance, true, false, false, InteractionAnimationContainers.DoorBreach,
-            InteractionAnimationContainers.DoorBreach);
+            InteractionMovementParameters.StationaryPromptDistance, true, false, false, breach, breach);
+    }
 
     /// <summary>An extraction elevator's call or descend button.</summary>
+    /// <param name="data">The game data: the interaction animation containers.</param>
     /// <param name="button">The button.</param>
     /// <returns>The settings.</returns>
-    public static InteractionSettings ForElevatorButton(ExtractionButton button)
+    public static InteractionSettings ForElevatorButton(GameDataSet data, ExtractionButton button)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (button.InteractionType is not { } type)
         {
             throw new ArgumentException("A repair button has no interaction settings.", nameof(button));
         }
 
-        InteractionAnimationContainer? own = button.AnimationContainer is { } path ? InteractionAnimationContainers.Find(path) : null;
+        InteractionAnimationContainer? own = button.AnimationContainer is { } path ? data.Movement.FindInteractionAnimation(path) : null;
         bool immobilizes = button.HoldSeconds > 0 || type == StandardInteractionType.Continuous;
         return new InteractionSettings(type, button.HoldSeconds, button.AlignmentSeconds, false, true,
             InteractionMovementParameters.DefaultDesiredCharacterDistance, InteractionMovementParameters.DefaultDesiredCharacterDistanceTolerance,
             immobilizes ? InteractionMovementParameters.StationaryPromptDistance : InteractionMovementParameters.StandardPromptDistance,
-            false, false, false, own, own ?? InteractionMovement.FallbackContainer([]));
+            false, false, false, own, own ?? InteractionMovement.FallbackContainer(data, []));
     }
 }
 
@@ -324,15 +334,18 @@ public static class InteractionMovement
     /// The character's fallback animation container for an interaction without its own: the first entry whose semantic
     /// tags the interaction has (a tag also counts for its parents), else the first entry.
     /// </summary>
+    /// <param name="data">The game data: the interaction animation containers.</param>
     /// <param name="semanticTags">The interaction's semantic tags.</param>
     /// <returns>The container.</returns>
-    public static InteractionAnimationContainer FallbackContainer(IReadOnlyCollection<string> semanticTags)
+    public static InteractionAnimationContainer FallbackContainer(GameDataSet data, IReadOnlyCollection<string> semanticTags)
     {
+        ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(semanticTags);
-        TaggedInteractionAnimationContainer entry = InteractionAnimationContainers.TagBased.FirstOrDefault(candidate =>
+        IReadOnlyList<TaggedInteractionAnimationContainer> tagged = data.Movement.TaggedInteractionAnimationContainers;
+        TaggedInteractionAnimationContainer entry = tagged.FirstOrDefault(candidate =>
             candidate.SemanticTags.Any(tag => semanticTags.Any(own => own == tag || own.StartsWith(tag + ".", StringComparison.Ordinal))))
-            ?? InteractionAnimationContainers.TagBased[0];
-        return InteractionAnimationContainers.Find(entry.Container)
+            ?? tagged[0];
+        return data.Movement.FindInteractionAnimation(entry.Container)
             ?? throw new InvalidOperationException($"Fallback container {entry.Container} is not listed.");
     }
 

@@ -6,6 +6,9 @@ namespace Ares.Host.Services.Inventory;
 public sealed record OwnedItem(string InstanceId, string Type, long Quantity, double Durability, double MaxDurability,
     [property: JsonPropertyName("etag")] string ETag, long UpdatedAt)
 {
+    /// <summary>Durability of a new item and of every structure node: durability is a fraction of a maximum of 1.</summary>
+    public const double FullDurability = 1.0;
+
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Slot { get; init; }
 }
@@ -14,28 +17,14 @@ public sealed record OwnedItem(string InstanceId, string Type, long Quantity, do
 /// The stash container tier the player owns and its unordered contents. <paramref name="ContainerAssetId"/> is zero
 /// until the stash is initialized; the tier's definition gives the capacity.
 /// </summary>
-public sealed record PlayerStash(long ContainerAssetId, IReadOnlyList<OwnedItem> Items)
-{
-    [JsonIgnore]
-    public int SlotCount => InventoryCatalog.StashCapacity(ContainerAssetId);
-}
+public sealed record PlayerStash(long ContainerAssetId, IReadOnlyList<OwnedItem> Items);
 
 /// <summary>Occupied positions in one carried container. Capacity comes from the loadout definition.</summary>
 public sealed record PlayerItemContainer(IReadOnlyList<OwnedItem> Items);
 
 /// <summary>Equipped items and carried containers. Single equipment slots are null when empty.</summary>
 public sealed record PlayerLoadoutState(OwnedItem? Augment, OwnedItem? Shield, OwnedItem? MainWeapon, OwnedItem? SecondaryWeapon,
-    PlayerItemContainer Backpack, PlayerItemContainer QuickUse, PlayerItemContainer SafePockets)
-{
-    [JsonIgnore]
-    public int BackpackCapacity => InventoryCatalog.LoadoutCapacity(this, InventoryArea.Backpack);
-
-    [JsonIgnore]
-    public int QuickUseCapacity => InventoryCatalog.LoadoutCapacity(this, InventoryArea.QuickUse);
-
-    [JsonIgnore]
-    public int SafePocketCapacity => InventoryCatalog.LoadoutCapacity(this, InventoryArea.SafePockets);
-}
+    PlayerItemContainer Backpack, PlayerItemContainer QuickUse, PlayerItemContainer SafePockets);
 
 /// <summary>Persistent stash, equipped items and carried contents.</summary>
 public sealed record PlayerInventory(long Revision, PlayerStash Stash, PlayerLoadoutState Loadout)
@@ -49,7 +38,7 @@ public sealed record PlayerInventory(long Revision, PlayerStash Stash, PlayerLoa
     public IReadOnlyList<OwnedItem> Wallet { get; init; } = [];
 
     [JsonIgnore]
-    public int ItemCount => Enum.GetValues<InventoryArea>().Sum(area => InventoryCatalog.Items(this, area).Count);
+    public int ItemCount => Enum.GetValues<InventoryArea>().Sum(area => InventoryAreas.Items(this, area).Count);
 
     public static PlayerInventory Empty { get; } = new(0, new PlayerStash(0, []),
         new PlayerLoadoutState(null, null, null, null, new PlayerItemContainer([]), new PlayerItemContainer([]), new PlayerItemContainer([])));

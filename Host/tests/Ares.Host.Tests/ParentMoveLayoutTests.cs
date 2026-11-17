@@ -12,7 +12,7 @@ public sealed class ParentMoveLayoutTests
 
     private static readonly PlayerInventory s_inventory = PlayerInventory.Empty with
     {
-        Stash = new PlayerStash(StorageItems.StashContainerAssetId, [s_duck, s_spare]),
+        Stash = new PlayerStash(TestCatalog.StashContainer, [s_duck, s_spare]),
         Loadout = PlayerInventory.Empty.Loadout with { Augment = s_equipped },
     };
 
@@ -32,7 +32,7 @@ public sealed class ParentMoveLayoutTests
     public void A_move_of_an_item_the_batch_consumed_is_skipped()
     {
         AppliedOperations applied = Applied() with { Consumed = new HashSet<string>(["missing"], StringComparer.Ordinal) };
-        PlayerInventory? placed = ParentMoveLayout.Apply(TestDatabase.UserId, applied, [new SetItemParents("missing", [StashSlot(0)])], AugmentSlot(), "moved", 1,
+        PlayerInventory? placed = ParentMoveLayout.Apply(TestCatalog.Real, TestDatabase.UserId, applied, [new SetItemParents("missing", [StashSlot(0)])], AugmentSlot(), "moved", 1,
             out bool moved);
         Assert.NotNull(placed);
         Assert.False(moved);
@@ -58,17 +58,17 @@ public sealed class ParentMoveLayoutTests
     }
 
     private static PlayerInventory? Place(AppliedOperations applied, params SetItemParents[] moves) =>
-        ParentMoveLayout.Apply(TestDatabase.UserId, applied, moves, AugmentSlot(), "moved", 1, out _);
+        ParentMoveLayout.Apply(TestCatalog.Real, TestDatabase.UserId, applied, moves, AugmentSlot(), "moved", 1, out _);
 
     private static AppliedOperations Applied() =>
         new(s_inventory, false, new HashSet<string>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
 
-    private static string AugmentSlot() => Snapshot().Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId;
+    private static string AugmentSlot() => Snapshot().Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId;
 
-    private static string StashSlot(int index) => Snapshot().Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[index];
+    private static string StashSlot(int index) => Snapshot().Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[index];
 
-    private static InventorySnapshot Snapshot() => InventoryProjection.Create(TestDatabase.UserId, s_inventory).Snapshot;
+    private static InventorySnapshot Snapshot() => InventoryProjection.Create(TestCatalog.Real, TestDatabase.UserId, s_inventory).Snapshot;
 
     private static OwnedItem Item(string instanceId, string type) =>
-        new(instanceId, type, 1, StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "initial", 0);
+        new(instanceId, type, 1, OwnedItem.FullDurability, OwnedItem.FullDurability, "initial", 0);
 }

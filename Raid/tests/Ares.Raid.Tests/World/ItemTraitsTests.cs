@@ -1,5 +1,4 @@
 using Ares.Common.Game.Inventory;
-using Ares.Raid.World;
 using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
@@ -16,21 +15,21 @@ public sealed class ItemTraitsTests
     {
         Dictionary<ushort, string> expected = new()
         {
-            [WeaponItems.FerroIUsableIndex] = FerroDefaults.ItemClass,
-            [HandItems.RaiderToolUsableIndex] = HandItems.RaiderToolItemClass,
-            [HandItems.UnarmedUsableIndex] = HandItems.UnarmedItemClass,
-            [GadgetItems.SnapHookUsableIndex] = GadgetItems.SnapHookItemClass,
+            [TestGameData.Items.FerroIIndex] = TestGameData.Items.FerroI.ItemClass,
+            [TestGameData.Items.RaiderToolIndex] = TestGameData.Items.RaiderTool.ItemClass,
+            [TestGameData.Items.UnarmedIndex] = TestGameData.Items.Unarmed.ItemClass,
+            [TestGameData.Items.SnapHookIndex] = TestGameData.Items.SnapHook.ItemClass,
         };
-        Assert.Equal(expected.OrderBy(entry => entry.Key), WorldImports.HeldItemClasses.OrderBy(entry => entry.Key));
+        Assert.Equal(expected.OrderBy(entry => entry.Key), TestGameData.Items.HeldItemClasses.OrderBy(entry => entry.Key));
     }
 
     [Fact]
     public void Only_the_ferro_and_light_shield_get_a_mod_container_of_their_mod_slot_count()
     {
         Dictionary<int, int> modSlots = [];
-        foreach (ItemDefinition carried in LoadoutDefinitions.Generated.CarriedItems)
+        foreach (ItemDefinition carried in TestGameData.Items.Definitions.CarriedItems)
         {
-            RaidInventory inventory = new(Placed(carried.AssetId));
+            RaidInventory inventory = new(TestGameData.Items, Placed(carried.AssetId));
             foreach (ContainerItem item in inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>())
             {
                 if (item.ModContainerId is { } mods)
@@ -40,21 +39,21 @@ public sealed class ItemTraitsTests
             }
         }
 
-        Assert.Equal([(ShieldItems.LightShieldUsableIndex, ShieldDefaults.ModSlotCount), (WeaponItems.FerroIUsableIndex, FerroDefaults.ModSlotCount)],
+        Assert.Equal([(TestGameData.Data.Names.LightShield.UsableIndex, TestGameData.Items.LightShield.ModSlotCount), (TestGameData.Items.FerroIIndex, TestGameData.Items.FerroModSlotCount)],
             modSlots.OrderBy(entry => entry.Key).Select(entry => (entry.Key, entry.Value)));
-        Assert.Equal(3, FerroDefaults.ModSlotCount);
-        Assert.Equal(0, ShieldDefaults.ModSlotCount);
+        Assert.Equal(3, TestGameData.Items.FerroModSlotCount);
+        Assert.Equal(0, TestGameData.Items.LightShield.ModSlotCount);
     }
 
     [Fact]
     public void Only_the_ferro_fits_the_firearm_slots_and_only_the_light_shield_the_armor_slot()
     {
         List<(int Item, int Slot)> accepted = [];
-        foreach (UsableItem usable in UsableItems.All)
+        foreach (ItemDefinition usable in TestGameData.Data.Items.All)
         {
             for (int slot = 0; slot < InventoryBlackboard.LoadoutSlotCount; slot++)
             {
-                RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+                RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
                 int loot = inventory.OpenWorldContainer([Item(usable.UsableIndex)], new Dictionary<ushort, double> { [(ushort)usable.UsableIndex] = 0 });
                 if (inventory.Apply(ShieldTests.Swap(loot, 0, inventory.Loadout, slot)))
                 {
@@ -63,17 +62,17 @@ public sealed class ItemTraitsTests
             }
         }
 
-        Assert.Equal([(ShieldItems.LightShieldUsableIndex, InventoryBlackboard.ArmorSlot), (WeaponItems.FerroIUsableIndex, InventoryBlackboard.Firearm1Slot),
-            (WeaponItems.FerroIUsableIndex, InventoryBlackboard.Firearm2Slot)], accepted.Order());
+        Assert.Equal([(TestGameData.Data.Names.LightShield.UsableIndex, InventoryBlackboard.ArmorSlot), (TestGameData.Items.FerroIIndex, InventoryBlackboard.Firearm1Slot),
+            (TestGameData.Items.FerroIIndex, InventoryBlackboard.Firearm2Slot)], accepted.Order());
     }
 
     [Fact]
     public void Only_the_ferro_unloads_its_rounds_as_heavy_ammo_on_extraction()
     {
         List<(int Item, long Ammo, long Rounds)> unloaded = [];
-        foreach (ItemDefinition usable in LoadoutDefinitions.Generated.CarriedItems)
+        foreach (ItemDefinition usable in TestGameData.Items.Definitions.CarriedItems)
         {
-            RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+            RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
             int loot = inventory.OpenWorldContainer([Item(usable.UsableIndex) with { AmmoInClip = 1 }],
                 new Dictionary<ushort, double> { [(ushort)usable.UsableIndex] = 0 });
             if (!Store(inventory, loot))
@@ -89,16 +88,16 @@ public sealed class ItemTraitsTests
             Assert.Equal(0, lost);
         }
 
-        Assert.Equal([(WeaponItems.FerroIUsableIndex, WeaponItems.HeavyAmmoAssetId, 1L)], unloaded);
+        Assert.Equal([(TestGameData.Items.FerroIIndex, TestGameData.Items.HeavyAmmo.AssetId, 1L)], unloaded);
     }
 
     [Fact]
     public void Only_the_snap_hook_is_drawn_from_the_belt()
     {
         List<int> quick = [];
-        foreach (ItemDefinition usable in LoadoutDefinitions.Generated.CarriedItems)
+        foreach (ItemDefinition usable in TestGameData.Items.Definitions.CarriedItems)
         {
-            RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+            RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
             ContainerItem item = Item(usable.UsableIndex);
             int loot = inventory.OpenWorldContainer([item], new Dictionary<ushort, double> { [(ushort)usable.UsableIndex] = 0 });
             if (!inventory.Apply(ShieldTests.Swap(loot, 0, inventory.Belt, 0)))
@@ -107,7 +106,7 @@ public sealed class ItemTraitsTests
             }
 
             inventory.CloseWorldContainer();
-            RaidWeapons weapons = new(inventory);
+            RaidWeapons weapons = new(inventory, TestGameData.Data);
             Dictionary<Guid, ulong> objects = new() { [item.Id] = 77 };
             weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
             weapons.Apply(new WeaponInput(40, 0, 77, 1), objects);
@@ -117,7 +116,7 @@ public sealed class ItemTraitsTests
             }
         }
 
-        Assert.Equal([GadgetItems.SnapHookUsableIndex], quick);
+        Assert.Equal([TestGameData.Items.SnapHookIndex], quick);
     }
 
     // Moves the loot item into the first loadout, backpack or belt slot that takes it.
@@ -132,12 +131,12 @@ public sealed class ItemTraitsTests
     private static PlayerLoadout Placed(long asset)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        long branchAsset = s_branches.First(branch => ((SingleItemSlot)LoadoutDefinitions.Generated.ByAsset[LoadoutDefinitions.Generated.Container(LoadoutItems.StandardFrameAssetId, branch)
+        long branchAsset = s_branches.First(branch => ((SingleItemSlot)TestGameData.Items.Definitions.ByAsset[TestGameData.Items.Definitions.Container(LoadoutItems.StandardFrameAssetId, branch)
             .SlotAssetId].SlotConfig!).AllowedSlotAssetIds.Contains(asset));
-        InventoryItem branchNode = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branchNode = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branchNode.Slots[0]);
         string slot = container.Slots[^1];
-        InventoryItem[] modSlots = LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig is StructuralItemSlots slots
+        InventoryItem[] modSlots = TestGameData.Items.Definitions.ByAsset[asset].SlotConfig is StructuralItemSlots slots
             ? [.. slots.SlotAssetIds.Select(slotAsset => new InventoryItem(Guid.NewGuid().ToString("D"), slotAsset, 1, [], 1, 1, "", "pin", 0))]
             : [];
         InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, 1, [.. modSlots.Select(modSlot => modSlot.InstanceId)], 1, 1, "", "pin", 0);

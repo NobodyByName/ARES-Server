@@ -22,7 +22,7 @@ public sealed class MovementModifiersTests
         Assert.Equal(200, modifiers.SlideEntrySpeed);
         Assert.True(modifiers.SprintBurstAllowed);
         Assert.False(modifiers.WalkForced || modifiers.JumpBlocked || modifiers.HeavyRoll || modifiers.ExhaustedVaults);
-        Assert.Equal(0UL, modifiers.GraphTags);
+        Assert.Equal(0UL, modifiers.GraphTags(TestGameData.Tags));
         Assert.Equal(GroundMovementParameters.Armed, modifiers.Run(armed: true));
         Assert.Equal(SprintMovementParameters.Unarmed, modifiers.Sprint(armed: false));
     }
@@ -58,7 +58,7 @@ public sealed class MovementModifiersTests
         Assert.True(modifiers.ExhaustedVaults);
         Assert.False(modifiers.WalkForced);
         Assert.False(modifiers.JumpBlocked);
-        Assert.Equal(GraphStateTags.AttributeMovementHeavy, modifiers.GraphTags);
+        Assert.Equal(TestGameData.Tags.AttributeMovementHeavy.Mask, modifiers.GraphTags(TestGameData.Tags));
         Assert.Null(modifiers.ForcedWalkSpeed(input, armed: false, sprintClaimed: true, sprintAllowed: true));
     }
 
@@ -70,7 +70,7 @@ public sealed class MovementModifiersTests
         Assert.True(modifiers.WalkForced);
         Assert.True(modifiers.JumpBlocked);
         Assert.False(modifiers.HeavyRoll);
-        Assert.Equal(GraphStateTags.AttributeMovementSuperHeavy, modifiers.GraphTags);
+        Assert.Equal(TestGameData.Tags.AttributeMovementSuperHeavy.Mask, modifiers.GraphTags(TestGameData.Tags));
         Assert.Equal(200, modifiers.ForcedWalkSpeed(input, armed: false, sprintClaimed: true, sprintAllowed: true));
         Assert.Equal(150, modifiers.CrouchSpeed);
     }

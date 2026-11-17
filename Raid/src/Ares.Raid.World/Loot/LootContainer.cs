@@ -50,16 +50,16 @@ public sealed record LootContainer(int Index, LootContainerSource Source, Vector
     }
 
     /// <summary>The search interaction.</summary>
-    public ulong Interaction => Components[ComponentIndex(LootContainerClasses.InteractionComponent)];
+    public ulong Interaction => Components[ComponentIndex(LootContainerBlueprintMembers.InteractionComponent)];
 
     /// <summary>The item container.</summary>
-    public ulong ItemContainer => Components[ComponentIndex(LootContainerClasses.ItemContainerComponent)];
+    public ulong ItemContainer => Components[ComponentIndex(LootContainerBlueprintMembers.ItemContainerComponent)];
 
     /// <summary>Class of the search interaction.</summary>
-    public string InteractionClass => Class.Components[ComponentIndex(LootContainerClasses.InteractionComponent)].Class;
+    public string InteractionClass => Class.Components[ComponentIndex(LootContainerBlueprintMembers.InteractionComponent)].Class;
 
     /// <summary>Class of the item container.</summary>
-    public string ItemContainerClass => Class.Components[ComponentIndex(LootContainerClasses.ItemContainerComponent)].Class;
+    public string ItemContainerClass => Class.Components[ComponentIndex(LootContainerBlueprintMembers.ItemContainerComponent)].Class;
 
     /// <summary>Where the container's prompt is: an open container measures the player's distance from it.</summary>
     public Vector3D Prompt

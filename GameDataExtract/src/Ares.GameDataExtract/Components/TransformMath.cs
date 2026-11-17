@@ -60,20 +60,15 @@ internal static class TransformMath
         const double SingularityThreshold = 0.4999995;
         double singularity = (q.Z * q.X) - (q.W * q.Y);
         double yaw = Math.Atan2(2 * ((q.W * q.Z) + (q.X * q.Y)), 1 - (2 * ((q.Y * q.Y) + (q.Z * q.Z)))) * RadiansToDegrees;
-        if (singularity < -SingularityThreshold)
+        return singularity switch
         {
-            return new Rotator(-90.0, yaw, NormalizeAxis(-yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees))));
-        }
-
-        if (singularity > SingularityThreshold)
-        {
-            return new Rotator(90.0, yaw, NormalizeAxis(yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees))));
-        }
-
-        return new Rotator(
-            Math.Asin(2 * singularity) * RadiansToDegrees,
-            yaw,
-            Math.Atan2(-2 * ((q.W * q.X) + (q.Y * q.Z)), 1 - (2 * ((q.X * q.X) + (q.Y * q.Y)))) * RadiansToDegrees);
+            < -SingularityThreshold => new Rotator(-90.0, yaw, NormalizeAxis(-yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees)))),
+            > SingularityThreshold => new Rotator(90.0, yaw, NormalizeAxis(yaw - (2 * (Math.Atan2(q.X, q.W) * RadiansToDegrees)))),
+            _ => new Rotator(
+                Math.Asin(2 * singularity) * RadiansToDegrees,
+                yaw,
+                Math.Atan2(-2 * ((q.W * q.X) + (q.Y * q.Z)), 1 - (2 * ((q.X * q.X) + (q.Y * q.Y)))) * RadiansToDegrees),
+        };
     }
 
     /// <summary>An angle in degrees normalized to (−180, 180] (<c>FRotator::NormalizeAxis</c>).</summary>

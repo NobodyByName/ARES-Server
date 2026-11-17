@@ -1,6 +1,4 @@
 using Ares.Raid.World.Loot;
-using Ares.Structs.Game.Loot;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.Loot;
 
@@ -10,18 +8,15 @@ namespace Ares.Raid.Tests.Loot;
 /// </summary>
 public sealed class LootDefaultNamesTests
 {
-    private static readonly string[] s_knownTags =
-    [
-        .. LootContainerTypes.All.Select(type => type.Tag),
-        .. DamLootSockets.All.Select(socket => socket.ContainerTag),
-    ];
+    private static readonly Lazy<string[]> s_knownTags = new(() => [
+        .. TestGameData.Loot.ContainerTypes.Select(type => type.Tag),
+        .. TestGameData.Dam.LootSockets.Select(socket => socket.ContainerTag),
+    ]);
 
-    private static readonly HashSet<string> s_knownClasses =
-    [
-        .. LootContainerClasses.All.Select(container => container.Container.Class),
-        .. LootContainerClasses.Unsupported.Keys,
-        .. DamDynamicLoot.Spawners.SelectMany(spawner => spawner.Classes).Select(entry => entry.Class),
-    ];
+    private static readonly Lazy<HashSet<string>> s_knownClasses = new(() => [
+        .. TestGameData.Loot.ContainerClasses.Select(container => container.Container.Class),
+        .. TestGameData.Dam.DynamicLootSpawners.SelectMany(spawner => spawner.Classes).Select(entry => entry.Class),
+    ]);
 
     public static TheoryData<string> SocketTags =>
     [
@@ -44,7 +39,7 @@ public sealed class LootDefaultNamesTests
     [MemberData(nameof(SocketTags))]
     public void A_socket_tag_is_a_container_tag_or_a_parent_of_one(string tag)
     {
-        Assert.True(s_knownTags.Any(known => known.Equals(tag, StringComparison.OrdinalIgnoreCase)
+        Assert.True(s_knownTags.Value.Any(known => known.Equals(tag, StringComparison.OrdinalIgnoreCase)
             || known.StartsWith(tag + ".", StringComparison.OrdinalIgnoreCase)), $"Unknown socket tag {tag}.");
     }
 
@@ -52,13 +47,13 @@ public sealed class LootDefaultNamesTests
     [MemberData(nameof(TableNames))]
     public void A_table_name_is_a_value_loot_table(string name)
     {
-        Assert.True(StaticValueLootTables.All.Any(table => table.Name.Equals(name, StringComparison.OrdinalIgnoreCase)), $"Unknown loot table {name}.");
+        Assert.True(TestGameData.Loot.StaticValueTables.Any(table => table.Name.Equals(name, StringComparison.OrdinalIgnoreCase)), $"Unknown loot table {name}.");
     }
 
     [Theory]
     [MemberData(nameof(ClassPaths))]
     public void A_type_pool_class_is_a_known_container_class(string classPath)
     {
-        Assert.Contains(classPath, s_knownClasses);
+        Assert.Contains(classPath, s_knownClasses.Value);
     }
 }

@@ -90,7 +90,6 @@ public readonly record struct MovementModifierInput(
 /// <param name="JumpBlocked">Whether jumping is blocked (<c>Ability.Block.Jump</c> from the super-heavy effect).</param>
 /// <param name="HeavyRoll">Whether the roll picks its heavy-load variant.</param>
 /// <param name="ExhaustedVaults">Whether vaults use the exhausted definition set.</param>
-/// <param name="GraphTags">Graph-state tag bits the load effects hold.</param>
 public readonly record struct MovementModifiers(
     double ArmedRunSpeed,
     double UnarmedRunSpeed,
@@ -106,11 +105,19 @@ public readonly record struct MovementModifiers(
     bool WalkForced,
     bool JumpBlocked,
     bool HeavyRoll,
-    bool ExhaustedVaults,
-    ulong GraphTags)
+    bool ExhaustedVaults)
 {
     /// <summary>The modifiers of a new character: the unchanged base speeds, nothing blocked.</summary>
     public static MovementModifiers Default { get; } = From(MovementModifierInput.Default);
+
+    /// <summary>Graph-state tag bits the load effects hold: the heavy and super-heavy movement attributes.</summary>
+    /// <param name="tags">The graph state tag bits.</param>
+    /// <returns>The bits.</returns>
+    public ulong GraphTags(GraphTagBits tags)
+    {
+        ArgumentNullException.ThrowIfNull(tags);
+        return (HeavyRoll ? tags.AttributeMovementHeavy.Mask : 0) | (JumpBlocked ? tags.AttributeMovementSuperHeavy.Mask : 0);
+    }
 
     /// <summary>Horizontal speed from which a slide may start.</summary>
     public double SlideEntrySpeed => SlideMovementParameters.EntrySpeed * RunScale;
@@ -140,7 +147,6 @@ public readonly record struct MovementModifiers(
         double aiming = attributes.MaxSpeed * attributes.Ads;
         double crouchBase = GroundMovementParameters.Crouched.MaximumSpeed;
         float stick = attributes.MaxSpeed * MovementModifierParameters.StickRemapBaseSpeed * attributes.Run;
-        ulong tags = (input.Heavy ? GraphStateTags.AttributeMovementHeavy : 0) | (input.SuperHeavy ? GraphStateTags.AttributeMovementSuperHeavy : 0);
         return new MovementModifiers(
             GroundMovementParameters.Armed.MaximumSpeed * run,
             GroundMovementParameters.Unarmed.MaximumSpeed * run,
@@ -156,8 +162,7 @@ public readonly record struct MovementModifiers(
             input.SuperHeavy || input.ForcedWalk,
             input.SuperHeavy,
             input.Heavy,
-            input is { Exhausted: true, DisableExhaustedVault: false } || input.Heavy,
-            tags);
+            input is { Exhausted: true, DisableExhaustedVault: false } || input.Heavy);
     }
 
     /// <summary>

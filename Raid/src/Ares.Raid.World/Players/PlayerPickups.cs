@@ -7,7 +7,6 @@ using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Players;
 
@@ -216,14 +215,15 @@ internal sealed class PlayerPickups : IPlayerFamily
     private static (Vector3D Location, Rotator Rotation) DropPlacement(IPlayerChannelsContext player)
     {
         RaidPlayer member = player.Member;
+        double halfHeight = player.Raid.GameData.Map.PlayerStartCapsule.HalfHeight;
         Vector3D feet = player.InputPosition
-            ?? member.Spawn.Location with { Z = member.Spawn.Location.Z - DamPlayerStarts.Capsule.HalfHeight };
+            ?? member.Spawn.Location with { Z = member.Spawn.Location.Z - halfHeight };
         double yaw = player.InputYaw is { } radians ? radians * 180 / Math.PI : member.Spawn.Yaw;
         double heading = yaw * Math.PI / 180;
         Vector3D ahead = new(
             feet.X + (Pickups.DropDistance * Math.Cos(heading)),
             feet.Y + (Pickups.DropDistance * Math.Sin(heading)),
-            feet.Z + DamPlayerStarts.Capsule.HalfHeight);
+            feet.Z + halfHeight);
         return (new Vector3D(Math.Round(ahead.X), Math.Round(ahead.Y), Math.Round(ahead.Z)), new Rotator(0, yaw, 0));
     }
 

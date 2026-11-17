@@ -11,28 +11,30 @@ internal sealed class InventoryProjection
 {
     private readonly Dictionary<string, InventoryPosition> _positions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, IReadOnlyList<long>> _allowed = new(StringComparer.Ordinal);
+    private readonly InventoryCatalog _catalog;
 
-    private InventoryProjection(long userId, PlayerInventory inventory, bool allowOverflow = false)
+    private InventoryProjection(InventoryCatalog catalog, long userId, PlayerInventory inventory, bool allowOverflow = false)
     {
-        Inventory = Validate(inventory, allowOverflow);
+        _catalog = catalog;
+        Inventory = Validate(catalog, inventory, allowOverflow);
         List<InventoryItem> items = [];
         if (inventory.Stash.ContainerAssetId != 0)
         {
-            BuildNode(StorageItems.StashSlotAssetId, "stash", new InventoryPosition(InventoryArea.Stash, 0));
+            BuildNode(catalog.StashSlotAssetId, "stash", new InventoryPosition(InventoryArea.Stash, 0));
         }
 
         // The stock menu looks up the next frame and migrates items locally before committing
         // operations. The tree keeps every supported frame present, with independent permanent slot IDs.
-        LoadoutContents contents = new(InventoryCatalog.Items(inventory, InventoryArea.Augment).SingleOrDefault() is { } augment ? Item(augment) : null,
-            ((StructuralItemSlots)InventoryCatalog.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds.ToDictionary(branch => branch,
-                branch => InventoryCatalog.Branch(branch) is { } location ? Contents(location.Area) : []));
-        LoadoutTree tree = LoadoutTree.Build(LoadoutDefinitions.Generated, contents, Structure);
+        LoadoutContents contents = new(InventoryAreas.Items(inventory, InventoryArea.Augment).SingleOrDefault() is { } augment ? Item(catalog, augment) : null,
+            ((StructuralItemSlots)catalog.ByAsset[catalog.Items.StandardFrameAssetId].SlotConfig!).SlotAssetIds.ToDictionary(branch => branch,
+                branch => catalog.Branch(branch) is { } location ? Contents(location.Area) : []));
+        LoadoutTree tree = LoadoutTree.Build(catalog.Items, contents, Structure);
         items.AddRange(tree.Items);
         foreach ((string id, LoadoutSlot slot) in tree.Slots)
         {
             // Slots without a position stay empty: the default melee structure.
-            InventoryPosition? position = slot.Branch == AugmentItems.AugmentSlotAssetId ? new InventoryPosition(InventoryArea.Augment, slot.Index)
-                : InventoryCatalog.Branch(slot.Branch) is { } location ? location with { Index = location.Index + slot.Index, FrameAssetId = slot.FrameAssetId }
+            InventoryPosition? position = slot.Branch == catalog.Items.AugmentSlotAssetId ? new InventoryPosition(InventoryArea.Augment, slot.Index)
+                : catalog.Branch(slot.Branch) is { } location ? location with { Index = location.Index + slot.Index, FrameAssetId = slot.FrameAssetId }
                 : null;
             if (position is null)
             {
@@ -43,29 +45,29 @@ internal sealed class InventoryProjection
             _allowed.Add(id, slot.AllowedAssetIds);
         }
 
-        items.AddRange(inventory.Wallet.Select(Item));
+        items.AddRange(inventory.Wallet.Select(owned => Item(catalog, owned)));
         Snapshot = InventorySnapshots.Copy(new InventorySnapshot(userId, inventory.Revision, items.AsReadOnly(), tree.Roots));
         return;
 
         // The owned items of a loadout area by slot index; a single-item area has one slot.
         IReadOnlyList<InventoryItem?> Contents(InventoryArea area)
         {
-            IReadOnlyList<OwnedItem> owned = InventoryCatalog.Items(inventory, area);
-            return [.. Enumerable.Range(0, InventoryCatalog.LoadoutCapacity(inventory.Loadout, area)).Select(index =>
-                (InventoryCatalog.UsesSlots(area) ? owned.SingleOrDefault(stored => stored.Slot == index) : owned.SingleOrDefault()) is { } item ? Item(item) : null)];
+            IReadOnlyList<OwnedItem> owned = InventoryAreas.Items(inventory, area);
+            return [.. Enumerable.Range(0, catalog.LoadoutCapacity(inventory.Loadout, area)).Select(index =>
+                (InventoryAreas.UsesSlots(area) ? owned.SingleOrDefault(stored => stored.Slot == index) : owned.SingleOrDefault()) is { } item ? Item(catalog, item) : null)];
         }
 
         // The stash slot, its owned container tier and the stored items.
         string BuildNode(long asset, string path, InventoryPosition? position)
         {
-            ItemDescription definition = InventoryCatalog.ByAsset[asset];
+            ItemDescription definition = catalog.ByAsset[asset];
             string id = StructuralId(userId, path);
             List<string> children = [];
             switch (definition.SlotConfig)
             {
                 case SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } single:
                     // The stash slot holds the owned container tier; its structural id stays the same across upgrades.
-                    children.Add(BuildNode(asset == StorageItems.StashSlotAssetId ? inventory.Stash.ContainerAssetId : single.DefaultSlotAssetId,
+                    children.Add(BuildNode(asset == catalog.StashSlotAssetId ? inventory.Stash.ContainerAssetId : single.DefaultSlotAssetId,
                         path + "/container", position));
                     break;
                 case ItemSlotArray array:
@@ -87,22 +89,22 @@ internal sealed class InventoryProjection
 
                     _positions.Add(id, position);
                     _allowed.Add(id, single.AllowedSlotAssetIds);
-                    OwnedItem? owned = InventoryCatalog.Items(inventory, position.Area)
+                    OwnedItem? owned = InventoryAreas.Items(inventory, position.Area)
                         .OrderBy(item => item.Type, StringComparer.Ordinal).ThenBy(item => item.InstanceId, StringComparer.Ordinal).ElementAtOrDefault(position.Index);
                     if (owned is not null)
                     {
-                        long itemAsset = InventoryCatalog.AssetId(owned.Type);
+                        long itemAsset = catalog.AssetId(owned.Type);
                         if (!single.AllowedSlotAssetIds.Contains(itemAsset))
                         {
                             throw new InvalidDataException("Item is incompatible with its equipment slot");
                         }
 
                         // The menu shows a weapon's mod slots only from these child nodes. They stay empty until mods are supported.
-                        List<string> modSlots = InventoryCatalog.ByAsset[itemAsset].SlotConfig is StructuralItemSlots weaponSlots
+                        List<string> modSlots = catalog.ByAsset[itemAsset].SlotConfig is StructuralItemSlots weaponSlots
                             ? [.. weaponSlots.SlotAssetIds.Select((slot, index) =>
                                 BuildNode(slot, "items/" + owned.InstanceId + "/" + index.ToString(CultureInfo.InvariantCulture), null))]
                             : [];
-                        items.Add(Item(owned) with { Slots = modSlots.AsReadOnly() });
+                        items.Add(Item(catalog, owned) with { Slots = modSlots.AsReadOnly() });
                         children.Add(owned.InstanceId);
                     }
 
@@ -119,28 +121,29 @@ internal sealed class InventoryProjection
         InventoryItem Structure(long asset, string path, IReadOnlyList<string> children)
         {
             string etag = "ares-structure-" + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('|', children))));
-            return new InventoryItem(StructuralId(userId, path), asset, 1, children, StorageItems.InitialDurability, StorageItems.InitialMaxDurability, "", etag, 0);
+            return new InventoryItem(StructuralId(userId, path), asset, 1, children, OwnedItem.FullDurability, OwnedItem.FullDurability, "", etag, 0);
         }
     }
 
     internal PlayerInventory Inventory { get; }
     internal InventorySnapshot Snapshot { get; }
-    internal static InventoryProjection Create(long userId, PlayerInventory inventory) => new(userId, inventory);
+    internal static InventoryProjection Create(InventoryCatalog catalog, long userId, PlayerInventory inventory) => new(catalog, userId, inventory);
     // A batch may temporarily remove an augment before moving items out of its larger containers.
     // Only the final projection is validated and saved; provisional over-capacity items stay owned.
-    internal static InventoryProjection ForOperations(long userId, PlayerInventory inventory) => new(userId, inventory, allowOverflow: true);
+    internal static InventoryProjection ForOperations(InventoryCatalog catalog, long userId, PlayerInventory inventory) =>
+        new(catalog, userId, inventory, allowOverflow: true);
 
     internal InventoryPosition Position(string slotId) => _positions.GetValueOrDefault(slotId)
         ?? throw new InvalidDataException("Unknown inventory destination slot");
 
     internal bool Allows(string slotId, string itemType) => _allowed.TryGetValue(slotId, out IReadOnlyList<long>? assets)
-        && assets.Contains(InventoryCatalog.AssetId(itemType));
+        && assets.Contains(_catalog.AssetId(itemType));
 
-    private static PlayerInventory Validate(PlayerInventory inventory, bool allowOverflow)
+    private static PlayerInventory Validate(InventoryCatalog catalog, PlayerInventory inventory, bool allowOverflow)
     {
         if (inventory is not
             {
-                Revision: >= 0, Stash.SlotCount: >= 0,
+                Revision: >= 0,
                 Loadout:
                 {
                     Backpack.Items.Count: <= InventorySnapshots.MaximumItems,
@@ -164,9 +167,9 @@ internal sealed class InventoryProjection
         HashSet<string> ids = [];
         foreach (InventoryArea area in Enum.GetValues<InventoryArea>())
         {
-            IReadOnlyList<OwnedItem> contents = InventoryCatalog.Items(inventory, area)
+            IReadOnlyList<OwnedItem> contents = InventoryAreas.Items(inventory, area)
                 ?? throw new InvalidDataException("Missing inventory item array");
-            int capacity = InventoryCatalog.Capacity(inventory, area);
+            int capacity = catalog.Capacity(inventory, area);
             HashSet<int> slots = [];
             if (!allowOverflow && contents.Count > capacity)
             {
@@ -179,19 +182,19 @@ internal sealed class InventoryProjection
                     || item.InstanceId.Any(char.IsControl) || !ids.Add(item.InstanceId)
                     || !double.IsFinite(item.Durability) || !double.IsFinite(item.MaxDurability)
                     || item.Durability < 0 || item.MaxDurability < item.Durability
-                    || !InventoryCatalog.UsesSlots(area) && item.Slot is not null
-                    || InventoryCatalog.UsesSlots(area) && (item.Slot is not { } slot || slot < 0 || slot >= InventorySnapshots.MaximumItems || !allowOverflow && slot >= capacity || !slots.Add(slot)))
+                    || !InventoryAreas.UsesSlots(area) && item.Slot is not null
+                    || InventoryAreas.UsesSlots(area) && (item.Slot is not { } slot || slot < 0 || slot >= InventorySnapshots.MaximumItems || !allowOverflow && slot >= capacity || !slots.Add(slot)))
                 {
                     throw new InvalidDataException("Invalid owned item or position");
                 }
 
-                ItemDescription definition = InventoryCatalog.ByAsset[InventoryCatalog.AssetId(item.Type)];
+                ItemDescription definition = catalog.ByAsset[catalog.AssetId(item.Type)];
                 if (item.Quantity > definition.MaxAmount || !definition.Stackable && item.Quantity != 1)
                 {
                     throw new InvalidDataException("Invalid item quantity");
                 }
 
-                if ((area == InventoryArea.Wallet) != InventoryCatalog.IsCurrency(item.Type)
+                if ((area == InventoryArea.Wallet) != catalog.IsCurrency(item.Type)
                     || area == InventoryArea.Wallet && contents.Count(other => other.Type == item.Type) != 1)
                 {
                     throw new InvalidDataException("Currencies belong in the wallet, one stack each");
@@ -202,7 +205,7 @@ internal sealed class InventoryProjection
         return inventory;
     }
 
-    private static InventoryItem Item(OwnedItem owned) => new(owned.InstanceId, InventoryCatalog.AssetId(owned.Type), owned.Quantity, [],
+    private static InventoryItem Item(InventoryCatalog catalog, OwnedItem owned) => new(owned.InstanceId, catalog.AssetId(owned.Type), owned.Quantity, [],
         owned.Durability, owned.MaxDurability, "", owned.ETag, owned.UpdatedAt);
 
     private static string StructuralId(long userId, string path)

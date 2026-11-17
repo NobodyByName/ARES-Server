@@ -8,7 +8,6 @@ using Ares.Structs.Game.Characters;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
-using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -127,7 +126,7 @@ public sealed class PlayerInitializationTests
     {
         ScriptedPlayer session = new();
         session.Flush("start");
-        session.ReportVisible((DamMap.MapPackage, true, false));
+        session.ReportVisible((TestGameData.Dam.MapPackage, true, false));
         session.Service(200);
         Assert.Equal(DeliveryPhase.InitialLevelsPending, session.Channels.Phase);
         Assert.False(session.Player.PossessionAcknowledged);
@@ -183,7 +182,7 @@ public sealed class PlayerInitializationTests
         Assert.Equal(2, session.Channels.BlackboardFrames);
         uint frame = session.Channels.InputFrame!.Value;
         ActorContentBlock expected = session.Raid.State.BlackboardFrame(1, 2,
-            PawnBlackboardFrames.State(frame, new PawnMotion(session.Member.Spawn.Location, Yaw: session.Member.Spawn.Yaw * Math.PI / 180), 0,
+            PawnBlackboardFrames.State(TestGameData.Data, frame, new PawnMotion(session.Member.Spawn.Location, Yaw: session.Member.Spawn.Yaw * Math.PI / 180), 0,
                 session.Member.Inventory.InitialBlackboard, session.Member.Weapons.Variables(frame), session.Channels.TimeOffset!.Value),
             session.SpawnState);
         ChannelBunch first = Assert.Single(session.Sent, bunch => bunch.Channel == 6);

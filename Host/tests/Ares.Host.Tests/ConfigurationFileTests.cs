@@ -1,6 +1,10 @@
 using System.Net;
+using System.Text.Json;
 using Ares.Common.CommandLine;
+using Ares.Common.Game.Content;
 using Ares.Host.Services;
+using Ares.Structs.Backend;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
 namespace Ares.Host.Tests;
@@ -86,6 +90,7 @@ public sealed class ConfigurationFileTests : IDisposable
         File.WriteAllText(Path.Combine(_directory, "operator-token"), new string('a', 64));
         File.WriteAllText(Path.Combine(_directory, "ARES-Raid"), "");
         File.WriteAllBytes(Path.Combine(_directory, "identity-key"), new byte[32]);
+        Directory.CreateDirectory(Path.Combine(_directory, "content"));
         Write("""
             # Full-line comment
             port = 19090
@@ -106,6 +111,7 @@ public sealed class ConfigurationFileTests : IDisposable
             raid-control-port = 17000
             raid-lighting = Lighting.GreyMorning
             game-data-dir = gamedata
+            content-dir = content
             stash-upgrade-coins = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0
             console = json
             log-file = logs/host.log
@@ -122,7 +128,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal(2, configuration.Settings.RaidCapacity);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
-            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "gamedata")), configuration.Raids);
+            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "gamedata"), Path.Combine(_directory, "content")), configuration.Raids);
         Assert.Equal([1L, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0], configuration.Settings.StashUpgrades.Coins);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
@@ -195,6 +201,39 @@ public sealed class ConfigurationFileTests : IDisposable
     {
         Write(content);
         Assert.Contains(expected, Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_content_folder_replaces_default_files_and_its_stash_sets_the_upgrade_prices()
+    {
+        // A stash of the first two default tiers: one upgrade.
+        StashContent defaults = AresContent.Defaults.Stash;
+        long contentSlot = ((ItemSlotArray)defaults.Tiers[0].SlotConfig!).SlotAssetId;
+        Directory.CreateDirectory(Path.Combine(_directory, "content"));
+        File.WriteAllText(Path.Combine(_directory, "content", AresContent.StashFile), JsonSerializer.Serialize(new
+        {
+            stashSlot = defaults.SlotAssetId,
+            firstContainer = defaults.FirstContainerAssetId,
+            definitions = (ItemDescription[])
+            [
+                .. defaults.Definitions.Where(definition => definition.GameAssetId == defaults.SlotAssetId || definition.GameAssetId == contentSlot),
+                defaults.Tiers[0], defaults.Tiers[1] with { Upgrade = null },
+            ],
+        }, BackendJson.Options));
+
+        Write("content-dir = content");
+        HostConfiguration configuration = Parse();
+        Assert.Equal(Path.Combine(_directory, "content"), configuration.Content.Directory);
+        Assert.Equal([AresContent.StashFile], configuration.Content.Overrides);
+        Assert.Equal(2, configuration.Content.Stash.Tiers.Count);
+        Assert.Equal([5000L], configuration.Settings.StashUpgrades.Coins);
+        Write("content-dir = content\nstash-upgrade-coins = 7");
+        Assert.Equal([7L], Parse().Settings.StashUpgrades.Coins);
+        Write("content-dir = content\nstash-upgrade-coins = 1, 2");
+        Assert.Contains("--stash-upgrade-coins expects 1 comma-separated", Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+        Write("content-dir = missing");
+        Assert.Contains("does not exist", Assert.Throws<AresContentException>(() => Parse()).Message, StringComparison.Ordinal);
+        Assert.Same(AresContent.Defaults, new HostConfiguration { Settings = configuration.Settings, Bind = IPAddress.Loopback, Port = 1 }.Content);
     }
 
     [Fact]

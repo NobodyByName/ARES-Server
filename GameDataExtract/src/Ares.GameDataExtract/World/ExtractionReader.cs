@@ -80,7 +80,7 @@ internal static class ExtractionReader
             new Vector3D(zoneLocation.X + 0.0, zoneLocation.Y + 0.0, zoneLocation.Z + 0.0),
             new Rotator(0.0, 0.0, 0.0),
             sources.Default(ExtractionMembers.StandardInteractionClass, ExtractionMembers.InteractionServerHoldStartedTime).AsDouble,
-            sources.Default(ExtractionMembers.ExtractionInfoStruct, ExtractionMembers.ExtractionStartedTS).AsDouble,
+            sources.Default(ExtractionMembers.ExtractionInfoStruct, ExtractionMembers.ExtractionStartedTs).AsDouble,
             DoorsSeconds(sources, blueprintDefault));
     }
 
@@ -242,12 +242,9 @@ internal static class ExtractionReader
             }
         }
 
-        if (rows.Select(row => row.DataAsset).Distinct(StringComparer.Ordinal).Count() != rows.Count)
-        {
-            throw new InvalidDataException($"{mapPackage}: elevators share a data asset");
-        }
-
-        return [.. rows.OrderBy(row => row.Actor, StringComparer.Ordinal)];
+        return rows.Select(row => row.DataAsset).Distinct(StringComparer.Ordinal).Count() == rows.Count
+            ? [.. rows.OrderBy(row => row.Actor, StringComparer.Ordinal)]
+            : throw new InvalidDataException($"{mapPackage}: elevators share a data asset");
     }
 
     private static ExtractionPointPlacement Point(MapRuleSources sources, SceneResolver scenes, ExportRef placed)

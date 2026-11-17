@@ -21,21 +21,21 @@ public sealed class ShieldTests : IDisposable
         {
             store.AddItem(augmentType, DateTimeOffset.UnixEpoch);
             OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == augmentType);
-            Assert.Equal(200, store.Commit(Move(augment.InstanceId, store.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId, "augment"), DateTimeOffset.UnixEpoch).StatusCode);
+            Assert.Equal(200, store.Commit(Move(augment.InstanceId, store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId, "augment"), DateTimeOffset.UnixEpoch).StatusCode);
         }
 
         OwnedItem shield = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.LightShield);
         InventorySnapshot before = store.Snapshot;
-        ServiceReply reply = store.Commit(Move(shield.InstanceId, Slot(store, LoadoutItems.ArmorSlotAssetId), "equip"), DateTimeOffset.UnixEpoch);
+        ServiceReply reply = store.Commit(Move(shield.InstanceId, Slot(store, TestCatalog.Branches.Shield), "equip"), DateTimeOffset.UnixEpoch);
         Assert.Equal(200, reply.StatusCode);
         AssertChanges(before, reply, store.Snapshot);
         Assert.Equal(shield.InstanceId, store.Inventory.Loadout.Shield!.InstanceId);
         Assert.DoesNotContain(store.Inventory.Stash.Items, item => item.InstanceId == shield.InstanceId);
-        InventoryStore restarted = new(_database.Store, TestDatabase.UserId);
+        InventoryStore restarted = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         Assert.Equal(store.Inventory.Loadout.Shield, restarted.Inventory.Loadout.Shield);
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout handoff = restarted.Reserve(ticket);
-        InventoryItem carried = Assert.Single(handoff.Items, item => item.GameAssetId == ShieldItems.LightShieldAssetId);
+        InventoryItem carried = Assert.Single(handoff.Items, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.LightShield));
         Assert.Equal(shield.InstanceId, carried.InstanceId);
         Assert.Equal(shield.Durability, carried.Durability);
         Assert.Equal(shield.MaxDurability, carried.MaxDurability);
@@ -53,19 +53,19 @@ public sealed class ShieldTests : IDisposable
         OwnedItem first = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.LightShield);
         store.AddItem(ItemTechnicalNames.LightShield, DateTimeOffset.UnixEpoch);
         OwnedItem second = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.LightShield && item.InstanceId != first.InstanceId);
-        Assert.Equal(200, store.Commit(Move(first.InstanceId, Slot(store, LoadoutItems.ArmorSlotAssetId), "equip"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, store.Commit(Move(first.InstanceId, Slot(store, TestCatalog.Branches.Shield), "equip"), DateTimeOffset.UnixEpoch).StatusCode);
         string saved = _database.InventoryJson;
-        Assert.Equal(400, store.Commit(Move(second.InstanceId, Slot(store, LoadoutItems.ArmorSlotAssetId), "occupied"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(400, store.Commit(Move(second.InstanceId, Slot(store, TestCatalog.Branches.Shield), "occupied"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(saved, _database.InventoryJson);
         InventorySnapshot before = store.Snapshot;
-        InventoryOperationsRequest swap = new([new SetItemParents(second.InstanceId, [Slot(store, LoadoutItems.ArmorSlotAssetId)]), new SetItemParents(first.InstanceId, [StashSlot(store)])], "swap");
+        InventoryOperationsRequest swap = new([new SetItemParents(second.InstanceId, [Slot(store, TestCatalog.Branches.Shield)]), new SetItemParents(first.InstanceId, [StashSlot(store)])], "swap");
         ServiceReply reply = store.Commit(swap, DateTimeOffset.UnixEpoch);
         Assert.Equal(200, reply.StatusCode);
         AssertChanges(before, reply, store.Snapshot);
         Assert.Equal(second.InstanceId, store.Inventory.Loadout.Shield!.InstanceId);
         Assert.Equal(first.Durability, store.Inventory.Stash.Items.Single(item => item.InstanceId == first.InstanceId).Durability);
         long revision = store.Inventory.Revision;
-        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, new InventoryStore(_database.Store, TestDatabase.UserId, TestCatalog.Real).Commit(swap, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(revision, store.Inventory.Revision);
     }
 
@@ -74,12 +74,12 @@ public sealed class ShieldTests : IDisposable
     {
         InventoryStore store = Create();
         OwnedItem shield = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.LightShield);
-        Assert.Equal(200, store.Commit(Move(shield.InstanceId, Slot(store, LoadoutItems.ArmorSlotAssetId), "shield"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, store.Commit(Move(shield.InstanceId, Slot(store, TestCatalog.Branches.Shield), "shield"), DateTimeOffset.UnixEpoch).StatusCode);
         store.AddItem(ItemTechnicalNames.CombatMk1, DateTimeOffset.UnixEpoch);
         OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.CombatMk1);
-        string oldSlot = Slot(store, LoadoutItems.ArmorSlotAssetId);
-        string nextSlot = Slot(store, LoadoutItems.ArmorSlotAssetId, AugmentItems.FrameAssetIds[AugmentItems.CombatMk1AssetId]);
-        InventoryOperationsRequest migrate = new([new SetItemParents(shield.InstanceId, [nextSlot]), new SetItemParents(augment.InstanceId, [store.Snapshot.Items.Single(item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId).InstanceId])], "migrate");
+        string oldSlot = Slot(store, TestCatalog.Branches.Shield);
+        string nextSlot = Slot(store, TestCatalog.Branches.Shield, TestCatalog.AugmentFrames[TestCatalog.Asset(ItemTechnicalNames.CombatMk1)]);
+        InventoryOperationsRequest migrate = new([new SetItemParents(shield.InstanceId, [nextSlot]), new SetItemParents(augment.InstanceId, [store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.AugmentContentSlot).InstanceId])], "migrate");
         Assert.Equal(200, store.Commit(migrate, DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Equal(shield.InstanceId, store.Inventory.Loadout.Shield!.InstanceId);
         Assert.Empty(store.Snapshot.Items.Single(item => item.InstanceId == oldSlot).Slots);
@@ -93,9 +93,9 @@ public sealed class ShieldTests : IDisposable
         OwnedItem shield = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.LightShield);
         OwnedItem duck = store.Inventory.Stash.Items.Single(item => item.Type == ItemTechnicalNames.RubberDuck);
         string saved = _database.InventoryJson;
-        Assert.Equal(400, store.Commit(Move(duck.InstanceId, Slot(store, LoadoutItems.ArmorSlotAssetId), "duck"), DateTimeOffset.UnixEpoch).StatusCode);
-        Assert.Equal(400, store.Commit(Move(shield.InstanceId, Slot(store, LoadoutItems.BeltSlotAssetId), "belt"), DateTimeOffset.UnixEpoch).StatusCode);
-        Assert.Equal(400, store.Commit(Move(shield.InstanceId, Slot(store, LoadoutItems.Firearm1SlotAssetId), "weapon"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(400, store.Commit(Move(duck.InstanceId, Slot(store, TestCatalog.Branches.Shield), "duck"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(400, store.Commit(Move(shield.InstanceId, Slot(store, TestCatalog.Branches.QuickUse), "belt"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(400, store.Commit(Move(shield.InstanceId, Slot(store, TestCatalog.Branches.MainWeapon), "weapon"), DateTimeOffset.UnixEpoch).StatusCode);
         foreach (string type in new[] { "DA_Item_Armor_MediumBody", "DA_Item_Armor_HeavyBody" })
         {
             Assert.Throws<InvalidDataException>(() => store.AddItem(type, DateTimeOffset.UnixEpoch));
@@ -103,14 +103,14 @@ public sealed class ShieldTests : IDisposable
         }
 
         Assert.Equal(saved, _database.InventoryJson);
-        Assert.Equal(200, store.Commit(Move(shield.InstanceId, Slot(store, LoadoutItems.BackpackSlotAssetId), "carry"), DateTimeOffset.UnixEpoch).StatusCode);
+        Assert.Equal(200, store.Commit(Move(shield.InstanceId, Slot(store, TestCatalog.Branches.Backpack), "carry"), DateTimeOffset.UnixEpoch).StatusCode);
         Assert.Null(store.Inventory.Loadout.Shield);
         Assert.Equal(shield.InstanceId, Assert.Single(store.Inventory.Loadout.Backpack.Items).InstanceId);
     }
 
     private InventoryStore Create()
     {
-        InventoryStore store = new(_database.Store, TestDatabase.UserId);
+        InventoryStore store = new(_database.Store, TestDatabase.UserId, TestCatalog.Real);
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.LightShield, DateTimeOffset.UnixEpoch);
         return store;
@@ -119,13 +119,13 @@ public sealed class ShieldTests : IDisposable
     private static string Slot(InventoryStore store, long branchAsset, long? frameAsset = null)
     {
         InventorySnapshot snapshot = store.Snapshot;
-        string frameId = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId).Slots[0];
+        string frameId = snapshot.Items.Single(item => item.GameAssetId == TestCatalog.FrameSlot).Slots[0];
         InventoryItem frame = frameAsset is { } asset ? snapshot.Items.Single(item => item.GameAssetId == asset) : snapshot.Items.Single(item => item.InstanceId == frameId);
-        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && TestCatalog.Definitions.StandardBranch(item.GameAssetId) == branchAsset);
         return snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots[0];
     }
 
-    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == StorageItems.StashContainerAssetId).Slots[0];
+    private static string StashSlot(InventoryStore store) => store.Snapshot.Items.Single(item => item.GameAssetId == TestCatalog.StashContainer).Slots[0];
     private static InventoryOperationsRequest Move(string item, string target, string id) => new([new SetItemParents(item, [target])], id);
 
     private static void AssertChanges(InventorySnapshot before, ServiceReply reply, InventorySnapshot after)

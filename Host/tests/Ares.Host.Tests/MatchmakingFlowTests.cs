@@ -76,14 +76,14 @@ public sealed class MatchmakingFlowTests : IAsyncLifetime
         Assert.Equal(228, items.GetProperty("items").GetArrayLength());
         JsonElement definitions = await _host.GetJson("/v1/pioneer/game-data");
         Assert.Contains(definitions.GetProperty("items-description").GetProperty("itemDescriptions").EnumerateArray(),
-            item => item.GetProperty("gameAssetId").GetInt64() == StorageItems.RubberDuckAssetId);
+            item => item.GetProperty("gameAssetId").GetInt64() == TestCatalog.Asset(ItemTechnicalNames.RubberDuck));
 
         await _host.Post("/v1/shared/social/party/v2/create", new { });
         string ticket = (await HostHarness.Json(await _host.Post("/v1/shared/match/start", new { matchmakingScenario = "TheDam" }, bearer))).GetProperty("ticketId").GetString()!;
         await _host.Post("/v1/shared/match/status", new { ticketId = ticket }, bearer);
-        Assert.Equal("carried", Assert.Single(Assert.Single(_host.Raid.LastRequest!.Loadouts!).Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId).InstanceId);
+        Assert.Equal("carried", Assert.Single(Assert.Single(_host.Raid.LastRequest!.Loadouts!).Items, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.RubberDuck)).InstanceId);
         Assert.Equal(inventory.Snapshot.UserId, _host.Raid.LastRequest.Loadouts![0].UserId);
-        Assert.Equal(ticket, new InventoryStore(_host.Database.Store, TestDatabase.UserId).ReservedTicketId);
+        Assert.Equal(ticket, new InventoryStore(_host.Database.Store, TestDatabase.UserId, TestCatalog.Real).ReservedTicketId);
         Assert.Throws<InvalidOperationException>(() => inventory.Import(inventory.Inventory with { Stash = inventory.Inventory.Stash with { Items = [] } }, inventory.Snapshot.Revision));
 
         _host.Raid.Forget();

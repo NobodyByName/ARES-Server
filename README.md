@@ -127,6 +127,21 @@ item count and maps. When Host starts a raid, the Host log shows the Raid's same
 `"map_collision": "unavailable"` comes with a `warning` that says why (the collision file is missing or
 unusable), and raids then run without collision.
 
+## ARES content
+
+Some backend data the game's menu needs is not in the installed game: the stash and loadout
+structures, what recycling each item gives, the trader offers and item quality levels. ARES ships it
+as default content, built into ARES-Host and ARES-Raid and copied next to
+ARES-Host in `default-content/` (`stash.json`, `loadout.json`, `item-recycling.json`,
+`trader-offers.json`, `item-quality-levels.json`; JSON in the backend's wire format). To change it,
+copy a file into a folder of your own, edit it, set `content-dir` in `ares-host.conf` to that folder
+and restart Host: each file there replaces the default of the same name, the others stay built in.
+Host passes the folder to every Raid it starts (`--content-dir`), and each Raid loads it the same way
+when it starts. Host and Raid refuse to start (exit code 2, with the reason on standard error) when a
+file is malformed, inconsistent or does not fit the game data, or when the folder holds another JSON
+file. Stash upgrade prices stay in `stash-upgrade-coins`, which needs one price per upgrade of the
+content's stash.
+
 ## Contributing
 
 Contributions to the servers and standalone Structs library are welcome. See

@@ -11,4 +11,9 @@
     <ProjectReference Include="../../../Common/src/Ares.Common.Control.Server/Ares.Common.Control.Server.csproj" />
   </ItemGroup>
 
+  <!-- The real game data tier and synthetic game data. -->
+  <ItemGroup>
+    <ProjectReference Include="../../../Common/tests/Ares.Common.Testing/Ares.Common.Testing.csproj" />
+  </ItemGroup>
+
 </Project>

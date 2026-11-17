@@ -27,12 +27,12 @@ public sealed class LootTests
         LootCatalog catalog = session.Raid.Loot;
         LootSpawnCounts counts = catalog.Counts;
 
-        Assert.Equal(DamLootSockets.All.Count, counts.Sockets);
+        Assert.Equal(TestGameData.Dam.LootSockets.Length, counts.Sockets);
         Assert.Equal(counts.Sockets, counts.Spawned + counts.InactiveLayer + counts.NoContainerType + counts.Unsupported);
         Assert.Equal((0, 0, 0), (counts.SkippedByRoll, counts.SkippedByGroupCap, counts.SkippedByLimiter));
-        Assert.Equal(DamLootSockets.All.Count(socket => socket.DataLayer is { } layer && !session.Raid.ActiveDataLayers.Contains(layer)), counts.InactiveLayer);
+        Assert.Equal(TestGameData.Dam.LootSockets.Count(socket => socket.DataLayer is { } layer && !session.Raid.ActiveDataLayers.Contains(layer)), counts.InactiveLayer);
         Assert.Equal(counts.Spawned, catalog.Containers.Count);
-        Assert.All(catalog.Containers, container => Assert.Contains(container.Class.Container, LootSocketClasses.Supported(container.Socket!)));
+        Assert.All(catalog.Containers, container => Assert.Contains(container.Class.Container, LootSocketClasses.Supported(TestGameData.Data, container.Socket!)));
         Assert.Equal(catalog.Containers.Count, catalog.Containers.Select(container => container.Guid).Distinct().Count());
         Assert.Equal(catalog.Containers.Count, catalog.Containers.Select(container => container.Interaction).Distinct().Count());
         Assert.All(catalog.Containers, container => Assert.Same(container, catalog.ByInteraction(container.Interaction)));
@@ -48,8 +48,8 @@ public sealed class LootTests
     [Fact]
     public void Sockets_in_inactive_layers_without_a_type_or_without_a_servable_class_get_no_container()
     {
-        LootSocket cabinet = DamLootSockets.All.Single(socket => socket is { Actor: CabinetActor, Socket: CabinetSocket });
-        LootSocket unsupported = DamLootSockets.All.First(socket => socket is { DataLayer: null } && LootSocketClasses.Candidates(socket).Count > 0 && LootSocketClasses.Supported(socket).Count == 0);
+        LootSocket cabinet = TestGameData.Dam.LootSockets.Single(socket => socket is { Actor: CabinetActor, Socket: CabinetSocket });
+        LootSocket unsupported = TestGameData.Dam.LootSockets.First(socket => socket is { DataLayer: null } && LootSocketClasses.Candidates(TestGameData.Data, socket).Count > 0 && LootSocketClasses.Supported(TestGameData.Data, socket).Count == 0);
         LootSocket[] sockets =
         [
             cabinet,
@@ -59,7 +59,7 @@ public sealed class LootTests
             unsupported,
         ];
 
-        LootCatalog catalog = new(new ScriptedPlayer().Worlds.Current!.State.Replication, sockets, DamLootSockets.Meshes, DamRounds.All[0].Name, ["DataLayer_Active"], 7, LootSpawnRules.EverySocket);
+        LootCatalog catalog = new(TestGameData.Raid, new ScriptedPlayer().Worlds.Current!.State.Replication, sockets, TestGameData.Dam.LootSocketMeshes, TestGameData.Dam.Rounds[0].Name, ["DataLayer_Active"], 7, LootSpawnRules.EverySocket);
         LootSpawnCounts counts = catalog.Counts;
         Assert.Equal((5, 2, 1, 1, 1, 1, 0, 0, 0), (counts.Sockets, counts.Spawned, counts.InactiveLayer, counts.NoContainerType, counts.Unsupported, counts.Classes, counts.SkippedByRoll, counts.SkippedByGroupCap, counts.SkippedByLimiter));
         Assert.Equal(2, counts.SpawnedByLootValue[PointOfInterestLootValue.Unknown]);
@@ -76,10 +76,10 @@ public sealed class LootTests
 
         IReadOnlyList<LootContainer> near = session.Raid.Loot.Relevant(at);
         Assert.Same(cabinet, near[0]);
-        Assert.All(near, container => Assert.True(Distance(container.Location, at) <= LootContainerClasses.NetCullDistance));
-        Assert.Equal(session.Raid.Loot.Containers.Count(container => Distance(container.Location, at) <= LootContainerClasses.NetCullDistance), near.Count);
-        Assert.DoesNotContain(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + LootContainerClasses.NetCullDistance + 1 }));
-        Assert.Contains(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + LootContainerClasses.NetCullDistance - 1 }));
+        Assert.All(near, container => Assert.True(Distance(container.Location, at) <= TestGameData.Loot.ContainerDefaults.NetCullDistance));
+        Assert.Equal(session.Raid.Loot.Containers.Count(container => Distance(container.Location, at) <= TestGameData.Loot.ContainerDefaults.NetCullDistance), near.Count);
+        Assert.DoesNotContain(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Loot.ContainerDefaults.NetCullDistance + 1 }));
+        Assert.Contains(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Loot.ContainerDefaults.NetCullDistance - 1 }));
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class LootTests
         ChannelBunch names = LootCatalog.ComponentExportBunch(container);
         (ObjectExports records, IReadOnlyList<ulong> roots) = ObjectExports.Read(new BitReader(names.Payload, names.PayloadBits));
         Assert.Equal(container.Components, roots);
-        Assert.Equal(LootContainerClasses.InteractionComponent, Assert.IsType<StableSubobjectExport>(records.Records[container.Interaction]).Path);
+        Assert.Equal(LootContainerBlueprintMembers.InteractionComponent, Assert.IsType<StableSubobjectExport>(records.Records[container.Interaction]).Path);
         Assert.Equal(container.Guid, records.Records[container.Interaction].Outer);
 
         ChannelBunch search = session.Raid.Loot.StateBunch(container, 300, new LootView(CurrentInteractionState.Idle, null, null, null));
@@ -218,7 +218,7 @@ public sealed class LootTests
         Assert.Equal((ulong)CurrentInteractionState.Ongoing, searching[PropertyNames.CurrentInteractionState]);
 
         // Not before the tool is out, the character lined up and the breach held.
-        double drawn = at + FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds;
+        double drawn = at + TestGameData.Items.FerroI.UnequipSeconds + TestGameData.Items.RaiderTool.EquipSeconds;
         double opensAt = drawn + container.Class.AlignmentSeconds + container.Class.HoldSeconds;
         session.Input(frame + 3, frame + 6, focus: container.Interaction, position: container.Prompt);
         session.Service(opensAt - 0.1);
@@ -271,7 +271,7 @@ public sealed class LootTests
     [Fact]
     public void A_spawner_container_is_searched_like_a_socket_container()
     {
-        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Dam });
+        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam) });
         LootContainer container = session.Raid.Loot.Containers.First(container => container.Source == LootContainerSource.Spawner);
         Assert.Null(container.Socket);
         (uint frame, double at) = Reach(session, container);
@@ -280,7 +280,7 @@ public sealed class LootTests
         session.Input(frame, frame + 3, container.Interaction, container.Interaction, container.Prompt, request: PressWithTool);
         session.Service(at);
         Assert.Equal(1, session.Channels.LootSearches);
-        double ready = container.Class.EquipsRaiderTool ? at + FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds : at;
+        double ready = container.Class.EquipsRaiderTool ? at + TestGameData.Items.FerroI.UnequipSeconds + TestGameData.Items.RaiderTool.EquipSeconds : at;
         session.Input(frame + 3, frame + 6, focus: container.Interaction, position: container.Prompt);
         session.Service(ready + container.Class.AlignmentSeconds + container.Class.HoldSeconds);
         Assert.Equal(1, session.Channels.LootOpens);
@@ -295,7 +295,7 @@ public sealed class LootTests
     [Fact]
     public void A_loot_channel_the_client_closes_is_counted_named_and_not_delivered_again()
     {
-        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Dam });
+        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam) });
         LootContainer container = session.Raid.Loot.Containers.First(container => container.Source == LootContainerSource.Spawner);
         (uint frame, double at) = Ready(session);
         ChannelBunch? open = null;
@@ -453,7 +453,7 @@ public sealed class LootTests
     public void A_server_run_interaction_shows_its_times_place_and_animation()
     {
         PawnInteraction interaction = new(0x380002, LastInteractionEvent.Restaged, 357.566, 357.566, 358.566, 3, new Vector3D(76.3, 6.2, -0.1), 0x2F0007);
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(PawnBlackboardFrames.FirstTick, new PawnMotion(default), 0x380002, interaction: interaction);
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, PawnBlackboardFrames.FirstTick, new PawnMotion(default), 0x380002, interaction: interaction);
         PendulumSlot slot = state[PawnBlackboard.InteractorSlot];
         IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[slot.DescriptorId!.Value].Fields;
         // Times and places are steps of about 0.12 around the middle of the field.
@@ -527,7 +527,7 @@ public sealed class LootTests
         StableSubobjectContent component = StableSubobjectContent.Read(reader);
 
         Assert.Equal(container.Interaction, component.Guid);
-        return new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DamDoors.InteractionState]))
+        return new PropertyCodec(new ValueCodec(GameReplication.Catalog, [DoorClasses.InteractionState]))
             .Decode(new PropertyLayout(GameReplication.Catalog, container.InteractionClass), component.Content);
     }
 

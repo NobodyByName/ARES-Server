@@ -32,13 +32,12 @@ internal static class ScriptSchemaCheck
         }
     }
 
+    // The depth of a nested struct, refused past MaxDepth.
+    private static int Deeper(string scriptType, int depth) =>
+        depth < MaxDepth ? depth + 1 : throw new InvalidDataException($"{scriptType}: structs nest too deeply");
+
     private static void Check(ScriptCache cache, string scriptType, StructSchema schema, int depth)
     {
-        if (depth > MaxDepth)
-        {
-            throw new InvalidDataException($"{scriptType}: structs nest too deeply");
-        }
-
         ScriptProperty[] members = [.. cache.Class(scriptType).ReflectedProperties];
         if (members.Length != schema.Members.Count
             || members.Zip(schema.Members).Any(pair => pair.Second is { } known && known.Name != pair.First.Name))
@@ -60,7 +59,7 @@ internal static class ScriptSchemaCheck
             if (type is { Kind: PropertyKind.Struct, Struct: { Native: NativeLayout.None } nested }
                 && cache.TypeName(scriptMember) is { } name && cache.TryGetClass(name, out _))
             {
-                Check(cache, name, nested, depth + 1);
+                Check(cache, name, nested, Deeper(name, depth));
             }
         }
     }

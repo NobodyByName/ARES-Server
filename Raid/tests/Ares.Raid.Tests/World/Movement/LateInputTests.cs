@@ -165,7 +165,7 @@ public sealed class LateInputTests
     private static Run Deliver(IEnumerable<uint> packets, Func<uint, HeldItemInput>? held = null)
     {
         InputHistory history = new();
-        PlayerMovement movement = new(Start, default, 0);
+        PlayerMovement movement = new(TestGameData.Data, Start, default, 0);
         Dictionary<uint, CharacterState> settled = [];
         uint latest = 0;
         int mostMissing = 0;

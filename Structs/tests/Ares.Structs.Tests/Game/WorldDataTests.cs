@@ -24,6 +24,14 @@ public sealed class WorldDataTests
     }
 
     [Fact]
+    public void Dam_protocol_facts_equal_the_generated_map_identity()
+    {
+        Assert.Equal(DamMap.GameModeTag, DamProtocol.GameModeTag);
+        Assert.Equal(DamMap.GlobalActors, DamProtocol.GlobalActors);
+        Assert.Equal(DamMap.WorldDataLayersClass, MapWorldClasses.WorldDataLayers);
+    }
+
+    [Fact]
     public void Ladders_climb_whole_cycles_and_end_below_their_top()
     {
         Assert.Equal(43, DamLadders.All.Count);

@@ -33,17 +33,17 @@ public sealed class RaidReservationTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.OK, (await _host.Post("/v1/pioneer/v1/batch-operation", swap, bearer)).StatusCode);
         Assert.Null(store.ReservedTicketId);
-        Assert.Equal(ItemTechnicalNames.CombatMk1, new InventoryStore(_host.Database.Store, TestDatabase.UserId).Inventory.Loadout.Augment!.Type);
+        Assert.Equal(ItemTechnicalNames.CombatMk1, new InventoryStore(_host.Database.Store, TestDatabase.UserId, TestCatalog.Real).Inventory.Loadout.Augment!.Type);
         ticket ??= await _host.StartMatch(bearer);
         Assert.NotEqual(oldTicket, ticket);
         Assert.Equal(HttpStatusCode.OK, (await _host.Post("/v1/shared/match/status", new { ticketId = ticket }, bearer)).StatusCode);
 
         PlayerLoadout loadout = Assert.Single(_host.Raid.LastRequest!.Loadouts!);
         Assert.Equal(store.Snapshot.Revision, loadout.Revision);
-        Assert.Equal("combat", Assert.Single(loadout.Items, item => item.GameAssetId == AugmentItems.CombatMk1AssetId).InstanceId);
-        Assert.Contains(loadout.Items, item => item.GameAssetId == AugmentItems.FrameAssetIds[AugmentItems.CombatMk1AssetId]);
-        Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == AugmentItems.LootingMk1AssetId);
-        Assert.Single(loadout.Items, item => item.GameAssetId == StorageItems.RubberDuckAssetId);
+        Assert.Equal("combat", Assert.Single(loadout.Items, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.CombatMk1)).InstanceId);
+        Assert.Contains(loadout.Items, item => item.GameAssetId == TestCatalog.AugmentFrames[TestCatalog.Asset(ItemTechnicalNames.CombatMk1)]);
+        Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.LootingMk1));
+        Assert.Single(loadout.Items, item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.RubberDuck));
         Assert.Equal(ticket, store.ReservedTicketId);
         Assert.Equal(3, store.Inventory.ItemCount);
         Assert.Equal("looting", Assert.Single(store.Inventory.Stash.Items).InstanceId);
@@ -64,7 +64,7 @@ public sealed class RaidReservationTests : IAsyncLifetime
         Assert.Equal(ticket, store.ReservedTicketId);
         Assert.Equal(ItemTechnicalNames.LootingMk1, store.Inventory.Loadout.Augment!.Type);
         Assert.Equal("looting", Assert.Single(Assert.Single(_host.Raid.LastRequest!.Loadouts!).Items,
-            item => item.GameAssetId == AugmentItems.LootingMk1AssetId).InstanceId);
+            item => item.GameAssetId == TestCatalog.Asset(ItemTechnicalNames.LootingMk1)).InstanceId);
     }
 
     [Theory]

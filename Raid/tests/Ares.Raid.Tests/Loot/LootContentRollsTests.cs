@@ -1,4 +1,3 @@
-using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Loot;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
@@ -34,10 +33,10 @@ public sealed class LootContentRollsTests
     [Fact]
     public void Candidates_are_plain_items_the_pool_selects_and_the_container_accepts()
     {
-        HashSet<ItemDefinition> plain = [.. LoadoutDefinitions.Generated.PlainItems];
-        foreach (LootContainerType type in LootContainerTypes.All)
+        HashSet<ItemDefinition> plain = [.. TestGameData.Items.Definitions.PlainItems];
+        foreach (LootContainerType type in TestGameData.Loot.ContainerTypes)
         {
-            IReadOnlyList<ItemDefinition> candidates = LootContentRolls.Candidates(type.Tag);
+            IReadOnlyList<ItemDefinition> candidates = TestGameData.Raid.LootRolls.Candidates(type.Tag);
             Assert.All(candidates, item =>
             {
                 Assert.Contains(item, plain);
@@ -49,11 +48,11 @@ public sealed class LootContentRollsTests
 
         // Typical server cabinet items are candidates there; the Mushroom socket holds only Mushroom.
         HashSet<string> cabinetItems = ["DA_Item_Salvage_Sensors", "DA_Item_Salvage_Processor", "DA_Item_Salvage_FriedMotherboard", "DA_Item_Salvage_CoolingFan", "DA_Item_Salvage_Plastic"];
-        Assert.Superset(cabinetItems, new HashSet<string>(LootContentRolls.Candidates(ServerCabinet).Select(item => item.TechnicalName)));
-        Assert.Equal(["DA_Item_Consumable_Mushroom"], LootContentRolls.Candidates("Socket.LootContainer.Nature.Mushroom").Select(item => item.TechnicalName));
-        Assert.Empty(LootContentRolls.Candidates("Socket.LootContainer.Nature.Resin"));
-        Assert.Empty(LootContentRolls.Candidates("Socket.LootContainer.ARC.Wreck02"));
-        Assert.Equal("Medical", LootContentRolls.TablePool("Socket.LootCOntainer.Medical.RsrCartShelf.Drawer01")?.Name);
+        Assert.Superset(cabinetItems, new HashSet<string>(TestGameData.Raid.LootRolls.Candidates(ServerCabinet).Select(item => item.TechnicalName)));
+        Assert.Equal(["DA_Item_Consumable_Mushroom"], TestGameData.Raid.LootRolls.Candidates("Socket.LootContainer.Nature.Mushroom").Select(item => item.TechnicalName));
+        Assert.Empty(TestGameData.Raid.LootRolls.Candidates("Socket.LootContainer.Nature.Resin"));
+        Assert.Empty(TestGameData.Raid.LootRolls.Candidates("Socket.LootContainer.ARC.Wreck02"));
+        Assert.Equal("Medical", TestGameData.Raid.LootRolls.TablePool("Socket.LootCOntainer.Medical.RsrCartShelf.Drawer01")?.Name);
     }
 
     [Fact]
@@ -64,10 +63,10 @@ public sealed class LootContentRollsTests
         foreach (string tag in (string[])[ServerCabinet, "Socket.LootContainer.Commercial.GvtDesk.Drawer", "Socket.LootContainer.Industrial.Lockers.Door",
                      "Socket.LootCOntainer.Medical.RsrCartShelf.Drawer01", "Socket.LootContainer.Mechanical.Car01.Trunk", "Socket.LootContainer.Residential.Closet.Door"])
         {
-            IReadOnlyList<ItemDefinition> candidates = LootContentRolls.Candidates(tag);
+            IReadOnlyList<ItemDefinition> candidates = TestGameData.Raid.LootRolls.Candidates(tag);
             for (int roll = 0; roll < 200; roll++)
             {
-                LootContents contents = LootContentRolls.Roll(tag, "", 8, PointOfInterestLootValue.Unknown, random);
+                LootContents contents = TestGameData.Raid.LootRolls.Roll(tag, "", 8, PointOfInterestLootValue.Unknown, random);
                 // Two or three drawn stacks (fewer when avoid groups leave no item), and at most one extra stack.
                 List<LootStack> salvage = [.. contents.Stacks.Where(stack => candidates.Contains(stack.Item))];
                 Assert.InRange(contents.Stacks.Count, 1, 4);
@@ -89,7 +88,7 @@ public sealed class LootContentRollsTests
         }
 
         // A container never holds more stacks than slots.
-        Assert.Single(LootContentRolls.Roll(ServerCabinet, "", 1, PointOfInterestLootValue.Unknown, new Random(3)).Stacks);
+        Assert.Single(TestGameData.Raid.LootRolls.Roll(ServerCabinet, "", 1, PointOfInterestLootValue.Unknown, new Random(3)).Stacks);
     }
 
     [Fact]
@@ -99,7 +98,7 @@ public sealed class LootContentRollsTests
         Assert.True(Rare(PointOfInterestLootValue.High, random) > Rare(PointOfInterestLootValue.Unknown, random) * 1.2);
 
         // The server cabinet's pool has no ammunition or healing items: those come from the extra stack.
-        int extras = Enumerable.Range(0, 2000).Count(_ => LootContentRolls.Roll(ServerCabinet, "", 8, PointOfInterestLootValue.Unknown, random).Stacks
+        int extras = Enumerable.Range(0, 2000).Count(_ => TestGameData.Raid.LootRolls.Roll(ServerCabinet, "", 8, PointOfInterestLootValue.Unknown, random).Stacks
             .Any(stack => stack.Item.DropTags.Any(tag => tag.StartsWith("Item.Drop.Type.Ammo", StringComparison.Ordinal) || tag.StartsWith("Item.Drop.Type.Consumable.Healing", StringComparison.Ordinal))));
         Assert.InRange(extras, 200, 400);
     }
@@ -108,21 +107,21 @@ public sealed class LootContentRollsTests
     public void Nature_raider_and_unfilled_containers_follow_their_own_rules()
     {
         Random random = new(9);
-        LootStack mushroom = Assert.Single(LootContentRolls.Roll("Socket.LootContainer.Nature.Mushroom", "", 8, PointOfInterestLootValue.High, random).Stacks);
+        LootStack mushroom = Assert.Single(TestGameData.Raid.LootRolls.Roll("Socket.LootContainer.Nature.Mushroom", "", 8, PointOfInterestLootValue.High, random).Stacks);
         Assert.Equal(("DA_Item_Consumable_Mushroom", 1), (mushroom.Item.TechnicalName, mushroom.Amount));
-        Assert.Equal(new LootContents("Nature", []), LootContentRolls.Roll("Socket.LootContainer.Nature.Resin", "", 8, PointOfInterestLootValue.Unknown, random));
-        Assert.Equal(new LootContents("ARC", []), LootContentRolls.Roll("Socket.LootContainer.ARC.Wreck02", "", 8, PointOfInterestLootValue.Unknown, random));
-        Assert.Equal(new LootContents(null, []), LootContentRolls.Roll(null, "/Game/Unknown.Unknown_C", 8, PointOfInterestLootValue.Unknown, random));
+        Assert.Equal(new LootContents("Nature", []), TestGameData.Raid.LootRolls.Roll("Socket.LootContainer.Nature.Resin", "", 8, PointOfInterestLootValue.Unknown, random));
+        Assert.Equal(new LootContents("ARC", []), TestGameData.Raid.LootRolls.Roll("Socket.LootContainer.ARC.Wreck02", "", 8, PointOfInterestLootValue.Unknown, random));
+        Assert.Equal(new LootContents(null, []), TestGameData.Raid.LootRolls.Roll(null, "/Game/Unknown.Unknown_C", 8, PointOfInterestLootValue.Unknown, random));
 
         for (int roll = 0; roll < 100; roll++)
         {
-            LootContents weapons = LootContentRolls.Roll(null, WeaponCaseHigh, 8, PointOfInterestLootValue.Unknown, random);
+            LootContents weapons = TestGameData.Raid.LootRolls.Roll(null, WeaponCaseHigh, 8, PointOfInterestLootValue.Unknown, random);
             Assert.Equal("RaiderWeaponsHigh", weapons.Pool);
             Assert.InRange(weapons.Stacks.Count, 1, 3);
             Assert.All(weapons.Stacks, stack => Assert.True(stack.Item.Category == ItemCategory.Modification
                 ? !stack.Item.DropTags.Contains("Item.Drop.Tier.Low")
                 : stack.Item.DropTags.Any(tag => tag.StartsWith("Item.Drop.Type.Ammo.", StringComparison.Ordinal)) && stack.Amount >= Math.Min(10, stack.Item.MaxStack)));
-            LootContents medical = LootContentRolls.Roll(null, MedicalBag, 8, PointOfInterestLootValue.Unknown, random);
+            LootContents medical = TestGameData.Raid.LootRolls.Roll(null, MedicalBag, 8, PointOfInterestLootValue.Unknown, random);
             Assert.All(medical.Stacks, stack => Assert.Contains(stack.Item.DropTags, tag => tag.StartsWith("Item.Drop.Type.Consumable.Healing", StringComparison.Ordinal)));
             Assert.Equal(medical.Stacks.Count, medical.Stacks.Select(stack => stack.Item).Distinct().Count());
         }
@@ -133,14 +132,14 @@ public sealed class LootContentRollsTests
 
     // Rare stacks in 2000 server cabinets of an area's loot value.
     private static int Rare(PointOfInterestLootValue value, Random random) => Enumerable.Range(0, 2000)
-        .Sum(_ => LootContentRolls.Roll(ServerCabinet, "", 8, value, random).Stacks.Count(stack => LootContentRolls.TierOf(stack.Item) == LootTier.Rare));
+        .Sum(_ => TestGameData.Raid.LootRolls.Roll(ServerCabinet, "", 8, value, random).Stacks.Count(stack => LootContentRolls.TierOf(stack.Item) == LootTier.Rare));
 
-    private static ItemDefinition Item(string name) => LoadoutDefinitions.Generated.CarriedItems.Single(item => item.TechnicalName == name);
+    private static ItemDefinition Item(string name) => TestGameData.Items.Definitions.CarriedItems.Single(item => item.TechnicalName == name);
 
     private static List<(string Item, int Amount)> Rolls(string tag, int seed, int count)
     {
         Random random = new(seed);
-        return [.. Enumerable.Range(0, count).SelectMany(_ => LootContentRolls.Roll(tag, "", 8, PointOfInterestLootValue.Unknown, random).Stacks)
+        return [.. Enumerable.Range(0, count).SelectMany(_ => TestGameData.Raid.LootRolls.Roll(tag, "", 8, PointOfInterestLootValue.Unknown, random).Stacks)
             .Select(stack => (stack.Item.TechnicalName, stack.Amount))];
     }
 }

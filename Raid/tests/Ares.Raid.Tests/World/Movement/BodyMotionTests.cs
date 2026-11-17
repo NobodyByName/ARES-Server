@@ -22,7 +22,7 @@ public sealed class BodyMotionTests
 
         for (uint frame = 1; frame <= 30; frame++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(300, 0, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(300, 0, 0), Tick);
         }
 
         Assert.False(body.Airborne);
@@ -39,13 +39,13 @@ public sealed class BodyMotionTests
         CollisionWorld world = World();
         BodyState body = BodyMotion.Start(world, new Vector3D(-1000, 0, 0));
         uint frame = 10;
-        body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, true), default, Tick);
+        body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, true), default, Tick);
         Assert.Equal(frame, body.JumpRequestedAt);
 
         while (!body.Airborne)
         {
             frame++;
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), default, Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), default, Tick);
         }
 
         Assert.Equal(10u + (uint)AirMovementParameters.JumpDelayTicks, frame);
@@ -61,7 +61,7 @@ public sealed class BodyMotionTests
         {
             frame++;
             airTicks++;
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), default, Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), default, Tick);
             highest = Math.Max(highest, body.Position.Z);
         }
 
@@ -77,7 +77,7 @@ public sealed class BodyMotionTests
         for (int settle = 0; settle < 30; settle++)
         {
             frame++;
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), default, Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), default, Tick);
         }
 
         // A character that stands still after its landing keeps the height the landing left it at.
@@ -93,20 +93,20 @@ public sealed class BodyMotionTests
         BodyState body = BodyMotion.Start(world, new Vector3D(-1000, 0, 1));
 
         // Standing a little above the ground changes nothing.
-        body = BodyMotion.Move(world, BodyMotion.Begin(body, 1, false), default, Tick);
+        body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, 1, false), default, Tick);
         Assert.Equal(1, body.Position.Z);
         Assert.Equal(0, body.Velocity.Z);
 
         // One walking tick takes the share of the height that the smoothest path to rest within the settle time covers.
         const double Share = Tick / GroundContactParameters.SettleSeconds;
         const double Pull = 30 * Share * Share * (1 - Share) * (1 - Share) / GroundContactParameters.SettleSeconds;
-        body = BodyMotion.Move(world, BodyMotion.Begin(body, 2, false), new Vector3D(30, 0, 0), Tick);
+        body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, 2, false), new Vector3D(30, 0, 0), Tick);
         Assert.Equal(-Pull, body.Velocity.Z, 9);
         Assert.Equal(1 - (Pull * Tick), body.Position.Z, 9);
 
         for (uint frame = 3; frame < 60; frame++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(30, 0, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(30, 0, 0), Tick);
         }
 
         Assert.Equal(0, body.Position.Z, 4);
@@ -136,7 +136,7 @@ public sealed class BodyMotionTests
         while (body.Position.X < 400 && frame < 200)
         {
             frame++;
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(300, 0, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(300, 0, 0), Tick);
             if (body.Airborne && double.IsNaN(left))
             {
                 left = body.Position.X;
@@ -156,7 +156,7 @@ public sealed class BodyMotionTests
         BodyState body = BodyMotion.Start(world, new Vector3D(-1000, 0, 0));
         for (uint frame = 1; frame <= 60; frame++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(0, 300, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(0, 300, 0), Tick);
         }
 
         // The wall's face is at y = 200.
@@ -166,7 +166,7 @@ public sealed class BodyMotionTests
         double along = body.Position.X;
         for (uint frame = 61; frame <= 90; frame++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(200, 200, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(200, 200, 0), Tick);
         }
 
         Assert.Equal(along + 200, body.Position.X, 0);
@@ -180,7 +180,7 @@ public sealed class BodyMotionTests
         CollisionWorld world = World();
         // Placed with its pill a few units into the wall, whose face is at y = 200.
         BodyState body = BodyMotion.Start(world, new Vector3D(-1000, 200 - GroundContactParameters.PillRadius + 5, 0));
-        BodyState moved = BodyMotion.Move(world, BodyMotion.Begin(body, 1, false), new Vector3D(2, 0, 0), Tick);
+        BodyState moved = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, 1, false), new Vector3D(2, 0, 0), Tick);
 
         Assert.True(moved.Position.Y < body.Position.Y);
         Assert.InRange(Math.Sqrt((moved.Velocity.X * moved.Velocity.X) + (moved.Velocity.Y * moved.Velocity.Y)), 0, 2 + 1e-9);
@@ -193,7 +193,7 @@ public sealed class BodyMotionTests
         BodyState body = BodyMotion.Start(world, new Vector3D(-1000, -400, 0));
         for (uint frame = 1; frame <= 40; frame++)
         {
-            body = BodyMotion.Move(world, BodyMotion.Begin(body, frame, false), new Vector3D(0, -300, 0), Tick);
+            body = BodyMotion.Move(TestGameData.Data, world, BodyMotion.Begin(body, frame, false), new Vector3D(0, -300, 0), Tick);
         }
 
         // A platform 20 high starts at y = -500.
@@ -253,10 +253,10 @@ public sealed class BodyMotionTests
             SyntheticMaps.At(-1000, 0, 140), PlacementFlags.BlocksPawn);
         CollisionWorld world = new(builder.Build());
 
-        Assert.False(BodyMotion.CanStand(world, new Vector3D(-500, 0, 0)));
-        Assert.True(BodyMotion.CanStand(world, new Vector3D(500, 0, 0)));
+        Assert.False(BodyMotion.CanStand(TestGameData.Data, world, new Vector3D(-500, 0, 0)));
+        Assert.True(BodyMotion.CanStand(TestGameData.Data, world, new Vector3D(500, 0, 0)));
 
-        CharacterSimulation simulation = new(new Vector3D(-500, 0, 0), world: world);
+        CharacterSimulation simulation = new(TestGameData.Data, new Vector3D(-500, 0, 0), world: world);
         for (uint frame = 1; frame <= 5; frame++)
         {
             Step(simulation, frame, MovementButtons.Crouch | (frame > 1 ? MovementButtons.PreviousCrouch : MovementButtons.None));
@@ -285,7 +285,7 @@ public sealed class BodyMotionTests
         builder.AddPlacement(builder.AddBody(SyntheticMaps.Body("wall", boxes: [SyntheticMaps.Box(new Vector3(10, 500, 57.5f))])), cell,
             SyntheticMaps.At(100, 0, 57.5), PlacementFlags.BlocksPawn | PlacementFlags.BlocksClimbable);
         CollisionWorld world = new(builder.Build());
-        CharacterSimulation simulation = new(new Vector3D(-100, 0, 0), world: world);
+        CharacterSimulation simulation = new(TestGameData.Data, new Vector3D(-100, 0, 0), world: world);
         uint frame = 1;
         for (; frame <= 10; frame++)
         {
@@ -297,7 +297,7 @@ public sealed class BodyMotionTests
         Assert.False(found.VaultMissed);
         Assert.Equal(VaultKind.Over, found.Vault!.Value.Kind);
         Assert.Equal(VaultParameters.ActionStance, found.Stance);
-        Assert.Equal(GeneratedGraphStateFlags.Vaulting, found.GraphFlags & GeneratedGraphStateFlags.Vaulting);
+        Assert.Equal(TestGameData.Flags.Vaulting, found.GraphFlags(TestGameData.Data) & TestGameData.Flags.Vaulting);
         Assert.True(found.Body!.Value.Airborne);
 
         int duration = VaultMovement.Duration(found.Vault.Value);
@@ -309,14 +309,14 @@ public sealed class BodyMotionTests
         Assert.True(simulation.State.VaultFinished);
         CharacterState after = Walk(simulation, frame, 0);
         Assert.False(after.Vaulting);
-        Assert.Equal(0UL, after.GraphFlags & GeneratedGraphStateFlags.Vaulting);
+        Assert.Equal(0UL, after.GraphFlags(TestGameData.Data) & TestGameData.Flags.Vaulting);
         Assert.True(after.Body!.Value.Position.X > 110);
     }
 
     [Fact]
     public void A_vault_request_with_nothing_to_vault_is_reported_as_missed()
     {
-        CharacterSimulation simulation = new(new Vector3D(-1000, 0, 0), world: World());
+        CharacterSimulation simulation = new(TestGameData.Data, new Vector3D(-1000, 0, 0), world: World());
         CharacterState state = Walk(simulation, 1, 1UL << VaultParameters.RequestBit);
 
         Assert.True(state.VaultMissed);
@@ -351,7 +351,7 @@ public sealed class BodyMotionTests
 
     private static CharacterState Walk(CharacterSimulation simulation, uint frame, ulong claims) =>
         simulation.StepOnGround(new CharacterInput(frame, claims), new MovementInput(frame, 126, 0, MovementButtons.None), 0, PawnBlackboard.TickSeconds,
-            GroundMovementParameters.Unarmed, steerAboveMaximum: true, fixBrakingOvershoot: true, vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
+            GroundMovementParameters.Unarmed, steerAboveMaximum: true, fixBrakingOvershoot: true, vaults: TestGameData.Data.Movement.Vaults(armed: false, exhausted: false));
 
     private static CharacterState Step(CharacterSimulation simulation, uint frame, MovementButtons buttons) =>
         simulation.StepOnGround(new CharacterInput(frame, 0), new MovementInput(frame, 0, 0, buttons), 0, PawnBlackboard.TickSeconds,

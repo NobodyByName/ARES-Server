@@ -114,7 +114,7 @@ public sealed class PropertyReaderTests
             new PropertyField("Asset", PropertyType.StructOf(EngineStructs.SoftObjectPath)),
             new PropertyField("Tags", PropertyType.StructOf(EngineStructs.GameplayTagContainer)),
             new PropertyField("Turn", PropertyType.StructOf(EngineStructs.Rotator)),
-            new PropertyField("Small", PropertyType.StructOf(EngineStructs.Vector3f)),
+            new PropertyField("Small", PropertyType.StructOf(EngineStructs.Vector3F)),
         ]);
         byte[] block =
         [

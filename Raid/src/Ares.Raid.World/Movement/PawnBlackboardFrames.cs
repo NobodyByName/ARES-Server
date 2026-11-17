@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Movement;
@@ -52,6 +53,7 @@ public static class PawnBlackboardFrames
     private static readonly IReadOnlyList<PendulumField> s_slideFields = PendulumRegistry.Descriptors[PawnSlideState.DescriptorId].Fields;
 
     /// <summary>The pawn's state at a tick.</summary>
+    /// <param name="data">The game data: the graph state flags the simulation decides.</param>
     /// <param name="tick">Simulation tick (an input frame of the client).</param>
     /// <param name="motion">Character movement.</param>
     /// <param name="focus">Interaction the character may use (its focused button), or 0 for none.</param>
@@ -61,9 +63,11 @@ public static class PawnBlackboardFrames
     /// <param name="interaction">The interaction under way and its last event, if the server runs one (an open container).</param>
     /// <param name="emptySlots">Slots that keep their place in the layout without a variable (see <c>RaidWeapons.EmptyItemSlots</c>).</param>
     /// <returns>The slots by index.</returns>
-    public static IReadOnlyDictionary<int, PendulumSlot> State(uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
+    public static IReadOnlyDictionary<int, PendulumSlot> State(GameDataSet data, uint tick, PawnMotion motion, ulong focus, PendulumVariable? inventory = null,
         IReadOnlyList<PendulumVariable>? weapons = null, long timeOffset = 0, PawnInteraction? interaction = null, IReadOnlyList<PendulumSlot>? emptySlots = null)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        GraphStateFlags graphFlags = data.Names.GraphFlags;
         long storedOffset = s_timeOffset.Default + timeOffset;
         if (storedOffset < 0 || storedOffset >= s_timeOffset.Maximum)
         {
@@ -98,10 +102,10 @@ public static class PawnBlackboardFrames
                     {
                         // The simulation decides its own flags; the others keep their initial values.
                         ulong flags = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.GraphTagsField)?.Value ?? 0;
-                        ulong simulated = GeneratedGraphStateFlags.Simulated | (graph.HeldItem is not null ? GeneratedGraphStateFlags.HeldItem : 0);
-                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphTagsField, (flags & ~simulated) | graph.GraphFlags));
+                        ulong simulated = graphFlags.Simulated | (graph.HeldItem is not null ? graphFlags.HeldItem : 0);
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphTagsField, (flags & ~simulated) | graph.GraphFlags(data)));
                         ulong upper = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.GraphUpperTagsField)?.Value ?? 0;
-                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphUpperTagsField, (upper & ~GeneratedGraphStateFlags.SimulatedUpper) | graph.UpperGraphFlags));
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphUpperTagsField, (upper & ~graphFlags.SimulatedUpper) | graph.UpperGraphFlags(data)));
                     }
 
                     break;

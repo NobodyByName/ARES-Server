@@ -64,12 +64,12 @@ public sealed class FrameReadBackTests
     {
         Dictionary<uint, CharacterState> reference = ReferenceRun.Run(s_floor, s_start, Start + 2, Last,
             frame => ReferenceRun.Input(frame, Input(frame), Input(frame - 1)));
-        List<CharacterState> whole = ScriptedClient.Deliver(new PlayerMovement(Start, s_start, 0, s_floor), Script, ScriptedClient.InOrder(Start + 3, Last));
+        List<CharacterState> whole = ScriptedClient.Deliver(new PlayerMovement(TestGameData.Data, Start, s_start, 0, s_floor), Script, ScriptedClient.InOrder(Start + 3, Last));
         const uint Seed = Slide + 10;
         CharacterState seed = whole[(int)(Seed - Start - 1)];
         Assert.NotNull(seed.Slide);
 
-        List<CharacterState> continued = ScriptedClient.Deliver(PlayerMovement.From(Seed, seed, 0, s_floor), Script, ScriptedClient.InOrder(Seed + 1, Last));
+        List<CharacterState> continued = ScriptedClient.Deliver(PlayerMovement.From(TestGameData.Data, Seed, seed, 0, s_floor), Script, ScriptedClient.InOrder(Seed + 1, Last));
 
         Assert.Equal(whole[(int)(Seed - Start)..], continued);
         return;
@@ -91,7 +91,7 @@ public sealed class FrameReadBackTests
             layout.ActiveSlot);
 
     private static IReadOnlyDictionary<int, PendulumSlot> Frame(uint frame, CharacterState state, IReadOnlyList<PendulumVariable> weapons) =>
-        PawnBlackboardFrames.State(frame, new PawnMotion(state.Position, state.Velocity, state.Yaw, state), 0, weapons: weapons);
+        PawnBlackboardFrames.State(TestGameData.Data, frame, new PawnMotion(state.Position, state.Velocity, state.Yaw, state), 0, weapons: weapons);
 
     // The frame's slots; the action and graph states as their integer fields apart from those not read back.
     private static List<string> Text(IReadOnlyDictionary<int, PendulumSlot> frame, int[] skipped) =>
@@ -102,7 +102,7 @@ public sealed class FrameReadBackTests
         { Slot: PawnBlackboard.ActionStateSlot, DescriptorId: { } descriptor } => Fields(slot, descriptor,
             (index, value) => s_notReadBack.Contains(index) ? 0 : value),
         { Slot: PawnBlackboard.GraphStateSlot, DescriptorId: { } descriptor } => Fields(slot, descriptor,
-            (index, value) => index == PawnBlackboard.GraphUpperTagsField ? value & ~GraphStateUpperTags.UiSkillStateActiveSprintBoost : value),
+            (index, value) => index == PawnBlackboard.GraphUpperTagsField ? value & ~TestGameData.Tags.UiSkillStateActiveSprintBoost.Mask : value),
         _ => Convert.ToHexStringLower(slot.Value),
     };
 

@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 
@@ -270,6 +271,7 @@ public static class RopeSwingMovement
     }
 
     /// <summary>Advances a swing by one simulation tick (<c>SimUpdateSelfBP</c> without wall faces).</summary>
+    /// <param name="data">The game data: the graph state flags of a swing.</param>
     /// <param name="state">Swing state.</param>
     /// <param name="rope">The rope.</param>
     /// <param name="input">The tick's input.</param>
@@ -280,9 +282,11 @@ public static class RopeSwingMovement
     /// <param name="seconds">Simulation step duration.</param>
     /// <param name="vault">The vault query a climb to the top or a vault request runs, if any.</param>
     /// <returns>Velocity, heading, flags, the rope and the exit, if any.</returns>
-    public static RopeSwingStep Step(RopeSwingState state, GrappleRope rope, RopeSwingInput input, Vector3D feet, Vector3D velocity, double halfHeight,
-        RopeSwingGround ground, double seconds, RopeSwingVaultQuery? vault = null)
+    public static RopeSwingStep Step(GameDataSet data, RopeSwingState state, GrappleRope rope, RopeSwingInput input, Vector3D feet, Vector3D velocity,
+        double halfHeight, RopeSwingGround ground, double seconds, RopeSwingVaultQuery? vault = null)
     {
+        ArgumentNullException.ThrowIfNull(data);
+        GraphStateFlags graph = data.Names.GraphFlags;
         if (!double.IsFinite(seconds) || seconds <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(seconds));
@@ -297,16 +301,16 @@ public static class RopeSwingMovement
 
         if (!rope.Anchored)
         {
-            return End(next, rope, velocity, feet, seconds, RopeSwingExit.Unanchored, false);
+            return End(graph, next, rope, velocity, feet, seconds, RopeSwingExit.Unanchored, false);
         }
 
         bool forcedClimb = state.GroundClimbEntry && next.Ticks * (double)(float)PawnBlackboard.TickSeconds < SwingParameters.GroundClimbEntryForcedClimbTime;
         next = next with { ClimbingUpRope = input.FireDown || forcedClimb, Rappelling = input.CrouchDown, HadWallKickInput = false };
-        ulong flags = GeneratedGraphStateFlags.Swinging;
+        ulong flags = graph.Swinging;
         int crouchBlock = 0;
         if (next.Rappelling)
         {
-            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
+            flags |= graph.SwingStaminaBlock;
             crouchBlock = GrapplingHookMovement.TimeToTicks(SwingParameters.RappelCrouchBlockTime);
         }
 
@@ -323,7 +327,7 @@ public static class RopeSwingMovement
         if (nearGround && !steepGround && !(velocity.Z > 0) && !(next.ClimbingUpRope && pivotHighEnough))
         {
             double slack = (float)(Vectors.Length(Vectors.Subtract(rope.Pivot, ropeEnd)) + SwingParameters.LandingRopeSlack);
-            return End(next, rope with { WorkingLength = slack }, velocity, feet, seconds, RopeSwingExit.Landed, false);
+            return End(graph, next, rope with { WorkingLength = slack }, velocity, feet, seconds, RopeSwingExit.Landed, false);
         }
 
         next = next with { RopeLength = rope.WorkingLength };
@@ -362,14 +366,14 @@ public static class RopeSwingMovement
         double stamina = 0;
         if (next.Kicking)
         {
-            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
+            flags |= graph.SwingStaminaBlock;
             stamina += SwingParameters.KickStaminaCostPerSecond * seconds;
         }
 
         rope = rope with { WorkingLength = next.RopeLength };
         if (next.RopeOverloaded)
         {
-            return End(next, rope.End(SwingParameters.BrokenEndReason), result, feet, seconds, RopeSwingExit.RopeBroke, true) with
+            return End(graph, next, rope.End(SwingParameters.BrokenEndReason), result, feet, seconds, RopeSwingExit.RopeBroke, true) with
             {
                 Flags = flags,
                 StaminaCost = stamina,
@@ -388,7 +392,7 @@ public static class RopeSwingMovement
 
         if (next.ClimbingUpRope)
         {
-            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
+            flags |= graph.SwingStaminaBlock;
             stamina += SwingParameters.ClimbStaminaCostPerSecond * seconds;
         }
 
@@ -401,7 +405,7 @@ public static class RopeSwingMovement
         rope = rope.End(SwingParameters.ReleasedEndReason);
         result = new Vector3D(result.X + (steerWorld.X * SwingParameters.JumpForce), result.Y + (steerWorld.Y * SwingParameters.JumpForce),
             result.Z + (steerWorld.Z * SwingParameters.JumpForce) + SwingParameters.JumpUpwardForce);
-        flags |= GeneratedGraphStateFlags.SwingJumpStarted;
+        flags |= graph.SwingJumpStarted;
         return Result(next, rope, result, feet, seconds, yaw, flags, RopeSwingExit.JumpOff, true, true, crouchBlock, stamina);
     }
 
@@ -679,9 +683,9 @@ public static class RopeSwingMovement
     }
 
     // The swing ends (EndSwing): detaching, the velocity kept, no turn, the finished state raised.
-    private static RopeSwingStep End(RopeSwingState state, GrappleRope rope, Vector3D velocity, Vector3D feet, double seconds, RopeSwingExit exit,
-        bool afterActionLayer) =>
-        Result(state with { Phase = SwingPhase.Detaching }, rope, velocity, feet, seconds, null, GeneratedGraphStateFlags.Swinging, exit, true, afterActionLayer, 0, 0);
+    private static RopeSwingStep End(GraphStateFlags graph, RopeSwingState state, GrappleRope rope, Vector3D velocity, Vector3D feet, double seconds,
+        RopeSwingExit exit, bool afterActionLayer) =>
+        Result(state with { Phase = SwingPhase.Detaching }, rope, velocity, feet, seconds, null, graph.Swinging, exit, true, afterActionLayer, 0, 0);
 
     private static RopeSwingStep Result(RopeSwingState state, GrappleRope rope, Vector3D velocity, Vector3D feet, double seconds, double? yaw, ulong flags,
         RopeSwingExit exit, bool finished, bool actionLayer, int crouchBlock, double stamina) =>

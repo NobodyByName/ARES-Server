@@ -44,7 +44,7 @@ internal static class VaultReader
             .. s_tables.Select(table => Bags(asset, table).Select(vertical => new HeightRow(
                 VerticalName(vertical),
                 vertical.Get("Height", 0.0),
-                [.. Bags(vertical, "Speeds").Select(speed => Speed(package, speed, paths))])).ToArray()),
+                [.. Bags(vertical, "Speeds").Select(speed => SpeedRowOf(package, speed, paths))])).ToArray()),
         ];
         return new SetRows(asset.Get("Settings", Empty()).Get("GlobalPlayRate", 1.0), tables);
     }
@@ -60,7 +60,7 @@ internal static class VaultReader
     }
 
     /// <summary>The over and onto clips of one speed row.</summary>
-    private static SpeedRow Speed(CookedPackage package, PropertyBag speed, Dictionary<string, RootPath> paths)
+    private static SpeedRow SpeedRowOf(CookedPackage package, PropertyBag speed, Dictionary<string, RootPath> paths)
     {
         ClipDefinition? over = Definition(package, speed.Get("VaultOver", Empty()), paths);
         ClipDefinition? onto = Definition(package, speed.Get("VaultOnTo", Empty()), paths);
@@ -92,15 +92,13 @@ internal static class VaultReader
             throw new InvalidDataException($"{sequence}: the root path is not sampled every {step} s");
         }
 
-        if (!paths.TryGetValue(sequence, out RootPath? known))
-        {
-            paths[sequence] = new RootPath(step, points);
-        }
-        else if (points.Length > 0 && known.Points.Length > 0 && (!SamePoints(known.Points, points) || !known.SampleSeconds.Equals(step)))
+        RootPath? known = paths.GetValueOrDefault(sequence);
+        if (known is { Points.Length: > 0 } && points.Length > 0 && (!SamePoints(known.Points, points) || !known.SampleSeconds.Equals(step)))
         {
             throw new InvalidDataException($"{sequence}: definitions disagree on its root path");
         }
-        else if (points.Length > 0 && known.Points.Length == 0)
+
+        if (known is null || (points.Length > 0 && known.Points.Length == 0))
         {
             paths[sequence] = new RootPath(step, points);
         }

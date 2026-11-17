@@ -5,7 +5,6 @@ using Ares.Raid.World.Replication;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
-using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests.World;
 
@@ -14,19 +13,19 @@ public sealed class PlainItemTests
     [Fact]
     public void Loot_containers_know_the_weight_of_every_carried_item()
     {
-        Assert.Equal(LoadoutDefinitions.Generated.CarriedItems.Count, LootStates.UnitWeights.Count);
-        Assert.All(LoadoutDefinitions.Generated.CarriedItems, item => Assert.Equal(item.Weight, LootStates.UnitWeights[checked((ushort)item.UsableIndex)]));
+        Assert.Equal(TestGameData.Items.Definitions.CarriedItems.Count, TestGameData.Items.UnitWeights.Count);
+        Assert.All(TestGameData.Items.Definitions.CarriedItems, item => Assert.Equal(item.Weight, TestGameData.Items.UnitWeights[checked((ushort)item.UsableIndex)]));
     }
 
     [Fact]
     public void A_catalogue_item_taken_from_a_container_counts_its_weight_and_comes_home_as_its_asset()
     {
-        UsableItem sensors = UsableItems.ByTechnicalName["DA_Item_Salvage_Sensors"];
-        UsableItem grenade = UsableItems.ByTechnicalName["DA_Item_BasicStickyGrenade"];
-        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ItemDefinition sensors = TestGameData.Data.Items.ByTechnicalName["DA_Item_Salvage_Sensors"];
+        ItemDefinition grenade = TestGameData.Data.Items.ByTechnicalName["DA_Item_BasicStickyGrenade"];
+        RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
         ContainerItem found = new(checked((ushort)sensors.UsableIndex), Guid.NewGuid(), 2, 1);
         ContainerItem thrown = new(checked((ushort)grenade.UsableIndex), Guid.NewGuid(), 3, 1);
-        int loot = inventory.OpenWorldContainer([found, thrown], LootStates.UnitWeights);
+        int loot = inventory.OpenWorldContainer([found, thrown], TestGameData.Items.UnitWeights);
         Assert.True(inventory.Apply(Swap(loot, 0, inventory.Backpack, 0)));
         Assert.True(inventory.Apply(Swap(loot, 1, inventory.Backpack, 1)));
         Assert.Equal((2 * sensors.Weight) + (3 * grenade.Weight), inventory.Weight, 6);
@@ -42,15 +41,15 @@ public sealed class PlainItemTests
     [Fact]
     public void A_brought_catalogue_item_keeps_its_identity_in_the_backpack()
     {
-        UsableItem shot = UsableItems.ByTechnicalName["DA_Item_AdrenalinShot"];
+        ItemDefinition shot = TestGameData.Data.Items.ByTechnicalName["DA_Item_AdrenalinShot"];
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        InventoryItem backpackBranch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        InventoryItem backpackBranch = loadout.Items.Single(item => TestGameData.Items.Definitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
         InventoryItem backpack = loadout.Items.Single(item => item.InstanceId == backpackBranch.Slots[0]);
         string target = backpack.Slots[0];
         InventoryItem brought = new(Guid.NewGuid().ToString("D"), shot.AssetId, 4, [], 1, 1, "", "shot", 0);
         loadout = loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == target ? item with { Slots = [brought.InstanceId] } : item), brought] };
 
-        RaidInventory inventory = new(loadout);
+        RaidInventory inventory = new(TestGameData.Items, loadout);
         ContainerItem carried = inventory.Containers[inventory.Backpack].Items[0]!;
         Assert.Equal((checked((ushort)shot.UsableIndex), Guid.Parse(brought.InstanceId), 4), (carried.AssetIndex, carried.Id, carried.Amount));
         Assert.Contains(inventory.CarriedHome(RaidOutcomes.Extracted), item => item.Item == brought);
@@ -61,9 +60,9 @@ public sealed class PlainItemTests
     {
         ScriptedPlayer session = new();
         ReplicationContext replication = session.Worlds.Current!.State.Replication;
-        string round = DamRounds.All[0].Name;
-        LootCatalog first = new(replication, round, [], 1234, LootSpawnRules.Dam);
-        LootCatalog second = new(replication, round, [], 1234, LootSpawnRules.Dam);
+        string round = TestGameData.Dam.Rounds[0].Name;
+        LootCatalog first = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam));
+        LootCatalog second = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam));
         Assert.Equal(first.Containers.Select(Contents), second.Containers.Select(Contents));
         Assert.Contains(first.Containers, container => container.Contents.Stacks.Count >= 2);
 
@@ -77,7 +76,7 @@ public sealed class PlainItemTests
             states.Describe(cabinet.Index), StringComparison.Ordinal);
 
         // A container whose tag no item accepts holds the duck, and counts as a placeholder of its class.
-        LootContainerClass wreck = LootContainerClasses.All.Single(type => type.Container.Class.EndsWith(".BP_SocketContainer_EnemyWreck_02_A_C", StringComparison.Ordinal));
+        LootContainerClass wreck = LootSocketClasses.ServedClasses(TestGameData.Loot).Single(type => type.Container.Class.EndsWith(".BP_SocketContainer_EnemyWreck_02_A_C", StringComparison.Ordinal));
         LootContainer spawned = Assert.IsType<LootContainer>(every.Spawn(wreck, cabinet.Location, default));
         Assert.Equal(("Socket.LootContainer.ARC.Wreck02", "ARC", 0), (spawned.Tag, spawned.Contents.Pool, spawned.Contents.Stacks.Count));
         Assert.Equal([(InventoryBlackboard.RubberDuckIndex, 1)], states.Items(spawned.Index).OfType<ContainerItem>().Select(item => (item.AssetIndex, item.Amount)));
@@ -88,17 +87,17 @@ public sealed class PlainItemTests
     [Fact]
     public void Several_item_kinds_from_a_container_split_merge_and_come_home_with_their_amounts()
     {
-        UsableItem metal = UsableItems.ByTechnicalName["DA_Item_Salvage_ScrapMetal"];
-        UsableItem sensors = UsableItems.ByTechnicalName["DA_Item_Salvage_Sensors"];
-        UsableItem ammo = UsableItems.ByTechnicalName["DA_Item_LightAmmo"];
-        UsableItem mod = UsableItems.ByTechnicalName["DA_Item_WeaponMod_Muzzle_Brake_01"];
-        RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
+        ItemDefinition metal = TestGameData.Data.Items.ByTechnicalName["DA_Item_Salvage_ScrapMetal"];
+        ItemDefinition sensors = TestGameData.Data.Items.ByTechnicalName["DA_Item_Salvage_Sensors"];
+        ItemDefinition ammo = TestGameData.Data.Items.ByTechnicalName["DA_Item_LightAmmo"];
+        ItemDefinition mod = TestGameData.Data.Items.ByTechnicalName["DA_Item_WeaponMod_Muzzle_Brake_01"];
+        RaidInventory inventory = new(TestGameData.Items, new PlayerLoadout(43, 0, []));
         ContainerItem?[] slots = new ContainerItem?[8];
         slots[0] = new ContainerItem(Index(metal), Guid.NewGuid(), 7, 1);
         slots[1] = new ContainerItem(Index(sensors), Guid.NewGuid(), 1, 1);
         slots[2] = new ContainerItem(Index(ammo), Guid.NewGuid(), 25, 1);
         slots[3] = new ContainerItem(Index(mod), Guid.NewGuid(), 1, 1);
-        int loot = inventory.OpenWorldContainer(slots, LootStates.UnitWeights);
+        int loot = inventory.OpenWorldContainer(slots, TestGameData.Items.UnitWeights);
         int backpack = inventory.Backpack;
 
         // Split part of a stack out, then merge more of it onto the new stack; take a whole stack and part of another.
@@ -124,7 +123,7 @@ public sealed class PlainItemTests
         Assert.All(home, item => Assert.Equal(StorageItems.InitialMaxDurability, item.Item.Durability));
     }
 
-    private static ushort Index(UsableItem item) => checked((ushort)item.UsableIndex);
+    private static ushort Index(ItemDefinition item) => checked((ushort)item.UsableIndex);
 
     private static (string? Pool, string[] Items) Contents(LootContainer container) =>
         (container.Contents.Pool, [.. container.Contents.Stacks.Select(stack => $"{stack.Amount}x {stack.Item.TechnicalName} {stack.Durability}")]);
