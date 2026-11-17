@@ -5,7 +5,7 @@ namespace Ares.Common.GameData;
 
 /// <summary>
 /// The rows of one map's tables (<see cref="MapTables"/>), as read from <c>maps/&lt;map&gt;/</c> or written by hand for
-/// a test. <see cref="GameData.Create"/> checks and indexes them into a <see cref="MapData"/>.
+/// a test. <see cref="GameDataSet.Create"/> checks and indexes them into a <see cref="MapData"/>.
 /// </summary>
 /// <remarks>Each member is named after its table and holds its rows in the table's order.</remarks>
 public sealed record MapContent

@@ -141,7 +141,7 @@ public sealed partial class InventoryStore
     /// </summary>
     public void AddItem(string technicalName, DateTimeOffset now, long quantity = 1)
     {
-        if (!LoadoutDefinitions.AssetIds.ContainsKey(technicalName))
+        if (!LoadoutDefinitions.Generated.AssetIds.ContainsKey(technicalName))
         {
             throw new InvalidDataException("Unknown inventory item technical name");
         }

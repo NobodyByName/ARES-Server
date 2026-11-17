@@ -1,3 +1,4 @@
+using Ares.Common.Game.Inventory;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -120,7 +121,7 @@ public sealed class RecycleTests : IDisposable
         Assert.Equal(200, store.Commit(Recycle(wires), DateTimeOffset.UnixEpoch).StatusCode);
     }
 
-    private static long Asset(string type) => ItemTechnicalNames.AssetIds[type];
+    private static long Asset(string type) => LoadoutDefinitions.Generated.AssetIds[type];
 
     private static ItemDescription Description(IReadOnlyList<ItemDescription> descriptions, string type) =>
         descriptions.Single(item => item.GameAssetId == Asset(type));

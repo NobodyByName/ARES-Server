@@ -249,14 +249,14 @@ public sealed class CharacterSimulationTests
             Assert.Equal(CharacterStance.Uncontrolled, state.Stance);
             Assert.Equal(LocoMode.Running, state.Locomotion);
             Assert.Equal(pressed.MovementLocomotion, state.MovementLocomotion);
-            Assert.Equal(DodgeRollParameters.RollingFlags, state.GraphFlags & DodgeRollParameters.RollingFlags);
+            Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, state.GraphFlags & GeneratedGraphStateFlags.DodgeRolling);
         }
 
         // The tick after the last step still moves with the animation; then ground movement takes over in equal steps.
         CharacterState exit = roll[duration];
         Assert.False(exit.Rolling);
         Assert.Equal(1, exit.RollExitTicks);
-        Assert.Equal(0UL, exit.GraphFlags & DodgeRollParameters.RollingFlags);
+        Assert.Equal(0UL, exit.GraphFlags & GeneratedGraphStateFlags.DodgeRolling);
         Assert.Equal(2, roll[duration + 1].RollExitTicks);
         Assert.Null(roll[^1].Roll);
         Assert.Equal(CharacterStance.Stand, roll[^1].Stance);
@@ -284,8 +284,8 @@ public sealed class CharacterSimulationTests
 
         Assert.True(state.OnLadder);
         Assert.Equal(CharacterStance.Ladder, state.Stance);
-        Assert.Equal(LadderParameters.ClimbingFlags | LadderParameters.CrouchInputBlockedFlag,
-            state.GraphFlags & (LadderParameters.ClimbingFlags | LadderParameters.CrouchInputBlockedFlag));
+        Assert.Equal(GeneratedGraphStateFlags.LadderState | GeneratedGraphStateFlags.LadderCrouchInputBlocked,
+            state.GraphFlags & (GeneratedGraphStateFlags.LadderState | GeneratedGraphStateFlags.LadderCrouchInputBlocked));
         Assert.True(state.Position.Z > feet.Z + 100);
 
         // Holding crouch drops off the ladder; the crouch input stays blocked a few ticks longer.
@@ -293,8 +293,8 @@ public sealed class CharacterSimulationTests
         Assert.Null(dropped.Ladder);
         CharacterState after = GroundStep(simulation, 32, crouch: false, moving: false);
         Assert.False(after.OnLadder);
-        Assert.Equal(0UL, after.GraphFlags & LadderParameters.ClimbingFlags);
-        Assert.Equal(LadderParameters.CrouchInputBlockedFlag, after.GraphFlags & LadderParameters.CrouchInputBlockedFlag);
+        Assert.Equal(0UL, after.GraphFlags & GeneratedGraphStateFlags.LadderState);
+        Assert.Equal(GeneratedGraphStateFlags.LadderCrouchInputBlocked, after.GraphFlags & GeneratedGraphStateFlags.LadderCrouchInputBlocked);
     }
 
     private static CharacterState Ladder(CharacterSimulation simulation, uint frame, sbyte forward, ulong claims, LadderState? start = null) =>

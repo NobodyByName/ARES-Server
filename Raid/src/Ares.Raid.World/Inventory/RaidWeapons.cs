@@ -516,7 +516,7 @@ public sealed class RaidWeapons(RaidInventory inventory)
     /// <summary>One leg from a firearm or hand item to the wanted item; a quick-use item gets a new node.</summary>
     private Leg Draw(Guid from, Guid wanted, uint start)
     {
-        if (Belt(wanted) is not { } quick || ItemTraitsTable.Of(quick.AssetIndex).QuickUse is not { } times)
+        if (Belt(wanted) is not { } quick || ItemTraitsTable.Generated.Of(quick.AssetIndex).QuickUse is not { } times)
         {
             return new Leg(start, new Held(from), new Held(wanted), new Held(wanted), Units(Times(from).Unequip), Units(Times(wanted).Equip), null, null, from);
         }
@@ -730,9 +730,9 @@ public sealed class RaidWeapons(RaidInventory inventory)
         : FerroDefaults.ReEquipFromItemSeconds;
 
     /// <summary>Whether the item is a quick-use item in the belt.</summary>
-    private bool IsQuick(Guid item) => Belt(item) is { } carried && ItemTraitsTable.Of(carried.AssetIndex).QuickUse is not null;
+    private bool IsQuick(Guid item) => Belt(item) is { } carried && ItemTraitsTable.Generated.Of(carried.AssetIndex).QuickUse is not null;
 
-    private static QuickUseTimes QuickUse(int asset) => ItemTraitsTable.Of(asset).QuickUse ?? throw new InvalidOperationException("Not a quick-use item");
+    private static QuickUseTimes QuickUse(int asset) => ItemTraitsTable.Generated.Of(asset).QuickUse ?? throw new InvalidOperationException("Not a quick-use item");
 
     private Guid DefaultItem() => Active(Equipped(), null)?.Id ?? DefaultUnarmed();
 

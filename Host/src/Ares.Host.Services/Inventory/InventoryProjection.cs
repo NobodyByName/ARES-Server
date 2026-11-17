@@ -26,7 +26,7 @@ internal sealed class InventoryProjection
         LoadoutContents contents = new(InventoryCatalog.Items(inventory, InventoryArea.Augment).SingleOrDefault() is { } augment ? Item(augment) : null,
             ((StructuralItemSlots)InventoryCatalog.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds.ToDictionary(branch => branch,
                 branch => InventoryCatalog.Branch(branch) is { } location ? Contents(location.Area) : []));
-        LoadoutTree tree = LoadoutTree.Build(contents, Structure);
+        LoadoutTree tree = LoadoutTree.Build(LoadoutDefinitions.Generated, contents, Structure);
         items.AddRange(tree.Items);
         foreach ((string id, LoadoutSlot slot) in tree.Slots)
         {

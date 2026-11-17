@@ -12,7 +12,7 @@ public static class GameDataStartup
     /// <exception cref="GameDataException">
     /// <c>game-data-dir</c> is not set, or the data cannot be used; the message tells the operator why and what to do.
     /// </exception>
-    public static GameData Load(string? directory, out JsonObject loaded)
+    public static GameDataSet Load(string? directory, out JsonObject loaded)
     {
         if (directory is null)
         {
@@ -23,7 +23,7 @@ public static class GameDataStartup
 
         long started = Stopwatch.GetTimestamp();
         GameDataDirectory opened = GameDataDirectory.Open(directory);
-        GameData data = GameData.Load(opened);
+        GameDataSet data = GameDataSet.Load(opened);
         loaded = new JsonObject
         {
             ["game_data"] = "loaded",

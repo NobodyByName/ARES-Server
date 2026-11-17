@@ -92,10 +92,6 @@ public static class ZiplineParameters
     /// <summary>Transient state the ride raises when it ends (the graph's default edge back to ground movement).</summary>
     public const int FinishedTransientState = 3;
 
-    /// <summary>Graph state flags of the ride: reload and context interaction blocked, and the attached-to-a-zipline tag.</summary>
-    public const ulong RidingFlags = GraphStateTags.AbilityBlockReloadPendulumMove | GraphStateTags.AbilityBlockContextInteractPendulumMove
-        | GraphStateTags.GameplayEffectAttachedTraversalZipline;
-
     /// <summary>Action-layer stance while riding.</summary>
     public const CharacterStance ActionStance = CharacterStance.Uncontrolled;
 

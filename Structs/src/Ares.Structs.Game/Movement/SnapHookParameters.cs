@@ -5,7 +5,7 @@ namespace Ares.Structs.Game.Movement;
 /// <summary>
 /// Snap hook rules: the item (<c>USnaphookItem</c>, its pull <c>FSnaphookPull</c>) throws a hook along the aim, and once
 /// it holds on something heavy enough a move target pulls the character to it (<c>UPendulumSnapHookNodeData</c>).
-/// Values the item Blueprint overrides are in <see cref="SnapHookItem"/>.
+/// Values the item Blueprint overrides are in <see cref="SnapHookItemDefaults"/>.
 /// </summary>
 public static class SnapHookParameters
 {
@@ -136,13 +136,4 @@ public static class SnapHookParameters
 
     /// <summary>Seconds over which the pull takes over the character's velocity from the movement it started from.</summary>
     public const double EntryBlendSeconds = 0.1;
-
-    /// <summary>
-    /// Graph state flags while pulled: the snap hook animation state, and equipping and context interactions blocked.
-    /// </summary>
-    public const ulong PullingFlags = GraphStateTags.AnimationPendulumStateSnapHookActive | GraphStateTags.AbilityBlockEquipItemPendulumMove
-        | GraphStateTags.AbilityBlockContextInteractPendulumMove;
-
-    /// <summary>Graph state flags of the previous tick that cancel a thrown hook.</summary>
-    public const ulong CancellingFlags = GraphStateTags.AbilityLandingHeavy;
 }

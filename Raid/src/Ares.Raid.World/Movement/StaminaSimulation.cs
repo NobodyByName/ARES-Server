@@ -90,7 +90,7 @@ public static class StaminaSimulation
     /// <summary>Stamina a dodge roll of this kind costs when it starts.</summary>
     /// <param name="kind">Roll variant.</param>
     /// <returns>The cost.</returns>
-    public static double DodgeRollCost(DodgeRollKind kind) => DodgeRollParameters.Sequence(kind).StaminaCost;
+    public static double DodgeRollCost(DodgeRollKind kind) => GeneratedMovementData.DodgeRoll(kind).StaminaCost;
 
     /// <summary>Stamina a vault costs when it starts.</summary>
     /// <param name="verticalDistance">Vertical vault distance of the vault query.</param>

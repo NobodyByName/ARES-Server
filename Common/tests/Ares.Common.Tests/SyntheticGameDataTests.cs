@@ -6,14 +6,14 @@ namespace Ares.Common.Tests;
 
 /// <summary>
 /// The synthetic game data of logic tests resolves every game name and offers a one-of-each map, and
-/// <see cref="GameData.GameData.Create"/> refuses data that lacks a game name or contradicts itself.
+/// <see cref="GameDataSet.Create"/> refuses data that lacks a game name or contradicts itself.
 /// </summary>
 public sealed class SyntheticGameDataTests
 {
     [Fact]
     public void The_default_data_resolves_every_game_name()
     {
-        GameData.GameData data = SyntheticGameData.Create();
+        GameDataSet data = SyntheticGameData.Create();
 
         Assert.Null(data.Source);
         Assert.Equal(GameNames.Items.FerroI, data.Names.FerroI.TechnicalName);
@@ -39,7 +39,7 @@ public sealed class SyntheticGameDataTests
     [Fact]
     public void Items_get_usable_indices_in_name_order_and_tests_set_the_values_they_need()
     {
-        GameData.GameData data = new SyntheticGameData()
+        GameDataSet data = new SyntheticGameData()
             .AddItem("DA_Item_Salvage_Rubber", item => item with { MaxStack = 50, Weight = 0.25 })
             .AddItem(GameNames.Items.HeavyAmmo, item => item with { MaxStack = 100 })
             .Build();
@@ -96,7 +96,7 @@ public sealed class SyntheticGameDataTests
     [Fact]
     public void Maps_are_found_by_world_name()
     {
-        GameData.GameData data = new SyntheticGameData()
+        GameDataSet data = new SyntheticGameData()
             .With(content => content with { Maps = [.. content.Maps, content.Maps[0] with { World = content.Maps[0].World with { WorldName = "Other_P" } }] })
             .Build();
 

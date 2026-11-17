@@ -64,7 +64,7 @@ public sealed class WorldPickups
     private const ulong GuidStride = 6;
 
     // Data asset of every item a player can carry (and so drop), by usable index.
-    private static readonly Dictionary<ushort, string> s_dataAssets = LoadoutDefinitions.CarriedItems
+    private static readonly Dictionary<ushort, string> s_dataAssets = LoadoutDefinitions.Generated.CarriedItems
         .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.DataAsset);
 
     private readonly ReplicationContext _replication;

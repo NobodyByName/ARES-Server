@@ -238,20 +238,4 @@ public static class VaultParameters
 
     /// <summary>Locomotion of the action layer during a vault.</summary>
     public const LocoMode ActionLocomotion = LocoMode.Running;
-
-    /// <summary>Graph-state tags (<see cref="GraphStateTags"/>) held while a vault runs.</summary>
-    public const ulong VaultingFlags = GraphStateFlags.BlockedActions | GraphStateTags.AbilityBlockContextInteractPendulumMove
-        | GraphStateTags.AbilityBlockCrouchPendulumMove | GraphStateTags.AnimationPendulumDisplaySyncedPose | GraphStateTags.AbilityVault;
-
-    /// <summary>The definition set for the character's equipment and condition.</summary>
-    /// <param name="armed">Whether an item other than empty hands is held.</param>
-    /// <param name="exhausted">Whether the character is exhausted (and exhausted vaults are not disabled) or carries a heavy load.</param>
-    /// <returns>The set.</returns>
-    public static VaultDefinitionSet Definitions(bool armed, bool exhausted) => (armed, exhausted) switch
-    {
-        (true, false) => VaultDefinitions.Armed,
-        (false, false) => VaultDefinitions.Unarmed,
-        (true, true) => VaultDefinitions.ArmedExhausted,
-        (false, true) => VaultDefinitions.UnarmedExhausted,
-    };
 }

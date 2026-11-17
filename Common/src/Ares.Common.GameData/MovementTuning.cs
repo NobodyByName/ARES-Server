@@ -16,7 +16,7 @@ public sealed class MovementTuning
         HeavyLandingLevels = content.HeavyLandingLevels;
         RecoveryLandingLevels = content.RecoveryLandingLevels;
         GraphStateTags = content.GraphStateTags;
-        _graphTags = GameDataIndex.Unique(GraphStateTags.Select((tag, index) => (tag, new GraphTagBit(index))), "graph state tag", StringComparer.Ordinal);
+        _graphTags = GameDataIndex.Unique(GraphStateTags.Select((tag, index) => (tag, new GraphTagBit(tag, index))), "graph state tag", StringComparer.Ordinal);
         SnapHookItem = content.SnapHookItem;
         SprintBurstCurve = content.SprintBurstCurve;
         InteractionAnimationContainers = content.InteractionAnimationContainers;
@@ -65,7 +65,18 @@ public sealed class MovementTuning
     /// </summary>
     public ImmutableArray<TaggedInteractionAnimationContainer> TaggedInteractionAnimationContainers { get; }
 
-    /// <summary>The dodge roll of a kind.</summary>
+    /// <summary>The vault definition set for the character's equipment and condition.</summary>
+    /// <param name="armed">Whether an item other than empty hands is held.</param>
+    /// <param name="exhausted">Whether the character is exhausted (and exhausted vaults are not disabled) or carries a heavy load.</param>
+    public VaultDefinitionSet Vaults(bool armed, bool exhausted) => (armed, exhausted) switch
+    {
+        (true, false) => ArmedVaults,
+        (false, false) => UnarmedVaults,
+        (true, true) => ArmedExhaustedVaults,
+        (false, true) => UnarmedExhaustedVaults,
+    };
+
+    /// <summary>The dodge roll of a kind (generated: <c>DodgeRollParameters.Sequence</c>).</summary>
     public DodgeRollSequence DodgeRoll(DodgeRollKind kind) => DodgeRolls[(int)kind];
 
     /// <summary>The bit of a graph state tag, or null when the graph does not track it.</summary>
@@ -82,15 +93,4 @@ public sealed class MovementTuning
 
     private static ImmutableArray<TRow> Exactly<TRow>(ImmutableArray<TRow> rows, int count, string table) => rows.Length == count ? rows
         : throw new GameDataException($"Game data table {table} holds {rows.Length} rows, but ARES expects {count}. Run the ARES-GameDataExtract of this ARES version again.");
-}
-
-/// <summary>A graph state tag's bit: bit <c>Index % 64</c> of tag word <c>Index / 64</c>.</summary>
-/// <param name="Index">The tag's position in the graph's tag list.</param>
-public readonly record struct GraphTagBit(int Index)
-{
-    /// <summary>The tag word holding the bit: 0 for the graph tag word, 1 for the upper tag word.</summary>
-    public int Word => Index / MovementAssets.GraphTagWordBits;
-
-    /// <summary>The bit within its word.</summary>
-    public ulong Mask => 1UL << (Index % MovementAssets.GraphTagWordBits);
 }

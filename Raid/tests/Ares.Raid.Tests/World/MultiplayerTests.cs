@@ -345,8 +345,8 @@ public sealed class MultiplayerTests
             Assert.Equal(use.Target is not null, moveTarget is not null);
             PendulumSlot? pull = state.Values.SingleOrDefault(slot => slot.DescriptorId == QuickItemProtocol.PullNodeDescriptor);
             Assert.Equal(use.Pull is not null, pull is not null);
-            bool pulling = (PendulumCodec.Integer(graph[PawnBlackboard.GraphTagsField], state[PawnBlackboard.GraphStateSlot].Value) & SnapHookParameters.PullingFlags)
-                == SnapHookParameters.PullingFlags;
+            bool pulling = (PendulumCodec.Integer(graph[PawnBlackboard.GraphTagsField], state[PawnBlackboard.GraphStateSlot].Value) & GeneratedGraphStateFlags.SnapHookPulling)
+                == GeneratedGraphStateFlags.SnapHookPulling;
             Assert.Equal(use.Pull is not null, pulling);
             if (moveTarget is not null)
             {

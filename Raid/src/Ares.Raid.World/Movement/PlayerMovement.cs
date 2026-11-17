@@ -341,7 +341,7 @@ public sealed class PlayerMovement
                 armed ? GroundMovementParameters.Armed : GroundMovementParameters.Unarmed, SteerAboveMaximum, FixBrakingOvershoot,
                 input.Position(frame), sprint: armed ? SprintMovementParameters.Armed : SprintMovementParameters.Unarmed,
                 slide: SlideMovementParameters.ForSurface(_simulation.State.Body?.Ground.Surface ?? default), unsettled: _air.Unsettled,
-                vaults: VaultParameters.Definitions(armed, exhausted: false), pitch: input.Pitch(frame) ?? 0,
+                vaults: GeneratedMovementData.Vaults(armed, exhausted: false), pitch: input.Pitch(frame) ?? 0,
                 heldItem: HeldControls(heldItem, input.Weapon(frame)));
         }
 

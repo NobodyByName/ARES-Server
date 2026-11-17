@@ -45,7 +45,7 @@ public sealed class HeavyLandingWiringTests
             Assert.Null(state.Roll);
             Assert.Null(state.Vault);
             Assert.Null(state.Body!.Value.JumpRequestedAt);
-            Assert.Equal(GraphStateFlags.HeavyLandingRecovery, state.GraphFlags & GraphStateFlags.HeavyLandingRecovery);
+            Assert.Equal(GeneratedGraphStateFlags.HeavyLandingRecovery, state.GraphFlags & GeneratedGraphStateFlags.HeavyLandingRecovery);
             Assert.Equal(LocoMode.Still, state.Locomotion);
             Assert.Equal(reference.Position, state.Position);
             Assert.Equal(reference.Stance, state.Stance);
@@ -152,5 +152,5 @@ public sealed class HeavyLandingWiringTests
     private static CharacterState Step(CharacterSimulation simulation, uint frame, sbyte forward, MovementButtons buttons) =>
         simulation.StepOnGround(new CharacterInput(frame, 0), new MovementInput(frame, forward, 0, buttons), 0, Tick, GroundMovementParameters.Unarmed,
             steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Unarmed, slide: SlideMovementParameters.Default,
-            vaults: VaultParameters.Definitions(armed: false, exhausted: false));
+            vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
 }

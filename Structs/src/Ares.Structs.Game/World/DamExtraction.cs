@@ -3,27 +3,6 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Structs.Game.World;
 
-/// <summary>Type of a standard interaction button (<c>EStandardInteractionType</c>).</summary>
-public enum StandardInteractionType : byte
-{
-    Press = 0,
-    Hold = 1,
-    Continuous = 2,
-}
-
-/// <summary>State of an extraction point (<c>EExtractionState</c>).</summary>
-public enum ExtractionState : byte
-{
-    Dormant = 0,
-    Disabled = 1,
-    Broken = 2,
-    Closed = 3,
-    Closing = 4,
-    Requested = 5,
-    Arriving = 6,
-    Ready = 7,
-}
-
 /// <summary>
 /// Elevator extraction points of the Dam map: Blueprint actors placed in the map's persistent level,
 /// the buttons each one has, and the timings of the settings asset they share.

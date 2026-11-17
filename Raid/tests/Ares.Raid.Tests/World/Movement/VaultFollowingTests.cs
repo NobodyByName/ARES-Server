@@ -25,7 +25,7 @@ public sealed class VaultFollowingTests
         Assert.Equal(1, states[Request].VaultFollowedTicks);
         Assert.Equal(12, states.Values.Max(state => state.VaultFollowedTicks));
         Assert.All(states.Values.Where(state => state.VaultFollowedTicks > 0),
-            state => Assert.Equal(VaultParameters.VaultingFlags, state.GraphFlags & VaultParameters.VaultingFlags));
+            state => Assert.Equal(GeneratedGraphStateFlags.Vaulting, state.GraphFlags & GeneratedGraphStateFlags.Vaulting));
         Assert.False(states[Request + 20].Vaulting);
         Assert.Equal(1, movement.Reseeds);
     }

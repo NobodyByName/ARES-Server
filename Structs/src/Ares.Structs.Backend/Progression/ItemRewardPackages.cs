@@ -16,11 +16,12 @@ public static class ItemRewardPackages
         ? new OfferRewardPackage([.. outputs.Select(output => new OfferRewardedItem(output.GameAssetId, output.Amount, FullDurability, [], "", 0, HideInUi: false))])
         : null;
 
-    /// <summary>The coins an item sells for at full durability, or null when <see cref="ItemValues"/> gives it no value.</summary>
-    /// <param name="assetId">Item asset id.</param>
+    /// <summary>The coins an item sells for at full durability, or null when it has no scrap value.</summary>
+    /// <param name="scrapValue">The item's scrap value (the game data's item values), 0 when it has none.</param>
+    /// <param name="coinsAssetId">Asset id of the coins item.</param>
     /// <returns>The item's scrap description, or null when it cannot be sold.</returns>
-    public static ItemScrapDescription? Scrap(long assetId) => ItemValues.ScrapValues.TryGetValue(assetId, out int value) && value > 0
-        ? new ItemScrapDescription(new OfferRewardPackage([new OfferRewardedItem(CurrencyItems.CoinsAssetId, value, FullDurability, [], "", 0, HideInUi: false)]))
+    public static ItemScrapDescription? Scrap(int scrapValue, long coinsAssetId) => scrapValue > 0
+        ? new ItemScrapDescription(new OfferRewardPackage([new OfferRewardedItem(coinsAssetId, scrapValue, FullDurability, [], "", 0, HideInUi: false)]))
         : null;
 
     /// <summary>

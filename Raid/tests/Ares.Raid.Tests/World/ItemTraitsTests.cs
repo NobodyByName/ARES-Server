@@ -28,7 +28,7 @@ public sealed class ItemTraitsTests
     public void Only_the_ferro_and_light_shield_get_a_mod_container_of_their_mod_slot_count()
     {
         Dictionary<int, int> modSlots = [];
-        foreach (UsableItem carried in LoadoutDefinitions.CarriedItems)
+        foreach (ItemDefinition carried in LoadoutDefinitions.Generated.CarriedItems)
         {
             RaidInventory inventory = new(Placed(carried.AssetId));
             foreach (ContainerItem item in inventory.Containers.SelectMany(container => container.Items).OfType<ContainerItem>())
@@ -71,7 +71,7 @@ public sealed class ItemTraitsTests
     public void Only_the_ferro_unloads_its_rounds_as_heavy_ammo_on_extraction()
     {
         List<(int Item, long Ammo, long Rounds)> unloaded = [];
-        foreach (UsableItem usable in LoadoutDefinitions.CarriedItems)
+        foreach (ItemDefinition usable in LoadoutDefinitions.Generated.CarriedItems)
         {
             RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
             int loot = inventory.OpenWorldContainer([Item(usable.UsableIndex) with { AmmoInClip = 1 }],
@@ -96,7 +96,7 @@ public sealed class ItemTraitsTests
     public void Only_the_snap_hook_is_drawn_from_the_belt()
     {
         List<int> quick = [];
-        foreach (UsableItem usable in LoadoutDefinitions.CarriedItems)
+        foreach (ItemDefinition usable in LoadoutDefinitions.Generated.CarriedItems)
         {
             RaidInventory inventory = new(new PlayerLoadout(43, 0, []));
             ContainerItem item = Item(usable.UsableIndex);
@@ -132,12 +132,12 @@ public sealed class ItemTraitsTests
     private static PlayerLoadout Placed(long asset)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        long branchAsset = s_branches.First(branch => ((SingleItemSlot)LoadoutDefinitions.ByAsset[LoadoutDefinitions.Container(LoadoutItems.StandardFrameAssetId, branch)
+        long branchAsset = s_branches.First(branch => ((SingleItemSlot)LoadoutDefinitions.Generated.ByAsset[LoadoutDefinitions.Generated.Container(LoadoutItems.StandardFrameAssetId, branch)
             .SlotAssetId].SlotConfig!).AllowedSlotAssetIds.Contains(asset));
-        InventoryItem branchNode = loadout.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branchNode = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branchNode.Slots[0]);
         string slot = container.Slots[^1];
-        InventoryItem[] modSlots = LoadoutDefinitions.ByAsset[asset].SlotConfig is StructuralItemSlots slots
+        InventoryItem[] modSlots = LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig is StructuralItemSlots slots
             ? [.. slots.SlotAssetIds.Select(slotAsset => new InventoryItem(Guid.NewGuid().ToString("D"), slotAsset, 1, [], 1, 1, "", "pin", 0))]
             : [];
         InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, 1, [.. modSlots.Select(modSlot => modSlot.InstanceId)], 1, 1, "", "pin", 0);

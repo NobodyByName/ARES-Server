@@ -104,22 +104,6 @@ public static class DodgeRollParameters
     /// </summary>
     public const int ExitBlendTicks = 3;
 
-    /// <summary>Graph-state tags (<see cref="GraphStateTags"/>) held while a roll runs.</summary>
-    public const ulong RollingFlags = GraphStateFlags.BlockedActions | GraphStateTags.AbilityBlockContextInteractPendulumMove
-        | GraphStateTags.AnimationPendulumDisplaySyncedPose | GraphStateTags.AbilityDodgeRollActive;
-
-    /// <summary>The authored metrics of a roll variant.</summary>
-    /// <param name="kind">Roll variant.</param>
-    /// <returns>Its sequence.</returns>
-    public static DodgeRollSequence Sequence(DodgeRollKind kind) => kind switch
-    {
-        DodgeRollKind.Standard => DodgeRollSequences.Standard,
-        DodgeRollKind.Sprint => DodgeRollSequences.Sprint,
-        DodgeRollKind.Exhausted => DodgeRollSequences.Exhausted,
-        DodgeRollKind.Ninja => DodgeRollSequences.Ninja,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind)),
-    };
-
     /// <summary>The root distance a roll variant's animation was authored for.</summary>
     /// <param name="kind">Roll variant.</param>
     /// <returns>Authored distance in world units.</returns>

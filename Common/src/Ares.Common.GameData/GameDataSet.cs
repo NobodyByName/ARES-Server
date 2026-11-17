@@ -8,11 +8,11 @@ namespace Ares.Common.GameData;
 /// items, the world item list, loot and movement definitions, each map's data, and <see cref="GameNames"/> resolved
 /// against them. Pass the instance to what needs it; there is no global one.
 /// </summary>
-public sealed class GameData
+public sealed class GameDataSet
 {
     private readonly Dictionary<string, MapData> _maps;
 
-    private GameData(GameDataContent content, string? source)
+    private GameDataSet(GameDataContent content, string? source)
     {
         ArgumentNullException.ThrowIfNull(content);
         Source = source;
@@ -56,19 +56,19 @@ public sealed class GameData
     /// The directory cannot be used (see <see cref="GameDataDirectory.Open"/>), a table is missing or malformed, the
     /// tables contradict each other, or a name of <see cref="GameNames"/> is missing; the message tells the operator why.
     /// </exception>
-    public static GameData Load(string directory) => Load(GameDataDirectory.Open(directory));
+    public static GameDataSet Load(string directory) => Load(GameDataDirectory.Open(directory));
 
     /// <summary>Loads every table of an opened game data directory.</summary>
     /// <exception cref="GameDataException">See <see cref="Load(string)"/>.</exception>
-    public static GameData Load(GameDataDirectory directory)
+    public static GameDataSet Load(GameDataDirectory directory)
     {
         ArgumentNullException.ThrowIfNull(directory);
-        return new GameData(GameDataReader.Read(directory), directory.FullPath);
+        return new GameDataSet(GameDataReader.Read(directory), directory.FullPath);
     }
 
     /// <summary>Checks and indexes tables made in memory, for example the tiny made-up data of a logic test.</summary>
     /// <exception cref="GameDataException">The tables contradict each other, or a name of <see cref="GameNames"/> is missing.</exception>
-    public static GameData Create(GameDataContent content) => new(content, null);
+    public static GameDataSet Create(GameDataContent content) => new(content, null);
 
     /// <summary>The data of a map.</summary>
     /// <param name="worldName">The map's world name, for example <see cref="GameNames.Maps.Dam"/>.</param>

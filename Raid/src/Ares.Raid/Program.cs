@@ -40,7 +40,7 @@ catch (CommandLineException error)
     return 2;
 }
 
-GameData gameData;
+GameDataSet gameData;
 JsonObject gameDataLoaded;
 try
 {

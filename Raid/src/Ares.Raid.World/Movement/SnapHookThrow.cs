@@ -202,7 +202,7 @@ public static class SnapHookThrow
             return new SnapHookHookStep(hook, SnapHookHookEvent.None, null, 0);
         }
 
-        if ((previousFlags & SnapHookParameters.CancellingFlags) != 0)
+        if ((previousFlags & GeneratedGraphStateFlags.SnapHookCancelling) != 0)
         {
             return Cancel(hook);
         }

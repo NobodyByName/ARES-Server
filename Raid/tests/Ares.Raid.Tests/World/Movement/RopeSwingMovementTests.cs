@@ -128,7 +128,7 @@ public sealed class RopeSwingMovementTests
         Assert.True(first.State.ClimbingUpRope);
         Assert.Equal(-1200 * Tick, first.State.CurrentReelSpeed, 4);
         Assert.Equal(600 - (1200 * Tick * Tick), first.State.RopeLength, 3);
-        Assert.NotEqual(0UL, first.Flags & SwingParameters.StaminaBlockFlag);
+        Assert.NotEqual(0UL, first.Flags & GeneratedGraphStateFlags.SwingStaminaBlock);
         Assert.Equal(SwingParameters.ClimbStaminaCostPerSecond * Tick, first.StaminaCost, 9);
 
         (state, rope, feet, velocity) = (first.State, first.Rope, first.Position, first.Velocity);
@@ -152,7 +152,7 @@ public sealed class RopeSwingMovementTests
         Assert.True(first.State.Rappelling);
         Assert.Equal(1500 * Tick, first.State.CurrentReelSpeed, 4);
         Assert.Equal(9, first.CrouchBlockTicks);
-        Assert.NotEqual(0UL, first.Flags & SwingParameters.StaminaBlockFlag);
+        Assert.NotEqual(0UL, first.Flags & GeneratedGraphStateFlags.SwingStaminaBlock);
         (state, rope, feet, velocity) = (first.State, first.Rope, first.Position, first.Velocity);
         for (int tick = 0; tick < 30; tick++)
         {
@@ -176,7 +176,7 @@ public sealed class RopeSwingMovementTests
         Assert.False(step.Rope.Anchored);
         Assert.Equal(SwingParameters.ReleasedEndReason, step.Rope.EndReason);
         Assert.Equal(SwingPhase.Detaching, step.State.Phase);
-        Assert.NotEqual(0UL, step.Flags & SwingParameters.JumpStartedFlag);
+        Assert.NotEqual(0UL, step.Flags & GeneratedGraphStateFlags.SwingJumpStarted);
         Assert.Equal(plain.Velocity.Y + 200, step.Velocity.Y, 9);
         Assert.Equal(plain.Velocity.Z + 500, step.Velocity.Z, 9);
         Assert.Equal(Math.PI / 2, step.Yaw);

@@ -254,7 +254,7 @@ public static class DownedMovement
     }
 
     private static ulong Tags(DownedState state) =>
-        DownedMovementParameters.NodeTags
+        GeneratedGraphStateFlags.DownedNodeTags
         | (state.GoingDownTag ? GraphStateTags.AnimationPendulumStateDeathToDbno : 0)
         | (state.StandingUpTag ? GraphStateTags.AnimationPendulumStateDbnoToBaseMove : 0);
 

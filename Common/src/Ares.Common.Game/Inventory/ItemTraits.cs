@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 
@@ -28,50 +29,65 @@ public sealed record ItemTraits(int UsableIndex)
     public QuickUseTimes? QuickUse { get; init; }
 }
 
-/// <summary>The traits of every item the servers handle: carried items, hand items and held gadgets.</summary>
-public static class ItemTraitsTable
+/// <summary>
+/// The traits of every item the servers handle: carried items, hand items and held gadgets. Built from the game data once
+/// at startup and passed to what needs it.
+/// </summary>
+public sealed partial class ItemTraitsTable
 {
-    private static readonly Dictionary<int, string> s_heldClasses = new()
+    private readonly Dictionary<int, ItemTraits> _byUsableIndex;
+
+    /// <summary>Builds the traits from loaded game data.</summary>
+    /// <param name="data">The game data.</param>
+    /// <param name="definitions">The shared item definitions built from the same data.</param>
+    public ItemTraitsTable(GameDataSet data, LoadoutDefinitions definitions)
+        : this(ItemDataSources.From(data), definitions)
     {
-        [WeaponItems.FerroIUsableIndex] = FerroDefaults.ItemClass,
-        [HandItems.RaiderToolUsableIndex] = HandItems.RaiderToolItemClass,
-        [HandItems.UnarmedUsableIndex] = HandItems.UnarmedItemClass,
-        [GadgetItems.SnapHookUsableIndex] = GadgetItems.SnapHookItemClass,
-    };
+    }
 
-    private static readonly Dictionary<int, QuickUseTimes> s_quickUse = new()
+    internal ItemTraitsTable(ItemDataSources sources, LoadoutDefinitions definitions)
     {
-        [GadgetItems.SnapHookUsableIndex] = new QuickUseTimes(GadgetItems.SnapHookUnequipSeconds, GadgetItems.SnapHookEquipSeconds),
-    };
+        ArgumentNullException.ThrowIfNull(definitions);
+        Dictionary<int, string> heldClasses = new()
+        {
+            [sources.FerroI.UsableIndex] = sources.FerroI.ItemClass,
+            [sources.RaiderTool.UsableIndex] = sources.RaiderTool.ItemClass,
+            [sources.Unarmed.UsableIndex] = sources.Unarmed.ItemClass,
+            [sources.SnapHook.UsableIndex] = sources.SnapHook.ItemClass,
+        };
+        Dictionary<int, QuickUseTimes> quickUse = new()
+        {
+            [sources.SnapHook.UsableIndex] = new QuickUseTimes(sources.SnapHook.UnequipSeconds, sources.SnapHook.EquipSeconds),
+        };
+        Dictionary<int, int> ammunition = WeaponAmmunition.ByWeapon.ToDictionary(pair => sources.CatalogueByTechnicalName[pair.Key].UsableIndex,
+            pair => sources.CatalogueByTechnicalName[pair.Value].UsableIndex);
 
-    private static readonly Dictionary<int, int> s_ammunition = WeaponAmmunition.ByWeapon
-        .ToDictionary(pair => UsableItems.ByAssetId[pair.Key].UsableIndex, pair => UsableItems.ByAssetId[pair.Value].UsableIndex);
-
-    // Carried weapons and armor get a mod container with one slot per mod slot of their definition.
-    private static readonly Dictionary<int, int> s_modSlots = LoadoutDefinitions.CarriedItems
-        .Where(item => item.Category is ItemCategory.Launcher or ItemCategory.Rifle or ItemCategory.Armor)
-        .ToDictionary(item => item.UsableIndex,
-            item => LoadoutDefinitions.ByAsset[item.AssetId].SlotConfig is StructuralItemSlots slots ? slots.SlotAssetIds.Count : 0);
+        // Carried weapons and armor get a mod container with one slot per mod slot of their definition.
+        Dictionary<int, int> modSlots = definitions.CarriedItems
+            .Where(item => item.Category is ItemCategory.Launcher or ItemCategory.Rifle or ItemCategory.Armor)
+            .ToDictionary(item => item.UsableIndex,
+                item => definitions.ByAsset[item.AssetId].SlotConfig is StructuralItemSlots slots ? slots.SlotAssetIds.Count : 0);
+        All =
+        [
+            .. heldClasses.Keys.Union(quickUse.Keys).Union(definitions.CarriedItems.Select(item => item.UsableIndex))
+                .Select(index => new ItemTraits(index)
+                {
+                    Ammunition = ammunition.TryGetValue(index, out int rounds) ? rounds : null,
+                    ModSlotCount = modSlots.TryGetValue(index, out int slots) ? slots : null,
+                    HeldClass = heldClasses.GetValueOrDefault(index),
+                    QuickUse = quickUse.GetValueOrDefault(index),
+                }),
+        ];
+        _byUsableIndex = All.ToDictionary(traits => traits.UsableIndex);
+    }
 
     /// <summary>
     /// Traits of the handled items: the held items first, in the order the raid exports their classes, then the quick-use
     /// and carried items.
     /// </summary>
-    public static IReadOnlyList<ItemTraits> All { get; } =
-    [
-        .. s_heldClasses.Keys.Union(s_quickUse.Keys).Union(LoadoutDefinitions.CarriedItems.Select(item => item.UsableIndex))
-            .Select(index => new ItemTraits(index)
-            {
-                Ammunition = s_ammunition.TryGetValue(index, out int ammunition) ? ammunition : null,
-                ModSlotCount = s_modSlots.TryGetValue(index, out int modSlots) ? modSlots : null,
-                HeldClass = s_heldClasses.GetValueOrDefault(index),
-                QuickUse = s_quickUse.GetValueOrDefault(index),
-            }),
-    ];
-
-    private static readonly Dictionary<int, ItemTraits> s_byUsableIndex = All.ToDictionary(traits => traits.UsableIndex);
+    public IReadOnlyList<ItemTraits> All { get; }
 
     /// <summary>The traits of an item; an item the servers do not handle has none.</summary>
     /// <param name="usableIndex">Index of the item in the usable-item catalogue.</param>
-    public static ItemTraits Of(int usableIndex) => s_byUsableIndex.GetValueOrDefault(usableIndex) ?? new ItemTraits(usableIndex);
+    public ItemTraits Of(int usableIndex) => _byUsableIndex.GetValueOrDefault(usableIndex) ?? new ItemTraits(usableIndex);
 }

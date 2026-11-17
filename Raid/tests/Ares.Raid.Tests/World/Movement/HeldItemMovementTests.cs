@@ -138,6 +138,6 @@ public sealed class HeldItemMovementTests
             GroundMovementParameters.Armed, steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Armed);
         Assert.Null(state.HeldItem);
         Assert.Equal(LocoMode.Sprinting, state.Locomotion);
-        Assert.Equal(0UL, state.GraphFlags & GraphStateFlags.HeldItem);
+        Assert.Equal(0UL, state.GraphFlags & GeneratedGraphStateFlags.HeldItem);
     }
 }

@@ -13,7 +13,11 @@ namespace Ares.Common.GameData;
 /// </summary>
 public sealed class ResolvedGameNames
 {
-    internal ResolvedGameNames(GameData data)
+    // The member of GameNames.GraphTags naming each tag, for the error that lists missing names.
+    private static readonly Dictionary<string, string> s_graphTagMembers = typeof(GameNames.GraphTags).GetFields()
+        .ToDictionary(field => (string)field.GetRawConstantValue()!, field => $"GameNames.GraphTags.{field.Name}", StringComparer.Ordinal);
+
+    internal ResolvedGameNames(GameDataSet data)
     {
         Resolver resolver = new();
         ItemCatalog items = data.Items;
@@ -40,8 +44,19 @@ public sealed class ResolvedGameNames
             items.LoadoutFrames.Where(frame => frame.TechnicalName == GameNames.ItemStructures.StandardLoadoutFrame));
         DoorBreachAnimation = resolver.One("interaction animation container", GameNames.InteractionAnimations.DoorBreach,
             data.Movement.InteractionAnimationContainers.Where(container => container.Path == GameNames.InteractionAnimations.DoorBreach));
-        GraphTags = new ResolvedGraphTags(resolver, data.Movement);
+        MovementTuning movement = data.Movement;
+        GraphTags = new GraphTagBits(tag => resolver.One("graph state tag", tag, movement.FindGraphTag(tag) is { } bit ? [bit] : Array.Empty<GraphTagBit>(),
+            s_graphTagMembers[tag]));
         resolver.ThrowIfMissing(data.Source);
+        try
+        {
+            GraphFlags = new GraphStateFlags(GraphTags);
+        }
+        catch (ArgumentException exception)
+        {
+            throw new GameDataException($"{(data.Source is null ? "The game data" : $"The game data in {data.Source}")} does not lay out the graph state "
+                + $"tags as ARES expects: {exception.Message} If the game moved the tag, ARES needs an update.", exception);
+        }
     }
 
     /// <summary>The Dam (<see cref="GameNames.Maps.Dam"/>).</summary>
@@ -107,8 +122,17 @@ public sealed class ResolvedGameNames
     /// <summary>The door breach animation (generated: <c>InteractionAnimationContainers.DoorBreach</c>).</summary>
     public InteractionAnimationContainer DoorBreachAnimation { get; }
 
-    /// <summary>The graph state tags a server reads or sets (generated: <c>GraphStateTags</c>, <c>GraphStateUpperTags</c>).</summary>
-    public ResolvedGraphTags GraphTags { get; }
+    /// <summary>
+    /// The bits of the graph state tags a server reads or sets (generated: <c>GraphStateTags.X</c> was the mask of a word-0
+    /// tag and <c>GraphStateUpperTags.X</c> of a word-1 tag; a resolved <see cref="GraphTagBit"/> carries its word).
+    /// </summary>
+    public GraphTagBits GraphTags { get; }
+
+    /// <summary>
+    /// The groups of graph state tags the character holds together (generated: the <c>GraphStateFlags</c> constants and the
+    /// <c>…Flags</c>/<c>…Tags</c> constants of the movement parameter classes).
+    /// </summary>
+    public GraphStateFlags GraphFlags { get; }
 
     /// <summary>The error for a game name the data does not have.</summary>
     internal static GameDataException Missing(string kind, string name, string member) => new(

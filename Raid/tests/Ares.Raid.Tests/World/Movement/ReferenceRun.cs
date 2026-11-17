@@ -26,7 +26,7 @@ internal static class ReferenceRun
             states[frame] = simulation.StepOnGround(claims, movement, 0, PawnBlackboard.TickSeconds, GroundMovementParameters.Unarmed,
                 steerAboveMaximum: true, fixBrakingOvershoot: true, sprint: SprintMovementParameters.Unarmed,
                 slide: SlideMovementParameters.ForSurface(simulation.State.Body?.Ground.Surface ?? default),
-                vaults: VaultParameters.Definitions(armed: false, exhausted: false));
+                vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
         }
 
         return states;

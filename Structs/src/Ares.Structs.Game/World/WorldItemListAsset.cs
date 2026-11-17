@@ -3,8 +3,8 @@ using Ares.Structs.Core.Assets;
 namespace Ares.Structs.Game.World;
 
 /// <summary>
-/// The cooked world item class list (<see cref="WorldItemList"/>): a <c>UPreloadableEmbarkActorListAsset</c> that
-/// stores one member, its array of soft class paths.
+/// The cooked world item class list, the source of the game data's world item table: a
+/// <c>UPreloadableEmbarkActorListAsset</c> that stores one member, its array of soft class paths.
 /// </summary>
 public static class WorldItemListAsset
 {

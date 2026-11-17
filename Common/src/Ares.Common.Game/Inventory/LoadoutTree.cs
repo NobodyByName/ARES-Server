@@ -4,7 +4,7 @@ using Ares.Structs.Backend.Progression;
 namespace Ares.Common.Game.Inventory;
 
 /// <summary>A content slot of the loadout tree.</summary>
-/// <param name="Branch">The standard equipment branch holding the slot, or <see cref="AugmentItems.AugmentSlotAssetId"/> for the augment slot.</param>
+/// <param name="Branch">The standard equipment branch holding the slot, or <see cref="LoadoutDefinitions.AugmentSlotAssetId"/> for the augment slot.</param>
 /// <param name="Index">Index of the slot in its branch's container.</param>
 /// <param name="FrameAssetId">The frame holding the branch; null for the augment slot.</param>
 /// <param name="AllowedAssetIds">Asset ids of the items the slot may hold.</param>
@@ -18,7 +18,12 @@ public sealed record LoadoutSlot(long Branch, int Index, long? FrameAssetId, IRe
 public sealed record LoadoutContents(InventoryItem? Augment, IReadOnlyDictionary<long, IReadOnlyList<InventoryItem?>> Branches)
 {
     /// <summary>The inventory frame selected by the equipped augment.</summary>
-    public long FrameAssetId => LoadoutDefinitions.FrameAssetId(Augment?.GameAssetId);
+    /// <param name="definitions">The shared item definitions.</param>
+    public long FrameAssetId(LoadoutDefinitions definitions)
+    {
+        ArgumentNullException.ThrowIfNull(definitions);
+        return definitions.FrameAssetId(Augment?.GameAssetId);
+    }
 }
 
 /// <summary>
@@ -46,46 +51,48 @@ public sealed class LoadoutTree
     public IReadOnlyDictionary<string, LoadoutSlot> Slots { get; }
 
     /// <summary>Builds the tree; only the selected frame holds the contents.</summary>
+    /// <param name="definitions">The shared item definitions.</param>
     /// <param name="contents">The items in the loadout's slots.</param>
     /// <param name="structure">
     /// Creates a structure node from its asset id, its path (stable and unique within the tree, for example
     /// <c>carried/container/-1935122902/container/3</c>) and its child ids.
     /// </param>
     /// <exception cref="InvalidDataException">An item does not fit its slot.</exception>
-    public static LoadoutTree Build(LoadoutContents contents, Func<long, string, IReadOnlyList<string>, InventoryItem> structure)
+    public static LoadoutTree Build(LoadoutDefinitions definitions, LoadoutContents contents, Func<long, string, IReadOnlyList<string>, InventoryItem> structure)
     {
+        ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(contents);
         ArgumentNullException.ThrowIfNull(structure);
-        IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.ByAsset;
-        long selected = contents.FrameAssetId;
+        IReadOnlyDictionary<long, ItemDescription> descriptions = definitions.ByAsset;
+        long selected = contents.FrameAssetId(definitions);
         List<InventoryItem> items = [];
         Dictionary<string, LoadoutSlot> slots = new(StringComparer.Ordinal);
         Dictionary<long, string> frames = [];
-        foreach (long frame in AugmentItems.FrameAssetIds.Values.Prepend(LoadoutItems.StandardFrameAssetId))
+        foreach (long frame in definitions.AugmentFrames.Prepend(LoadoutItems.StandardFrameAssetId))
         {
             string path = frame == LoadoutItems.StandardFrameAssetId ? "carried/container" : "frames/" + Text(frame);
-            if (definitions[frame].SlotConfig is not StructuralItemSlots branches)
+            if (descriptions[frame].SlotConfig is not StructuralItemSlots branches)
             {
                 throw new InvalidDataException("Unsupported inventory structure");
             }
 
             frames.Add(frame, Node(frame, path, [.. branches.SlotAssetIds.Select(branch =>
             {
-                long standard = LoadoutDefinitions.StandardBranch(branch);
+                long standard = definitions.StandardBranch(branch);
                 return Branch(branch, path + "/" + Text(standard), standard, frame,
                     frame == selected ? contents.Branches.GetValueOrDefault(standard) ?? [] : []);
             })]));
         }
 
         string carried = Node(LoadoutItems.FrameSlotAssetId, "carried", [frames[selected]]);
-        string augment = Branch(AugmentItems.AugmentSlotAssetId, "augment", AugmentItems.AugmentSlotAssetId, null, [contents.Augment]);
+        string augment = Branch(definitions.AugmentSlotAssetId, "augment", definitions.AugmentSlotAssetId, null, [contents.Augment]);
         return new LoadoutTree(items.AsReadOnly(), [carried, augment], slots.AsReadOnly());
 
         string Branch(long asset, string path, long standard, long? frame, IReadOnlyList<InventoryItem?> branchContents)
         {
-            if (definitions[asset].SlotConfig is not SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } branch
-                || definitions[branch.DefaultSlotAssetId].SlotConfig is not ItemSlotArray container
-                || definitions[container.SlotAssetId].SlotConfig is not SingleItemSlot { IsRequired: false } slot)
+            if (descriptions[asset].SlotConfig is not SingleItemSlot { DefaultSlotAssetId: not 0, IsRequired: true } branch
+                || descriptions[branch.DefaultSlotAssetId].SlotConfig is not ItemSlotArray container
+                || descriptions[container.SlotAssetId].SlotConfig is not SingleItemSlot { IsRequired: false } slot)
             {
                 throw new InvalidDataException("Unsupported inventory structure");
             }
@@ -112,7 +119,7 @@ public sealed class LoadoutTree
                 }
 
                 // The menu shows a weapon's mod slots only from these child nodes. They stay empty until mods are supported.
-                IReadOnlyList<string> modSlots = definitions[item.GameAssetId].SlotConfig is StructuralItemSlots weaponSlots
+                IReadOnlyList<string> modSlots = descriptions[item.GameAssetId].SlotConfig is StructuralItemSlots weaponSlots
                     ? [.. weaponSlots.SlotAssetIds.Select((modSlot, index) => Node(modSlot, "items/" + item.InstanceId + "/" + Text(index), []))]
                     : [];
                 items.Add(item with { Slots = modSlots });
@@ -133,13 +140,16 @@ public sealed class LoadoutTree
     }
 
     /// <summary>Reads a raid handoff back into typed slots; an empty loadout has no augment and empty branches.</summary>
+    /// <param name="definitions">The shared item definitions.</param>
     /// <param name="loadout">The item tree of the selected roots.</param>
     /// <exception cref="InvalidDataException">The tree does not have the loadout structure or holds an item a raid cannot carry.</exception>
-    public static LoadoutContents Parse(PlayerLoadout loadout)
+    public static LoadoutContents Parse(LoadoutDefinitions definitions, PlayerLoadout loadout)
     {
+        ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(loadout);
         Dictionary<string, InventoryItem> items = loadout.Items.ToDictionary(item => item.InstanceId, StringComparer.Ordinal);
-        IReadOnlyDictionary<long, ItemDescription> definitions = LoadoutDefinitions.ByAsset;
+        IReadOnlyDictionary<long, ItemDescription> descriptions = definitions.ByAsset;
+        long augmentSlot = definitions.AugmentSlotAssetId;
         Dictionary<long, IReadOnlyList<InventoryItem?>> branches = [];
         if (items.Count == 0)
         {
@@ -150,22 +160,22 @@ public sealed class LoadoutTree
         HashSet<string> children = [.. items.Values.SelectMany(item => item.Slots)];
         InventoryItem[] roots = [.. items.Values.Where(item => !children.Contains(item.InstanceId))];
         if (roots.Count(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId) != 1
-            || roots.Count(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId) > 1
-            || roots.Any(item => item.GameAssetId is not (LoadoutItems.FrameSlotAssetId or AugmentItems.AugmentSlotAssetId)))
+            || roots.Count(item => item.GameAssetId == augmentSlot) > 1
+            || roots.Any(item => item.GameAssetId != LoadoutItems.FrameSlotAssetId && item.GameAssetId != augmentSlot))
         {
             throw new InvalidDataException("Player loadout requires a frame and an optional augment structure");
         }
 
-        InventoryItem? augment = roots.SingleOrDefault(item => item.GameAssetId == AugmentItems.AugmentSlotAssetId) is { } augmentRoot
+        InventoryItem? augment = roots.SingleOrDefault(item => item.GameAssetId == augmentSlot) is { } augmentRoot
             ? Branch(augmentRoot).Single()
             : null;
-        if (augment is not null && !AugmentItems.FrameAssetIds.ContainsKey(augment.GameAssetId))
+        if (augment is not null && !definitions.SupportsAugment(augment.GameAssetId))
         {
             throw new InvalidDataException("Unsupported equipped augment");
         }
 
-        InventoryItem frame = Child(roots.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId), LoadoutDefinitions.FrameAssetId(augment?.GameAssetId));
-        if (definitions[frame.GameAssetId].SlotConfig is not StructuralItemSlots frameSlots || frame.Slots.Count != frameSlots.SlotAssetIds.Count)
+        InventoryItem frame = Child(roots.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId), definitions.FrameAssetId(augment?.GameAssetId));
+        if (descriptions[frame.GameAssetId].SlotConfig is not StructuralItemSlots frameSlots || frame.Slots.Count != frameSlots.SlotAssetIds.Count)
         {
             throw new InvalidDataException("Invalid player frame branches");
         }
@@ -177,7 +187,7 @@ public sealed class LoadoutTree
                 throw new InvalidDataException("Invalid player frame branch");
             }
 
-            branches[LoadoutDefinitions.StandardBranch(asset)] = Branch(items[id]);
+            branches[definitions.StandardBranch(asset)] = Branch(items[id]);
         }
 
         return visited.Count == items.Count
@@ -187,13 +197,13 @@ public sealed class LoadoutTree
         // A branch, or the augment slot, holding one container of content slots.
         IReadOnlyList<InventoryItem?> Branch(InventoryItem branch)
         {
-            if (definitions[branch.GameAssetId].SlotConfig is not SingleItemSlot configuration)
+            if (descriptions[branch.GameAssetId].SlotConfig is not SingleItemSlot configuration)
             {
                 throw new InvalidDataException("Invalid player frame branch");
             }
 
             InventoryItem container = Child(branch, configuration.DefaultSlotAssetId);
-            if (definitions[container.GameAssetId].SlotConfig is not ItemSlotArray slots || container.Slots.Count != slots.NumberOfSlots)
+            if (descriptions[container.GameAssetId].SlotConfig is not ItemSlotArray slots || container.Slots.Count != slots.NumberOfSlots)
             {
                 throw new InvalidDataException("Invalid player container size");
             }
@@ -228,9 +238,9 @@ public sealed class LoadoutTree
 
             InventoryItem item = items[slot.Slots[0]];
             visited.Add(item.InstanceId);
-            if (!LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId) || !EmptyModSlots(item)
-                || item.Amount <= 0 || item.Amount > definitions[item.GameAssetId].MaxAmount
-                || definitions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId))
+            if (!definitions.SupportsCarriedItem(item.GameAssetId) || !EmptyModSlots(item)
+                || item.Amount <= 0 || item.Amount > descriptions[item.GameAssetId].MaxAmount
+                || descriptions[asset].SlotConfig is not SingleItemSlot allowed || !allowed.AllowedSlotAssetIds.Contains(item.GameAssetId))
             {
                 throw new InvalidDataException("Unsupported carried inventory item");
             }
@@ -241,7 +251,7 @@ public sealed class LoadoutTree
         // An item carries one empty node per mod slot; mods themselves are not supported yet.
         bool EmptyModSlots(InventoryItem item)
         {
-            IReadOnlyList<long> expected = definitions[item.GameAssetId].SlotConfig is StructuralItemSlots modSlots ? modSlots.SlotAssetIds : [];
+            IReadOnlyList<long> expected = descriptions[item.GameAssetId].SlotConfig is StructuralItemSlots modSlots ? modSlots.SlotAssetIds : [];
             if (item.Slots.Count != expected.Count)
             {
                 return false;

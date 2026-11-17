@@ -18,7 +18,7 @@ public static class RealGameData
     public const string SkipReason =
         $"Real-data test: set {DirectoryVariable} to a game data directory written by ARES-GameDataExtract extract to run it.";
 
-    private static readonly Lazy<GameData.GameData> s_data = new(() => GameData.GameData.Load(Directory!), LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<GameDataSet> s_data = new(() => GameDataSet.Load(Directory!), LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>The configured directory, or null when <see cref="DirectoryVariable"/> is not set.</summary>
     public static string? Directory => Environment.GetEnvironmentVariable(DirectoryVariable) is { Length: > 0 } directory ? directory : null;
@@ -32,11 +32,11 @@ public static class RealGameData
     /// </summary>
     /// <exception cref="InvalidOperationException">No directory is configured.</exception>
     /// <exception cref="GameDataException">The configured directory cannot be used.</exception>
-    public static GameData.GameData Data => IsConfigured ? s_data.Value
+    public static GameDataSet Data => IsConfigured ? s_data.Value
         : throw new InvalidOperationException($"{DirectoryVariable} is not set; mark the test as a real-data test.");
 
     /// <summary>The loaded data; skips the calling test when no directory is configured.</summary>
-    public static GameData.GameData Require()
+    public static GameDataSet Require()
     {
         Assert.SkipUnless(IsConfigured, SkipReason);
         return Data;

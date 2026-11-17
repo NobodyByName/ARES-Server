@@ -436,7 +436,7 @@ public sealed class GadgetTests
 
     internal static PlayerLoadout AddSnapHook(PlayerLoadout loadout, int slot, long durability = 50)
     {
-        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == LoadoutItems.BeltSlotAssetId);
+        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BeltSlotAssetId);
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branch.Slots[0]);
         string target = container.Slots[slot];
         InventoryItem hook = new(Guid.NewGuid().ToString("D"), GadgetItems.SnapHookAssetId, 1, [], durability, 100, "", "hook", 0);

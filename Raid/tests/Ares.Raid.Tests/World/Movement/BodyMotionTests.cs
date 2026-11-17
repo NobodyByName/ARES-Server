@@ -297,7 +297,7 @@ public sealed class BodyMotionTests
         Assert.False(found.VaultMissed);
         Assert.Equal(VaultKind.Over, found.Vault!.Value.Kind);
         Assert.Equal(VaultParameters.ActionStance, found.Stance);
-        Assert.Equal(VaultParameters.VaultingFlags, found.GraphFlags & VaultParameters.VaultingFlags);
+        Assert.Equal(GeneratedGraphStateFlags.Vaulting, found.GraphFlags & GeneratedGraphStateFlags.Vaulting);
         Assert.True(found.Body!.Value.Airborne);
 
         int duration = VaultMovement.Duration(found.Vault.Value);
@@ -309,7 +309,7 @@ public sealed class BodyMotionTests
         Assert.True(simulation.State.VaultFinished);
         CharacterState after = Walk(simulation, frame, 0);
         Assert.False(after.Vaulting);
-        Assert.Equal(0UL, after.GraphFlags & VaultParameters.VaultingFlags);
+        Assert.Equal(0UL, after.GraphFlags & GeneratedGraphStateFlags.Vaulting);
         Assert.True(after.Body!.Value.Position.X > 110);
     }
 
@@ -351,7 +351,7 @@ public sealed class BodyMotionTests
 
     private static CharacterState Walk(CharacterSimulation simulation, uint frame, ulong claims) =>
         simulation.StepOnGround(new CharacterInput(frame, claims), new MovementInput(frame, 126, 0, MovementButtons.None), 0, PawnBlackboard.TickSeconds,
-            GroundMovementParameters.Unarmed, steerAboveMaximum: true, fixBrakingOvershoot: true, vaults: VaultParameters.Definitions(armed: false, exhausted: false));
+            GroundMovementParameters.Unarmed, steerAboveMaximum: true, fixBrakingOvershoot: true, vaults: GeneratedMovementData.Vaults(armed: false, exhausted: false));
 
     private static CharacterState Step(CharacterSimulation simulation, uint frame, MovementButtons buttons) =>
         simulation.StepOnGround(new CharacterInput(frame, 0), new MovementInput(frame, 0, 0, buttons), 0, PawnBlackboard.TickSeconds,

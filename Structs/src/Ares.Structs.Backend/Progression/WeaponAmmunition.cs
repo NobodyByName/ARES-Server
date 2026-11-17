@@ -3,9 +3,9 @@ namespace Ares.Structs.Backend.Progression;
 /// <summary>The ammunition item each supported firearm loads.</summary>
 public static class WeaponAmmunition
 {
-    /// <summary>Asset id of the ammunition item, by firearm asset id.</summary>
-    public static IReadOnlyDictionary<long, long> ByWeapon { get; } = new Dictionary<long, long>
+    /// <summary>Technical name of the ammunition item, by technical name of the firearm.</summary>
+    public static IReadOnlyDictionary<string, string> ByWeapon { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        [WeaponItems.FerroIAssetId] = WeaponItems.HeavyAmmoAssetId,
+        [ItemTechnicalNames.FerroI] = ItemTechnicalNames.HeavyAmmo,
     };
 }

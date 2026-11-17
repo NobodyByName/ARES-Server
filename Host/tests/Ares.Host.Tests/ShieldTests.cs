@@ -121,7 +121,7 @@ public sealed class ShieldTests : IDisposable
         InventorySnapshot snapshot = store.Snapshot;
         string frameId = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId).Slots[0];
         InventoryItem frame = frameAsset is { } asset ? snapshot.Items.Single(item => item.GameAssetId == asset) : snapshot.Items.Single(item => item.InstanceId == frameId);
-        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
         return snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots[0];
     }
 

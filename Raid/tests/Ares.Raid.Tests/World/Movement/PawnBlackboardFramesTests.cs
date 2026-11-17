@@ -204,7 +204,7 @@ public sealed class PawnBlackboardFramesTests
         Assert.Equal((ulong)CharacterStance.Crouch, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionStanceField));
         Assert.Equal((ulong)LocoMode.Walking, Field(lit, PawnBlackboard.ActionStateSlot, PawnBlackboard.ActionLocoModeField));
         // The simulated flags replace the initial ones: a crouch by input, no sprint.
-        ulong flags = (Field(initial, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField) & ~GraphStateFlags.Simulated) | GraphStateTags.AbilityCrouch;
+        ulong flags = (Field(initial, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField) & ~GeneratedGraphStateFlags.Simulated) | GraphStateTags.AbilityCrouch;
         Assert.Equal(flags | GraphStateTags.AbilityFlashlightActive, Field(lit, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField));
         Assert.Equal(flags, Field(dark, PawnBlackboard.GraphStateSlot, PawnBlackboard.GraphTagsField));
     }
@@ -225,9 +225,9 @@ public sealed class PawnBlackboardFramesTests
     {
         CharacterState rolling = new(40, s_spawn, Flashlight: false) { Roll = new DodgeRollState(DodgeRollKind.Standard, new Vector3D(1, 0, 0), 5) };
         CharacterState recovering = new(40, s_spawn, Flashlight: false) { HeavyLandingTicks = 3 };
-        Assert.Equal(DodgeRollParameters.RollingFlags, Graph(rolling) & DodgeRollParameters.RollingFlags);
-        Assert.Equal(DodgeRollParameters.RollingFlags, Graph(rolling with { RollExitTicks = 1 }) ^ Graph(rolling));
-        Assert.Equal(GraphStateFlags.HeavyLandingRecovery, Graph(recovering) & GraphStateFlags.HeavyLandingRecovery);
+        Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, Graph(rolling) & GeneratedGraphStateFlags.DodgeRolling);
+        Assert.Equal(GeneratedGraphStateFlags.DodgeRolling, Graph(rolling with { RollExitTicks = 1 }) ^ Graph(rolling));
+        Assert.Equal(GeneratedGraphStateFlags.HeavyLandingRecovery, Graph(recovering) & GeneratedGraphStateFlags.HeavyLandingRecovery);
         Assert.Equal(0UL, Graph(recovering with { HeavyLandingTicks = 0 }) & GraphStateTags.AbilityLandingHeavy);
     }
 

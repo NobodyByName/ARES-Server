@@ -9,7 +9,7 @@ namespace Ares.Raid.World.Loot;
 /// <param name="Item">The item.</param>
 /// <param name="Amount">Items in the stack.</param>
 /// <param name="Durability">Durability as a fraction of maximum durability.</param>
-public sealed record LootStack(UsableItem Item, int Amount, double Durability);
+public sealed record LootStack(ItemDefinition Item, int Amount, double Durability);
 
 /// <summary>What a container holds from its creation.</summary>
 /// <param name="Pool">Name of the pool it drew from; null when no pool covers the container.</param>
@@ -26,17 +26,17 @@ public sealed record LootContents(string? Pool, IReadOnlyList<LootStack> Stacks)
 /// </summary>
 public static class LootContentRolls
 {
-    private static readonly UsableItem[] s_items =
+    private static readonly ItemDefinition[] s_items =
     [
-        .. LoadoutDefinitions.PlainItems.Where(item => !item.DropTags.Any(tag => LootContentDefaults.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded)))),
+        .. LoadoutDefinitions.Generated.PlainItems.Where(item => !item.DropTags.Any(tag => LootContentDefaults.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded)))),
     ];
 
     // Every drop tag of each item with the tags above them, which avoid groups are matched against.
-    private static readonly Dictionary<UsableItem, HashSet<string>> s_dropTagGroups = s_items.ToDictionary<UsableItem, UsableItem, HashSet<string>>(item => item,
+    private static readonly Dictionary<ItemDefinition, HashSet<string>> s_dropTagGroups = s_items.ToDictionary<ItemDefinition, ItemDefinition, HashSet<string>>(item => item,
         item => new HashSet<string>(item.DropTags.SelectMany(TagAndParents), StringComparer.OrdinalIgnoreCase), ReferenceEqualityComparer.Instance);
 
     // What each table the pools name selects: every item with the entry that selects it, in entry order.
-    private static readonly Dictionary<string, (UsableItem Item, StaticValueLootTableEntry Entry)[]> s_tableSelections = LootContentDefaults.TablePools
+    private static readonly Dictionary<string, (ItemDefinition Item, StaticValueLootTableEntry Entry)[]> s_tableSelections = LootContentDefaults.TablePools
         .SelectMany(pool => pool.Tables).Distinct(StringComparer.OrdinalIgnoreCase)
         .ToDictionary(name => name, Selections, StringComparer.OrdinalIgnoreCase);
 
@@ -47,7 +47,7 @@ public static class LootContentRolls
     private static readonly Dictionary<string, PoolItem[]> s_typeCandidates = LootContainerTypes.All
         .ToDictionary(type => type.Tag, type => FilterCandidates(type.Tag), StringComparer.OrdinalIgnoreCase);
 
-    private static readonly Dictionary<LootTypeEntry, UsableItem[]> s_typeItems = LootContentDefaults.TypePools
+    private static readonly Dictionary<LootTypeEntry, ItemDefinition[]> s_typeItems = LootContentDefaults.TypePools
         .SelectMany(pool => pool.Entries).Concat(LootContentDefaults.ExtraStackEntries).Distinct()
         .ToDictionary(entry => entry, entry => s_items.Where(item => Matches(item, entry)).ToArray());
 
@@ -69,7 +69,7 @@ public static class LootContentRolls
     /// <param name="item">The item.</param>
     /// <param name="containerTag">The container's tag.</param>
     /// <returns>True when the item may spawn in the container.</returns>
-    public static bool MatchesContainerTag(UsableItem item, string containerTag)
+    public static bool MatchesContainerTag(ItemDefinition item, string containerTag)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(containerTag);
@@ -80,7 +80,7 @@ public static class LootContentRolls
     /// <summary>The tier of an item: the first tier of <see cref="LootContentDefaults.TierWeights"/> whose drop tag it carries.</summary>
     /// <param name="item">The item.</param>
     /// <returns>The tier, <see cref="LootTier.Other"/> when it carries none.</returns>
-    public static LootTier TierOf(UsableItem item)
+    public static LootTier TierOf(ItemDefinition item)
     {
         ArgumentNullException.ThrowIfNull(item);
         return LootContentDefaults.TierWeights.FirstOrDefault(tier => tier.DropTag is { } tag && item.DropTags.Any(drop => IsTagOrBelow(drop, tag)))?.Tier
@@ -106,7 +106,7 @@ public static class LootContentRolls
     /// <summary>The items a container of a tag may get from its table pool.</summary>
     /// <param name="containerTag">The container's tag.</param>
     /// <returns>The items, in pool order; none when no table pool covers the tag.</returns>
-    public static IReadOnlyList<UsableItem> Candidates(string containerTag) => [.. PoolCandidates(containerTag).Select(entry => entry.Item)];
+    public static IReadOnlyList<ItemDefinition> Candidates(string containerTag) => [.. PoolCandidates(containerTag).Select(entry => entry.Item)];
 
     /// <summary>Draws a container's contents.</summary>
     /// <param name="containerTag">The container's tag, or null when it has none.</param>
@@ -172,7 +172,7 @@ public static class LootContentRolls
     // items evenly. Null when no entry has one left.
     private static LootStack? Draw(IReadOnlyList<LootTypeEntry> entries, List<LootStack> present, bool avoidGroups, Random random)
     {
-        (LootTypeEntry Entry, UsableItem[] Items)[] open =
+        (LootTypeEntry Entry, ItemDefinition[] Items)[] open =
         [
             .. entries.Select(entry => (Entry: entry, Items: s_typeItems[entry].Where(item => avoidGroups ? Fits(item, present) : present.TrueForAll(stack => !ReferenceEquals(stack.Item, item))).ToArray()))
                 .Where(entry => entry.Items.Length > 0 && entry.Entry.Weight > 0),
@@ -183,8 +183,8 @@ public static class LootContentRolls
         }
 
         double roll = random.NextDouble() * open.Sum(entry => entry.Entry.Weight);
-        (LootTypeEntry chosen, UsableItem[] items) = open[^1];
-        foreach ((LootTypeEntry Entry, UsableItem[] Items) entry in open)
+        (LootTypeEntry chosen, ItemDefinition[] items) = open[^1];
+        foreach ((LootTypeEntry Entry, ItemDefinition[] Items) entry in open)
         {
             if (roll < entry.Entry.Weight)
             {
@@ -195,7 +195,7 @@ public static class LootContentRolls
             roll -= entry.Entry.Weight;
         }
 
-        UsableItem item = items[random.Next(items.Length)];
+        ItemDefinition item = items[random.Next(items.Length)];
         return new LootStack(item, Amount(item, chosen.StackSize, random), 1);
     }
 
@@ -240,11 +240,11 @@ public static class LootContentRolls
     }
 
     // Whether an item may join a container's stacks: not there yet, and no avoid group of either item covers another.
-    private static bool Fits(UsableItem item, List<LootStack> present) => present.TrueForAll(stack => Fits(item, stack.Item));
+    private static bool Fits(ItemDefinition item, List<LootStack> present) => present.TrueForAll(stack => Fits(item, stack.Item));
 
-    private static bool Fits(UsableItem item, UsableItem other) => !ReferenceEquals(item, other) && !Avoids(item, other) && !Avoids(other, item);
+    private static bool Fits(ItemDefinition item, ItemDefinition other) => !ReferenceEquals(item, other) && !Avoids(item, other) && !Avoids(other, item);
 
-    private static bool Avoids(UsableItem item, UsableItem other)
+    private static bool Avoids(ItemDefinition item, ItemDefinition other)
     {
         HashSet<string> groups = s_dropTagGroups[other];
         return item.LootAvoidGroups.Any(groups.Contains);
@@ -258,11 +258,11 @@ public static class LootContentRolls
         }
     }
 
-    private static int Amount(UsableItem item, LootRange range, Random random) => Math.Max(1, Math.Min(Uniform(range, random), item.MaxStack));
+    private static int Amount(ItemDefinition item, LootRange range, Random random) => Math.Max(1, Math.Min(Uniform(range, random), item.MaxStack));
 
     private static int Uniform(LootRange range, Random random) => range.Max <= range.Min ? range.Min : random.Next(range.Min, range.Max + 1);
 
-    private static bool Matches(UsableItem item, LootTypeEntry entry) =>
+    private static bool Matches(ItemDefinition item, LootTypeEntry entry) =>
         item.DropTags.Any(tag => IsTagOrBelow(tag, entry.DropTag)) && !item.DropTags.Any(tag => entry.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded)));
 
     private static PoolItem[] PoolCandidates(string containerTag)
@@ -296,8 +296,8 @@ public static class LootContentRolls
     private static PreparedPool Prepare(LootTablePool pool)
     {
         List<PoolItem> items = [];
-        HashSet<UsableItem> seen = new(ReferenceEqualityComparer.Instance);
-        foreach ((UsableItem item, StaticValueLootTableEntry entry) in pool.Tables.SelectMany(name => s_tableSelections[name]))
+        HashSet<ItemDefinition> seen = new(ReferenceEqualityComparer.Instance);
+        foreach ((ItemDefinition item, StaticValueLootTableEntry entry) in pool.Tables.SelectMany(name => s_tableSelections[name]))
         {
             if (seen.Add(item))
             {
@@ -309,7 +309,7 @@ public static class LootContentRolls
     }
 
     // The items a table (every table of that name) selects, entry by entry.
-    private static (UsableItem Item, StaticValueLootTableEntry Entry)[] Selections(string name)
+    private static (ItemDefinition Item, StaticValueLootTableEntry Entry)[] Selections(string name)
     {
         StaticValueLootTable[] tables = [.. StaticValueLootTables.All.Where(table => string.Equals(table.Name, name, StringComparison.OrdinalIgnoreCase))];
         if (tables.Length == 0)
@@ -321,7 +321,7 @@ public static class LootContentRolls
             .SelectMany(entry => s_items.Where(item => entry.Selects(item.TechnicalName, item.DropTags)).Select(item => (item, entry)))];
     }
 
-    private sealed record PoolItem(UsableItem Item, LootTier Tier, LootRange StackSize, LootRange Durability);
+    private sealed record PoolItem(ItemDefinition Item, LootTier Tier, LootRange StackSize, LootRange Durability);
 
     private sealed record PreparedPool(LootTablePool Pool, IReadOnlyList<PoolItem> Items);
 }

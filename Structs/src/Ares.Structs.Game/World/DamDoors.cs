@@ -2,19 +2,6 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Structs.Game.World;
 
-/// <summary>State of an interaction component (<c>ECurrentInteractionState</c>).</summary>
-public enum CurrentInteractionState : byte
-{
-    Uninitialized = 0,
-    Disabled = 1,
-    Idle = 2,
-    Ongoing = 3,
-    Succeeding = 4,
-    Cancelling = 5,
-    SuccessIdle = 6,
-    SuccessDisabled = 7,
-}
-
 /// <summary>
 /// Regular doors of the Dam map: placed directly in a cell's persistent level, with two
 /// open/close buttons, and how each one starts. Puzzle and Harvester doors are not included.

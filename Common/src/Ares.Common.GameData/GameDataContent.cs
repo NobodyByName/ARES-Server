@@ -8,7 +8,7 @@ namespace Ares.Common.GameData;
 
 /// <summary>
 /// The rows of every global table (<see cref="GameTables"/>) and of each map's tables, as read from a game data
-/// directory or written by hand for a test. <see cref="GameData.Create"/> checks and indexes them.
+/// directory or written by hand for a test. <see cref="GameDataSet.Create"/> checks and indexes them.
 /// </summary>
 /// <remarks>Each member is named after its table and holds its rows in the table's order.</remarks>
 public sealed record GameDataContent

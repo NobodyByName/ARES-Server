@@ -6,11 +6,14 @@ namespace Ares.Structs.Tests.Backend;
 
 public sealed class ScrapJsonTests
 {
+    private const long CoinsAssetId = 1_000_002;
+
+    private static readonly ItemDescription s_item = new(1_000_001, "GameItem", 10, true, false, [], []);
+
     [Fact]
     public void A_sellable_item_describes_its_coin_value_as_a_scrap_reward_package()
     {
-        long metalParts = ItemTechnicalNames.AssetIds[ItemTechnicalNames.MetalParts];
-        ItemDescription description = SalvageItems.Definitions.Single(item => item.GameAssetId == metalParts) with { Scrap = ItemRewardPackages.Scrap(metalParts) };
+        ItemDescription description = s_item with { Scrap = ItemRewardPackages.Scrap(75, CoinsAssetId) };
         using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(description, BackendJson.Options));
 
         JsonElement scrap = document.RootElement.GetProperty("scrap");
@@ -18,17 +21,15 @@ public sealed class ScrapJsonTests
         JsonElement reward = Assert.Single(scrap.GetProperty("rewardPackage").GetProperty("rewardedItems").EnumerateArray());
         Assert.Equal(["gameAssetId", "amount", "durability", "slots", "aliasInstanceId", "maxAmount", "hideInUi"],
             reward.EnumerateObject().Select(property => property.Name));
-        Assert.Equal((CurrencyItems.CoinsAssetId, 75L, 1.0), (reward.GetProperty("gameAssetId").GetInt64(), reward.GetProperty("amount").GetInt64(),
+        Assert.Equal((CoinsAssetId, 75L, 1.0), (reward.GetProperty("gameAssetId").GetInt64(), reward.GetProperty("amount").GetInt64(),
             reward.GetProperty("durability").GetDouble()));
     }
 
     [Fact]
     public void An_item_without_a_value_has_no_scrap_member()
     {
-        Assert.Equal(0, ItemValues.ScrapValues[CurrencyItems.CoinsAssetId]);
-        Assert.Null(ItemRewardPackages.Scrap(CurrencyItems.CoinsAssetId));
-        Assert.Null(ItemRewardPackages.Scrap(StorageItems.StashSlotAssetId));
-        using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(CurrencyItems.Definitions.Single(), BackendJson.Options));
+        Assert.Null(ItemRewardPackages.Scrap(0, CoinsAssetId));
+        using JsonDocument document = JsonDocument.Parse(JsonSerializer.Serialize(s_item, BackendJson.Options));
         Assert.False(document.RootElement.TryGetProperty("scrap", out _));
     }
 

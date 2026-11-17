@@ -18,15 +18,15 @@ namespace Ares.Raid.Tests.World;
 
 public sealed class PickupTests
 {
-    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
+    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
     private static readonly int s_maxDucks = RaidInventory.MaxAmount(s_duck);
 
     [Fact]
     public void Every_item_a_player_can_drop_has_a_data_asset_and_hand_items_stay_in_the_inventory()
     {
-        Assert.All(LoadoutDefinitions.All.Where(item => LoadoutDefinitions.SupportsCarriedItem(item.GameAssetId)), item =>
+        Assert.All(LoadoutDefinitions.Generated.All.Where(item => LoadoutDefinitions.Generated.SupportsCarriedItem(item.GameAssetId)), item =>
         {
-            ushort index = checked((ushort)LoadoutDefinitions.UsableIndex(item.GameAssetId));
+            ushort index = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(item.GameAssetId));
             Assert.True(WorldPickups.Supports(index));
             Assert.True(RaidInventory.MaxAmount(index) > 0);
         });

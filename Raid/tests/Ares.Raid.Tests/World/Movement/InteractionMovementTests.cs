@@ -208,8 +208,8 @@ public sealed class InteractionMovementTests
         Assert.True(InteractionSettings.ForElevatorButton(descend).Immobilizes);
         Assert.False(InteractionSettings.ForElevatorButton(call).Immobilizes);
 
-        Assert.Equal(1UL << 62, InteractionMovementParameters.Tags);
-        Assert.Equal(0x3fUL, InteractionMovementParameters.UpperTags);
-        Assert.Equal((1UL << 0) | (1UL << 1) | (1UL << 2) | (1UL << 4) | (1UL << 63), InteractionMovementParameters.RootMotionNodeTags);
+        Assert.Equal(1UL << 62, GeneratedGraphStateFlags.InteractionTags);
+        Assert.Equal(0x3fUL, GeneratedGraphStateFlags.InteractionUpperTags);
+        Assert.Equal((1UL << 0) | (1UL << 1) | (1UL << 2) | (1UL << 4) | (1UL << 63), GeneratedGraphStateFlags.InteractionRootMotionNodeTags);
     }
 }

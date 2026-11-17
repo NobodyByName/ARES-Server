@@ -289,15 +289,6 @@ public static class SwingParameters
     /// <summary>Transient state the swing raises on every tick it runs to the end.</summary>
     public const int UnknownSwingTransientState = 8;
 
-    /// <summary>Graph state flags while the swing runs: equipping another item is blocked.</summary>
-    public const ulong SwingingFlags = GraphStateTags.AbilityBlockEquipItemPendulumMove;
-
-    /// <summary>Graph state flag raised while climbing, rappelling or kicking: stamina does not recharge.</summary>
-    public const ulong StaminaBlockFlag = GraphStateTags.AttributeStaminaBlockRechargePendulumMove;
-
-    /// <summary>Graph state flag raised on the tick of a jump off the rope.</summary>
-    public const ulong JumpStartedFlag = GraphStateTags.AnimationAbilityJumpStarted;
-
     /// <summary>Action-layer stance while swinging.</summary>
     public const CharacterStance ActionStance = CharacterStance.Uncontrolled;
 

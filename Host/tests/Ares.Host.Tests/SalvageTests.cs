@@ -33,7 +33,7 @@ public sealed class SalvageTests : IDisposable
     public void The_operator_adds_a_full_salvage_stack_to_the_stash_and_game_data_describes_it(string type, long maxStack)
     {
         InventoryStore store = Create();
-        long assetId = ItemTechnicalNames.AssetIds[type];
+        long assetId = LoadoutDefinitions.Generated.AssetIds[type];
         store.AddItem(type, DateTimeOffset.UnixEpoch, maxStack);
         OwnedItem stack = Assert.Single(store.Inventory.Stash.Items, item => item.Type == type);
         Assert.Equal(maxStack, stack.Quantity);
@@ -41,9 +41,9 @@ public sealed class SalvageTests : IDisposable
         Assert.Equal((assetId, maxStack), (owned.GameAssetId, owned.Amount));
         ItemDescription description = Assert.Single(store.GameData().ItemDescriptions.ItemDescriptions, item => item.GameAssetId == assetId);
         Assert.Equal((maxStack, true), (description.MaxAmount, description.Stackable));
-        Assert.True(LoadoutDefinitions.SupportsCarriedItem(assetId));
-        Assert.Equal(SalvageItems.ItemWeights[assetId], LoadoutDefinitions.ItemWeight(assetId));
-        Assert.Equal(SalvageItems.UsableIndices[assetId], LoadoutDefinitions.UsableIndex(assetId));
+        Assert.True(LoadoutDefinitions.Generated.SupportsCarriedItem(assetId));
+        Assert.Equal(SalvageItems.ItemWeights[assetId], LoadoutDefinitions.Generated.ItemWeight(assetId));
+        Assert.Equal(SalvageItems.UsableIndices[assetId], LoadoutDefinitions.Generated.UsableIndex(assetId));
         Assert.Equal(type, ItemTechnicalNames.DataAssets[type].Split('.')[^1]);
     }
 
@@ -98,7 +98,7 @@ public sealed class SalvageTests : IDisposable
         InventorySnapshot snapshot = store.Snapshot;
         string frameId = snapshot.Items.Single(item => item.GameAssetId == LoadoutItems.FrameSlotAssetId).Slots[0];
         InventoryItem frame = snapshot.Items.Single(item => item.InstanceId == frameId);
-        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.StandardBranch(item.GameAssetId) == branchAsset);
+        InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId) && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
         return [.. snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots];
     }
 

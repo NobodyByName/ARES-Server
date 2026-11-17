@@ -98,10 +98,10 @@ public static class PawnBlackboardFrames
                     {
                         // The simulation decides its own flags; the others keep their initial values.
                         ulong flags = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.GraphTagsField)?.Value ?? 0;
-                        ulong simulated = GraphStateFlags.Simulated | (graph.HeldItem is not null ? GraphStateFlags.HeldItem : 0);
+                        ulong simulated = GeneratedGraphStateFlags.Simulated | (graph.HeldItem is not null ? GeneratedGraphStateFlags.HeldItem : 0);
                         Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphTagsField, (flags & ~simulated) | graph.GraphFlags));
                         ulong upper = values.OfType<PendulumIntegerValue>().LastOrDefault(value => value.Field == PawnBlackboard.GraphUpperTagsField)?.Value ?? 0;
-                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphUpperTagsField, (upper & ~GraphStateFlags.SimulatedUpper) | graph.UpperGraphFlags));
+                        Replace(values, new PendulumIntegerValue(PawnBlackboard.GraphUpperTagsField, (upper & ~GeneratedGraphStateFlags.SimulatedUpper) | graph.UpperGraphFlags));
                     }
 
                     break;

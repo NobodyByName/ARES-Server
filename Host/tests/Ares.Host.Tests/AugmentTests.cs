@@ -20,7 +20,7 @@ public sealed class AugmentTests : IDisposable
         OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == type);
         Assert.Equal(200, store.Commit(Move(duck.InstanceId, BackpackSlots(store.Snapshot)[0], "carry"), DateTimeOffset.UnixEpoch).StatusCode);
         InventorySnapshot before = store.Snapshot;
-        long frame = AugmentItems.FrameAssetIds[ItemTechnicalNames.AssetIds[type]];
+        long frame = AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]];
         string destination = BackpackSlots(before, frame)[0];
         Assert.NotEqual(BackpackSlots(before)[0], destination);
         string saved = _database.InventoryJson;
@@ -81,7 +81,7 @@ public sealed class AugmentTests : IDisposable
         InventorySnapshot before = store.Snapshot;
         InventoryItem empty = Assert.Single(before.Items, item => item.GameAssetId == AugmentItems.AugmentContentSlotAssetId);
         Assert.Empty(empty.Slots);
-        string[] slots = BackpackSlots(before, AugmentItems.FrameAssetIds[ItemTechnicalNames.AssetIds[type]]);
+        string[] slots = BackpackSlots(before, AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]]);
         OwnedItem augment = store.Inventory.Stash.Items.Single(item => item.Type == type);
         ServiceReply reply = store.Commit(Move(augment.InstanceId, empty.InstanceId, "equip"), DateTimeOffset.UnixEpoch.AddMinutes(1));
         Assert.Equal(200, reply.StatusCode);
@@ -98,7 +98,7 @@ public sealed class AugmentTests : IDisposable
         string ticket = Guid.NewGuid().ToString("D");
         PlayerLoadout loadout = restarted.Reserve(ticket);
         Assert.Contains(loadout.Items, item => item.InstanceId == augment.InstanceId);
-        long frame = AugmentItems.FrameAssetIds[ItemTechnicalNames.AssetIds[type]];
+        long frame = AugmentItems.FrameAssetIds[LoadoutDefinitions.Generated.AssetIds[type]];
         Assert.Contains(loadout.Items, item => item.GameAssetId == frame);
         Assert.DoesNotContain(loadout.Items, item => item.GameAssetId == LoadoutItems.StandardFrameAssetId);
         Assert.Equal(409, restarted.Commit(Move(augment.InstanceId, StashSlot(restarted), "reserved"), DateTimeOffset.UnixEpoch).StatusCode);
@@ -212,7 +212,7 @@ public sealed class AugmentTests : IDisposable
         InventoryItem frame = frameAssetId is { } asset ? snapshot.Items.Single(item => item.GameAssetId == asset)
             : snapshot.Items.Single(item => item.InstanceId == root.Slots[0]);
         InventoryItem branch = snapshot.Items.Single(item => frame.Slots.Contains(item.InstanceId)
-            && LoadoutDefinitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+            && LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
         return [.. snapshot.Items.Single(item => item.InstanceId == branch.Slots[0]).Slots];
     }
 

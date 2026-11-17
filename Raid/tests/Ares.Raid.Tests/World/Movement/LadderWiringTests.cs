@@ -40,8 +40,8 @@ public sealed class LadderWiringTests
         double sprinting = Speed(states, Climb + 70, Climb + 79);
         Assert.Equal(LadderParameters.ClimbUpSpeed, climbing, 1);
         Assert.Equal(LadderParameters.SprintUpSpeed, sprinting, 1);
-        Assert.Equal(LadderParameters.SprintActiveFlag, states[Climb + 75].GraphFlags & LadderParameters.SprintActiveFlag);
-        Assert.Contains(Range(states, Climb + 80, Climb + 160), state => (state.GraphFlags & LadderParameters.SlidingFlag) != 0);
+        Assert.Equal(GeneratedGraphStateFlags.LadderSprintActive, states[Climb + 75].GraphFlags & GeneratedGraphStateFlags.LadderSprintActive);
+        Assert.Contains(Range(states, Climb + 80, Climb + 160), state => (state.GraphFlags & GeneratedGraphStateFlags.LadderSliding) != 0);
         Assert.False(states[Climb + 159].OnLadder);
         Assert.Equal(0, movement.Reseeds);
         return;
@@ -69,7 +69,7 @@ public sealed class LadderWiringTests
         Assert.True(states[Crouch - 1].OnLadder);
         Assert.Null(states[Crouch].Ladder);
         Assert.False(states[Crouch + 1].OnLadder);
-        int blocked = Range(states, Crouch + 1, Climb + 30).Count(state => (state.GraphFlags & LadderParameters.CrouchInputBlockedFlag) != 0);
+        int blocked = Range(states, Crouch + 1, Climb + 30).Count(state => (state.GraphFlags & GeneratedGraphStateFlags.LadderCrouchInputBlocked) != 0);
         Assert.Equal(LadderMovement.CrouchBlockTicks - 1, blocked);
     }
 

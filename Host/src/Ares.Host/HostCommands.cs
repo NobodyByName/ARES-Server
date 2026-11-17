@@ -53,7 +53,7 @@ internal sealed class HostCommands(JsonEventLog log)
             Complete: preceding => preceding switch
             {
                 [_, _] => s_inventoryCommands,
-                [_, _, var subcommand] when subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => LoadoutDefinitions.AssetIds.Keys,
+                [_, _, var subcommand] when subcommand.Equals("add", StringComparison.OrdinalIgnoreCase) => LoadoutDefinitions.Generated.AssetIds.Keys,
                 _ => [],
             }),
         new("raid",

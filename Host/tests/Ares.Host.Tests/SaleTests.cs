@@ -1,3 +1,4 @@
+using Ares.Common.Game.Inventory;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -174,7 +175,7 @@ public sealed class SaleTests : IDisposable
     }
 
     private static long Value(IReadOnlyList<ItemDescription> descriptions, string type) =>
-        descriptions.Single(item => item.GameAssetId == ItemTechnicalNames.AssetIds[type]).Scrap!.RewardPackage.RewardedItems.Single().Amount;
+        descriptions.Single(item => item.GameAssetId == LoadoutDefinitions.Generated.AssetIds[type]).Scrap!.RewardPackage.RewardedItems.Single().Amount;
 
     private static InventoryOperationsRequest Sell(string itemId, long? amount = null) => new([new ScrapItem(itemId, amount)], "");
 

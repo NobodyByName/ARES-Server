@@ -35,7 +35,7 @@ public sealed class DownedMovementTests
         DownedStep crawling = Step(state, Downed(s_forward), velocity);
         Assert.Equal(DownedPhase.Crawling, crawling.Phase);
         Assert.Equal(0UL, crawling.GraphTags & GraphStateTags.AnimationPendulumStateDeathToDbno);
-        Assert.Equal(DownedMovementParameters.NodeTags, crawling.GraphTags);
+        Assert.Equal(GeneratedGraphStateFlags.DownedNodeTags, crawling.GraphTags);
     }
 
     [Fact]

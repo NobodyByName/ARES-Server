@@ -169,7 +169,7 @@ public sealed class SnapHookMovementTests
         Assert.Equal(SnapHookExit.None, first.Exit);
         Assert.Equal(5000.0 / 15 * Tick, first.Velocity.X, 9);
         Assert.Equal(0, first.Velocity.Z, 9);
-        Assert.Equal(SnapHookParameters.PullingFlags, first.Flags);
+        Assert.Equal(GeneratedGraphStateFlags.SnapHookPulling, first.Flags);
         Assert.True(first.HeavyLandingQuery);
         Assert.True(first.ActionLayerWritten);
         Assert.Equal(CharacterStance.InAir, first.Stance);

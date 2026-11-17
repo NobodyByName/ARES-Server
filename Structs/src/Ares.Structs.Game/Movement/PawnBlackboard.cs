@@ -187,10 +187,10 @@ public static class PawnBlackboard
     /// <summary>Movement flag (<see cref="MovementFlagsField"/>) set while the last ground trace found the character's feet under the ground.</summary>
     public const ulong FeetUnderGroundMovementFlag = 1UL << 6;
 
-    /// <summary>Graph-state tag word holding the tracked tags 0–63 (<see cref="GraphStateTags"/>).</summary>
+    /// <summary>Graph-state tag word holding the tracked tags 0–63 (<see cref="GraphTagBit.Word"/> 0).</summary>
     public const int GraphTagsField = 7;
 
-    /// <summary>Graph-state tag word holding the tracked tags from 64 (<see cref="GraphStateUpperTags"/>).</summary>
+    /// <summary>Graph-state tag word holding the tracked tags from 64 (<see cref="GraphTagBit.Word"/> 1).</summary>
     public const int GraphUpperTagsField = 8;
 
     /// <summary>Simulation time units per tick.</summary>

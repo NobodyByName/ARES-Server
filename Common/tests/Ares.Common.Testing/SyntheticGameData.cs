@@ -40,7 +40,7 @@ public sealed class SyntheticGameData
     private Func<GameDataContent, GameDataContent> _content = Same<GameDataContent>();
 
     /// <summary>The default made-up data.</summary>
-    public static GameData.GameData Create() => new SyntheticGameData().Build();
+    public static GameDataSet Create() => new SyntheticGameData().Build();
 
     /// <summary>
     /// Adds an item, or changes one of <see cref="GameNames.Items"/>. Usable indices follow the technical names' order
@@ -128,7 +128,7 @@ public sealed class SyntheticGameData
             VaultDefinitions = [.. MovementAssets.VaultPackages.Select(_ => new VaultDefinitionSet(1.0, [], [], []))],
             HeavyLandingLevels = [],
             RecoveryLandingLevels = [],
-            GraphStateTags = [.. typeof(GameNames.GraphTags).GetFields().Select(field => (string)field.GetRawConstantValue()!).Order(StringComparer.Ordinal)],
+            GraphStateTags = GraphStateTags(),
             SnapHookItem = new SnapHookItemDefaults("/Game/Synthetic/DA_Item_SnapHook", 1800, 60),
             SprintBurstCurve = [new WeightedCurveKey(0f, 0f, 0f, 0f, 0f, 0f), new WeightedCurveKey(0.5f, 1f, 0f, 0f, 0f, 0f)],
             LootContainerTypes = [new LootContainerType(ContainerTag, [new ArchetypeClass(ContainerClass, "/Game/Synthetic/BP_Container.Default__BP_Container_C")], [], 2)],
@@ -150,9 +150,26 @@ public sealed class SyntheticGameData
     }
 
     /// <summary>The checked and indexed data.</summary>
-    public GameData.GameData Build() => GameData.GameData.Create(BuildContent());
+    public GameDataSet Build() => GameDataSet.Create(BuildContent());
 
     private static Func<T, T> Same<T>() => value => value;
+
+    // The graph's tag list: every name of GameNames.GraphTags, those the upper tag word holds after made-up tags that fill
+    // the graph tag word (GraphStateFlags groups each tag in its word).
+    private static ImmutableArray<string> GraphStateTags()
+    {
+        string[] upper =
+        [
+            GameNames.GraphTags.AbilityBlockEquipItemInteract, GameNames.GraphTags.AbilityBlockFirePrimaryInteract, GameNames.GraphTags.AbilityBlockFireSecondaryInteract,
+            GameNames.GraphTags.AbilityBlockJumpInteract, GameNames.GraphTags.AbilityBlockReloadInteract, GameNames.GraphTags.StatusImmobilizedInteract,
+            GameNames.GraphTags.UiSkillStateActiveSprintBoost, GameNames.GraphTags.StatusExhausted,
+        ];
+        string[] lower =
+        [
+            .. typeof(GameNames.GraphTags).GetFields().Select(field => (string)field.GetRawConstantValue()!).Except(upper).Order(StringComparer.Ordinal),
+        ];
+        return [.. lower, .. Enumerable.Range(0, MovementAssets.GraphTagWordBits - lower.Length).Select(index => $"Synthetic.Tag{index}"), .. upper];
+    }
 
     private static ItemDefinition Item(string name, long assetId) => new(0, name, $"/Game/Synthetic/{name}", assetId, assetId, [], ItemCategory.Misc, ItemRarity.Common, 1,
         1.0, false, false, false, [], [], [], [], [], $"/Game/Synthetic/BP_{name}.BP_{name}_C", 0.2, 0.2, 0.2, 0.2);

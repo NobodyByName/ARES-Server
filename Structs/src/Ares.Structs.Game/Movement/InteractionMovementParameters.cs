@@ -6,9 +6,9 @@ namespace Ares.Structs.Game.Movement;
 /// What an interaction does to the character's movement while it runs. The interactor layer
 /// (<c>UPendulumInteractorNodeData</c>) steps the interaction through its events; while one runs, the ground node lines the
 /// character up at <see cref="DefaultDesiredCharacterDistance"/> from it (replacing the player's movement input), and an
-/// interaction that immobilizes makes the persistent action layer hold <see cref="Tags"/> and <see cref="UpperTags"/>,
+/// interaction that immobilizes makes the persistent action layer hold <see cref="GraphStateFlags.InteractionTags"/> and <see cref="GraphStateFlags.InteractionUpperTags"/>,
 /// which zero the player's movement input. Interactions whose own animation container aligns the character play as
-/// root motion in the interact node instead (<see cref="RootMotionNodeTags"/>).
+/// root motion in the interact node instead (<see cref="GraphStateFlags.InteractionRootMotionNodeTags"/>).
 /// </summary>
 public static class InteractionMovementParameters
 {
@@ -50,19 +50,6 @@ public static class InteractionMovementParameters
 
     /// <summary>Semantic tag of a loot container's first search, which picks its fallback animation container.</summary>
     public const string LootSearchSemanticTag = "Animation.Interaction.Container";
-
-    /// <summary>Tags 0–63 the persistent action layer holds while an immobilizing interaction runs.</summary>
-    public const ulong Tags = GraphStateTags.AnimationPendulumStateStationaryInteractionNonRootMotion;
-
-    /// <summary>Tags 64–111 the persistent action layer holds while an immobilizing interaction runs.</summary>
-    public const ulong UpperTags = GraphStateUpperTags.AbilityBlockEquipItemInteract | GraphStateUpperTags.AbilityBlockFirePrimaryInteract
-        | GraphStateUpperTags.AbilityBlockFireSecondaryInteract | GraphStateUpperTags.AbilityBlockJumpInteract
-        | GraphStateUpperTags.AbilityBlockReloadInteract | GraphStateUpperTags.StatusImmobilizedInteract;
-
-    /// <summary>Tags the root-motion interact node holds on every tick it runs.</summary>
-    public const ulong RootMotionNodeTags = GraphStateTags.AbilityBlockFirePrimaryPendulumMove | GraphStateTags.AbilityBlockFireSecondaryPendulumMove
-        | GraphStateTags.AbilityBlockReloadPendulumMove | GraphStateTags.AbilityBlockEquipItemPendulumMove
-        | GraphStateTags.AnimationPendulumStateStationaryInteractionRootMotion;
 
     /// <summary>Allowance for rounding in summed step times when comparing interaction times.</summary>
     public const double ElapsedTolerance = 1e-6;

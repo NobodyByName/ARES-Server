@@ -1,59 +1,73 @@
-using System.Runtime.CompilerServices;
-using Ares.Structs.Game;
+namespace Ares.Structs.Game.Movement;
 
-namespace Ares.Common.GameData;
+/// <summary>A graph state tag's bit: bit <c>Index % 64</c> of tag word <c>Index / 64</c>.</summary>
+/// <param name="Tag">The tag name, for example <c>Ability.Crouch</c>.</param>
+/// <param name="Index">The tag's position in the character graph's tag list.</param>
+public readonly record struct GraphTagBit(string Tag, int Index)
+{
+    /// <summary>
+    /// The tag word holding the bit: 0 for <see cref="PawnBlackboard.GraphTagsField"/>, 1 for
+    /// <see cref="PawnBlackboard.GraphUpperTagsField"/>.
+    /// </summary>
+    public int Word => Index / MovementAssets.GraphTagWordBits;
+
+    /// <summary>The bit within its word.</summary>
+    public ulong Mask => 1UL << (Index % MovementAssets.GraphTagWordBits);
+}
 
 /// <summary>
-/// The bits of the graph state tags a server reads or sets (<see cref="GameNames.GraphTags"/>). Generated:
-/// <c>GraphStateTags.X</c> was the mask of a word-0 tag and <c>GraphStateUpperTags.X</c> of a word-1 tag; a resolved
-/// <see cref="GraphTagBit"/> carries its word.
+/// The bits of the graph state tags a server reads or sets (<see cref="GameNames.GraphTags"/>). The bits follow the
+/// character graph's tag list, which the game data holds: build this once from it at startup.
 /// </summary>
-public sealed class ResolvedGraphTags
+public sealed class GraphTagBits
 {
-    internal ResolvedGraphTags(ResolvedGameNames.Resolver resolver, MovementTuning movement)
+    /// <summary>Looks up the bit of every tag of <see cref="GameNames.GraphTags"/>.</summary>
+    /// <param name="bitOf">The bit of a tag name in the character graph's tag list.</param>
+    public GraphTagBits(Func<string, GraphTagBit> bitOf)
     {
-        AbilityBlockContextInteractPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockContextInteractPendulumMove);
-        AbilityBlockCrouchPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockCrouchPendulumMove);
-        AbilityBlockEquipItemInteract = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockEquipItemInteract);
-        AbilityBlockEquipItemPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockEquipItemPendulumMove);
-        AbilityBlockFirePrimaryInteract = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockFirePrimaryInteract);
-        AbilityBlockFirePrimaryPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockFirePrimaryPendulumMove);
-        AbilityBlockFireSecondaryInteract = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockFireSecondaryInteract);
-        AbilityBlockFireSecondaryPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockFireSecondaryPendulumMove);
-        AbilityBlockInputCrouchPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockInputCrouchPendulumMove);
-        AbilityBlockInputSprintPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockInputSprintPendulumMove);
-        AbilityBlockJumpInteract = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockJumpInteract);
-        AbilityBlockKnockbackPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockKnockbackPendulumMove);
-        AbilityBlockReloadInteract = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockReloadInteract);
-        AbilityBlockReloadPendulumMove = Tag(resolver, movement, GameNames.GraphTags.AbilityBlockReloadPendulumMove);
-        AbilityCrouch = Tag(resolver, movement, GameNames.GraphTags.AbilityCrouch);
-        AbilityDodgeRollActive = Tag(resolver, movement, GameNames.GraphTags.AbilityDodgeRollActive);
-        AbilityFirePrimaryPendulumWep = Tag(resolver, movement, GameNames.GraphTags.AbilityFirePrimaryPendulumWep);
-        AbilityFlashlightActive = Tag(resolver, movement, GameNames.GraphTags.AbilityFlashlightActive);
-        AbilityJump = Tag(resolver, movement, GameNames.GraphTags.AbilityJump);
-        AbilityJumpPending = Tag(resolver, movement, GameNames.GraphTags.AbilityJumpPending);
-        AbilityLandingHeavy = Tag(resolver, movement, GameNames.GraphTags.AbilityLandingHeavy);
-        AbilityLandingRecovery = Tag(resolver, movement, GameNames.GraphTags.AbilityLandingRecovery);
-        AbilitySprintActive = Tag(resolver, movement, GameNames.GraphTags.AbilitySprintActive);
-        AbilityVault = Tag(resolver, movement, GameNames.GraphTags.AbilityVault);
-        AbilityZooming = Tag(resolver, movement, GameNames.GraphTags.AbilityZooming);
-        AnimationAbilityJumpStarted = Tag(resolver, movement, GameNames.GraphTags.AnimationAbilityJumpStarted);
-        AnimationPendulumDisplaySyncedPose = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumDisplaySyncedPose);
-        AnimationPendulumStateDbno = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateDbno);
-        AnimationPendulumStateDbnoToBaseMove = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateDbnoToBaseMove);
-        AnimationPendulumStateDeathToDbno = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateDeathToDbno);
-        AnimationPendulumStateSnapHookActive = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateSnapHookActive);
-        AnimationPendulumStateStationaryInteractionNonRootMotion = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateStationaryInteractionNonRootMotion);
-        AnimationPendulumStateStationaryInteractionRootMotion = Tag(resolver, movement, GameNames.GraphTags.AnimationPendulumStateStationaryInteractionRootMotion);
-        AttributeMovementHeavy = Tag(resolver, movement, GameNames.GraphTags.AttributeMovementHeavy);
-        AttributeMovementSuperHeavy = Tag(resolver, movement, GameNames.GraphTags.AttributeMovementSuperHeavy);
-        AttributeStaminaBlockRechargePendulumMove = Tag(resolver, movement, GameNames.GraphTags.AttributeStaminaBlockRechargePendulumMove);
-        GameplayCueAbilityLadderSlide = Tag(resolver, movement, GameNames.GraphTags.GameplayCueAbilityLadderSlide);
-        GameplayEffectAttachedTraversalLadder = Tag(resolver, movement, GameNames.GraphTags.GameplayEffectAttachedTraversalLadder);
-        GameplayEffectAttachedTraversalZipline = Tag(resolver, movement, GameNames.GraphTags.GameplayEffectAttachedTraversalZipline);
-        StatusExhausted = Tag(resolver, movement, GameNames.GraphTags.StatusExhausted);
-        StatusImmobilizedInteract = Tag(resolver, movement, GameNames.GraphTags.StatusImmobilizedInteract);
-        UiSkillStateActiveSprintBoost = Tag(resolver, movement, GameNames.GraphTags.UiSkillStateActiveSprintBoost);
+        ArgumentNullException.ThrowIfNull(bitOf);
+        AbilityBlockContextInteractPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockContextInteractPendulumMove);
+        AbilityBlockCrouchPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockCrouchPendulumMove);
+        AbilityBlockEquipItemInteract = bitOf(GameNames.GraphTags.AbilityBlockEquipItemInteract);
+        AbilityBlockEquipItemPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockEquipItemPendulumMove);
+        AbilityBlockFirePrimaryInteract = bitOf(GameNames.GraphTags.AbilityBlockFirePrimaryInteract);
+        AbilityBlockFirePrimaryPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockFirePrimaryPendulumMove);
+        AbilityBlockFireSecondaryInteract = bitOf(GameNames.GraphTags.AbilityBlockFireSecondaryInteract);
+        AbilityBlockFireSecondaryPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockFireSecondaryPendulumMove);
+        AbilityBlockInputCrouchPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockInputCrouchPendulumMove);
+        AbilityBlockInputSprintPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockInputSprintPendulumMove);
+        AbilityBlockJumpInteract = bitOf(GameNames.GraphTags.AbilityBlockJumpInteract);
+        AbilityBlockKnockbackPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockKnockbackPendulumMove);
+        AbilityBlockReloadInteract = bitOf(GameNames.GraphTags.AbilityBlockReloadInteract);
+        AbilityBlockReloadPendulumMove = bitOf(GameNames.GraphTags.AbilityBlockReloadPendulumMove);
+        AbilityCrouch = bitOf(GameNames.GraphTags.AbilityCrouch);
+        AbilityDodgeRollActive = bitOf(GameNames.GraphTags.AbilityDodgeRollActive);
+        AbilityFirePrimaryPendulumWep = bitOf(GameNames.GraphTags.AbilityFirePrimaryPendulumWep);
+        AbilityFlashlightActive = bitOf(GameNames.GraphTags.AbilityFlashlightActive);
+        AbilityJump = bitOf(GameNames.GraphTags.AbilityJump);
+        AbilityJumpPending = bitOf(GameNames.GraphTags.AbilityJumpPending);
+        AbilityLandingHeavy = bitOf(GameNames.GraphTags.AbilityLandingHeavy);
+        AbilityLandingRecovery = bitOf(GameNames.GraphTags.AbilityLandingRecovery);
+        AbilitySprintActive = bitOf(GameNames.GraphTags.AbilitySprintActive);
+        AbilityVault = bitOf(GameNames.GraphTags.AbilityVault);
+        AbilityZooming = bitOf(GameNames.GraphTags.AbilityZooming);
+        AnimationAbilityJumpStarted = bitOf(GameNames.GraphTags.AnimationAbilityJumpStarted);
+        AnimationPendulumDisplaySyncedPose = bitOf(GameNames.GraphTags.AnimationPendulumDisplaySyncedPose);
+        AnimationPendulumStateDbno = bitOf(GameNames.GraphTags.AnimationPendulumStateDbno);
+        AnimationPendulumStateDbnoToBaseMove = bitOf(GameNames.GraphTags.AnimationPendulumStateDbnoToBaseMove);
+        AnimationPendulumStateDeathToDbno = bitOf(GameNames.GraphTags.AnimationPendulumStateDeathToDbno);
+        AnimationPendulumStateSnapHookActive = bitOf(GameNames.GraphTags.AnimationPendulumStateSnapHookActive);
+        AnimationPendulumStateStationaryInteractionNonRootMotion = bitOf(GameNames.GraphTags.AnimationPendulumStateStationaryInteractionNonRootMotion);
+        AnimationPendulumStateStationaryInteractionRootMotion = bitOf(GameNames.GraphTags.AnimationPendulumStateStationaryInteractionRootMotion);
+        AttributeMovementHeavy = bitOf(GameNames.GraphTags.AttributeMovementHeavy);
+        AttributeMovementSuperHeavy = bitOf(GameNames.GraphTags.AttributeMovementSuperHeavy);
+        AttributeStaminaBlockRechargePendulumMove = bitOf(GameNames.GraphTags.AttributeStaminaBlockRechargePendulumMove);
+        GameplayCueAbilityLadderSlide = bitOf(GameNames.GraphTags.GameplayCueAbilityLadderSlide);
+        GameplayEffectAttachedTraversalLadder = bitOf(GameNames.GraphTags.GameplayEffectAttachedTraversalLadder);
+        GameplayEffectAttachedTraversalZipline = bitOf(GameNames.GraphTags.GameplayEffectAttachedTraversalZipline);
+        StatusExhausted = bitOf(GameNames.GraphTags.StatusExhausted);
+        StatusImmobilizedInteract = bitOf(GameNames.GraphTags.StatusImmobilizedInteract);
+        UiSkillStateActiveSprintBoost = bitOf(GameNames.GraphTags.UiSkillStateActiveSprintBoost);
     }
 
     /// <summary>Tag <c>Ability.Block.ContextInteract.PendulumMove</c>.</summary>
@@ -181,7 +195,4 @@ public sealed class ResolvedGraphTags
 
     /// <summary>Tag <c>UI.SkillState.Active.SprintBoost</c>.</summary>
     public GraphTagBit UiSkillStateActiveSprintBoost { get; }
-
-    private static GraphTagBit Tag(ResolvedGameNames.Resolver resolver, MovementTuning movement, string tag, [CallerArgumentExpression(nameof(tag))] string member = "") =>
-        resolver.One("graph state tag", tag, movement.FindGraphTag(tag) is { } bit ? [bit] : Array.Empty<GraphTagBit>(), member);
 }

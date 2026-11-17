@@ -2,6 +2,19 @@ using Ares.Structs.Core.Geometry;
 
 namespace Ares.Structs.Game.World;
 
+/// <summary>State of an extraction point (<c>EExtractionState</c>).</summary>
+public enum ExtractionState : byte
+{
+    Dormant = 0,
+    Disabled = 1,
+    Broken = 2,
+    Closed = 3,
+    Closing = 4,
+    Requested = 5,
+    Arriving = 6,
+    Ready = 7,
+}
+
 /// <summary>What an extraction elevator's interaction component does.</summary>
 public enum ExtractionButtonRole
 {

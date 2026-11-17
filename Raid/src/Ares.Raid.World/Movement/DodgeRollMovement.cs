@@ -150,7 +150,7 @@ public static class DodgeRollMovement
             throw new ArgumentOutOfRangeException(nameof(seconds));
         }
 
-        DodgeRollSequence sequence = DodgeRollParameters.Sequence(state.Kind);
+        DodgeRollSequence sequence = GeneratedMovementData.DodgeRoll(state.Kind);
         int tick = state.Ticks + 1;
         double travelled = Root(sequence, AnimationTick(sequence, tick)) - Root(sequence, AnimationTick(sequence, tick - 1));
         double speed = travelled * sequence.Distance / DodgeRollParameters.AuthoredDistance(state.Kind) / seconds;
@@ -182,7 +182,7 @@ public static class DodgeRollMovement
     private static bool EndsAt(DodgeRollKind kind, int tick)
     {
         // The roll hands over once the rest of its animation fits in the exit blend.
-        DodgeRollSequence sequence = DodgeRollParameters.Sequence(kind);
+        DodgeRollSequence sequence = GeneratedMovementData.DodgeRoll(kind);
         double remaining = (sequence.RootForward.Count - 1 - AnimationTick(sequence, tick)) / sequence.SampleRate;
         return remaining <= DodgeRollParameters.ExitBlendSeconds;
     }

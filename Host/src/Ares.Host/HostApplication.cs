@@ -26,7 +26,7 @@ public static class HostApplication
     /// </param>
     public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, TimeProvider? time = null,
         IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null,
-        GameData? gameData = null)
+        GameDataSet? gameData = null)
     {
         time ??= TimeProvider.System;
         HostSettings settings = configuration.Settings;

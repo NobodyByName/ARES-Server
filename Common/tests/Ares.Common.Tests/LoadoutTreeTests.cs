@@ -5,7 +5,7 @@ namespace Ares.Common.Tests;
 
 public sealed class LoadoutTreeTests
 {
-    private static readonly long[] s_branches = [.. ((StructuralItemSlots)LoadoutDefinitions.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds];
+    private static readonly long[] s_branches = [.. ((StructuralItemSlots)LoadoutDefinitions.Generated.ByAsset[LoadoutItems.StandardFrameAssetId].SlotConfig!).SlotAssetIds];
 
     [Theory]
     [InlineData(null)]
@@ -15,19 +15,19 @@ public sealed class LoadoutTreeTests
     public void Typed_slots_survive_the_tree_handed_to_a_raid(long? augment)
     {
         LoadoutContents contents = Contents(augment);
-        LoadoutTree tree = LoadoutTree.Build(contents, Structure);
+        LoadoutTree tree = LoadoutTree.Build(LoadoutDefinitions.Generated, contents, Structure);
         PlayerLoadout loadout = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, tree.Roots));
 
-        Assert.Equivalent(contents, LoadoutTree.Parse(loadout), strict: true);
+        Assert.Equivalent(contents, LoadoutTree.Parse(LoadoutDefinitions.Generated, loadout), strict: true);
         // Every frame stays in the menu tree, but only the selected one is handed to the raid.
         Assert.Equal(AugmentItems.FrameAssetIds.Count + 1, tree.Items.Count(item => item.GameAssetId == LoadoutItems.StandardFrameAssetId
             || AugmentItems.FrameAssetIds.Values.Contains(item.GameAssetId)));
-        Assert.Single(loadout.Items, item => item.GameAssetId == contents.FrameAssetId);
+        Assert.Single(loadout.Items, item => item.GameAssetId == contents.FrameAssetId(LoadoutDefinitions.Generated));
         // The Ferro carries one empty node per mod slot.
         InventoryItem ferro = Assert.Single(loadout.Items, item => item.GameAssetId == WeaponItems.FerroIAssetId);
-        Assert.Equal(((StructuralItemSlots)LoadoutDefinitions.ByAsset[WeaponItems.FerroIAssetId].SlotConfig!).SlotAssetIds,
+        Assert.Equal(((StructuralItemSlots)LoadoutDefinitions.Generated.ByAsset[WeaponItems.FerroIAssetId].SlotConfig!).SlotAssetIds,
             ferro.Slots.Select(slot => loadout.Items.Single(item => item.InstanceId == slot).GameAssetId));
-        LoadoutSlot armor = tree.Slots.Values.Single(slot => slot is { Branch: LoadoutItems.ArmorSlotAssetId } && slot.FrameAssetId == contents.FrameAssetId);
+        LoadoutSlot armor = tree.Slots.Values.Single(slot => slot is { Branch: LoadoutItems.ArmorSlotAssetId } && slot.FrameAssetId == contents.FrameAssetId(LoadoutDefinitions.Generated));
         Assert.Contains(ShieldItems.LightShieldAssetId, armor.AllowedAssetIds);
         Assert.Single(tree.Slots.Values, slot => slot is { Branch: AugmentItems.AugmentSlotAssetId, FrameAssetId: null });
     }
@@ -35,31 +35,31 @@ public sealed class LoadoutTreeTests
     [Fact]
     public void An_empty_handoff_has_no_augment_and_no_branches()
     {
-        LoadoutContents parsed = LoadoutTree.Parse(new PlayerLoadout(1, 0, []));
+        LoadoutContents parsed = LoadoutTree.Parse(LoadoutDefinitions.Generated, new PlayerLoadout(1, 0, []));
         Assert.Null(parsed.Augment);
         Assert.Empty(parsed.Branches);
-        Assert.Equal(LoadoutItems.StandardFrameAssetId, parsed.FrameAssetId);
+        Assert.Equal(LoadoutItems.StandardFrameAssetId, parsed.FrameAssetId(LoadoutDefinitions.Generated));
     }
 
     [Fact]
     public void Items_must_fit_their_slots_and_the_tree_must_keep_its_roots()
     {
         Dictionary<long, IReadOnlyList<InventoryItem?>> misplaced = new() { [LoadoutItems.Firearm1SlotAssetId] = [Item(StorageItems.RubberDuckAssetId, 1)] };
-        Assert.Throws<InvalidDataException>(() => LoadoutTree.Build(new LoadoutContents(null, misplaced), Structure));
+        Assert.Throws<InvalidDataException>(() => LoadoutTree.Build(LoadoutDefinitions.Generated, new LoadoutContents(null, misplaced), Structure));
 
-        LoadoutTree tree = LoadoutTree.Build(Contents(null), Structure);
+        LoadoutTree tree = LoadoutTree.Build(LoadoutDefinitions.Generated, Contents(null), Structure);
         PlayerLoadout loadout = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, [tree.Roots[0]]));
-        Assert.NotNull(LoadoutTree.Parse(loadout));
+        Assert.NotNull(LoadoutTree.Parse(LoadoutDefinitions.Generated, loadout));
         PlayerLoadout augmentOnly = InventorySnapshots.Loadout(new InventorySnapshot(1, 0, tree.Items, [tree.Roots[1]]));
-        Assert.Throws<InvalidDataException>(() => LoadoutTree.Parse(augmentOnly));
+        Assert.Throws<InvalidDataException>(() => LoadoutTree.Parse(LoadoutDefinitions.Generated, augmentOnly));
     }
 
     // A loadout filling a slot of every kind: augment, firearm, armor, backpack, quick-use and safe pocket.
     private static LoadoutContents Contents(long? augment)
     {
-        long frame = LoadoutDefinitions.FrameAssetId(augment);
+        long frame = LoadoutDefinitions.Generated.FrameAssetId(augment);
         Dictionary<long, IReadOnlyList<InventoryItem?>> branches = s_branches.ToDictionary(branch => branch,
-            IReadOnlyList<InventoryItem?> (branch) => new InventoryItem?[LoadoutDefinitions.Container(frame, branch).NumberOfSlots]);
+            IReadOnlyList<InventoryItem?> (branch) => new InventoryItem?[LoadoutDefinitions.Generated.Container(frame, branch).NumberOfSlots]);
         Place(LoadoutItems.Firearm1SlotAssetId, 0, Item(WeaponItems.FerroIAssetId, 1));
         Place(LoadoutItems.ArmorSlotAssetId, 0, Item(ShieldItems.LightShieldAssetId, 1));
         Place(LoadoutItems.BackpackSlotAssetId, 1, Item(WeaponItems.HeavyAmmoAssetId, 40));

@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Common.Testing;
 
 namespace Ares.Common.Tests;
@@ -8,7 +9,7 @@ namespace Ares.Common.Tests;
 /// </summary>
 public sealed class RealGameDataTests
 {
-    private readonly GameData.GameData _data = RealGameData.Require();
+    private readonly GameDataSet _data = RealGameData.Require();
 
     [Fact]
     public void The_data_is_loaded_once_from_the_configured_directory()

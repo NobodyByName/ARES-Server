@@ -69,7 +69,7 @@ public sealed record DynamicLootGroup(
 
 /// <summary>
 /// A <see cref="DynamicLootGroup"/> as a table row stores it: its spawners by index into the map's spawner table
-/// (<see cref="DamDynamicLoot.Spawners"/> for the Dam), so that a spawner several groups share stays one object.
+/// (the dynamic loot spawners of the map's game data), so that a spawner several groups share stays one object.
 /// </summary>
 /// <param name="Id">Activity node and position of the group within it.</param>
 /// <param name="Path">Titles of the activity nodes from the root down to the group's node.</param>

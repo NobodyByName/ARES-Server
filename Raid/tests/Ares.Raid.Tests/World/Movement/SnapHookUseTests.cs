@@ -335,7 +335,7 @@ public sealed class SnapHookUseTests
         Assert.Null(states[pullFirst - 1].SnapHook.Pull);
         foreach (uint frame in Enumerable.Range((int)pullFirst, (int)(end - pullFirst)).Select(frame => (uint)frame))
         {
-            Assert.Equal(SnapHookParameters.PullingFlags, states[frame].GraphFlags & SnapHookParameters.PullingFlags);
+            Assert.Equal(GeneratedGraphStateFlags.SnapHookPulling, states[frame].GraphFlags & GeneratedGraphStateFlags.SnapHookPulling);
             // The reports' coarser grid.
             Assert.Equal(Report(frame + 1).X, states[frame].Position.X, 0);
         }
@@ -344,7 +344,7 @@ public sealed class SnapHookUseTests
         Assert.Equal(SnapHookUse.Time(end), states[end].SnapHook.Target!.Value.RemovedAt);
         Assert.True(states[end].SnapHook.Hook.Thrown);
         Assert.False(states[end + 1].SnapHook.Busy);
-        Assert.Equal(0UL, states[end + 1].GraphFlags & SnapHookParameters.PullingFlags);
+        Assert.Equal(0UL, states[end + 1].GraphFlags & GeneratedGraphStateFlags.SnapHookPulling);
         Assert.Equal(0UL, Value(states[end + 1].SnapHook, QuickItemProtocol.HookStateField, Start));
     }
 

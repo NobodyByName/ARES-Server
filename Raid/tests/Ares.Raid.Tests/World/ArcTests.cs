@@ -139,7 +139,7 @@ public sealed class ArcTests
     {
         ScriptedPlayer session = new();
         WorldArc first = session.Raid.Arcs.Spawn(Arcs.Wasp, session.Member.Spawn.Location, default)!;
-        ushort duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
+        ushort duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
         WorldPickup pickup = session.Raid.Pickups.Drop(1, 0, new ContainerItem(duck, Guid.NewGuid(), 1, 1), session.Member.Spawn.Location, default, 0);
         Assert.True(first.Guid > pickup.Guid + (6UL * 10_000_000));
         for (int index = 1; index < WorldArcs.MaxArcs; index++)

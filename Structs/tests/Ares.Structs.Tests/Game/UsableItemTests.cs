@@ -89,7 +89,7 @@ public sealed class UsableItemTests
                 Assert.Equal(item.DescriptionTags, definition.Tags);
             }
         });
-        Assert.All(ItemTechnicalNames.AssetIds, pair => Assert.Equal(pair.Value, UsableItems.ByTechnicalName[pair.Key].AssetId));
+        Assert.All(ItemTechnicalNames.All, name => Assert.Contains(name, UsableItems.ByTechnicalName.Keys));
         Assert.All(ItemTechnicalNames.DataAssets, pair => Assert.Equal(pair.Value, UsableItems.ByTechnicalName[pair.Key].DataAsset));
 
         Dictionary<long, (int Index, double Weight)> expected = new()

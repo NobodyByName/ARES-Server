@@ -34,15 +34,16 @@ public static class ItemTechnicalNames
     public const string ArcAlloy = "DA_Item_Salvage_Mat_ARC_Metal";
     public const string Coins = "DA_Item_GrindCurrency";
 
-    /// <summary>Protocol asset IDs indexed by technical item name.</summary>
-    public static IReadOnlyDictionary<string, long> AssetIds { get; } = new Dictionary<string, long>(StringComparer.Ordinal)
-    {
-        [RubberDuck] = StorageItems.RubberDuckAssetId,
-        [LightShield] = ShieldItems.LightShieldAssetId,
-        [FerroI] = WeaponItems.FerroIAssetId,
-        [HeavyAmmo] = WeaponItems.HeavyAmmoAssetId,
-        [SnapHook] = GadgetItems.SnapHookAssetId,
-    }.Concat(AugmentItems.ItemAssetIds).Concat(SalvageItems.ItemAssetIds).Concat(CurrencyItems.ItemAssetIds).ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+    /// <summary>
+    /// Every name above, in a fixed order (Rubber Duck, the shield, Ferro, its ammunition, the Snap Hook, the augments, the
+    /// salvage materials by technical name, coins): the items supported beyond the plain catalogue items.
+    /// </summary>
+    public static IReadOnlyList<string> All { get; } =
+    [
+        RubberDuck, LightShield, FerroI, HeavyAmmo, SnapHook, CombatMk1, LootingMk1, TacticalMk1, Battery, Canister, Chemicals, DuctTape,
+        ElectricalComponents, CrudeExplosives, Fabric, SimpleGunParts, Magnet, ArcAlloy, MechanicalComponents, Oil, Planks, PlasticParts,
+        RubberParts, MetalParts, AssortedSeeds, SheetMetal, SteelSpring, Wires, DurableCloth, Coins,
+    ];
 
     /// <summary>Object path of each supported item's data asset (the item in the world, for example on the ground), by technical item name.</summary>
     public static IReadOnlyDictionary<string, string> DataAssets { get; } = new Dictionary<string, string>(StringComparer.Ordinal)

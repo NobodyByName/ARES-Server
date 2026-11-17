@@ -302,11 +302,11 @@ public static class RopeSwingMovement
 
         bool forcedClimb = state.GroundClimbEntry && next.Ticks * (double)(float)PawnBlackboard.TickSeconds < SwingParameters.GroundClimbEntryForcedClimbTime;
         next = next with { ClimbingUpRope = input.FireDown || forcedClimb, Rappelling = input.CrouchDown, HadWallKickInput = false };
-        ulong flags = SwingParameters.SwingingFlags;
+        ulong flags = GeneratedGraphStateFlags.Swinging;
         int crouchBlock = 0;
         if (next.Rappelling)
         {
-            flags |= SwingParameters.StaminaBlockFlag;
+            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
             crouchBlock = GrapplingHookMovement.TimeToTicks(SwingParameters.RappelCrouchBlockTime);
         }
 
@@ -362,7 +362,7 @@ public static class RopeSwingMovement
         double stamina = 0;
         if (next.Kicking)
         {
-            flags |= SwingParameters.StaminaBlockFlag;
+            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
             stamina += SwingParameters.KickStaminaCostPerSecond * seconds;
         }
 
@@ -388,7 +388,7 @@ public static class RopeSwingMovement
 
         if (next.ClimbingUpRope)
         {
-            flags |= SwingParameters.StaminaBlockFlag;
+            flags |= GeneratedGraphStateFlags.SwingStaminaBlock;
             stamina += SwingParameters.ClimbStaminaCostPerSecond * seconds;
         }
 
@@ -401,7 +401,7 @@ public static class RopeSwingMovement
         rope = rope.End(SwingParameters.ReleasedEndReason);
         result = new Vector3D(result.X + (steerWorld.X * SwingParameters.JumpForce), result.Y + (steerWorld.Y * SwingParameters.JumpForce),
             result.Z + (steerWorld.Z * SwingParameters.JumpForce) + SwingParameters.JumpUpwardForce);
-        flags |= SwingParameters.JumpStartedFlag;
+        flags |= GeneratedGraphStateFlags.SwingJumpStarted;
         return Result(next, rope, result, feet, seconds, yaw, flags, RopeSwingExit.JumpOff, true, true, crouchBlock, stamina);
     }
 
@@ -681,7 +681,7 @@ public static class RopeSwingMovement
     // The swing ends (EndSwing): detaching, the velocity kept, no turn, the finished state raised.
     private static RopeSwingStep End(RopeSwingState state, GrappleRope rope, Vector3D velocity, Vector3D feet, double seconds, RopeSwingExit exit,
         bool afterActionLayer) =>
-        Result(state with { Phase = SwingPhase.Detaching }, rope, velocity, feet, seconds, null, SwingParameters.SwingingFlags, exit, true, afterActionLayer, 0, 0);
+        Result(state with { Phase = SwingPhase.Detaching }, rope, velocity, feet, seconds, null, GeneratedGraphStateFlags.Swinging, exit, true, afterActionLayer, 0, 0);
 
     private static RopeSwingStep Result(RopeSwingState state, GrappleRope rope, Vector3D velocity, Vector3D feet, double seconds, double? yaw, ulong flags,
         RopeSwingExit exit, bool finished, bool actionLayer, int crouchBlock, double stamina) =>

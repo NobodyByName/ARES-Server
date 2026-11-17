@@ -161,7 +161,7 @@ public sealed class ShieldTests
     private static PlayerLoadout WithShield(long? augment = null, bool inBackpack = false)
     {
         PlayerLoadout loadout = InventoryTests.StandardLoadout(augment);
-        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == (inBackpack ? LoadoutItems.BackpackSlotAssetId : LoadoutItems.ArmorSlotAssetId));
+        InventoryItem branch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == (inBackpack ? LoadoutItems.BackpackSlotAssetId : LoadoutItems.ArmorSlotAssetId));
         InventoryItem container = loadout.Items.Single(item => item.InstanceId == branch.Slots[0]);
         string slot = container.Slots[inBackpack ? 5 : 0];
         InventoryItem shield = new(Guid.NewGuid().ToString("D"), ShieldItems.LightShieldAssetId, 1, [], 50, 100, "", "shield", 0);

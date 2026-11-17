@@ -17,13 +17,13 @@ public sealed class LootStates(LootCatalog catalog)
     private readonly List<int> _openings = [];
     private readonly List<string> _events = [];
 
-    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.UsableIndex(StorageItems.RubberDuckAssetId));
+    private static readonly ushort s_duck = checked((ushort)LoadoutDefinitions.Generated.UsableIndex(StorageItems.RubberDuckAssetId));
 
-    private static readonly Dictionary<ushort, string> s_names = LoadoutDefinitions.CarriedItems
+    private static readonly Dictionary<ushort, string> s_names = LoadoutDefinitions.Generated.CarriedItems
         .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.TechnicalName);
 
     /// <summary>Unit weight of each item type a container may hold.</summary>
-    public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = LoadoutDefinitions.CarriedItems
+    public static IReadOnlyDictionary<ushort, double> UnitWeights { get; } = LoadoutDefinitions.Generated.CarriedItems
         .ToDictionary(item => checked((ushort)item.UsableIndex), item => item.Weight);
 
     /// <summary>The containers in the order they were first opened: every player's view of them changed then.</summary>

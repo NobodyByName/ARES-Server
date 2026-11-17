@@ -127,7 +127,7 @@ public readonly record struct ZiplineState(
 /// <param name="Velocity">Velocity of the step.</param>
 /// <param name="Position">Feet after moving with <paramref name="Velocity"/> for the step, without collision.</param>
 /// <param name="Yaw">Heading the rider turns to (the control heading), in radians.</param>
-/// <param name="Flags">Graph state flags (<see cref="ZiplineParameters.RidingFlags"/>).</param>
+/// <param name="Flags">Graph state flags (<see cref="GeneratedGraphStateFlags.ZiplineRiding"/>).</param>
 /// <param name="Exit">Why the ride ends after this step, if it does.</param>
 /// <param name="Finished">Whether the step raises the finished state, so the graph returns to ground movement.</param>
 /// <param name="HeavyLandingQuery">Whether the step runs the ground movement's heavy-landing query.</param>
@@ -313,7 +313,7 @@ public static class ZiplineMovement
             result = result with { Z = Math.Max(result.Z, 0) };
         }
 
-        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, ZiplineParameters.RidingFlags, exit, finished, heavyLanding, true);
+        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, GeneratedGraphStateFlags.ZiplineRiding, exit, finished, heavyLanding, true);
     }
 
     // The first ticks: the rider's own velocity fades (an upward speed faster), and hands past a line end are pulled
@@ -384,7 +384,7 @@ public static class ZiplineMovement
         double fading = velocity.Z + (alpha * (0 - velocity.Z));
         Vector3D result = velocity with { Z = Math.Min(fading, 0) };
         bool finished = result.Z > ZiplineParameters.FallingExitSpeed;
-        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, ZiplineParameters.RidingFlags, exit, finished, true, false);
+        return new ZiplineStep(next, result, Advance(feet, result, seconds), yaw, GeneratedGraphStateFlags.ZiplineRiding, exit, finished, true, false);
     }
 
     // Exit points are not taken while the rider is being caught.

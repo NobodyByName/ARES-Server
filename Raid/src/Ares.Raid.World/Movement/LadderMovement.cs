@@ -184,7 +184,7 @@ public static class LadderMovement
         LadderState next = state with { Ticks = state.Ticks + 1 };
         bool sprinting = input is { Sprint: true, Exhausted: false };
         LocoMode locomotion = sprinting ? LocoMode.Sprinting : LocoMode.Still;
-        ulong flags = LadderParameters.ClimbingFlags | (input.Sprint ? LadderParameters.SprintActiveFlag : 0);
+        ulong flags = GeneratedGraphStateFlags.LadderState | (input.Sprint ? GeneratedGraphStateFlags.LadderSprintActive : 0);
         double yaw = state.Line.Yaw;
         if (state.PlayingTopEntry)
         {
@@ -240,7 +240,7 @@ public static class LadderMovement
             aligned = aligned with { Z = velocity.Z + ((0 - velocity.Z) * fade) };
         }
 
-        flags |= sliding ? LadderParameters.SlidingFlag : 0;
+        flags |= sliding ? GeneratedGraphStateFlags.LadderSliding : 0;
         Vector3D moved = aligned.Z < 0 && input.ClimberBelow ? default : aligned;
         return Result(next, moved, feet, seconds, yaw, locomotion, flags, LadderExit.None);
     }
@@ -282,7 +282,7 @@ public static class LadderMovement
                 break;
         }
 
-        flags |= LadderParameters.CrouchInputBlockedFlag;
+        flags |= GeneratedGraphStateFlags.LadderCrouchInputBlocked;
         if (input.CrouchHeld)
         {
             return Result(next, default, feet, seconds, yaw, locomotion, flags, LadderExit.StepOff);
@@ -294,7 +294,7 @@ public static class LadderMovement
         Vector3D moving = state.Line.Direction(correction with { Z = vertical });
         sliding |= fast;
         Vector3D moved = vertical < 0 && input.ClimberBelow ? default : moving;
-        flags |= sliding ? LadderParameters.SlidingFlag : 0;
+        flags |= sliding ? GeneratedGraphStateFlags.LadderSliding : 0;
         bool drain = moving.Z > 0 && sprinting;
         LadderExit exit = climbOffTop ? LadderExit.ClimbOffTop : LadderExit.None;
         Vector3D? target = climbOffTop ? ClimbOffTopTarget(centre, yaw) : null;

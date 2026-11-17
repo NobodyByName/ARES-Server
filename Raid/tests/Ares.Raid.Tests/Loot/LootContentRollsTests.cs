@@ -15,8 +15,8 @@ public sealed class LootContentRollsTests
     [Fact]
     public void An_item_goes_only_where_its_placement_list_accepts_the_container_tag()
     {
-        UsableItem shot = Item("DA_Item_AdrenalinShot");
-        UsableItem sensors = Item("DA_Item_Salvage_Sensors");
+        ItemDefinition shot = Item("DA_Item_AdrenalinShot");
+        ItemDefinition sensors = Item("DA_Item_Salvage_Sensors");
 
         // The placement tag itself or any tag below it, compared without case (the game misspells one medical tag).
         Assert.True(LootContentRolls.MatchesContainerTag(shot, "Socket.LootContainer.Commercial.GvtDesk.Drawer"));
@@ -34,10 +34,10 @@ public sealed class LootContentRollsTests
     [Fact]
     public void Candidates_are_plain_items_the_pool_selects_and_the_container_accepts()
     {
-        HashSet<UsableItem> plain = [.. LoadoutDefinitions.PlainItems];
+        HashSet<ItemDefinition> plain = [.. LoadoutDefinitions.Generated.PlainItems];
         foreach (LootContainerType type in LootContainerTypes.All)
         {
-            IReadOnlyList<UsableItem> candidates = LootContentRolls.Candidates(type.Tag);
+            IReadOnlyList<ItemDefinition> candidates = LootContentRolls.Candidates(type.Tag);
             Assert.All(candidates, item =>
             {
                 Assert.Contains(item, plain);
@@ -64,7 +64,7 @@ public sealed class LootContentRollsTests
         foreach (string tag in (string[])[ServerCabinet, "Socket.LootContainer.Commercial.GvtDesk.Drawer", "Socket.LootContainer.Industrial.Lockers.Door",
                      "Socket.LootCOntainer.Medical.RsrCartShelf.Drawer01", "Socket.LootContainer.Mechanical.Car01.Trunk", "Socket.LootContainer.Residential.Closet.Door"])
         {
-            IReadOnlyList<UsableItem> candidates = LootContentRolls.Candidates(tag);
+            IReadOnlyList<ItemDefinition> candidates = LootContentRolls.Candidates(tag);
             for (int roll = 0; roll < 200; roll++)
             {
                 LootContents contents = LootContentRolls.Roll(tag, "", 8, PointOfInterestLootValue.Unknown, random);
@@ -135,7 +135,7 @@ public sealed class LootContentRollsTests
     private static int Rare(PointOfInterestLootValue value, Random random) => Enumerable.Range(0, 2000)
         .Sum(_ => LootContentRolls.Roll(ServerCabinet, "", 8, value, random).Stacks.Count(stack => LootContentRolls.TierOf(stack.Item) == LootTier.Rare));
 
-    private static UsableItem Item(string name) => UsableItems.ByTechnicalName[name];
+    private static ItemDefinition Item(string name) => LoadoutDefinitions.Generated.CarriedItems.Single(item => item.TechnicalName == name);
 
     private static List<(string Item, int Amount)> Rolls(string tag, int seed, int count)
     {

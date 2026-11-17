@@ -11,14 +11,14 @@ using Ares.Structs.Game.World;
 namespace Ares.Common.Tests;
 
 /// <summary>
-/// Real-data tier: the loaded <see cref="GameData.GameData"/> of the extracted game data offers what the generated
+/// Real-data tier: the loaded <see cref="GameDataSet"/> of the extracted game data offers what the generated
 /// Structs classes offer, so that consumers switch to it without a change of behaviour, and every game name resolves to
 /// the generated constant it replaces. Skipped without <see cref="RealGameData.DirectoryVariable"/>. The one known difference: the
 /// catalogue has <c>DA_Item_Zipline</c>, which the generated data lists as not cooked (see <see cref="ItemDataParityTests"/>).
 /// </summary>
 public sealed class GameDataRealTests
 {
-    private static GameData.GameData Data => RealGameData.Data;
+    private static GameDataSet Data => RealGameData.Data;
 
     private static ResolvedGameNames Names => Data.Names;
 
@@ -103,13 +103,14 @@ public sealed class GameDataRealTests
             }
         }
 
-        PropertyInfo[] tags = typeof(ResolvedGraphTags).GetProperties();
+        PropertyInfo[] tags = typeof(GraphTagBits).GetProperties();
 
         Assert.Equal(42, tags.Length);
         Assert.All(tags, property =>
         {
             GraphTagBit bit = (GraphTagBit)property.GetValue(Names.GraphTags)!;
             Assert.Equal(generated[property.Name], (bit.Word, bit.Mask));
+            Assert.Equal(Data.Movement.GraphStateTags[bit.Index], bit.Tag);
         });
         Assert.Equal(GraphStateTags.Count, Data.Movement.GraphStateTags.Length);
     }

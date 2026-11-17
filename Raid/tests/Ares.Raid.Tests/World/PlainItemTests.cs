@@ -14,8 +14,8 @@ public sealed class PlainItemTests
     [Fact]
     public void Loot_containers_know_the_weight_of_every_carried_item()
     {
-        Assert.Equal(LoadoutDefinitions.CarriedItems.Count, LootStates.UnitWeights.Count);
-        Assert.All(LoadoutDefinitions.CarriedItems, item => Assert.Equal(item.Weight, LootStates.UnitWeights[checked((ushort)item.UsableIndex)]));
+        Assert.Equal(LoadoutDefinitions.Generated.CarriedItems.Count, LootStates.UnitWeights.Count);
+        Assert.All(LoadoutDefinitions.Generated.CarriedItems, item => Assert.Equal(item.Weight, LootStates.UnitWeights[checked((ushort)item.UsableIndex)]));
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class PlainItemTests
     {
         UsableItem shot = UsableItems.ByTechnicalName["DA_Item_AdrenalinShot"];
         PlayerLoadout loadout = InventoryTests.StandardLoadout();
-        InventoryItem backpackBranch = loadout.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
+        InventoryItem backpackBranch = loadout.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == LoadoutItems.BackpackSlotAssetId);
         InventoryItem backpack = loadout.Items.Single(item => item.InstanceId == backpackBranch.Slots[0]);
         string target = backpack.Slots[0];
         InventoryItem brought = new(Guid.NewGuid().ToString("D"), shot.AssetId, 4, [], 1, 1, "", "shot", 0);

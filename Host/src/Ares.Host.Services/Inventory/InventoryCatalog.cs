@@ -6,10 +6,10 @@ namespace Ares.Host.Services.Inventory;
 /// <summary>Maps technical item names and gameplay locations to shared definitions.</summary>
 internal static class InventoryCatalog
 {
-    private static readonly Dictionary<long, string> s_technicalNames = LoadoutDefinitions.AssetIds.ToDictionary(pair => pair.Value, pair => pair.Key);
+    private static readonly Dictionary<long, string> s_technicalNames = LoadoutDefinitions.Generated.AssetIds.ToDictionary(pair => pair.Value, pair => pair.Key);
 
-    internal static IReadOnlyList<ItemDescription> Definitions => LoadoutDefinitions.All;
-    internal static IReadOnlyDictionary<long, ItemDescription> ByAsset => LoadoutDefinitions.ByAsset;
+    internal static IReadOnlyList<ItemDescription> Definitions => LoadoutDefinitions.Generated.All;
+    internal static IReadOnlyDictionary<long, ItemDescription> ByAsset => LoadoutDefinitions.Generated.ByAsset;
 
     internal static bool UsesSlots(InventoryArea area) => area is InventoryArea.Backpack or InventoryArea.QuickUse or InventoryArea.SafePockets;
 
@@ -30,7 +30,7 @@ internal static class InventoryCatalog
     /// <summary>Whether the item is a currency, owned in the wallet rather than in a container.</summary>
     internal static bool IsCurrency(string name) => CurrencyItems.ItemAssetIds.ContainsKey(name);
 
-    internal static long FrameAssetId(PlayerLoadoutState loadout) => LoadoutDefinitions.FrameAssetId(loadout.Augment is { } augment ? AssetId(augment.Type) : null);
+    internal static long FrameAssetId(PlayerLoadoutState loadout) => LoadoutDefinitions.Generated.FrameAssetId(loadout.Augment is { } augment ? AssetId(augment.Type) : null);
 
     internal static int LoadoutCapacity(PlayerLoadoutState loadout, InventoryArea area) => area switch
     {
@@ -41,9 +41,9 @@ internal static class InventoryCatalog
         _ => throw new ArgumentOutOfRangeException(nameof(area)),
     };
 
-    private static int CapacityOf(PlayerLoadoutState loadout, long branch) => checked((int)LoadoutDefinitions.Container(FrameAssetId(loadout), branch).NumberOfSlots);
+    private static int CapacityOf(PlayerLoadoutState loadout, long branch) => checked((int)LoadoutDefinitions.Generated.Container(FrameAssetId(loadout), branch).NumberOfSlots);
 
-    internal static long AssetId(string name) => LoadoutDefinitions.AssetIds.TryGetValue(name, out long assetId) ? assetId
+    internal static long AssetId(string name) => LoadoutDefinitions.Generated.AssetIds.TryGetValue(name, out long assetId) ? assetId
         : throw new InvalidDataException("Unknown inventory item technical name");
 
     internal static string TechnicalName(long assetId) => s_technicalNames.TryGetValue(assetId, out string? name) ? name
@@ -83,7 +83,7 @@ internal static class InventoryCatalog
         };
     }
 
-    internal static InventoryPosition? Branch(long assetId) => LoadoutDefinitions.StandardBranch(assetId) switch
+    internal static InventoryPosition? Branch(long assetId) => LoadoutDefinitions.Generated.StandardBranch(assetId) switch
     {
         LoadoutItems.BackpackSlotAssetId => new InventoryPosition(InventoryArea.Backpack, 0),
         LoadoutItems.SafePocketSlotAssetId => new InventoryPosition(InventoryArea.SafePockets, 0),

@@ -20,7 +20,7 @@ public sealed class WorldImports
     private readonly List<(GlobalActor Actor, ulong Guid)> _globalActors = [];
 
     /// <summary>Gameplay classes of the items a character can hold, by usable-item index.</summary>
-    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = ItemTraitsTable.All
+    public static IReadOnlyDictionary<ushort, string> HeldItemClasses { get; } = ItemTraitsTable.Generated.All
         .Where(traits => traits.HeldClass is not null).ToDictionary(traits => checked((ushort)traits.UsableIndex), traits => traits.HeldClass!);
 
     /// <summary>Builds the exports.</summary>

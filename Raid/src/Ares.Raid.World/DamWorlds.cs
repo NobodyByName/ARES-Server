@@ -37,7 +37,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     /// <param name="collision">The map's static collision, or null when the operator has none; each raid indexes it.</param>
     /// <param name="gameData">The game data the server loaded at startup; raids do not read it yet (null in tests that predate it).</param>
     public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null, MapCollision? collision = null,
-        GameData? gameData = null)
+        GameDataSet? gameData = null)
     {
         Clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _random = random ?? (() => RandomNumberGenerator.GetInt32(int.MaxValue));
@@ -92,7 +92,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal MapCollision? MapCollision { get; }
 
     /// <summary>The game data the server loaded at startup, or null.</summary>
-    public GameData? GameData { get; }
+    public GameDataSet? GameData { get; }
 
     internal LootSpawnRules LootRules { get; }
 

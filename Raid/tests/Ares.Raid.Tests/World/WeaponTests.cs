@@ -408,13 +408,13 @@ public sealed class WeaponTests
         Assert.Throws<WorldPreparationException>(() => new RaidInventory(missing));
         PlayerLoadout reordered = loadout with { Items = [.. loadout.Items.Select(item => item == gun ? item with { Slots = [.. gun.Slots.Reverse()] } : item)] };
         Assert.Throws<WorldPreparationException>(() => new RaidInventory(reordered));
-        InventoryItem mod = new(Guid.NewGuid().ToString("D"), ((SingleItemSlot)LoadoutDefinitions.ByAsset[WeaponItems.MuzzleModSlotAssetId].SlotConfig!).AllowedSlotAssetIds[0],
+        InventoryItem mod = new(Guid.NewGuid().ToString("D"), ((SingleItemSlot)LoadoutDefinitions.Generated.ByAsset[WeaponItems.MuzzleModSlotAssetId].SlotConfig!).AllowedSlotAssetIds[0],
             1, [], 1, 1, "", "weapon-test", 0);
         PlayerLoadout filled = loadout with { Items = [.. loadout.Items.Select(item => item.InstanceId == gun.Slots[0] ? item with { Slots = [mod.InstanceId] } : item), mod] };
         Assert.Throws<WorldPreparationException>(() => new RaidInventory(filled));
         return;
 
-        static IReadOnlyList<long> StructuralSlots(long asset) => ((StructuralItemSlots)LoadoutDefinitions.ByAsset[asset].SlotConfig!).SlotAssetIds;
+        static IReadOnlyList<long> StructuralSlots(long asset) => ((StructuralItemSlots)LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig!).SlotAssetIds;
     }
 
     [Fact]
@@ -545,11 +545,11 @@ public sealed class WeaponTests
 
         static PlayerLoadout Add(PlayerLoadout source, long branchAsset, int index, long asset, long amount, double condition)
         {
-            InventoryItem branch = source.Items.Single(item => LoadoutDefinitions.StandardBranch(item.GameAssetId) == branchAsset);
+            InventoryItem branch = source.Items.Single(item => LoadoutDefinitions.Generated.StandardBranch(item.GameAssetId) == branchAsset);
             InventoryItem container = source.Items.Single(item => item.InstanceId == branch.Slots[0]);
             string slot = container.Slots[index];
             // Like the menu inventory, a weapon carries one empty node per mod slot.
-            InventoryItem[] modSlots = LoadoutDefinitions.ByAsset[asset].SlotConfig is StructuralItemSlots slots
+            InventoryItem[] modSlots = LoadoutDefinitions.Generated.ByAsset[asset].SlotConfig is StructuralItemSlots slots
                 ? [.. slots.SlotAssetIds.Select(slotAsset => new InventoryItem(Guid.NewGuid().ToString("D"), slotAsset, 1, [], 1, 1, "", "weapon-test", 0))]
                 : [];
             InventoryItem owned = new(Guid.NewGuid().ToString("D"), asset, amount, [.. modSlots.Select(modSlot => modSlot.InstanceId)], condition, 1, "", "weapon-test", 0);

@@ -91,11 +91,6 @@ public static class DownedMovementParameters
     /// <summary>Angle from straight uphill, in degrees, from which the input no longer counts as uphill.</summary>
     public const double UphillNoneDegrees = 90;
 
-    /// <summary>Tags the downed node holds on every tick it runs.</summary>
-    public const ulong NodeTags = GraphStateTags.AnimationPendulumStateDbno | GraphStateTags.AbilityBlockKnockbackPendulumMove
-        | GraphStateTags.AbilityBlockFirePrimaryPendulumMove | GraphStateTags.AbilityBlockFireSecondaryPendulumMove
-        | GraphStateTags.AbilityBlockReloadPendulumMove;
-
     /// <summary>Ground movement parameters of the crawl for a maximum speed.</summary>
     /// <param name="maximumSpeed">Maximum crawl speed.</param>
     /// <returns>The parameters.</returns>

@@ -343,7 +343,7 @@ public sealed class InventoryStoreTests : IDisposable
     }
 
     private static CarriedItem Carried(string place, int slot, OwnedItem item) => new(place, slot,
-        new InventoryItem(item.InstanceId, ItemTechnicalNames.AssetIds[item.Type], item.Quantity, [], item.Durability, item.MaxDurability, "", item.ETag, item.UpdatedAt));
+        new InventoryItem(item.InstanceId, LoadoutDefinitions.Generated.AssetIds[item.Type], item.Quantity, [], item.Durability, item.MaxDurability, "", item.ETag, item.UpdatedAt));
 
     private static CarriedItem NewDuck(string place, int slot) => new(place, slot,
         new InventoryItem(Guid.NewGuid().ToString("D"), StorageItems.RubberDuckAssetId, 1, [], StorageItems.InitialDurability,

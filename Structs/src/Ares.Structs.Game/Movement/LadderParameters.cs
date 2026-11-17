@@ -99,22 +99,6 @@ public static class LadderParameters
     /// <summary>Bit of the character claims flags (<see cref="PendulumInput.CharacterClaimsFlagsField"/>) set while crouch is held.</summary>
     public const int CrouchButtonDownBit = 5;
 
-    /// <summary>
-    /// Graph state flags of the ladder state: fire primary, fire secondary, equip, reload and context interaction
-    /// blocked, and the attached-to-a-ladder tag.
-    /// </summary>
-    public const ulong ClimbingFlags = GraphStateFlags.BlockedActions | GraphStateTags.AbilityBlockContextInteractPendulumMove
-        | GraphStateTags.GameplayEffectAttachedTraversalLadder;
-
-    /// <summary>Graph state flag set while crouch input is blocked ; each climbing tick renews it for <see cref="CrouchBlockSeconds"/>.</summary>
-    public const ulong CrouchInputBlockedFlag = GraphStateTags.AbilityBlockInputCrouchPendulumMove;
-
-    /// <summary>Graph state flag of the ladder slide cue sliding down, or catching the ladder while falling.</summary>
-    public const ulong SlidingFlag = GraphStateTags.GameplayCueAbilityLadderSlide;
-
-    /// <summary>Graph state flag of an active sprint ; on a ladder it follows the sprint button.</summary>
-    public const ulong SprintActiveFlag = GraphStateTags.AbilitySprintActive;
-
     /// <summary>Stamina change per application of the sprint drain effect (skills and flow state unchanged).</summary>
     public static double SprintStaminaMagnitude => -SprintStaminaCost * SprintStaminaShare;
 

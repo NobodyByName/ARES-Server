@@ -116,7 +116,7 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
     /// <summary>The Snap Hook's hook, its move target and the pull it gives the character.</summary>
     public SnapHookUse SnapHook { get; init; } = SnapHookUse.None;
 
-    /// <summary>The graph-state flags the simulation decides (<see cref="GraphStateFlags.Simulated"/>).</summary>
+    /// <summary>The graph-state flags the simulation decides (<see cref="GeneratedGraphStateFlags.Simulated"/>).</summary>
     public ulong GraphFlags
     {
         get
@@ -133,21 +133,21 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
                     | (sliding.Ticks >= GraphStateFlags.SlideSprintInputBlockedFirstTick ? GraphStateTags.AbilityBlockInputSprintPendulumMove : 0);
             }
 
-            flags |= Rolling ? DodgeRollParameters.RollingFlags : 0;
-            flags |= HeavyLandingTicks > 0 ? GraphStateFlags.HeavyLandingRecovery : 0;
-            flags |= Vaulting ? VaultParameters.VaultingFlags : 0;
+            flags |= Rolling ? GeneratedGraphStateFlags.DodgeRolling : 0;
+            flags |= HeavyLandingTicks > 0 ? GeneratedGraphStateFlags.HeavyLandingRecovery : 0;
+            flags |= Vaulting ? GeneratedGraphStateFlags.Vaulting : 0;
             flags |= LandingRecoveryTag ? GraphStateTags.AbilityLandingRecovery : 0;
             flags |= CrouchBlockTicks > 0 ? GraphStateTags.AbilityBlockInputCrouchPendulumMove : 0;
             flags |= HeldItem is { } held
                 ? (held.Zoom ? GraphStateTags.AbilityZooming : 0) | (held.PrimaryUseTag ? GraphStateTags.AbilityFirePrimaryPendulumWep : 0)
                     | (held.ReloadBlocked ? GraphStateTags.AbilityBlockReloadPendulumMove : 0)
                 : 0;
-            flags |= SnapHook.Pull is not null ? SnapHookParameters.PullingFlags : 0;
-            return flags | (Ladder is not null ? LadderFlags : LadderFollowedTicks > 0 ? LadderParameters.ClimbingFlags : 0);
+            flags |= SnapHook.Pull is not null ? GeneratedGraphStateFlags.SnapHookPulling : 0;
+            return flags | (Ladder is not null ? LadderFlags : LadderFollowedTicks > 0 ? GeneratedGraphStateFlags.LadderState : 0);
         }
     }
 
-    /// <summary>The graph-state tags from 64 the simulation decides (<see cref="GraphStateFlags.SimulatedUpper"/>).</summary>
+    /// <summary>The graph-state tags from 64 the simulation decides (<see cref="GeneratedGraphStateFlags.SimulatedUpper"/>).</summary>
     public ulong UpperGraphFlags => (GroundNode.SprintBoosted ? GraphStateUpperTags.UiSkillStateActiveSprintBoost : 0)
         | (Exhausted ? GraphStateUpperTags.StatusExhausted : 0);
 
@@ -159,7 +159,7 @@ public readonly record struct CharacterState(uint Frame, Vector3D Position, bool
 
     /// <summary>
     /// What the held item leaves for the movement (aim, forced walk, sprint blocks), or null while the held item is not
-    /// simulated; its tags (<see cref="GraphStateFlags.HeldItem"/>) then keep their initial values.
+    /// simulated; its tags (<see cref="GeneratedGraphStateFlags.HeldItem"/>) then keep their initial values.
     /// </summary>
     public HeldItemState? HeldItem { get; init; }
 
@@ -651,7 +651,7 @@ public sealed class CharacterSimulation
             LadderFlags = step.Flags,
             LadderFollowedTicks = animated ? 1 : 0,
             LadderDiverged = start is null && State.LadderDiverged,
-            CrouchBlockTicks = (step.Flags & LadderParameters.CrouchInputBlockedFlag) != 0 ? LadderMovement.CrouchBlockTicks : Math.Max(0, State.CrouchBlockTicks - 1),
+            CrouchBlockTicks = (step.Flags & GeneratedGraphStateFlags.LadderCrouchInputBlocked) != 0 ? LadderMovement.CrouchBlockTicks : Math.Max(0, State.CrouchBlockTicks - 1),
             Vault = null,
             VaultFinished = false,
             VaultMissed = false,

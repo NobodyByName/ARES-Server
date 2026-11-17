@@ -67,7 +67,7 @@ public sealed class ZiplineMovementTests
         // The own velocity loses 500 cm/s per second; the 10 cm offset across the line is pulled in by a fifth.
         Vector3D along = Scale(s_down, 300 - (500 * Tick));
         AssertClose(along with { Y = -10 * ZiplineParameters.CentringShare / Tick }, step.Velocity, 1e-6);
-        Assert.Equal(ZiplineParameters.RidingFlags, step.Flags);
+        Assert.Equal(GeneratedGraphStateFlags.ZiplineRiding, step.Flags);
         Assert.Equal(GraphStateTags.GameplayEffectAttachedTraversalZipline, step.Flags & GraphStateTags.GameplayEffectAttachedTraversalZipline);
     }
 
