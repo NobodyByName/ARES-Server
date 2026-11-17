@@ -111,7 +111,7 @@ public sealed partial class PlayerChannels
             return AdminRefusal.TeleportPending;
         }
 
-        if (InteractionFramesHeld(_raid.Clock()) || _openLoot is not null)
+        if (InteractionFramesHeld(_raid.Clock()) || _loot.ContainerOpen)
         {
             return AdminRefusal.Busy;
         }

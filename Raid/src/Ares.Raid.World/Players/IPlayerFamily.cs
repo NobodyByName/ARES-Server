@@ -31,7 +31,8 @@ internal interface IPlayerFamily
     bool Usable(IPlayerChannelsContext player, ulong target);
 
     /// <summary>The client closed a channel; when it is one of the family's, nothing more goes to the actor on it.</summary>
+    /// <param name="player">The player's channels.</param>
     /// <param name="channel">The channel.</param>
     /// <returns>True when the channel is one of the family's.</returns>
-    bool ChannelFailed(int channel);
+    bool ChannelFailed(IPlayerChannelsContext player, int channel);
 }

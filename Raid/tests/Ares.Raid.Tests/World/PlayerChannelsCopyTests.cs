@@ -25,6 +25,9 @@ public sealed class PlayerChannelsCopyTests
         "_weaponReferenceKeys",
     ];
 
+    // The families of world actors on a connection.
+    private static readonly string[] s_families = ["_doors", "_ladders", "_loot", "_pickups", "_arcs"];
+
     [Fact]
     public void A_copy_shares_no_collection_the_channels_change_in_place()
     {
@@ -68,7 +71,7 @@ public sealed class PlayerChannelsCopyTests
             .. typeof(PlayerChannels).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
                 .Where(field => field.FieldType.GetInterface("Ares.Raid.World.Players.IPlayerFamily") is not null),
         ];
-        Assert.NotEmpty(families);
+        Assert.All(s_families, name => Assert.Contains(families, field => field.Name == name));
         Assert.All(families, field => Assert.False(ReferenceEquals(field.GetValue(channels), field.GetValue(copy)), field.Name));
         string[] sharedInFamilies =
         [

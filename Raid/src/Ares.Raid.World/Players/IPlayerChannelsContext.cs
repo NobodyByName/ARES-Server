@@ -1,3 +1,4 @@
+using Ares.Raid.Transport;
 using Ares.Raid.World.Movement;
 using Ares.Structs.Core.Geometry;
 
@@ -54,6 +55,27 @@ internal interface IPlayerChannelsContext
     /// </summary>
     /// <param name="until">Raid clock.</param>
     void HoldFrames(double until);
+
+    /// <summary>
+    /// The character's pawn frames show an interaction the server runs for it (a container search, a descend hold),
+    /// times in raid world seconds (replaces an earlier one).
+    /// </summary>
+    /// <param name="interaction">The interaction.</param>
+    void RunInteraction(PawnInteraction interaction);
+
+    /// <summary>The server-run interaction, if any, ended successfully: the pawn frames show it succeeded.</summary>
+    void SucceedInteraction();
+
+    /// <summary>Whether the client has the character's interactor named, so it takes the interaction calls on it.</summary>
+    bool InteractorExported { get; }
+
+    /// <summary>Names the character's interactor to the client once; it counts as named once acknowledged.</summary>
+    /// <param name="sender">The connection's sender.</param>
+    void ExportInteractor(ReliableSender sender);
+
+    /// <summary>Numbers a new server-run interaction.</summary>
+    /// <returns>Its sequence number.</returns>
+    uint NextInteractionSequence();
 
     /// <summary>A request of an input frame changed the inventory: no pawn frame before that frame goes out.</summary>
     /// <param name="frame">Input frame.</param>

@@ -51,7 +51,7 @@ internal sealed class PlayerLadders : IPlayerFamily
     }
 
     /// <inheritdoc />
-    public bool ChannelFailed(int channel)
+    public bool ChannelFailed(IPlayerChannelsContext player, int channel)
     {
         if (_channels.IndexOf(channel) is not { } ladder)
         {
