@@ -25,7 +25,7 @@ knowledge needed: I host, you install
 | [Raid](Raid/) | ARES-Raid: independent game-session server that runs the raid. |
 | [Structs](Structs/) | Standalone library of decoded ARC Raiders structures, wire formats and game data for community projects. |
 | [Common](Common/) | Shared server logic used by Host and Raid, and the map file format. |
-| [MapData](MapData/) | ARES-MapData: operator tool that extracts the [map data](#map-data) from an installed game. |
+| [GameDataExtract](GameDataExtract/) | ARES-GameDataExtract: operator tool that extracts the [game data](#game-data) from an installed game. |
 
 ## Content progress
 
@@ -45,7 +45,7 @@ availability still need review.
   [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher). ARES supports one game build at a time;
   players on a newer build must wait for ARES to support it.
 - Operators must supply the game's [archive keys](#archive-keys). ARES includes no game keys or game files.
-- For map collision, operators extract [map data](#map-data) from their own game installation.
+- For map collision, operators extract [game data](#game-data) from their own game installation.
 - Developed and tested on Linux. Support for every ARC Raiders platform is a goal; Windows has not been tested yet.
 
 ## Archive keys
@@ -55,10 +55,10 @@ Operators must provide the supported build's pak and container keys in `archive-
 startup and supplies them to ARES-Launcher to read each player's own game files. Keep the key file
 private and out of Git.
 
-## Map data
+## Game data
 
 ARES-Raid needs the map's collision (ground, walls, buildings and other solid objects) to move players
-correctly. ARES does not include it: like the map extractors of other server emulators, ARES-MapData
+correctly. ARES does not include it: like the map extractors of other server emulators, ARES-GameDataExtract
 reads it from the operator's own game installation and writes ARES's map files. The files are derived
 from the game: keep them on your own servers and never distribute them.
 
@@ -71,7 +71,7 @@ without collision, so extract again whenever the supported game build changes.
 - **Game folder:** an installed copy of the supported game build (the folder holding `PioneerGame/`).
   It is only read, never changed.
 - **Archive keys file:** the same `archive-keys.txt` Host uses (see [Archive keys](#archive-keys)).
-- **TOC key file:** the key of the game's archive index (the `.utoc` files). Only ARES-MapData needs
+- **TOC key file:** the key of the game's archive index (the `.utoc` files). Only ARES-GameDataExtract needs
   it; Host does not. Operators must provide the supported build's TOC key in its own file, for example
   `toc-key.txt`: the key as 64 hex digits, optionally prefixed with `0x`. Whitespace is ignored and
   `#` starts a comment. Keep the file private and out of Git, like the archive keys.
@@ -79,11 +79,11 @@ without collision, so extract again whenever the supported game build changes.
 **Run it** from this repository (the .NET SDK is the only other requirement):
 
 ```sh
-dotnet run --project MapData/src/Ares.MapData -- extract \
+dotnet run --project GameDataExtract/src/Ares.GameDataExtract -- extract \
   --game "/path/to/Arc Raiders" \
   --keys /path/to/archive-keys.txt \
   --toc-key /path/to/toc-key.txt \
-  --out /path/to/map-data
+  --out /path/to/gamedata
 ```
 
 | Option | Meaning |
@@ -101,17 +101,17 @@ success, 1 that the game's files could not be read, and 2 invalid options or inp
 or file, keys for another game build, or a TOC key that does not decrypt the game's archive index.
 The keys are never printed.
 
-**Point Host at it:** set `map-data-dir` in `ares-host.conf` to the output folder (relative paths are
+**Point Host at it:** set `game-data-dir` in `ares-host.conf` to the output folder (relative paths are
 relative to the configuration file) and restart Host. Host passes the folder to every Raid it starts;
 each Raid loads the file when it starts, so raids started after a new extraction use the new file.
 
 **Servers without the game:** the server that runs Host and Raid does not need the game. Run
-ARES-MapData on any machine with the supported game build installed, copy the output folder to the
-server, for example `scp -r map-data user@server:/srv/ares/`, and set `map-data-dir` there.
+ARES-GameDataExtract on any machine with the supported game build installed, copy the output folder to the
+server, for example `scp -r gamedata user@server:/srv/ares/`, and set `game-data-dir` there.
 
 **Check it worked:** when Host starts a raid, the Host log shows the Raid's event
 `"map_collision": "loaded"` with its placement and height-field counts. `"map_collision": "unavailable"`
-comes with a `warning` that says why: `map-data-dir` is not set, the folder or file is missing, or the
+comes with a `warning` that says why: `game-data-dir` is not set, the folder or file is missing, or the
 file is unusable (for example extracted from another game build). Raids then run without collision.
 
 ## Contributing

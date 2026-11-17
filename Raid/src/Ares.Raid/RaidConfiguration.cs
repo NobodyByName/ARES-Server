@@ -28,7 +28,7 @@ public sealed record RaidConfiguration
           --fill-seconds <n>          Seconds after the first party during which other parties may join (0 to 600, default 60)
           --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
-          --map-data-dir <dir>        Folder with the map files written by ARES-MapData (default: none; no map collision)
+          --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (default: none; no map collision)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
           --help                      Show this help
@@ -63,7 +63,7 @@ public sealed record RaidConfiguration
     public string? Lighting { get; private init; }
 
     /// <summary>Folder with the map files, or null when none is configured.</summary>
-    public string? MapDataDirectory { get; private init; }
+    public string? GameDataDirectory { get; private init; }
 
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
@@ -94,7 +94,7 @@ public sealed record RaidConfiguration
         int controlPort = arguments.GetInt32("control-port", 0);
         string? tokenFile = arguments.GetString("control-token-file");
         string? lighting = arguments.GetString("lighting");
-        string? mapDataDirectory = arguments.GetString("map-data-dir");
+        string? gameDataDirectory = arguments.GetString("game-data-dir");
         int maxPlayers = arguments.GetInt32("max-players", 1);
         int fillSeconds = arguments.GetInt32("fill-seconds", 60);
         bool stopOnInputClose = arguments.Has("stop-on-input-close");
@@ -148,7 +148,7 @@ public sealed record RaidConfiguration
                 ControlPort = controlPort,
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
-                MapDataDirectory = mapDataDirectory is null ? null : Path.GetFullPath(mapDataDirectory),
+                GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
                 MaxPlayers = maxPlayers,
                 FillSeconds = fillSeconds,
                 StopOnInputClose = stopOnInputClose,

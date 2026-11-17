@@ -8,7 +8,7 @@ namespace Ares.Raid.Tests.World.Collision;
 
 public sealed class MapCollisionLoaderTests : IDisposable
 {
-    private readonly string _directory = Directory.CreateTempSubdirectory("ares-map-data-").FullName;
+    private readonly string _directory = Directory.CreateTempSubdirectory("ares-game-data-").FullName;
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
 
@@ -16,7 +16,7 @@ public sealed class MapCollisionLoaderTests : IDisposable
     public void Without_a_directory_no_collision_is_loaded()
     {
         Assert.Null(MapCollisionLoader.Load(null, MapName, out string? problem));
-        Assert.Contains("map-data-dir", problem, StringComparison.Ordinal);
+        Assert.Contains("game-data-dir", problem, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class MapCollisionLoaderTests : IDisposable
     public void A_missing_file_is_reported_with_its_path()
     {
         Assert.Null(MapCollisionLoader.Load(_directory, MapName, out string? problem));
-        Assert.Contains(Path.Combine(_directory, MapDataFiles.CollisionFileName(MapName)), problem, StringComparison.Ordinal);
+        Assert.Contains(Path.Combine(_directory, GameDataFiles.CollisionFileName(MapName)), problem, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class MapCollisionLoaderTests : IDisposable
         MapCollisionBuilder builder = Builder(gameBuildId);
         int cell = builder.AddCell("/Game/Cell", []);
         builder.AddPlacement(builder.AddBody(Body("box", boxes: [Box(new Vector3(10, 10, 10))])), cell, At(0, 0, 0), PlacementFlags.BlocksPawn);
-        using FileStream stream = File.Create(Path.Combine(_directory, MapDataFiles.CollisionFileName(MapName)));
+        using FileStream stream = File.Create(Path.Combine(_directory, GameDataFiles.CollisionFileName(MapName)));
         MapCollisionFile.Write(stream, builder.Build());
     }
 }

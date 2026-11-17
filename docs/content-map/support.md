@@ -74,7 +74,7 @@ Operators can steer running raids from the Host console: `raid list` shows the r
 or `despawn-arcs` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
 is also shown in the game's bottom-right corner. These are development tools.
 
-With [map data](../../README.md#map-data) configured, each raid loads the map's collision when it
+With [game data](../../README.md#game-data) configured, each raid loads the map's collision when it
 starts, and Raid simulates each player's movement on it: walking, crouching, sprinting, sliding, dodge
 rolls, jumps and landings, vaults and ladder climbs. Walking and running on flat ground are stock-client
 verified; the other moves are not yet.

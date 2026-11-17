@@ -81,7 +81,7 @@ public sealed record HostConfiguration
         int raidPort = file.GetInt32(HostOptions.RaidPort);
         int raidControlPort = file.GetInt32(HostOptions.RaidControlPort);
         string? raidLighting = EmptyToNull(file.GetString(HostOptions.RaidLighting));
-        string? mapDataDirectory = file.GetPath(HostOptions.MapDataDirectory);
+        string? gameDataDirectory = file.GetPath(HostOptions.GameDataDirectory);
         string? authKeyFile = file.GetPath(HostOptions.AuthKeyFile);
         string archiveKeysFile = file.GetPath(HostOptions.ArchiveKeysFile)
             ?? throw new CommandLineException("archive-keys-file must not be empty");
@@ -162,7 +162,7 @@ public sealed record HostConfiguration
         }
 
         RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
-            mapDataDirectory, bind, originUri.Host, port);
+            gameDataDirectory, bind, originUri.Host, port);
         StashUpgradePrices stashUpgrades = stashUpgradeCoins is null ? StashUpgradePrices.Default : ReadStashUpgrades(stashUpgradeCoins);
         byte[]? identityKey = authKeyFile is null ? null : ReadIdentityKey(authKeyFile);
         ArchiveKeys archiveKeys = ReadArchiveKeys(archiveKeysFile, archiveKeysSha256);
@@ -205,7 +205,7 @@ public sealed record HostConfiguration
     }
 
     private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
-        int controlPort, string? lighting, string? mapDataDirectory, IPAddress bind, string advertiseHost, int hostPort)
+        int controlPort, string? lighting, string? gameDataDirectory, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {
@@ -249,7 +249,7 @@ public sealed record HostConfiguration
             string fullTokenFile = Path.GetFullPath(tokenFile);
             return new RaidLaunch(fullExecutable, fullTokenFile, SecretFiles.ReadOperatorToken(fullTokenFile), bind,
                 ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting,
-                mapDataDirectory is null ? null : Path.GetFullPath(mapDataDirectory));
+                gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory));
         }
         catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException)
         {

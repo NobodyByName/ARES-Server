@@ -2,14 +2,14 @@ using Ares.Common.Maps;
 
 namespace Ares.Raid.World.Collision;
 
-/// <summary>Loads a map's collision from the operator's map data directory.</summary>
+/// <summary>Loads a map's collision from the operator's game data directory.</summary>
 public static class MapCollisionLoader
 {
     /// <summary>
     /// Reads the collision file of a map, or explains why there is none. Raids run without collision when it is
     /// missing or unusable, so problems are returned instead of thrown.
     /// </summary>
-    /// <param name="directory">The configured map data directory, or null when none is configured.</param>
+    /// <param name="directory">The configured game data directory, or null when none is configured.</param>
     /// <param name="mapName">The map's world name; the file name is derived from it.</param>
     /// <param name="problem">Why no collision was loaded, or null when it was.</param>
     /// <returns>The map's collision, or null.</returns>
@@ -17,21 +17,21 @@ public static class MapCollisionLoader
     {
         if (directory is null)
         {
-            problem = "map-data-dir is not set; raids run without map collision. Write the map files with ARES-MapData and set map-data-dir.";
+            problem = "game-data-dir is not set; raids run without map collision. Write the game data with ARES-GameDataExtract and set game-data-dir.";
             return null;
         }
 
         string fullDirectory = Path.GetFullPath(directory);
         if (!Directory.Exists(fullDirectory))
         {
-            problem = $"Map data directory not found: {fullDirectory}; raids run without map collision.";
+            problem = $"Game data directory not found: {fullDirectory}; raids run without map collision.";
             return null;
         }
 
-        string path = Path.Combine(fullDirectory, MapDataFiles.CollisionFileName(mapName));
+        string path = Path.Combine(fullDirectory, GameDataFiles.CollisionFileName(mapName));
         if (!File.Exists(path))
         {
-            problem = $"Map collision file not found: {path}; raids run without map collision. Write it with ARES-MapData.";
+            problem = $"Map collision file not found: {path}; raids run without map collision. Write it with ARES-GameDataExtract.";
             return null;
         }
 

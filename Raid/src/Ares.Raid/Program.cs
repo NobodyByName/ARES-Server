@@ -47,7 +47,7 @@ using Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, Protocol
 socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
 int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
 
-MapCollision? collision = MapCollisionLoader.Load(configuration.MapDataDirectory, DamMap.WorldName, out string? collisionProblem);
+MapCollision? collision = MapCollisionLoader.Load(configuration.GameDataDirectory, DamMap.WorldName, out string? collisionProblem);
 log.Write(collision is null
     ? new JsonObject { ["map_collision"] = "unavailable", ["warning"] = collisionProblem }
     : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });

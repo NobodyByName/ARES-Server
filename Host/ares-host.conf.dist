@@ -57,9 +57,9 @@ raid-port = 7777
 raid-control-port = 17778
 # Lighting of every raid, e.g. Lighting.GreyMorning. Empty: picked by the map's weights.
 raid-lighting =
-# Folder with the map files written by ARES-MapData (see "Map data" in the README).
+# Folder with the game data written by ARES-GameDataExtract (see "Game data" in the README).
 # Empty: raids run without map collision.
-map-data-dir =
+game-data-dir =
 
 # ECONOMY
 # Coin price of each stash upgrade (tier 2 to tier 12, 64 to 328 slots, 24 more each),

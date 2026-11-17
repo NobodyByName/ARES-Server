@@ -24,7 +24,7 @@ public sealed class CommandLineTests
     }
 
     [Fact]
-    public void Map_data_directory_is_optional_and_made_absolute()
+    public void Game_data_directory_is_optional_and_made_absolute()
     {
         string directory = Directory.CreateTempSubdirectory("ares-raid-config-").FullName;
         try
@@ -32,8 +32,8 @@ public sealed class CommandLineTests
             string tokenFile = Path.Combine(directory, "operator-token");
             File.WriteAllText(tokenFile, new string('a', 64));
             string[] required = ["--advertise-host", "127.0.0.1", "--control-port", "17778", "--control-token-file", tokenFile];
-            Assert.Null(RaidConfiguration.Parse(required).MapDataDirectory);
-            Assert.Equal(Path.GetFullPath("maps"), RaidConfiguration.Parse([.. required, "--map-data-dir", "maps"]).MapDataDirectory);
+            Assert.Null(RaidConfiguration.Parse(required).GameDataDirectory);
+            Assert.Equal(Path.GetFullPath("gamedata"), RaidConfiguration.Parse([.. required, "--game-data-dir", "gamedata"]).GameDataDirectory);
         }
         finally
         {

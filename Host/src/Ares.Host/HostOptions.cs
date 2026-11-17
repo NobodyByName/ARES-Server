@@ -50,7 +50,7 @@ internal static class HostOptions
     internal static HostOption RaidPort { get; } = new("raid-port", "<n>", "UDP game port of the first raid; each further raid uses the next port", "7777");
     internal static HostOption RaidControlPort { get; } = new("raid-control-port", "<n>", "Loopback allocation API port of the first raid, counted the same way", "17778");
     internal static HostOption RaidLighting { get; } = new("raid-lighting", "<tag>", "Lighting of every raid", DefaultNote: "picked by the map's weights");
-    internal static HostOption MapDataDirectory { get; } = new("map-data-dir", "<dir>", "Folder with the map files written by ARES-MapData, passed to every raid",
+    internal static HostOption GameDataDirectory { get; } = new("game-data-dir", "<dir>", "Folder with the game data written by ARES-GameDataExtract, passed to every raid",
         DefaultNote: "none");
     internal static HostOption StashUpgradeCoins { get; } = new("stash-upgrade-coins", "<list>", "Coin price of each stash upgrade, comma-separated from the first",
         DefaultNote: "the game's prices");
@@ -71,7 +71,7 @@ internal static class HostOptions
     internal static IReadOnlyList<HostOption> Settings { get; } =
     [
         Port, Bind, PublicOrigin, AllowNetworkClients, MongoDbUri, MongoDbUriFile, MongoDbDatabase, RaidExecutable, SessionControlTokenFile,
-        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, MapDataDirectory, StashUpgradeCoins, AuthKeyFile,
+        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, GameDataDirectory, StashUpgradeCoins, AuthKeyFile,
         ArchiveKeysFile, ServerName, Motd, GameBuildId, RaidCapacity, LogFile, Console,
     ];
 

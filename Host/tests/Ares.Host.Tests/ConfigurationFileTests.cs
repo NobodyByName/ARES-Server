@@ -105,7 +105,7 @@ public sealed class ConfigurationFileTests : IDisposable
             raid-port = 7000
             raid-control-port = 17000
             raid-lighting = Lighting.GreyMorning
-            map-data-dir = maps
+            game-data-dir = gamedata
             stash-upgrade-coins = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0
             console = json
             log-file = logs/host.log
@@ -122,7 +122,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal(2, configuration.Settings.RaidCapacity);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
-            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "maps")), configuration.Raids);
+            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "gamedata")), configuration.Raids);
         Assert.Equal([1L, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0], configuration.Settings.StashUpgrades.Coins);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
