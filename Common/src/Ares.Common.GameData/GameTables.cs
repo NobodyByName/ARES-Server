@@ -106,4 +106,17 @@ public static class GameTables
 
     /// <summary>The static loot spawn manager's tweakables (<see cref="LootSpawnTweakables"/>), one row.</summary>
     public const string StaticLootSpawnTweakables = "static-loot-spawn-tweakables.json";
+
+    /// <summary>
+    /// The interaction animation containers that change character movement (<see cref="InteractionAnimationContainer"/>):
+    /// those of the character's fallback list and knockout, the door breaches, the elevator buttons and the search
+    /// animations of every loot container class that decodes, ordered by the last segment of their path (ordinal).
+    /// </summary>
+    public const string InteractionAnimationContainers = "interaction-animation-containers.json";
+
+    /// <summary>
+    /// The character's fallback interaction animation containers (<see cref="TaggedInteractionAnimationContainer"/>), in
+    /// list order: an interaction without a container of its own uses the first entry whose tags it has, else the first.
+    /// </summary>
+    public const string TaggedInteractionAnimationContainers = "tagged-interaction-animation-containers.json";
 }

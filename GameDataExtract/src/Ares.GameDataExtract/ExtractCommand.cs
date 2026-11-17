@@ -18,14 +18,15 @@ using Ares.GameDataExtract.Scripts;
 using Ares.GameDataExtract.World;
 using Ares.Structs.Core;
 using Ares.Structs.Game.Collision;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract;
 
 /// <summary>
 /// <c>ARES-GameDataExtract extract</c>: reads the installed game read-only and writes the game data into the output
-/// folder (created when missing, never inside the game folder): the Dam map's collision file, world and loot area tables
-/// (see <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, the global item, movement and loot definition tables (see
+/// folder (created when missing, never inside the game folder): the Dam map's collision file, world, loot area and gameplay
+/// tables (see <see cref="MapTables"/>) under <c>maps/&lt;map&gt;/</c>, the global item, movement and loot definition tables (see
 /// <see cref="GameTables"/>), then <c>manifest.json</c> (layout in <see cref="GameDataFiles"/>). Each file replaces an
 /// earlier one only once complete. Prints what was written and which components could not be decoded.
 /// </summary>
@@ -121,11 +122,11 @@ internal sealed class ExtractCommand
     /// <param name="tocKey">The TOC key.</param>
     /// <param name="output">Standard output.</param>
     /// <param name="error">Standard error.</param>
-    /// <param name="itemTables">
-    /// Whether to extract the item tables; tests of the map files leave them out, since they need the game's whole
-    /// item catalogue.
+    /// <param name="gameAssetTables">
+    /// Whether to extract the item tables and the map gameplay tables; tests with a synthetic game leave them out, since
+    /// they need the game's whole item catalogue and its gameplay assets (game mode, rounds, lighting, extraction).
     /// </param>
-    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error, bool itemTables = true)
+    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error, bool gameAssetTables = true)
     {
         if (IsInside(OutputDirectory, GameDirectory))
         {
@@ -147,6 +148,9 @@ internal sealed class ExtractCommand
             TimeSpan lootTime;
             MapLootAreaData lootAreas;
             TimeSpan lootAreaTime;
+            MapRulesData? rules = null;
+            TimeSpan rulesTime = TimeSpan.Zero;
+            InteractionAnimationData? animations = null;
             TimeSpan sharedTime;
             using (GameArchive archive = GameArchive.Open(GameDirectory, keys, tocKey))
             {
@@ -155,7 +159,7 @@ internal sealed class ExtractCommand
                 ScriptCache scripts;
 
                 // The collision config pak is the main pak: it also holds the asset registry and the script cache, read
-                // once and shared by the item, movement, loot and loot area tables.
+                // once and shared by the item, movement, loot, loot area and gameplay tables.
                 using (PakFile configPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
                 {
                     profiles = CollisionProfiles.Load(configPak);
@@ -169,7 +173,7 @@ internal sealed class ExtractCommand
                 IReadOnlyList<string> cells = archive.PackagePathsUnder($"{DamMap.MapPackage}/{RuntimeCellMembers.GeneratedFolder}");
                 (map, summary) = CollisionExtractor.Extract(packages, profiles, cells);
                 world = MapWorldExtractor.Extract(packages, DamMap.MapPackage, cells, DamDataLayers.All);
-                if (itemTables)
+                if (gameAssetTables)
                 {
                     long itemStart = Stopwatch.GetTimestamp();
                     items = ItemExtractor.Extract(packages, registry, scripts);
@@ -185,6 +189,15 @@ internal sealed class ExtractCommand
                 long lootAreaStart = Stopwatch.GetTimestamp();
                 lootAreas = MapWorldExtractor.ExtractLootAreas(packages, scripts, DamMap.MapPackage, cells, DamDataLayers.All);
                 lootAreaTime = Stopwatch.GetElapsedTime(lootAreaStart);
+                if (gameAssetTables)
+                {
+                    long rulesStart = Stopwatch.GetTimestamp();
+                    rules = MapRulesExtractor.Extract(packages, scripts, DamMap.MapPackage, world.World, cells, RoundConfigurationAssets.Dam);
+                    rulesTime = Stopwatch.GetElapsedTime(rulesStart);
+                    animations = InteractionAnimationReader.Read(packages, scripts,
+                        loot.ContainerClasses.Select(row => row.SearchAnimation).OfType<string>(),
+                        rules.Extraction.Buttons.Select(button => button.AnimationContainer).OfType<string>());
+                }
             }
 
             GameDataWriter writer = new(OutputDirectory);
@@ -198,6 +211,17 @@ internal sealed class ExtractCommand
 
             WriteMovement(writer, movement);
             WriteLoot(writer, loot);
+            if (rules is not null)
+            {
+                WriteRules(writer, map.MapName, rules);
+            }
+
+            if (animations is not null)
+            {
+                writer.WriteTable(GameTables.InteractionAnimationContainers, animations.Containers, GameDataJsonContext.Default.InteractionAnimationContainer);
+                writer.WriteTable(GameTables.TaggedInteractionAnimationContainers, animations.TagBased, GameDataJsonContext.Default.TaggedInteractionAnimationContainer);
+            }
+
             string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
@@ -210,10 +234,22 @@ internal sealed class ExtractCommand
 
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"Movement tables: {movement.DodgeRolls.Count} dodge rolls, {movement.VaultDefinitions.Count} vault definition sets, {movement.HeavyLanding.Heavy.Count + movement.HeavyLanding.Recovery.Count} landing levels, {movement.GraphStateTags.Count} graph tags, {movement.SprintBurstCurve.Count} sprint curve keys (read in {movementTime.TotalSeconds:F1} s)"));
+            if (animations is not null)
+            {
+                output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"Interaction animation tables: {animations.Containers.Length:N0} containers ({animations.Containers.Count(container => container.Alignment != InteractionAlignment.None):N0} aligned), {animations.TagBased.Length:N0} tag-based entries"));
+            }
+
             WriteLootSummary(output, loot, lootTime);
+            if (rules is not null)
+            {
+                output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"Gameplay tables: {rules.Doors.Length:N0} doors, {rules.Rounds.Length:N0} round configurations, {rules.LightingScenarios.Length:N0} lighting scenarios, {rules.RoundLightingGroups.Length:N0} round lighting groups, {rules.Extraction.Points.Length:N0} extraction points (read in {rulesTime.TotalSeconds:F1} s)"));
+            }
+
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"Loot area tables: {lootAreas.PointsOfInterest.Length:N0} points of interest, {lootAreas.LootLimiters.Length:N0} loot limiters, {lootAreas.DynamicLootSpawners.Length:N0} dynamic loot spawners in {lootAreas.DynamicLootGroups.Length:N0} groups (read in {lootAreaTime.TotalSeconds:F1} s)"));
-            string tables = items is not null ? "the world, item, movement, loot and loot area tables" : "the world, movement, loot and loot area tables";
+            string tables = gameAssetTables ? "the world, gameplay, item, movement, interaction animation, loot and loot area tables" : "the world, movement, loot and loot area tables";
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), {tables} and {manifest} in {watch.Elapsed.TotalSeconds:F1} s (asset registry and script cache read once in {sharedTime.TotalSeconds:F1} s)"));
             return Success;
@@ -308,6 +344,21 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.LootLimiters(mapName), areas.LootLimiters, json.LootLimiter);
         writer.WriteTable(MapTables.DynamicLootSpawners(mapName), areas.DynamicLootSpawners, json.DynamicLootSpawner);
         writer.WriteTable(MapTables.DynamicLootGroups(mapName), areas.DynamicLootGroups, json.DynamicLootGroupEntry);
+    }
+
+    private static void WriteRules(GameDataWriter writer, string mapName, MapRulesData rules)
+    {
+        GameDataJsonContext json = GameDataJsonContext.Default;
+        writer.WriteTable(MapTables.GameMode(mapName), [rules.GameMode], json.MapGameMode);
+        writer.WriteTable(MapTables.Doors(mapName), rules.Doors, json.DoorPlacement);
+        writer.WriteTable(MapTables.Rounds(mapName), rules.Rounds, json.RoundConfiguration);
+        writer.WriteTable(MapTables.LightingScenarios(mapName), rules.LightingScenarios, json.LightingScenario);
+        writer.WriteTable(MapTables.RoundLightingGroups(mapName), rules.RoundLightingGroups, json.RoundLightingGroup);
+        writer.WriteTable(MapTables.ExtractionElevator(mapName), [rules.Extraction.Elevator], json.ExtractionElevator);
+        writer.WriteTable(MapTables.ExtractionButtons(mapName), rules.Extraction.Buttons, json.ExtractionButton);
+        writer.WriteTable(MapTables.ExtractionPoints(mapName), rules.Extraction.Points, json.ExtractionPointPlacement);
+        writer.WriteTable(MapTables.ZiplineDefaults(mapName), [rules.ZiplineDefaults], json.ZiplineLineDefaults);
+        writer.WriteTable(MapTables.PlayerStartCapsule(mapName), [rules.PlayerStartCapsule], json.PlayerStartCapsule);
     }
 
     /// <summary>Whether <paramref name="directory"/> is <paramref name="parent"/> or inside it.</summary>

@@ -6,7 +6,7 @@ namespace Ares.Common.GameData;
 /// File names of the per-map JSON tables (in <c>maps/&lt;map&gt;/</c>, see <see cref="GameDataFiles.MapFile"/>) and
 /// their row types in <see cref="GameDataJsonContext"/>.
 /// </summary>
-public static class MapTables
+public static partial class MapTables
 {
     /// <summary>The map's persistent world objects (<see cref="MapWorldObjects"/>), one row.</summary>
     /// <param name="mapName">The map's world name, for example <c>TheDam_02_P</c>.</param>

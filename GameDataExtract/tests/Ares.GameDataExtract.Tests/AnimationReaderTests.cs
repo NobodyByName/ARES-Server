@@ -107,6 +107,21 @@ public sealed class AnimationReaderTests
         Assert.Throws<InvalidDataException>(() => CurveKeyReader.Read(linear, linear.Exports[0]));
     }
 
+    [Fact]
+    public void The_latest_key_time_spans_every_rich_curve_of_the_asset()
+    {
+        static byte[] Key(float time) => [1, 0, 0, .. Floats(time, 0f, 0f, 0f, 0f, 0f)];
+        static CookedPackage Curves(byte[] first, byte[] trailer) => CookedPackage.Parse(SyntheticArchives.Package("/Game/Curves", [("Curves", PackageObjectIndex.Null, PackageObjectIndex.Null, 0,
+            [0x00, 0x05, 0x00, 0x03, .. BitConverter.GetBytes(2), .. first, 0x00, 0x03, .. BitConverter.GetBytes(1), .. Key(3.5f), .. trailer])]));
+        CookedPackage package = Curves([.. Key(0.5f), .. Key(2f)], new byte[8]);
+        CookedPackage unordered = Curves([.. Key(2f), .. Key(0.5f)], new byte[8]);
+        CookedPackage unread = Curves([.. Key(0.5f), .. Key(2f)], [0, 0, 0, 1]);
+
+        Assert.Equal(3.5f, CurveKeyReader.LatestKeyTime(package, package.Exports[0], 8));
+        Assert.Throws<InvalidDataException>(() => CurveKeyReader.LatestKeyTime(unordered, unordered.Exports[0], 8));
+        Assert.Throws<InvalidDataException>(() => CurveKeyReader.LatestKeyTime(unread, unread.Exports[0], 8));
+    }
+
     /// <summary>
     /// An export holding one track's compressed bone data: the track-to-bone table, an empty pair table, the stream
     /// size, a word holding the sequence length, the track offsets, the track stream and the codec name, then <paramref name="after"/>.

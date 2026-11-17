@@ -1,0 +1,63 @@
+using Ares.Structs.Net.Replication;
+
+namespace Ares.Structs.Game.World;
+
+/// <summary>
+/// The regular doors the map tables list (placed directly in a cell's persistent level, with two open/close buttons;
+/// Harvester doors are another class, puzzle doors are placed under another name) and the parts of a door the server
+/// drives.
+/// </summary>
+public static class DoorClasses
+{
+    /// <summary>Classes of the regular doors; a regular door actor is named after its class.</summary>
+    public static IReadOnlyList<string> Blueprints { get; } =
+    [
+        "/Game/Pioneer/Interactables/Doors/BP_InteractiveDoor_Rsr_x350z300_01.BP_InteractiveDoor_Rsr_x350z300_01_C",
+        "/Game/Pioneer/Interactables/Doors/BP_InteractiveDoor_Wrh_x300z325_01.BP_InteractiveDoor_Wrh_x300z325_01_C",
+    ];
+
+    /// <summary>Class whose replication layout the door Blueprints use.</summary>
+    public const string ActorClass = "/Script/Angelscript.BreachableDoorActor";
+
+    /// <summary>Class of the door buttons.</summary>
+    public const string InteractionClass = "/Script/Angelscript.StandardInteractionComponent";
+
+    /// <summary>Names of the door button components.</summary>
+    public static IReadOnlyList<string> InteractionComponents { get; } = ["OpenCloseInteraction_Exterior", "OpenCloseInteraction_Interior"];
+
+    /// <summary>Name of the door breach button component (a hold interaction).</summary>
+    public const string BreachInteractionComponent = "BreachInteraction";
+
+    /// <summary>Seconds the breach button is held, after its alignment.</summary>
+    public const double BreachHoldSeconds = 10.0;
+
+    /// <summary>Seconds the character aligns with the breach button before the hold starts.</summary>
+    public const double BreachAlignmentSeconds = 1.0;
+
+    /// <summary>The interaction-state enum (<c>ECurrentInteractionState</c>) as replication needs it.</summary>
+    public static EnumDefinition InteractionState { get; } = new("/Script/Angelscript.ECurrentInteractionState", 8,
+        ["Uninitialized", "Disabled", "Idle", "Ongoing", "Succeeding", "Cancelling", "SuccessIdle", "SuccessDisabled"]);
+}
+
+/// <summary>
+/// The start flags of a door (members of the door script class <c>ADoorBase</c>), by script member name. Each is a bool
+/// member of the door's property chain: a placed door or a Blueprint default that lists it sets it; otherwise the script
+/// constructor's value applies.
+/// </summary>
+public static class DoorStartFlagMembers
+{
+    /// <summary>Starts open (<see cref="DoorPlacement.StartAsOpened"/>).</summary>
+    public const string StartAsOpened = "bStartAsOpened";
+
+    /// <summary>Starts locked (<see cref="DoorPlacement.StartAsLocked"/>).</summary>
+    public const string StartAsLocked = "bStartAsLocked";
+
+    /// <summary>Starts barricaded (<see cref="DoorPlacement.StartAsSealed"/>).</summary>
+    public const string StartAsSealed = "bStartAsSealed";
+
+    /// <summary>Starts powered (<see cref="DoorPlacement.StartAsPowered"/>).</summary>
+    public const string StartAsPowered = "bStartAsPowered";
+
+    /// <summary>Opens once breached (<see cref="DoorPlacement.BreachOpensDoor"/>).</summary>
+    public const string BreachOpensDoor = "bBreachOpensDoor";
+}

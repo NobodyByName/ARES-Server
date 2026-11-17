@@ -138,6 +138,7 @@ public sealed class ExtractionTests : IDisposable
         Assert.Contains("Loot tables: ", output, StringComparison.Ordinal);
         Assert.Contains("Loot area tables: ", output, StringComparison.Ordinal);
         Assert.DoesNotContain("Item tables: ", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Gameplay tables: ", output, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -178,8 +179,9 @@ public sealed class ExtractionTests : IDisposable
     }
 
     /// <summary>
-    /// Runs the command without the item tables, which need the game's whole item catalogue (see <c>ItemReaderTests</c>
-    /// and the local data checks); the movement tables are always extracted, from <see cref="SyntheticMovementGame"/>.
+    /// Runs the command without the item and gameplay tables, which need the game's whole item catalogue and its gameplay
+    /// assets (see <c>ItemReaderTests</c> and the local data checks); the world, movement, loot and loot area tables are
+    /// always extracted, from the synthetic game.
     /// </summary>
     private (int Code, string Output, string Error) Run(string output, TocKey? tocKey = null)
     {
@@ -187,7 +189,7 @@ public sealed class ExtractionTests : IDisposable
             ["--game", Game, "--keys", Path.Combine(_directory, "keys.txt"), "--toc-key", Path.Combine(_directory, "toc-key.txt"), "--out", output]);
         StringWriter standardOutput = new();
         StringWriter standardError = new();
-        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError, itemTables: false);
+        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError, gameAssetTables: false);
         return (code, standardOutput.ToString(), standardError.ToString());
     }
 
