@@ -109,7 +109,7 @@ public enum DeliveryPhase
 /// lying in the world, the extraction elevators, and the other players of the raid with their movement; once an elevator leaves with the
 /// player, the end of their round.
 /// </summary>
-public sealed partial class PlayerChannels : IPlayerChannels
+public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsContext
 {
     private const int MaxDoorsInFlight = 8;
 
@@ -121,11 +121,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
     // Loot containers are dormant: a channel opens to send a container's state and closes again, so a few channels
     // serve them all. New deliveries start only while most of them are free; the rest stay free for state changes.
     private const int MaxLootDeliveries = 24;
-    private const int MaxLootStartsPerCheck = 8;
-    private const double LootRelevanceInterval = 0.25;
+    internal const int MaxLootStartsPerCheck = 8;
+    internal const double LootRelevanceInterval = 0.25;
     private const int LootRequestLog = 40;
     private const int LootFailureLog = 16;
-    private const int InteractionRequestLog = 40;
+    internal const int InteractionRequestLog = 40;
 
     // Longest time to put the held item away and draw the raider tool.
     private const double ToolDrawSeconds = FerroDefaults.UnequipSeconds + HandItems.RaiderToolEquipSeconds;
@@ -257,6 +257,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
     private BoundedLog _unknownRequests = new(InteractionRequestLog);
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
+    private PlayerPickups _pickups;
 
     // This player's departure with an elevator (its index and the server world time it left), the export naming the
     // controller's end-of-round component, and the server world times of each end-of-round step.
@@ -280,7 +281,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         _login = login ?? throw new ArgumentNullException(nameof(login));
         _bindings = [(ChannelLayout.Controller, player.Controller), (ChannelLayout.PlayerState, player.PlayerState), (ChannelLayout.Pawn, player.Pawn)];
         _lootLinks = new ActorChannelPool<LootLink>(raid.Channels.Loot);
-        _pickupLinks = new ActorChannelPool<PickupLink>(raid.Channels.Pickups);
+        _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcLinks = new ActorChannelPool<ArcLink>(raid.Channels.Arcs);
     }
 
@@ -475,6 +476,29 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Requests received on loot search interactions, oldest first, as request@input frame.</summary>
     public IReadOnlyList<string> LootRequests => _lootRequests;
 
+    /// <summary>Items this player dropped into the world.</summary>
+    public int ItemsDropped => _pickups.ItemsDropped;
+
+    /// <summary>Pickup requests of this player that took items.</summary>
+    public int PickupsTaken => _pickups.Taken;
+
+    /// <summary>Pickups whose actor and interaction this client has.</summary>
+    public int PickupsReady => _pickups.Ready;
+
+    /// <summary>Whether this client has a pickup (it keeps it while the pickup is dormant).</summary>
+    /// <param name="pickup">Pickup index.</param>
+    /// <returns>True once the pickup reached the client and until it is destroyed there.</returns>
+    public bool HasPickup(int pickup) => _pickups.Has(pickup);
+
+    /// <summary>Pickup channels open now (or on the way).</summary>
+    public int PickupChannelsInUse => _pickups.ChannelsInUse;
+
+    /// <summary>Requests received on pickup interactions, oldest first, as pickup:request@input frame.</summary>
+    public IReadOnlyList<string> PickupRequests => _pickups.Requests;
+
+    /// <summary>What happened to the raid's pickups, oldest first.</summary>
+    public IReadOnlyList<string> PickupEvents => _raid.Pickups.Events;
+
     /// <summary>Extraction elevators whose state and buttons this client has.</summary>
     public int ElevatorsReady => _elevators.Values.Count(elevator => elevator.State == ElevatorChannel.Open);
 
@@ -533,6 +557,18 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <summary>Client calls received and not handled yet, by name.</summary>
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
+    /// <inheritdoc />
+    RaidWorld IPlayerChannelsContext.Raid => _raid;
+
+    /// <inheritdoc />
+    RaidPlayer IPlayerChannelsContext.Member => _member;
+
+    /// <inheritdoc />
+    WorldPlayer IPlayerChannelsContext.Player => _player;
+
+    /// <inheritdoc />
+    Vector3D IPlayerChannelsContext.RelevancePosition => LootPosition;
+
     /// <summary>Queues the static exports.</summary>
     /// <param name="io">The connection's channels.</param>
     public void Start(ChannelIo io)
@@ -589,7 +625,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         copy._elevatorChanges = _elevatorChanges.Copy();
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
-        CopyPickups(copy);
+        copy._pickups = _pickups.Copy();
         CopyArcs(copy);
         return copy;
     }
@@ -732,7 +768,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
         ServiceDoors(io.Sender, now);
         ServiceLadders(io.Sender, now);
         ServiceLoot(io.Sender, now);
-        ServicePickups(io.Sender, now);
+        _pickups.Service(this, io.Sender, now);
         ServiceArcs(io.Sender, now);
         ServiceElevators(io.Sender, now);
         ServiceObserved(io.Sender, now);
@@ -745,6 +781,11 @@ public sealed partial class PlayerChannels : IPlayerChannels
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
+        if (_pickups.ChannelFailed(channel))
+        {
+            return;
+        }
+
         ChannelLayout layout = _raid.Channels;
         if (layout.Doors.IndexOf(channel) is { } index)
         {
@@ -774,10 +815,6 @@ public sealed partial class PlayerChannels : IPlayerChannels
         else if (layout.ObservedPlayer(channel) is { } observed && observed < _raid.Players.Count)
         {
             _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
-        }
-        else if (layout.Pickups.Contains(channel))
-        {
-            PickupChannelFailed(channel);
         }
         else if (layout.Arcs.Contains(channel))
         {
@@ -860,9 +897,8 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 continue;
             }
 
-            if (PickableUp(request.Target) is { } pickup)
+            if (_pickups.TryHandle(this, request, repeatedLog, now))
             {
-                RequestPickup(pickup, request, repeatedLog, now);
                 continue;
             }
 
@@ -941,7 +977,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
                 if (_member.Inventory.Apply(command, out string? rejection))
                 {
                     InventoryMoves++;
-                    PlaceDrops(now);
+                    _pickups.PlaceDrops(this, now);
                 }
                 else
                 {
@@ -1526,7 +1562,7 @@ public sealed partial class PlayerChannels : IPlayerChannels
             }
 
             focus = UsableDoor(_input.Focus) is null && BreachableDoor(_input.Focus) is null && SearchableLoot(_input.Focus) is null
-                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null && PickableUp(_input.Focus) is null ? 0 : _input.Focus;
+                && CallableElevator(_input.Focus) is null && DescendableElevator(_input.Focus) is null && !_pickups.Usable(this, _input.Focus) ? 0 : _input.Focus;
             frame = latest - 1;
             bool inventoryChanged = _inventoryVersion != _member.Inventory.Version;
             bool weaponsChanged = _weaponVersion != _member.Weapons.Version;
@@ -2544,6 +2580,12 @@ public sealed partial class PlayerChannels : IPlayerChannels
 
         return result with { InFlight = [.. waiting.Where(frame => frame.Tick > result.Tick)] };
     }
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.InventoryChangedAt(uint frame) => _inventoryFrame = Math.Max(_inventoryFrame, frame);
+
+    /// <inheritdoc />
+    bool IPlayerChannelsContext.MapActorsAllowed(double now) => MapActorsAllowed(now);
 
     // Doors and ladders wait until the character simulation has started and settled.
     private bool MapActorsAllowed(double now)

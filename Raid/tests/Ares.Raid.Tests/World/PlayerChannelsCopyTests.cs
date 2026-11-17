@@ -61,13 +61,37 @@ public sealed class PlayerChannelsCopyTests
         ];
         Assert.Contains(collections, field => field.FieldType.Assembly == typeof(PlayerChannels).Assembly);
         Assert.Empty(sharedInside);
+
+        // Each family of world actors (doors, ladders, pickups, ...) is copied, with everything it holds.
+        FieldInfo[] families =
+        [
+            .. typeof(PlayerChannels).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(field => field.FieldType.GetInterface("Ares.Raid.World.Players.IPlayerFamily") is not null),
+        ];
+        Assert.NotEmpty(families);
+        Assert.All(families, field => Assert.False(ReferenceEquals(field.GetValue(channels), field.GetValue(copy)), field.Name));
+        string[] sharedInFamilies =
+        [
+            .. families.SelectMany(field => SharedCollections(field.GetValue(channels), field.GetValue(copy)).Select(inner => $"{field.Name}.{inner}")),
+            .. families.SelectMany(field => FieldsOf(field.GetValue(channels))
+                .Where(inner => inner.FieldType.Assembly == typeof(PlayerChannels).Assembly)
+                .SelectMany(inner => SharedCollections(inner.GetValue(field.GetValue(channels)), inner.GetValue(field.GetValue(copy)))
+                    .Select(nested => $"{field.Name}.{inner.Name}.{nested}"))),
+        ];
+        Assert.Empty(sharedInFamilies);
     }
 
     private static IEnumerable<string> SharedCollections(object? original, object? copy) =>
         original is null || copy is null
             ? []
-            : original.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                .Where(field => field.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(field.FieldType))
+            : FieldsOf(original)
                 .Where(field => field.GetValue(original) is { } value && ReferenceEquals(value, field.GetValue(copy)))
                 .Select(field => field.Name);
+
+    // The collections an object holds in its fields (strings aside).
+    private static IEnumerable<FieldInfo> FieldsOf(object? value) =>
+        value is null
+            ? []
+            : value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                .Where(field => field.FieldType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(field.FieldType));
 }
