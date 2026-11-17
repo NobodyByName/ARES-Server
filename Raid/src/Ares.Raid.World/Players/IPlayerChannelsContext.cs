@@ -49,6 +49,10 @@ internal interface IPlayerChannelsContext
     /// <returns>True when a later frame moves.</returns>
     bool MovedSince(uint frame);
 
+    /// <summary>The client has these objects named: calls and properties sent to it may refer to them by their ids.</summary>
+    /// <param name="objects">The objects' ids.</param>
+    void MapObjects(IEnumerable<ulong> objects);
+
     /// <summary>
     /// Sends no pawn frame before a time, so the client keeps its interaction's ending long enough to play it (replaces
     /// an earlier hold).

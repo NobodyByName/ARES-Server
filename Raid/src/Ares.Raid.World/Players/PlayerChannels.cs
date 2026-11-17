@@ -132,10 +132,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     // to say it is ready for the end of the round before sending it back to the main menu instead.
     private const double DepartureFallbackSeconds = 20.0;
 
-    // Other players' movement is sent at most this often.
-    private const double ObservedFrameInterval = 0.05;
-    private const int MaxObservedFramesInFlight = 32;
-
     private static readonly HashSet<string> s_startupCalls = new(StringComparer.Ordinal)
     {
         FunctionNames.ServerAcknowledgePossession,
@@ -210,7 +206,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private uint _interactionCount;
     private ReliableKey? _interactorExport;
     private bool _interactorExported;
-    private Dictionary<long, ObservedPlayer> _observed = [];
     private BoundedLog _unknownRequests = new(InteractionRequestLog);
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
@@ -220,6 +215,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private PlayerPickups _pickups;
     private PlayerArcs _arcs;
     private PlayerElevators _elevators;
+    private PlayerObserved _observed = new();
 
     // This player's departure with an elevator (its index and the server world time it left), the export naming the
     // controller's end-of-round component, and the server world times of each end-of-round step.
@@ -248,16 +244,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _pickups = new PlayerPickups(raid.Channels.Pickups);
         _arcs = new PlayerArcs(raid.Channels.Arcs);
         _elevators = new PlayerElevators(raid.Channels.Elevators);
-    }
-
-    private enum ObservedStage
-    {
-        Hidden,
-        StateOpening,
-        PawnOpening,
-        Linking,
-        Visible,
-        Gone,
     }
 
     /// <summary>Where the actor delivery stands.</summary>
@@ -504,7 +490,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
     // The families of world actors on this connection, in the order they are serviced.
-    private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators];
+    private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators, _observed];
 
     // The families in the order they take interaction requests: the doors come last and take whatever the others left.
     private IPlayerFamily[] RequestOrder => [_loot, _pickups, _ladders, _elevators, _doors];
@@ -563,7 +549,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._requests = [.. _requests];
         copy._inventoryRequests = [.. _inventoryRequests];
         copy._weaponRequests = [.. _weaponRequests];
-        copy._observed = new Dictionary<long, ObservedPlayer>(_observed);
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
         copy._doors = _doors.Copy();
@@ -572,6 +557,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._pickups = _pickups.Copy();
         copy._arcs = _arcs.Copy();
         copy._elevators = _elevators.Copy();
+        copy._observed = _observed.Copy();
         return copy;
     }
 
@@ -715,7 +701,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             family.Service(this, io.Sender, now);
         }
 
-        ServiceObserved(io.Sender, now);
         ServiceDeparture(io.Sender, now);
     }
 
@@ -725,15 +710,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void ActorChannelFailed(int channel)
     {
-        if (Array.Exists(Families, family => family.ChannelFailed(this, channel)))
-        {
-            return;
-        }
-
-        if (_raid.Channels.ObservedPlayer(channel) is { } observed && observed < _raid.Players.Count)
-        {
-            _observed[_raid.Players[observed].Id] = new ObservedPlayer(ObservedStage.Gone);
-        }
+        // The family whose channel it is takes it.
+        _ = Array.Exists(Families, family => family.ChannelFailed(this, channel));
     }
 
     /// <inheritdoc />
@@ -1687,200 +1665,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         return offset;
     }
 
-    // Shows the client the other players of the raid once their characters move: opens each one's player state
-    // as a simulated actor, then its character at its latest movement, links them and gives the character its
-    // appearance; then sends that character's movement as it changes, unreliably, each frame coded
-    // against the newest frame the client confirmed. A player who leaves the raid, or leaves it with an elevator, is
-    // removed.
-    // Everyone is shown everywhere; far-away players are not filtered out yet.
-    private void ServiceObserved(ReliableSender sender, double now)
-    {
-        if (!MapActorsAllowed(now))
-        {
-            return;
-        }
-
-        IReadOnlyList<RaidPlayer> players = _raid.Players;
-        for (int index = 0; index < players.Count; index++)
-        {
-            RaidPlayer member = players[index];
-            ObservedPlayer observed = _observed.GetValueOrDefault(member.Id, new ObservedPlayer(ObservedStage.Hidden));
-            if (member.Id == _member.Id || observed.Stage == ObservedStage.Gone || observed.Keys.Any(sender.Pending)
-                || _raid.State.FindPlayer(member.Id) is not { } other)
-            {
-                continue;
-            }
-
-            int stateChannel = _raid.Channels.ObservedState(index);
-            int pawnChannel = stateChannel + 1;
-            if (member.Left || member.Departed)
-            {
-                if (observed.Stage >= ObservedStage.PawnOpening)
-                {
-                    sender.Queue(Bunches.Close(pawnChannel, Bunches.Destroyed));
-                }
-
-                if (observed.Stage >= ObservedStage.StateOpening)
-                {
-                    sender.Queue(Bunches.Close(stateChannel, Bunches.Destroyed));
-                }
-
-                _observed[member.Id] = new ObservedPlayer(ObservedStage.Gone);
-                continue;
-            }
-
-            if (member.Motion is not { } motion)
-            {
-                continue;
-            }
-
-            _observed[member.Id] = observed.Stage switch
-            {
-                ObservedStage.Hidden => OpenObservedState(sender, other, stateChannel),
-                ObservedStage.StateOpening => OpenObservedPawn(sender, other, pawnChannel, motion, now),
-                ObservedStage.PawnOpening => LinkObservedPawn(sender, other, stateChannel, observed),
-                ObservedStage.Linking => observed with
-                {
-                    Stage = ObservedStage.Visible,
-                    Keys = [sender.Queue(Bunches.Actor(pawnChannel, _raid.State.AppearanceContent(other).Write))],
-                },
-                _ when motion.Tick > observed.SentTick && now - observed.SentAt >= ObservedFrameInterval =>
-                    SendObservedFrame(sender, pawnChannel, observed, motion, now),
-                _ => observed,
-            };
-        }
-    }
-
-    private ObservedPlayer OpenObservedState(ReliableSender sender, WorldPlayer other, int channel)
-    {
-        ActorSpawn spawn = new(other.PlayerState, _raid.Imports.Archetypes[Actor(other.PlayerState).ClassPath], 0, default);
-        ActorInitialization open = new(spawn, null, [_raid.State.ObservedPlayerStateProperties(other)]);
-        return new ObservedPlayer(ObservedStage.StateOpening) { Keys = [sender.Queue(open.ToBunch(channel, sender.NextSequence(channel), []))] };
-    }
-
-    // The character opens as a simulated proxy with its movement's first (reset) frame.
-    // Other players' frames carry only the fields the game sends to other clients (PendulumCodec.Others).
-    // Frames are numbered by the character's simulation tick (about 30 per second).
-    private ObservedPlayer OpenObservedPawn(ReliableSender sender, WorldPlayer other, int channel, PlayerMotion motion, double now)
-    {
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
-        Rotator facing = new(0, (motion.Motion.Yaw ?? 0) * 180 / Math.PI, 0);
-        ActorSpawn spawn = new(other.Pawn, _raid.Imports.Archetypes[Actor(other.Pawn).ClassPath], 0, motion.Motion.Position, facing);
-        ushort pitch = WorldState.CompressedPitch(motion.Pitch);
-        ActorInitialization open = new(spawn, null,
-            [WorldState.Merge(_raid.State.ObservedPawnProperties(other, pitch), _raid.State.BlackboardFrame(0, motion.Tick, state, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others))]);
-        return new ObservedPlayer(ObservedStage.PawnOpening, motion.Tick, state, now, pitch, motion.Tick)
-        {
-            Keys = [sender.Queue(open.ToBunch(channel, sender.NextSequence(channel), []))],
-        };
-    }
-
-    private ObservedPlayer LinkObservedPawn(ReliableSender sender, WorldPlayer other, int stateChannel, ObservedPlayer observed)
-    {
-        _mapped.UnionWith([other.PlayerState, other.Pawn]);
-        (ObjectExports exports, ulong appearance) = _raid.State.AppearanceExports(other);
-        return observed with
-        {
-            Stage = ObservedStage.Linking,
-            Keys =
-            [
-                sender.Queue(Bunches.Actor(stateChannel, _raid.State.ObservedPawnLinks(other))),
-                sender.Queue(Bunches.Exports(exports, [appearance])),
-            ],
-        };
-    }
-
-    private ObservedPlayer SendObservedFrame(ReliableSender sender, int channel, ObservedPlayer observed, PlayerMotion motion, double now)
-    {
-        observed = Confirmed(sender, observed);
-        // A reset clears the receiver's history. Wait for its outcome before sending another frame.
-        if (observed.State is null && observed.InFlight.Length != 0)
-        {
-            return observed;
-        }
-
-        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(motion.Tick, motion.Motion, 0, weapons: motion.Weapons, timeOffset: motion.TimeOffset);
-        // The client may already have overwritten a baseline this far back; a reset frame starts from the defaults.
-        bool reset = observed.State is null || motion.Tick - observed.Tick >= PendulumFrames.History;
-        if (!reset && WithEndedSlots(state, observed.State!) is { } kept)
-        {
-            state = kept;
-        }
-        else
-        {
-            reset = true;
-        }
-
-        ActorContentBlock frame = reset
-            ? _raid.State.BlackboardFrame(0, motion.Tick, state, new Dictionary<int, PendulumSlot>(), PendulumCodec.Others)
-            : _raid.State.BlackboardFrame(observed.Tick, motion.Tick, state, observed.State!, PendulumCodec.Others);
-        // Aim pitch rides with the frame in one block when it changed.
-        ushort pitch = WorldState.CompressedPitch(motion.Pitch);
-        if (pitch != observed.Pitch)
-        {
-            frame = WorldState.Merge(_raid.State.ObservedPitch(pitch), frame);
-        }
-
-        ObservedFrame sent = new(sender.QueueUnreliable(Bunches.Actor(channel, frame)), motion.Tick, state, pitch);
-        return observed with
-        {
-            Stage = ObservedStage.Visible,
-            State = reset ? null : observed.State,
-            SentAt = now,
-            SentTick = motion.Tick,
-            InFlight = reset ? [sent] : [.. observed.InFlight.TakeLast(MaxObservedFramesInFlight - 1), sent],
-            Keys = [],
-        };
-    }
-
-    // A frame cannot take a slot out of the client's layout: the client keeps what its baseline has in a slot the frame
-    // does not name. A slot whose variable ended (the Snap Hook's pull node) stays laid out without a variable, as the
-    // game keeps it. Null when such a slot shares pages with the frame's own slots, which only a reset frame can clear.
-    private static IReadOnlyDictionary<int, PendulumSlot>? WithEndedSlots(IReadOnlyDictionary<int, PendulumSlot> state,
-        IReadOnlyDictionary<int, PendulumSlot> baseline)
-    {
-        PendulumSlot[] ended = [.. baseline.Values.Where(slot => !state.ContainsKey(slot.Slot))];
-        if (ended.Length == 0)
-        {
-            return state;
-        }
-
-        HashSet<int> pages = [.. state.Values.SelectMany(slot => Enumerable.Range(slot.Position, slot.Size))];
-        if (ended.Any(slot => Enumerable.Range(slot.Position, slot.Size).Any(pages.Contains)))
-        {
-            return null;
-        }
-
-        Dictionary<int, PendulumSlot> kept = new(state);
-        foreach (PendulumSlot slot in ended)
-        {
-            kept[slot.Slot] = slot with { DescriptorId = null, Value = [] };
-        }
-
-        return kept;
-    }
-
-    // The observed player with its baseline moved to the newest frame the client confirmed; lost or forgotten
-    // frames are dropped.
-    private static ObservedPlayer Confirmed(ReliableSender sender, ObservedPlayer observed)
-    {
-        ObservedPlayer result = observed;
-        List<ObservedFrame> waiting = [];
-        foreach (ObservedFrame frame in observed.InFlight)
-        {
-            if (sender.Arrived(frame.Key) is true && frame.Tick > result.Tick)
-            {
-                result = result with { Tick = frame.Tick, State = frame.State, Pitch = frame.Pitch };
-            }
-            else if (sender.Pending(frame.Key))
-            {
-                waiting.Add(frame);
-            }
-        }
-
-        return result with { InFlight = [.. waiting.Where(frame => frame.Tick > result.Tick)] };
-    }
-
     /// <inheritdoc />
     void IPlayerChannelsContext.InventoryChangedAt(uint frame) => _inventoryFrame = Math.Max(_inventoryFrame, frame);
 
@@ -1892,6 +1676,9 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <inheritdoc />
     bool IPlayerChannelsContext.MovedSince(uint frame) => MovedSince(frame);
+
+    /// <inheritdoc />
+    void IPlayerChannelsContext.MapObjects(IEnumerable<ulong> objects) => _mapped.UnionWith(objects);
 
     /// <inheritdoc />
     void IPlayerChannelsContext.HoldFrames(double until) => _framesHeldUntil = until;
@@ -1966,18 +1753,4 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private int ChannelOf(ulong actor) => Array.Find(_bindings, binding => binding.Guid == actor).Channel;
 
     private void Count(string name) => _ignoredCalls[name] = _ignoredCalls.GetValueOrDefault(name) + 1;
-
-    // What this client has of another player: how far its actors' delivery got, the reliable bunches it waits
-    // for, the newest movement frame it confirmed (tick, state, aim pitch), when and which tick was last sent, and
-    // the unreliable frames whose delivery is not known yet.
-    private readonly record struct ObservedPlayer(ObservedStage Stage, uint Tick = 0,
-        IReadOnlyDictionary<int, PendulumSlot>? State = null, double SentAt = 0, ushort Pitch = 0, uint SentTick = 0)
-    {
-        public ReliableKey[] Keys { get; init; } = [];
-
-        public ObservedFrame[] InFlight { get; init; } = [];
-    }
-
-    // An unreliable movement frame sent to this client.
-    private readonly record struct ObservedFrame(ReliableKey Key, uint Tick, IReadOnlyDictionary<int, PendulumSlot> State, ushort Pitch);
 }

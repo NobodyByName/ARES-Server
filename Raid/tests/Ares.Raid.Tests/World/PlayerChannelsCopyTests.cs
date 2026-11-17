@@ -26,7 +26,7 @@ public sealed class PlayerChannelsCopyTests
     ];
 
     // The families of world actors on a connection.
-    private static readonly string[] s_families = ["_doors", "_ladders", "_loot", "_pickups", "_arcs", "_elevators"];
+    private static readonly string[] s_families = ["_doors", "_ladders", "_loot", "_pickups", "_arcs", "_elevators", "_observed"];
 
     [Fact]
     public void A_copy_shares_no_collection_the_channels_change_in_place()
