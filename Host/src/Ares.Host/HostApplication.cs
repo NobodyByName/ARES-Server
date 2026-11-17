@@ -1,3 +1,4 @@
+using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Host.Services;
 using Ares.Host.Services.Accounts;
@@ -19,8 +20,13 @@ public static class HostApplication
     /// <param name="raidStarter">Optional Raid server starter (tests); by default Host starts the configured ARES-Raid.</param>
     /// <param name="configureBuilder">Optional builder customisation (tests use an in-memory server).</param>
     /// <param name="loggerProvider">Optional framework log destination.</param>
+    /// <param name="gameData">
+    /// The game data Host loaded at startup, registered as a service; the services do not read it yet (null in tests that
+    /// predate it).
+    /// </param>
     public static WebApplication Build(HostConfiguration configuration, JsonEventLog log, TimeProvider? time = null,
-        IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null)
+        IRaidStarter? raidStarter = null, Action<WebApplicationBuilder>? configureBuilder = null, ILoggerProvider? loggerProvider = null,
+        GameData? gameData = null)
     {
         time ??= TimeProvider.System;
         HostSettings settings = configuration.Settings;
@@ -64,6 +70,11 @@ public static class HostApplication
         }
 
         builder.Services.AddSingleton<HostDatabase>(_ => database);
+        if (gameData is not null)
+        {
+            builder.Services.AddSingleton(gameData);
+        }
+
         builder.Services.AddSingleton(accounts);
         builder.Services.AddSingleton(players);
         if (raids is not null)

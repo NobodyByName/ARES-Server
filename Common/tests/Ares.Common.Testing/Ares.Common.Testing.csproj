@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Ares.Common.Testing</RootNamespace>
+    <Description>Test support shared by the ARES test projects: the real game data tier and synthetic game data.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3.extensibility.core" />
+    <PackageReference Include="xunit.v3.assert" />
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Ares.Common.GameData/Ares.Common.GameData.csproj" />
+  </ItemGroup>
+
+</Project>

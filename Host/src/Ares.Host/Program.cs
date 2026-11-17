@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Ares.Common;
 using Ares.Common.CommandLine;
+using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Host;
 using Ares.Host.Services.Accounts;
@@ -31,12 +32,25 @@ catch (CommandLineException error)
     return 2;
 }
 
+GameData gameData;
+JsonObject gameDataLoaded;
+try
+{
+    gameData = GameDataStartup.Load(configuration.GameDataDirectory, out gameDataLoaded);
+}
+catch (GameDataException error)
+{
+    Console.Error.WriteLine($"ARES-Host: cannot start: {error.Message}");
+    return 2;
+}
+
 using HostConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
 JsonEventLog log = console.Log;
+log.Write(gameDataLoaded);
 WebApplication application;
 try
 {
-    application = HostApplication.Build(configuration, log, loggerProvider: console);
+    application = HostApplication.Build(configuration, log, loggerProvider: console, gameData: gameData);
 }
 catch (Exception error) when (error is PersistenceException or InvalidDataException or System.Text.Json.JsonException)
 {

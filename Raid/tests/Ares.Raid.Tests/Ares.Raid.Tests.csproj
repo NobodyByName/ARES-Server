@@ -4,6 +4,7 @@
     <ProjectReference Include="../../src/Ares.Raid.Transport/Ares.Raid.Transport.csproj" />
     <ProjectReference Include="../../src/Ares.Raid.World/Ares.Raid.World.csproj" />
     <ProjectReference Include="../../src/Ares.Raid/Ares.Raid.csproj" />
+    <ProjectReference Include="../../../Common/tests/Ares.Common.Testing/Ares.Common.Testing.csproj" />
   </ItemGroup>
 
 </Project>

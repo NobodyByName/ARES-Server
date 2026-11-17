@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Ares.Common.Game.Identity;
 using Ares.Common.Game.Inventory;
+using Ares.Common.GameData;
 using Ares.Common.Maps;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
@@ -34,7 +35,9 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     /// <param name="random">Random numbers from 0 to 2^31 - 2 (seeds, lighting); a secure generator by default.</param>
     /// <param name="lootRules">How each raid picks the sockets that get a container; <see cref="LootSpawnRules.Dam"/> by default.</param>
     /// <param name="collision">The map's static collision, or null when the operator has none; each raid indexes it.</param>
-    public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null, MapCollision? collision = null)
+    /// <param name="gameData">The game data the server loaded at startup; raids do not read it yet (null in tests that predate it).</param>
+    public DamWorlds(Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null, MapCollision? collision = null,
+        GameData? gameData = null)
     {
         Clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _random = random ?? (() => RandomNumberGenerator.GetInt32(int.MaxValue));
@@ -45,6 +48,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 
         _lighting = lighting;
         MapCollision = collision;
+        GameData = gameData;
         LootRules = lootRules ?? LootSpawnRules.Dam;
         Imports = new WorldImports(GameReplication.Catalog);
         Replication = new ReplicationContext(
@@ -86,6 +90,9 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     internal ExtractionCatalog Extraction { get; }
 
     internal MapCollision? MapCollision { get; }
+
+    /// <summary>The game data the server loaded at startup, or null.</summary>
+    public GameData? GameData { get; }
 
     internal LootSpawnRules LootRules { get; }
 

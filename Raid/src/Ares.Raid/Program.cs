@@ -6,6 +6,7 @@ using Ares.Common;
 using Ares.Common.CommandLine;
 using Ares.Common.Control;
 using Ares.Common.Control.Server;
+using Ares.Common.GameData;
 using Ares.Common.Logging;
 using Ares.Common.Maps;
 using Ares.Raid;
@@ -39,6 +40,18 @@ catch (CommandLineException error)
     return 2;
 }
 
+GameData gameData;
+JsonObject gameDataLoaded;
+try
+{
+    gameData = GameDataStartup.Load(configuration.GameDataDirectory, out gameDataLoaded);
+}
+catch (GameDataException error)
+{
+    Console.Error.WriteLine($"ARES-Raid: cannot start: {error.Message}");
+    return 2;
+}
+
 using RaidConsole console = new(configuration.ConsoleMode, logFile: configuration.LogFile);
 JsonEventLog log = console.Log;
 long started = Stopwatch.GetTimestamp();
@@ -47,11 +60,12 @@ using Socket socket = new(AddressFamily.InterNetwork, SocketType.Dgram, Protocol
 socket.Bind(new IPEndPoint(configuration.Bind, configuration.Port));
 int port = ((IPEndPoint)socket.LocalEndPoint!).Port;
 
+log.Write(gameDataLoaded);
 MapCollision? collision = MapCollisionLoader.Load(configuration.GameDataDirectory, DamMap.WorldName, out string? collisionProblem);
 log.Write(collision is null
     ? new JsonObject { ["map_collision"] = "unavailable", ["warning"] = collisionProblem }
     : new JsonObject { ["map_collision"] = "loaded", ["placements"] = collision.Placements.Length, ["height_fields"] = collision.HeightFields.Length });
-DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision);
+DamWorlds worlds = new(Clock, configuration.Lighting, collision: collision, gameData: gameData);
 RaidAllocations allocations = new(new GameServerEndpoint("", configuration.AdvertiseHost, port, "", "", false, "LOCAL"), worlds, Clock,
     configuration.MaxPlayers, fillWindow: configuration.FillSeconds, log: log);
 HandshakeServer handshake = new(GameBuild.NetworkChecksum, 0, clock: Clock);

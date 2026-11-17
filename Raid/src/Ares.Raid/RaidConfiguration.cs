@@ -28,7 +28,7 @@ public sealed record RaidConfiguration
           --fill-seconds <n>          Seconds after the first party during which other parties may join (0 to 600, default 60)
           --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
-          --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (default: none; no map collision)
+          --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (required to start)
           --log-file <path>           Append JSON events to a file while keeping the console interactive
           --console <mode>            Console: auto, interactive, plain or json (default auto)
           --help                      Show this help

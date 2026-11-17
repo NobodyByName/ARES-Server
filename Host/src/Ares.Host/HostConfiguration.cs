@@ -35,6 +35,12 @@ public sealed record HostConfiguration
     /// <summary>How Host starts Raid servers, or null to keep matchmaking in MATCHING.</summary>
     public RaidLaunch? Raids { get; private init; }
 
+    /// <summary>
+    /// Absolute path of the game data folder (<c>game-data-dir</c>), or null when it is not set. Host loads it at
+    /// startup and refuses to start without it; it also passes it to every Raid it starts.
+    /// </summary>
+    public string? GameDataDirectory { get; private init; }
+
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
 
@@ -190,6 +196,7 @@ public sealed record HostConfiguration
             Port = port,
             AllowNetworkClients = allowNetwork,
             Raids = raids,
+            GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
         };
     }
 

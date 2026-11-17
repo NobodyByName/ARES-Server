@@ -56,4 +56,15 @@ public sealed record ItemDefinition(
     double EquipSeconds,
     double UnequipSeconds,
     double UnequipToItemsSeconds,
-    double ReEquipFromItemSeconds);
+    double ReEquipFromItemSeconds)
+{
+    /// <summary>Item type of the menu description: generators are outpost stations, every other item is a game item.</summary>
+    public string ItemType => Category == ItemCategory.Generator ? "Generator" : "GameItem";
+
+    /// <summary>Whether more than one item fits in a stack.</summary>
+    public bool Stackable => MaxStack > 1;
+
+    /// <summary>Tags of the item's menu description: its release and flag tags, without its other asset tags.</summary>
+    public IEnumerable<string> DescriptionTags => Tags.Where(tag => tag.StartsWith("Online.Release.", StringComparison.Ordinal)
+        || tag.StartsWith("Item.Flag.", StringComparison.Ordinal));
+}
