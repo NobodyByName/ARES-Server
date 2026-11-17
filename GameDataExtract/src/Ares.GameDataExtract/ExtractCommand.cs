@@ -145,7 +145,7 @@ internal sealed class ExtractCommand
             string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers"));
+                $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers, {world.PlayerStarts.Length:N0} player starts, {world.Ladders.Length:N0} ladders, {world.ZiplineLines.Length:N0} ziplines, {world.ZiplineLaunchers.Length:N0} zipline launchers"));
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), the world tables and {manifest} in {watch.Elapsed.TotalSeconds:F1} s"));
             return Success;
@@ -175,6 +175,11 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.LootSocketMeshes(mapName), world.LootSocketMeshes, json.LootSocketMesh);
         writer.WriteTable(MapTables.LootSockets(mapName), world.LootSockets, json.LootSocket);
         writer.WriteTable(MapTables.PlacedLoot(mapName), world.PlacedLoot, json.PlacedLootContainer);
+        writer.WriteTable(MapTables.PlayerStarts(mapName), world.PlayerStarts, json.PlayerStart);
+        writer.WriteTable(MapTables.Ladders(mapName), world.Ladders, json.LadderPlacement);
+        writer.WriteTable(MapTables.LadderLogic(mapName), world.LadderLogic is { } logic ? [logic] : [], json.ArchetypeClass);
+        writer.WriteTable(MapTables.ZiplineLines(mapName), world.ZiplineLines, json.ZiplinePlacement);
+        writer.WriteTable(MapTables.ZiplineLaunchers(mapName), world.ZiplineLaunchers, json.ActivatableZiplinePlacement);
     }
 
     /// <summary>Whether <paramref name="directory"/> is <paramref name="parent"/> or inside it.</summary>

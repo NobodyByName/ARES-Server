@@ -41,3 +41,26 @@ public static class MapWorldClasses
     /// <summary>Script path of the world data layers actor class.</summary>
     public const string WorldDataLayers = "/Script/Engine.WorldDataLayers";
 }
+
+/// <summary>
+/// The native data that closes a cooked placed actor export after its properties: two int32 words
+/// (<see cref="FirstWord"/>, <see cref="SecondWord"/>), the actor's label as a string (an int32 length counting the
+/// terminating zero, then that many one-byte characters) and <see cref="TailSize"/> more bytes.
+/// </summary>
+public static class PlacedActorNativeData
+{
+    /// <summary>The first word.</summary>
+    public const int FirstWord = 0;
+
+    /// <summary>The second word.</summary>
+    public const int SecondWord = 1;
+
+    /// <summary>The shortest label length (with its terminating zero).</summary>
+    public const int MinLabelLength = 2;
+
+    /// <summary>The longest label length (with its terminating zero).</summary>
+    public const int MaxLabelLength = 256;
+
+    /// <summary>Bytes after the label.</summary>
+    public const int TailSize = 32;
+}

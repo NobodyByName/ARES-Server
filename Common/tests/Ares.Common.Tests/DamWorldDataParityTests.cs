@@ -1,4 +1,5 @@
 using Ares.Common.GameData;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
 namespace Ares.Common.Tests;
@@ -6,7 +7,8 @@ namespace Ares.Common.Tests;
 /// <summary>
 /// Local data checks: the Dam world tables that ARES-GameDataExtract writes from the installed game equal the generated
 /// Structs data, row for row and in the same order. They run only when <see cref="DirectoryVariable"/> names an extracted
-/// game data directory and are skipped otherwise.
+/// game data directory and are skipped otherwise. The hand-written constants that replace generated ones are compared
+/// with them always.
 /// </summary>
 /// <remarks>
 /// One deliberate difference: an override material that is a subobject inside a cell package (a placed light's
@@ -17,6 +19,10 @@ public sealed class DamWorldDataParityTests
 {
     /// <summary>Environment variable naming the extracted game data directory.</summary>
     public const string DirectoryVariable = "ARES_GAMEDATA_DIR";
+
+    private static readonly string[] s_noTags = [];
+    private static readonly Transform[] s_noSpawnPoints = [];
+    private static readonly ZiplineExitPoint[] s_noExitPoints = [];
 
     [Fact]
     public void World_objects_equal_the_generated_map_identity()
@@ -68,6 +74,67 @@ public sealed class DamWorldDataParityTests
         Assert.Equal(DamPlacedLoot.Containers, data.ReadTable(MapTables.PlacedLoot(DamMap.WorldName), GameDataJsonContext.Default.PlacedLootContainer));
     }
 
+    [Fact]
+    public void Player_starts_equal_the_generated_starts()
+    {
+        GameDataDirectory data = OpenOrSkip();
+
+        IReadOnlyList<PlayerStart> starts = data.ReadTable(MapTables.PlayerStarts(DamMap.WorldName), GameDataJsonContext.Default.PlayerStart);
+
+        Assert.Equal(DamPlayerStarts.All.Select(WithoutLists), starts.Select(WithoutLists));
+        Assert.Equal(DamPlayerStarts.All.Select(start => start.Tags), starts.Select(start => start.Tags));
+        Assert.Equal(DamPlayerStarts.All.Select(start => start.SpawnPoints), starts.Select(start => start.SpawnPoints));
+    }
+
+    [Fact]
+    public void Ladders_equal_the_generated_ladders()
+    {
+        GameDataDirectory data = OpenOrSkip();
+
+        Assert.Equal(DamLadders.All, data.ReadTable(MapTables.Ladders(DamMap.WorldName), GameDataJsonContext.Default.LadderPlacement));
+        Assert.Equal(DamLadders.Logic, Assert.Single(data.ReadTable(MapTables.LadderLogic(DamMap.WorldName), GameDataJsonContext.Default.ArchetypeClass)));
+    }
+
+    [Fact]
+    public void Zipline_lines_equal_the_generated_lines()
+    {
+        GameDataDirectory data = OpenOrSkip();
+
+        IReadOnlyList<ZiplinePlacement> lines = data.ReadTable(MapTables.ZiplineLines(DamMap.WorldName), GameDataJsonContext.Default.ZiplinePlacement);
+
+        Assert.Equal(DamZiplines.Lines.Select(WithoutExitPoints), lines.Select(WithoutExitPoints));
+        Assert.Equal(DamZiplines.Lines.Select(line => line.ExitPoints), lines.Select(line => line.ExitPoints));
+    }
+
+    [Fact]
+    public void Zipline_launchers_equal_the_generated_launchers()
+    {
+        GameDataDirectory data = OpenOrSkip();
+
+        Assert.Equal(DamZiplines.Launchers, data.ReadTable(MapTables.ZiplineLaunchers(DamMap.WorldName), GameDataJsonContext.Default.ActivatableZiplinePlacement));
+    }
+
+    [Fact]
+    public void Ladder_constants_equal_the_generated_constants()
+    {
+        Assert.Equal(DamLadders.CycleHeight, LadderLogic.CycleHeight);
+        Assert.Equal(DamLadders.EndInteractionDistance, LadderLogic.EndInteractionDistance);
+        Assert.Equal(DamLadders.ActorClass, LadderLogic.ActorClass);
+        Assert.Equal(DamLadders.InteractionClass, LadderLogic.InteractionClass);
+        Assert.Equal(DamLadders.InteractionComponents, LadderLogic.InteractionComponents);
+    }
+
+    [Fact]
+    public void Zipline_constants_equal_the_generated_constants()
+    {
+        Assert.Equal(DamZiplines.LineBlueprint, ZiplineClasses.LineBlueprint);
+        Assert.Equal(DamZiplines.LauncherBlueprint, ZiplineClasses.LauncherBlueprint);
+        Assert.Equal(DamZiplines.LineClass, ZiplineClasses.LineClass);
+        Assert.Equal(DamZiplines.LauncherClass, ZiplineClasses.LauncherClass);
+        Assert.Equal(DamZiplines.AttachInteraction, ZiplineClasses.AttachInteraction);
+        Assert.Equal(DamZiplines.ActivationInteraction, ZiplineClasses.ActivationInteraction);
+    }
+
     private static GameDataDirectory OpenOrSkip()
     {
         string directory = Environment.GetEnvironmentVariable(DirectoryVariable) ?? string.Empty;
@@ -78,6 +145,12 @@ public sealed class DamWorldDataParityTests
 
     /// <summary>The socket with its material list emptied, so that records compare by value.</summary>
     private static LootSocket WithoutMaterials(LootSocket socket) => socket with { OverrideMaterials = [] };
+
+    /// <summary>The start with its tag and spawn point lists replaced by shared empty ones, so that records compare by value.</summary>
+    private static PlayerStart WithoutLists(PlayerStart start) => start with { Tags = s_noTags, SpawnPoints = s_noSpawnPoints };
+
+    /// <summary>The line with its exit point list replaced by a shared empty one, so that records compare by value.</summary>
+    private static ZiplinePlacement WithoutExitPoints(ZiplinePlacement line) => line with { ExitPoints = s_noExitPoints };
 
     /// <summary>Material paths with the subobject separator read as <c>.</c> (see the remarks), joined for comparison.</summary>
     private static string Materials(IReadOnlyList<string?> materials) =>

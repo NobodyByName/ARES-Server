@@ -53,7 +53,9 @@ public sealed class ExtractionTests : IDisposable
         string[] tables =
         [
             MapTables.World(DamMap.WorldName), MapTables.StreamingCells(DamMap.WorldName), MapTables.LootSocketMeshes(DamMap.WorldName),
-            MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName),
+            MapTables.LootSockets(DamMap.WorldName), MapTables.PlacedLoot(DamMap.WorldName), MapTables.PlayerStarts(DamMap.WorldName),
+            MapTables.Ladders(DamMap.WorldName), MapTables.LadderLogic(DamMap.WorldName), MapTables.ZiplineLines(DamMap.WorldName),
+            MapTables.ZiplineLaunchers(DamMap.WorldName),
         ];
         Assert.Equal(
             [GameDataFiles.ManifestFileName, .. tables.Append(collision).Order(StringComparer.Ordinal)],
@@ -69,6 +71,11 @@ public sealed class ExtractionTests : IDisposable
         Assert.Equal([Cell(BaseCell), Cell(LayeredCell)], data.ReadTable(MapTables.StreamingCells(DamMap.WorldName), GameDataJsonContext.Default.String));
         Assert.Empty(data.ReadTable(MapTables.LootSockets(DamMap.WorldName), GameDataJsonContext.Default.LootSocket));
         Assert.Empty(data.ReadTable(MapTables.PlacedLoot(DamMap.WorldName), GameDataJsonContext.Default.PlacedLootContainer));
+        Assert.Empty(data.ReadTable(MapTables.PlayerStarts(DamMap.WorldName), GameDataJsonContext.Default.PlayerStart));
+        Assert.Empty(data.ReadTable(MapTables.Ladders(DamMap.WorldName), GameDataJsonContext.Default.LadderPlacement));
+        Assert.Empty(data.ReadTable(MapTables.LadderLogic(DamMap.WorldName), GameDataJsonContext.Default.ArchetypeClass));
+        Assert.Empty(data.ReadTable(MapTables.ZiplineLines(DamMap.WorldName), GameDataJsonContext.Default.ZiplinePlacement));
+        Assert.Empty(data.ReadTable(MapTables.ZiplineLaunchers(DamMap.WorldName), GameDataJsonContext.Default.ActivatableZiplinePlacement));
         MapCollision map;
         using (FileStream stream = data.OpenFile(collision))
         {

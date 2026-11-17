@@ -34,4 +34,30 @@ public static class MapTables
     /// </summary>
     /// <param name="mapName">The map's world name.</param>
     public static string PlacedLoot(string mapName) => GameDataFiles.MapFile(mapName, "placed-loot.json");
+
+    /// <summary>The authored player starts of the map's persistent level (<see cref="PlayerStart"/>), in export order.</summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string PlayerStarts(string mapName) => GameDataFiles.MapFile(mapName, "player-starts.json");
+
+    /// <summary>The climbable ladders the map's cells place (<see cref="LadderPlacement"/>), ordered by cell and actor name (ordinal).</summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string Ladders(string mapName) => GameDataFiles.MapFile(mapName, "ladders.json");
+
+    /// <summary>
+    /// The class the server spawns for each ladder to make it climbable, with its class default (<see cref="ArchetypeClass"/>):
+    /// one row, none for a map without ladders.
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string LadderLogic(string mapName) => GameDataFiles.MapFile(mapName, "ladder-logic.json");
+
+    /// <summary>The rideable ziplines the map's cells place (<see cref="ZiplinePlacement"/>), ordered by cell and actor name (ordinal).</summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string ZiplineLines(string mapName) => GameDataFiles.MapFile(mapName, "zipline-lines.json");
+
+    /// <summary>
+    /// The zipline launchers the map's cells place (<see cref="ActivatableZiplinePlacement"/>), ordered by cell and actor name
+    /// (ordinal).
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string ZiplineLaunchers(string mapName) => GameDataFiles.MapFile(mapName, "zipline-launchers.json");
 }
