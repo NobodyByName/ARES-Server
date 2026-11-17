@@ -503,8 +503,11 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <summary>Client calls received and not handled yet, by name.</summary>
     public IReadOnlyDictionary<string, int> IgnoredCalls => _ignoredCalls;
 
-    // The families of world actors on this connection.
+    // The families of world actors on this connection, in the order they are serviced.
     private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators];
+
+    // The families in the order they take interaction requests: the doors come last and take whatever the others left.
+    private IPlayerFamily[] RequestOrder => [_loot, _pickups, _ladders, _elevators, _doors];
 
     /// <inheritdoc />
     RaidWorld IPlayerChannelsContext.Raid => _raid;
@@ -761,33 +764,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         foreach (InteractionRequest request in _requests)
         {
-            // The loot sees every request first: a looting-menu close ends there, before its repeat is counted.
-            if (_loot.ClosesMenu(this, request))
-            {
-                continue;
-            }
-
-            // A held press repeats on the following input frames; it is logged once.
-            bool repeatedLog = _lastLoggedRequest is { } logged && logged.Frame + 1 == request.Frame && logged.Target == request.Target && logged.Request == request.Request;
-            _lastLoggedRequest = request;
-            if (request.Target == 0)
-            {
-                if ((request.Request & PendulumInput.PressRequest) != 0 && !repeatedLog)
-                {
-                    _unknownRequests.Add($"0x0 {request.Request}@{request.Frame}");
-                }
-
-                continue;
-            }
-
-            // The families take the request in turn until one ends it.
-            if (Array.Exists<IPlayerFamily>([_loot, _pickups, _ladders, _elevators], family => family.TryHandle(this, request, repeatedLog, now)))
-            {
-                continue;
-            }
-
-            // The doors take whatever the families before them left.
-            _doors.TryHandle(this, request, repeatedLog, now);
+            HandleRequest(request, now);
         }
 
         _requests.Clear();
@@ -1034,6 +1011,37 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _blackboardState = state;
         BlackboardFrames++;
         return frame;
+    }
+
+    private void HandleRequest(InteractionRequest request, double now)
+    {
+        // The loot sees every request first: a looting-menu close ends there, before its repeat is counted.
+        if (_loot.ClosesMenu(this, request))
+        {
+            return;
+        }
+
+        // A held press repeats on the following input frames; it is logged once.
+        bool repeated = _lastLoggedRequest is { } logged && logged.Frame + 1 == request.Frame && logged.Target == request.Target && logged.Request == request.Request;
+        _lastLoggedRequest = request;
+        if (request.Target == 0)
+        {
+            if ((request.Request & PendulumInput.PressRequest) != 0 && !repeated)
+            {
+                _unknownRequests.Add($"0x0 {request.Request}@{request.Frame}");
+            }
+
+            return;
+        }
+
+        // The families take the request in turn until one ends it.
+        foreach (IPlayerFamily family in RequestOrder)
+        {
+            if (family.TryHandle(this, request, repeated, now))
+            {
+                break;
+            }
+        }
     }
 
     private void ReceiveControllerCalls(ChannelBunch item, BitReader reader, List<(string, Dictionary<string, object?>)> replies)

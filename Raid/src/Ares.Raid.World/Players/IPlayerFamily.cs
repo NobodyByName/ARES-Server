@@ -4,9 +4,9 @@ using Ares.Raid.World.Movement;
 namespace Ares.Raid.World.Players;
 
 /// <summary>
-/// One family of world actors on a player's connection (doors, ladders, pickups, ARCs): it owns what the client has
-/// of them, sends them, and takes the client's interaction requests on them. Each family also has a <c>Copy</c> for
-/// speculative packet processing that shares nothing it changes in place with the original.
+/// One family of world actors on a player's connection (doors, ladders, loot, pickups, ARCs, elevators): it owns what
+/// the client has of them, sends them, and takes the client's interaction requests on them. Each family also has a
+/// <c>Copy</c> for speculative packet processing that shares nothing it changes in place with the original.
 /// </summary>
 internal interface IPlayerFamily
 {
