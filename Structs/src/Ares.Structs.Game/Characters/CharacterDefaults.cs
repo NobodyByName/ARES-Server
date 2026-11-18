@@ -18,5 +18,5 @@ public static class CharacterDefaults
     ];
 
     /// <summary>Default appearance: every slot uses its authored default.</summary>
-    public static DefaultAppearance Appearance { get; } = new("/Script/Angelscript.CharacterCustomizationComponent", "CharacterCustomizationComponent", 24983, 2624, [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]);
+    public static DefaultAppearance Appearance { get; } = new("/Script/Angelscript.CharacterCustomizationComponent", "CharacterCustomizationComponent", 57650, 2663, [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]);
 }
