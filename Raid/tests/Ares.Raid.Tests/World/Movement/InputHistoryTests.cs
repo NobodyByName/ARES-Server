@@ -47,6 +47,20 @@ public sealed class InputHistoryTests
         }
     }
 
+    [Fact]
+    public void Stock_client_input_names_descriptors_by_their_index_in_the_input_list()
+    {
+        // A stock client's first two input payloads after spawning, both coded against the defaults (frames 1 and 1-2).
+        InputHistory history = new();
+        Assert.Equal(1U, history.Read(Convert.FromHexString(
+            "010000001cfaffff03411008c1201481111c0112f4ffafb13164dfbf63530804783620c081858110508081ffffaf0967e6a561e7f172afff3526")).Latest);
+        Assert.Equal(2U, history.Read(Convert.FromHexString(
+            "010000002cfaffff03411008c1201481111c0112f4ffafb13164dfbf63530804783620c081858110508081ffffaf0967e6a561e7f172afff352664fc6f0ae14b330fc111764c2d17452d22b4b80866249038ae550f6b88ff1be68d4300de98f93fa451f672")).Latest);
+        Assert.NotNull(history.Movement(2));
+        Assert.NotNull(history.Claims(2));
+        Assert.NotNull(history.Yaw(2));
+    }
+
     private static Vector3D ReadPosition(uint quantized)
     {
         int descriptor = PendulumInput.SlotDescriptors[PendulumInput.PositionSlot];
@@ -60,7 +74,7 @@ public sealed class InputHistoryTests
         writer.WriteBit(true);
         writer.WriteBounded(0, PendulumFrames.BaselineRange);
         PendulumFrames.WriteRelative(writer, 1, 0);
-        PendulumCodec.Default.WriteFrame(writer,
+        PendulumCodec.Input.WriteFrame(writer,
             [new PendulumSlot(PendulumInput.PositionSlot, 0, 1, descriptor, value)], new Dictionary<int, PendulumSlot>());
 
         InputHistory history = new();

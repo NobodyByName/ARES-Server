@@ -26,9 +26,11 @@ public sealed class PendulumCodec
     // Shared by every user of Default, possibly on several threads.
     private readonly ConcurrentDictionary<int, byte[]> _defaults = new();
     private readonly int _registryCount;
+    // Wire index -> descriptor id, for frames that name descriptors by their index in a list (null: by id).
+    private readonly IReadOnlyList<int>? _wireDescriptors;
     private readonly PendulumFieldFlags _delta;
 
-    /// <summary>Creates a codec.</summary>
+    /// <summary>Creates a codec whose frames name a descriptor by its registry id.</summary>
     /// <param name="registryCount">Number of descriptors in the registry (the wire range of a descriptor id).</param>
     /// <param name="descriptors">Known descriptors by id.</param>
     /// <param name="serialized">Fields whose flags intersect this are sent.</param>
@@ -45,8 +47,26 @@ public sealed class PendulumCodec
         _delta = delta;
     }
 
-    /// <summary>The codec for the game's registry as the owning client reads it (its input and its own pawn frames).</summary>
+    /// <summary>Creates a codec whose frames name a descriptor by its index in <paramref name="wireDescriptors"/>.</summary>
+    /// <param name="wireDescriptors">The descriptor ids a frame can carry, in wire order.</param>
+    /// <param name="descriptors">Known descriptors by id.</param>
+    /// <param name="serialized">Fields whose flags intersect this are sent.</param>
+    /// <param name="delta">Fields whose flags intersect this are coded against the previous frame, the others against their default.</param>
+    public PendulumCodec(
+        IReadOnlyList<int> wireDescriptors,
+        IReadOnlyDictionary<int, PendulumDescriptor> descriptors,
+        PendulumFieldFlags serialized = PendulumFieldFlags.Owner,
+        PendulumFieldFlags delta = PendulumFieldFlags.Owner)
+        : this((wireDescriptors ?? throw new ArgumentNullException(nameof(wireDescriptors))).Count, descriptors, serialized, delta)
+    {
+        _wireDescriptors = wireDescriptors;
+    }
+
+    /// <summary>The codec for the game's registry as the owning client reads it (its own pawn frames).</summary>
     public static PendulumCodec Default { get; } = new(PendulumRegistry.Count, PendulumRegistry.Descriptors);
+
+    /// <summary>The codec for the owning client's input frames, which name descriptors by their index in <see cref="PendulumInput.Descriptors"/>.</summary>
+    public static PendulumCodec Input { get; } = new(PendulumInput.Descriptors, PendulumRegistry.Descriptors);
 
     /// <summary>The codec for other clients' copies of a character: only the fields sent to other players.</summary>
     public static PendulumCodec Others { get; } = new(PendulumRegistry.Count, PendulumRegistry.Descriptors, PendulumFieldFlags.Others, PendulumFieldFlags.Others);
@@ -195,7 +215,8 @@ public sealed class PendulumCodec
                 continue;
             }
 
-            int descriptorId = (int)reader.ReadBounded((ulong)_registryCount);
+            int wireId = (int)reader.ReadBounded((ulong)_registryCount);
+            int descriptorId = _wireDescriptors?[wireId] ?? wireId;
             slots[slot] = old with { DescriptorId = descriptorId, Value = DefaultValue(descriptorId) };
             fresh |= 1UL << slot;
         }
@@ -268,7 +289,7 @@ public sealed class PendulumCodec
                 writer.WriteBit(slot.DescriptorId is not null);
                 if (slot.DescriptorId is { } id)
                 {
-                    writer.WriteBounded((uint)id, (ulong)_registryCount);
+                    writer.WriteBounded((uint)WireId(id), (ulong)_registryCount);
                 }
             }
         }
@@ -303,6 +324,24 @@ public sealed class PendulumCodec
     /// <param name="previous">Previous value.</param>
     public void WriteValue(BitWriter writer, int descriptorId, byte[] value, byte[] previous) =>
         WriteFields(writer, Descriptor(descriptorId).Fields, value, previous, DefaultOf(descriptorId));
+
+    private int WireId(int descriptorId)
+    {
+        if (_wireDescriptors is null)
+        {
+            return descriptorId;
+        }
+
+        for (int index = 0; index < _wireDescriptors.Count; index++)
+        {
+            if (_wireDescriptors[index] == descriptorId)
+            {
+                return index;
+            }
+        }
+
+        throw new InvalidPacketException("Descriptor not sendable in this frame");
+    }
 
     private PendulumDescriptor Descriptor(int id) =>
         _descriptors.TryGetValue(id, out PendulumDescriptor? descriptor) ? descriptor : throw new InvalidPacketException("Unknown descriptor");

@@ -194,7 +194,7 @@ public sealed class InputHistory
         uint first = Math.Max(header.Baseline + 1, header.Latest >= PendulumFrames.FramesPerPacket - 1 ? header.Latest - (PendulumFrames.FramesPerPacket - 1) : 0);
         for (uint number = first; number <= header.Latest; number++)
         {
-            Dictionary<int, PendulumSlot> frame = PendulumCodec.Default.ReadFrame(reader, previous);
+            Dictionary<int, PendulumSlot> frame = PendulumCodec.Input.ReadFrame(reader, previous);
             updates[number] = frame;
             previous = frame;
             if (number > Latest && frame.TryGetValue(WeaponProtocol.InputSlot, out PendulumSlot? weapon))

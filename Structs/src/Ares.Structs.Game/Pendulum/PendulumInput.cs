@@ -9,6 +9,9 @@ public static class PendulumInput
     /// <summary>Descriptor id of each input frame slot, by slot.</summary>
     public static IReadOnlyList<int> SlotDescriptors { get; } = [80, 70, 103, 106, 43, 102, 104, 90];
 
+    /// <summary>Descriptors an input frame can carry; the frame names a slot's descriptor by its index here.</summary>
+    public static IReadOnlyList<int> Descriptors { get; } = [43, 70, 80, 90, 102, 103, 104, 105, 106, 117];
+
     /// <summary>Slot holding character button claims and inventory commands.</summary>
     public const int CharacterClaimsSlot = 5;
 

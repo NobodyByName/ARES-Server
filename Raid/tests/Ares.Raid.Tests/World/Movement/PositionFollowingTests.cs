@@ -111,7 +111,7 @@ public sealed class PositionFollowingTests
         for (uint frame = latest - 2; frame <= latest; frame++)
         {
             Dictionary<int, PendulumSlot> current = Slots(reported(frame));
-            PendulumCodec.Default.WriteFrame(writer, current.Values, previous);
+            PendulumCodec.Input.WriteFrame(writer, current.Values, previous);
             previous = current;
         }
 

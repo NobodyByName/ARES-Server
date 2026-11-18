@@ -107,7 +107,7 @@ internal static class ScriptedClient
         for (uint frame = latest - 2; frame <= latest; frame++)
         {
             Dictionary<int, PendulumSlot> current = Slots(script(frame), script(frame - 1));
-            PendulumCodec.Default.WriteFrame(writer, current.Values, previous);
+            PendulumCodec.Input.WriteFrame(writer, current.Values, previous);
             previous = current;
         }
 
