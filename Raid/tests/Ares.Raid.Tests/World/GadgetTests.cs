@@ -144,7 +144,10 @@ public sealed class GadgetTests
         "7408 7469 11 254 6 254 0 6 19 0 255 12:-@34x2,13:-@36x2",
     ];
 
-    /// <summary>The client's Snap Hook node while the hook is not thrown (its item object field zeroed).</summary>
+    /// <summary>
+    /// The client's Snap Hook node while the hook is not thrown (its item object field zeroed); its asset field is replaced
+    /// with the Snap Hook's usable index from the loaded game data.
+    /// </summary>
     private const string IdleItemNode = "ffffff03ffffff03ffffff03000000001a000080ffffff7fffffff7fffffff7fffffff7fffffff7f000000002803ffff000100ff";
 
     [Fact]
@@ -170,6 +173,8 @@ public sealed class GadgetTests
 
         byte[] idle = new byte[PendulumRegistry.Descriptors[QuickItemProtocol.ItemNodeDescriptor].Size];
         Convert.FromHexString(IdleItemNode).CopyTo(idle, 0);
+        PendulumCodec.Apply(PendulumRegistry.Descriptors[QuickItemProtocol.ItemNodeDescriptor].Fields, idle,
+            [new PendulumIntegerValue(QuickItemProtocol.ItemNodeAssetField, TestGameData.Items.SnapHookIndex)]);
         PendulumField link = PendulumRegistry.Descriptors[QuickItemProtocol.ItemNodeDescriptor].Fields[QuickItemProtocol.ItemNodeItemInstanceField];
         List<string> differences = [];
         int compared = 0;

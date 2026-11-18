@@ -94,7 +94,7 @@ public static class InventoryBlackboard
     public const int LootContainerFlags = 7;
 
     /// <summary>RubberDuckIndex in the player container state.</summary>
-    public const int RubberDuckIndex = 777;
+    public const int RubberDuckIndex = 781;
 
     /// <summary>DurabilityScale in the player container state.</summary>
     public const int DurabilityScale = 127;
