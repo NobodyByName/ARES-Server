@@ -11,8 +11,8 @@ the game-session server that runs its raids. Players connect with
 ## Help wanted: multiplayer testers
 
 Everything so far has been tested by one person on one PC, so parties, two players in the same
-raid and PvP have never been tried with a real second player. If you have ARC Raiders (build
-26439197) and can spare an evening, I'd love to play a few test raids with you. Say hi in the
+raid and PvP have never been tried with a real second player. If you have ARC Raiders and can
+spare an evening, I'd love to play a few test raids with you. Say hi in the
 [Matrix room](https://matrix.to/#/#ares-arc-raiders-emulation-server:matrix.org). No setup
 knowledge needed: I host, you install
 [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) and join.
@@ -41,12 +41,12 @@ availability still need review.
 
 - .NET 10 SDK to build from source (version in `global.json`). No game installation is needed to build or test.
 - An operator-managed MongoDB replica set for Host persistence and integration tests (tested with MongoDB 8.0).
-- Players need their own, unmodified copy of **ARC Raiders 2.4.1, Steam build 26439197**, and
-  [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher). ARES supports one game build at a time;
-  players on a newer build must wait for ARES to support it.
+- The client target for this trial is **ARC Raiders 2.6.0, Steam build 26619995**. Players connect with
+  an unmodified game and [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher).
+  Connection and raid compatibility still need a stock-client test.
 - Operators must supply the game's [archive keys](#archive-keys). ARES includes no game keys or game files.
-- Operators extract the [game data](#game-data) (items, loot, movement and map data, map collision) from their own
-  game installation. Host and Raid refuse to start without it.
+- For this trial, Host and Raid require [game data](#game-data) previously extracted from build 26439197.
+  Fresh extraction from the 2.6.0 install stops at the wrapped script cache.
 - Developed and tested on Linux. Support for every ARC Raiders platform is a goal; Windows has not been tested yet.
 
 ## Archive keys
@@ -64,13 +64,13 @@ buildings and other solid objects). ARES does not include it: like the map extra
 ARES-GameDataExtract reads it from the operator's own game installation and writes ARES's game data files. The files are derived
 from the game: keep them on your own servers and never distribute them.
 
-**When to run it:** at first setup and again after every game update. Each file is stamped with the
-game build it was extracted from. Host and Raid refuse game data from another build, so extract again
-whenever the supported game build changes.
+The manifest and collision header identify the source game build. Run the extractor at first setup
+and whenever the required **data build** changes. For the 2.6.0 client trial, point `game-data-dir`
+at your existing 2.4.1 extract.
 
 **What it needs:**
 
-- **Game folder:** an installed copy of the supported game build (the folder holding `PioneerGame/`).
+- **Game folder:** an installed copy of the required data build (the folder holding `PioneerGame/`).
   It is only read, never changed.
 - **Archive keys file:** the same `archive-keys.txt` Host uses (see [Archive keys](#archive-keys)).
 - **TOC key file:** the key of the game's archive index (the `.utoc` files). Only ARES-GameDataExtract needs
