@@ -8,7 +8,7 @@ namespace Ares.Common.GameData;
 
 /// <summary>
 /// An operator's game data directory, opened and checked: its manifest was written for this game build
-/// (<see cref="GameBuild.SteamBuildId"/>) and lists only well-formed names of files that exist. Each file's SHA-256 is
+/// (<see cref="GameBuild.GameDataBuildId"/>) and lists only well-formed names of files that exist. Each file's SHA-256 is
 /// checked against the manifest when the file is read.
 /// </summary>
 public sealed class GameDataDirectory
@@ -47,9 +47,9 @@ public sealed class GameDataDirectory
 
         string manifestPath = Path.Combine(fullPath, GameDataFiles.ManifestFileName);
         GameDataManifest manifest = ReadManifest(manifestPath);
-        if (manifest.GameBuildId != GameBuild.SteamBuildId)
+        if (manifest.GameBuildId != GameBuild.GameDataBuildId)
         {
-            throw new GameDataException($"The game data in {fullPath} was extracted from game build {manifest.GameBuildId}, but this ARES supports game build {GameBuild.SteamBuildId}. Install the supported game build, then run ARES-GameDataExtract extract again.");
+            throw new GameDataException($"The game data in {fullPath} was extracted from game build {manifest.GameBuildId}, but this ARES requires game data from build {GameBuild.GameDataBuildId}. Point game-data-dir at an extract from that build.");
         }
 
         CheckEntries(manifestPath, manifest);

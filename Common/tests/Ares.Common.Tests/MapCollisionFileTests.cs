@@ -19,7 +19,7 @@ public sealed class MapCollisionFileTests
         MapCollision map = BuildSampleMap();
         MapCollision read = RoundTrip(map);
 
-        Assert.Equal(GameBuild.SteamBuildId, read.GameBuildId);
+        Assert.Equal(GameBuild.GameDataBuildId, read.GameBuildId);
         Assert.Equal(MapName, read.MapName);
         Assert.Equal(map.Cells.Length, read.Cells.Length);
         for (int i = 0; i < map.Cells.Length; i++)
@@ -87,7 +87,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void A_tile_without_surface_types_reads_back_as_default_everywhere()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         builder.AddHeightField(new HeightFieldTile(cell, default, 100, 100, 1, 2, 2, [0, 0, 0, 0], [HeightFieldCellFlags.DiagonalFromLowCorner]));
 
@@ -130,7 +130,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void Bodies_are_shared_by_name()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int first = builder.AddBody(BoxBody("/Game/Props/Crate"));
         int again = builder.AddBody(SphereBody("/Game/Props/Crate"));
 
@@ -144,7 +144,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void A_negative_non_uniform_scale_is_kept_and_its_bounds_mirror_the_body()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         int body = builder.AddBody(HullBody("/Game/Props/Wedge"));
         builder.AddPlacement(body, cell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, new Vector3D(250000.5, -1000, 30), new Vector3D(-2, 1, 0.5)), PlacementFlags.BlocksPawn);
@@ -161,7 +161,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void Bounds_contain_complex_meshes()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         int body = builder.AddBody(ArchBody("/Game/Props/Arch"));
         builder.AddPlacement(body, cell, new Transform(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One), PlacementFlags.BlocksPawn);
@@ -176,7 +176,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void Unknown_trace_flags_and_complex_meshes_a_body_does_not_use_are_refused()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         CollisionBody arch = ArchBody("/Game/Props/Arch");
 
         Assert.Throws<ArgumentException>(() => builder.AddBody(arch with { TraceFlag = CollisionTraceFlag.UseDefault }));
@@ -200,7 +200,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void Bounds_contain_rotated_shapes_and_scale_spheres_by_the_largest_component()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         int body = builder.AddBody(SphereBody("/Game/Props/Ball"));
         Ares.Structs.Core.Geometry.Quaternion quarterTurn = new(0, 0, Math.Sqrt(0.5), Math.Sqrt(0.5));
@@ -272,7 +272,7 @@ public sealed class MapCollisionFileTests
     {
         byte[] bytes = Serialize(BuildSampleMap());
 
-        MapCollisionFormatException exception = Assert.Throws<MapCollisionFormatException>(() => MapCollisionFile.Read(new MemoryStream(bytes), GameBuild.SteamBuildId + 1));
+        MapCollisionFormatException exception = Assert.Throws<MapCollisionFormatException>(() => MapCollisionFile.Read(new MemoryStream(bytes), GameBuild.GameDataBuildId + 1));
         Assert.Equal(MapCollisionFileError.GameBuildMismatch, exception.Error);
     }
 
@@ -300,7 +300,7 @@ public sealed class MapCollisionFileTests
     [Fact]
     public void An_index_outside_the_map_is_refused()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int cell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         Transform identity = new(Ares.Structs.Core.Geometry.Quaternion.Identity, default, Vector3D.One);
 
@@ -322,7 +322,7 @@ public sealed class MapCollisionFileTests
             wedge with { Polygons = wedge.Polygons[..3] },
             wedge with { Bounds = new BoundingBox(Vector3.Zero, new Vector3(5, 10, 10)) },
         ];
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         foreach (ConvexHull hull in invalidHulls)
         {
             Assert.Throws<ArgumentException>(() => builder.AddBody(new CollisionBody("/Game/Props/Bad", [], [], [], [hull], [])));
@@ -357,7 +357,7 @@ public sealed class MapCollisionFileTests
 
     private static MapCollision BuildSampleMap()
     {
-        MapCollisionBuilder builder = new(GameBuild.SteamBuildId, MapName);
+        MapCollisionBuilder builder = new(GameBuild.GameDataBuildId, MapName);
         int baseCell = builder.AddCell("/Game/Maps/Test/Cell_0", []);
         int layerCell = builder.AddCell("/Game/Maps/Test/Cell_1", ["Coldsnap", "Night"]);
         int box = builder.AddBody(BoxBody("/Game/Props/Crate"));

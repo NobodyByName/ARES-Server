@@ -38,15 +38,15 @@ public sealed class MapCollisionLoaderTests : IDisposable
     [Fact]
     public void A_file_for_another_game_build_is_refused_with_the_reason()
     {
-        Write(GameBuild.SteamBuildId + 1);
+        Write(GameBuild.GameDataBuildId + 1);
         Assert.Null(MapCollisionLoader.Load(_directory, MapName, out string? problem));
-        Assert.Contains($"game build {GameBuild.SteamBuildId + 1}, expected {GameBuild.SteamBuildId}", problem, StringComparison.Ordinal);
+        Assert.Contains($"game build {GameBuild.GameDataBuildId + 1}, expected {GameBuild.GameDataBuildId}", problem, StringComparison.Ordinal);
     }
 
     [Fact]
     public void A_file_for_this_build_is_loaded()
     {
-        Write(GameBuild.SteamBuildId);
+        Write(GameBuild.GameDataBuildId);
         MapCollision? map = MapCollisionLoader.Load(_directory, MapName, out string? problem);
         Assert.Null(problem);
         Assert.NotNull(map);

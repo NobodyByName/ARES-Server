@@ -82,9 +82,9 @@ public static class MapCollisionFile
         WriteSection(writer, HeightFieldsTag, map, WriteHeightFields);
     }
 
-    /// <summary>Reads a map written for the current game build (<see cref="GameBuild.SteamBuildId"/>).</summary>
+    /// <summary>Reads a map written for the current game build (<see cref="GameBuild.GameDataBuildId"/>).</summary>
     /// <exception cref="MapCollisionFormatException">The stream does not hold a valid map for this build.</exception>
-    public static MapCollision Read(Stream stream) => Read(stream, GameBuild.SteamBuildId);
+    public static MapCollision Read(Stream stream) => Read(stream, GameBuild.GameDataBuildId);
 
     /// <summary>Reads a map, requiring it to be written for a given game build.</summary>
     /// <exception cref="MapCollisionFormatException">The stream does not hold a valid map for that build.</exception>

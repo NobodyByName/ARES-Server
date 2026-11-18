@@ -224,7 +224,7 @@ internal sealed class ExtractCommand
                 writer.WriteTable(GameTables.TaggedInteractionAnimationContainers, animations.TagBased, GameDataJsonContext.Default.TaggedInteractionAnimationContainer);
             }
 
-            string manifest = writer.WriteManifest(GameBuild.SteamBuildId, AresVersion.Current);
+            string manifest = writer.WriteManifest(GameBuild.GameDataBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers, {world.PlayerStarts.Length:N0} player starts, {world.Ladders.Length:N0} ladders, {world.ZiplineLines.Length:N0} ziplines, {world.ZiplineLaunchers.Length:N0} zipline launchers"));
@@ -399,7 +399,7 @@ internal sealed class ExtractCommand
             return keys;
         }
 
-        error.WriteLine($"ARES-GameDataExtract: error: archive keys file {KeysFile}: these keys do not match game build {GameBuild.SteamBuildId}");
+        error.WriteLine($"ARES-GameDataExtract: error: archive keys file {KeysFile}: these keys do not match game build {GameBuild.GameDataBuildId}");
         return null;
     }
 

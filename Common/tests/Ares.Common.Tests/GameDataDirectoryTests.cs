@@ -31,7 +31,7 @@ public sealed class GameDataDirectoryTests : IDisposable
 
         GameDataDirectory data = GameDataDirectory.Open(_directory);
 
-        Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
+        Assert.Equal(GameBuild.GameDataBuildId, data.Manifest.GameBuildId);
         Assert.Equal("2026110201", data.Manifest.ExtractorVersion);
         Assert.True(data.Contains(Table));
         Assert.False(data.Contains("other.json"));
@@ -75,9 +75,9 @@ public sealed class GameDataDirectoryTests : IDisposable
     [Fact]
     public void A_manifest_of_another_game_build_is_refused()
     {
-        WriteManifest(GameBuild.SteamBuildId + 1);
+        WriteManifest(GameBuild.GameDataBuildId + 1);
 
-        Assert.Contains($"extracted from game build {GameBuild.SteamBuildId + 1}, but this ARES supports game build {GameBuild.SteamBuildId}", Open(), StringComparison.Ordinal);
+        Assert.Contains($"extracted from game build {GameBuild.GameDataBuildId + 1}, but this ARES requires game data from build {GameBuild.GameDataBuildId}", Open(), StringComparison.Ordinal);
     }
 
     [Theory]
@@ -162,7 +162,7 @@ public sealed class GameDataDirectoryTests : IDisposable
 
     private string Open(string? directory = null) => Assert.Throws<GameDataException>(() => GameDataDirectory.Open(directory ?? _directory)).Message;
 
-    private void WriteManifest(params GameDataFileEntry[] files) => WriteManifest(GameBuild.SteamBuildId, files);
+    private void WriteManifest(params GameDataFileEntry[] files) => WriteManifest(GameBuild.GameDataBuildId, files);
 
     private void WriteManifest(int gameBuildId, params GameDataFileEntry[] files)
     {

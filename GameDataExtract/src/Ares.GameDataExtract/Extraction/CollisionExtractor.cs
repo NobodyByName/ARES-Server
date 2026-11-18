@@ -40,7 +40,7 @@ internal sealed class CollisionExtractor
     private CollisionExtractor(PackageCache packages, CollisionProfiles profiles, string mapPackage)
     {
         _mapPackage = mapPackage;
-        _builder = new MapCollisionBuilder(GameBuild.SteamBuildId, mapPackage[(mapPackage.LastIndexOf('/') + 1)..]);
+        _builder = new MapCollisionBuilder(GameBuild.GameDataBuildId, mapPackage[(mapPackage.LastIndexOf('/') + 1)..]);
         _packages = packages;
         _profiles = profiles;
         _components = new ComponentReader(packages);

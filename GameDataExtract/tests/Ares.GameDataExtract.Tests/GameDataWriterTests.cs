@@ -32,7 +32,7 @@ public sealed class GameDataWriterTests : IDisposable
 
         GameDataDirectory data = GameDataDirectory.Open(output);
 
-        Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
+        Assert.Equal(GameBuild.GameDataBuildId, data.Manifest.GameBuildId);
         Assert.Equal("2026110201", data.Manifest.ExtractorVersion);
         Assert.Equal([Table, Blob, MapTable], data.Manifest.Files.Select(file => file.Name));
         Assert.Equal([3, null, 1], data.Manifest.Files.Select(file => file.RowCount));
@@ -116,7 +116,7 @@ public sealed class GameDataWriterTests : IDisposable
         Shelf[] shelves = [new("A", null, 2), new("B", "Tools", 3)];
 
         writer.WriteTable(Table, shelves, WriterTestContext.Default.Shelf);
-        writer.WriteManifest(GameBuild.SteamBuildId, "2026110201");
+        writer.WriteManifest(GameBuild.GameDataBuildId, "2026110201");
 
         Assert.Contains("\"label\": null", File.ReadAllText(Path.Combine(output, Table)), StringComparison.Ordinal);
         Assert.Contains("\"note\": null", File.ReadAllText(Path.Combine(output, Table)), StringComparison.Ordinal);
@@ -140,7 +140,7 @@ public sealed class GameDataWriterTests : IDisposable
         writer.WriteTable(MapTable, s_crates[2..], WriterTestContext.Default.Crate);
         writer.WriteFile(Blob, stream => stream.Write([1, 2, 3]));
         writer.WriteTable(Table, s_crates, WriterTestContext.Default.Crate);
-        writer.WriteManifest(GameBuild.SteamBuildId, "2026110201");
+        writer.WriteManifest(GameBuild.GameDataBuildId, "2026110201");
     }
 }
 

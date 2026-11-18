@@ -11,7 +11,7 @@ if (args.Length == 0 || args[0] is "--help" or "-h")
 
 if (args[0] == "--version")
 {
-    Console.WriteLine($"ARES-GameDataExtract {AresVersion.Current} (game build {GameBuild.SteamBuildId})");
+    Console.WriteLine($"ARES-GameDataExtract {AresVersion.Current} (game build {GameBuild.GameDataBuildId})");
     return ExtractCommand.Success;
 }
 

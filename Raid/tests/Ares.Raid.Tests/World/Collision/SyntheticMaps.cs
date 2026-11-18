@@ -13,7 +13,7 @@ internal static class SyntheticMaps
 {
     public const string MapName = "TestMap";
 
-    public static MapCollisionBuilder Builder(int gameBuildId = GameBuild.SteamBuildId) => new(gameBuildId, MapName);
+    public static MapCollisionBuilder Builder(int gameBuildId = GameBuild.GameDataBuildId) => new(gameBuildId, MapName);
 
     public static CollisionBody Body(
         string name,

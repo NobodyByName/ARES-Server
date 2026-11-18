@@ -72,7 +72,7 @@ public sealed class ExtractionTests : IDisposable
             tables.Append(collision).Append(GameDataFiles.ManifestFileName).Order(StringComparer.Ordinal),
             Directory.GetFiles(Output, "*", SearchOption.AllDirectories).Select(file => Path.GetRelativePath(Output, file).Replace(Path.DirectorySeparatorChar, '/')).Order(StringComparer.Ordinal));
         GameDataDirectory data = GameDataDirectory.Open(Output);
-        Assert.Equal(GameBuild.SteamBuildId, data.Manifest.GameBuildId);
+        Assert.Equal(GameBuild.GameDataBuildId, data.Manifest.GameBuildId);
         Assert.Equal(AresVersion.Current, data.Manifest.ExtractorVersion);
         GameDataFileEntry entry = Assert.Single(data.Manifest.Files, file => file.Name == collision);
         Assert.Null(entry.RowCount);
@@ -108,7 +108,7 @@ public sealed class ExtractionTests : IDisposable
         }
 
         Assert.Equal(GameNames.Maps.Dam, map.MapName);
-        Assert.Equal(GameBuild.SteamBuildId, map.GameBuildId);
+        Assert.Equal(GameBuild.GameDataBuildId, map.GameBuildId);
         Assert.Equal([MapPackage, Cell(BaseCell), Cell(LayeredCell)], map.Cells.Select(cell => cell.PackageName));
         Assert.True(map.Cells[0].IsBaseMap);
         Assert.True(map.Cells[1].IsBaseMap);
