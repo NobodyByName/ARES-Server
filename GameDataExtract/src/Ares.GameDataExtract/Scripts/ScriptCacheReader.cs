@@ -38,6 +38,13 @@ internal ref struct ScriptCacheReader
     /// <exception cref="InvalidDataException">The data is malformed, of another revision or has trailing bytes.</exception>
     public static ScriptCache Parse(ReadOnlySpan<byte> data)
     {
+        if (data.StartsWith("ASPJ"u8))
+        {
+            ByteReader header = new(data, "ASPJ"u8.Length);
+            uint version = header.ReadUInt32();
+            throw new InvalidDataException($"PrecompiledScript.Cache uses the unsupported ASPJ v{version} wrapper");
+        }
+
         ScriptCacheReader reader = new(data);
         return reader.ReadCache();
     }

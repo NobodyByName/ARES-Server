@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 using Ares.Common.Archives;
 using Ares.GameDataExtract.Archives;
@@ -69,6 +70,16 @@ public sealed class ScriptCacheTests
         Assert.Contains("Several", Assert.Throws<InvalidDataException>(() => cache.Class("UBaseTweakables")).Message, StringComparison.Ordinal);
         Assert.Throws<InvalidDataException>(() => cache.Enum("EMissing"));
         Assert.False(cache.TryGetClass("UBaseTweakables", out _));
+    }
+
+    [Fact]
+    public void Wrapped_cache_is_identified_before_reading_the_inner_revision()
+    {
+        byte[] data = Sample().Write();
+        "ASPJ"u8.CopyTo(data);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), 1);
+        Assert.Contains("ASPJ v1", Assert.Throws<InvalidDataException>(() => ScriptCacheReader.Parse(data)).Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidDataException>(() => ScriptCacheReader.Parse(data.AsSpan(0, 7)));
     }
 
     [Fact]
