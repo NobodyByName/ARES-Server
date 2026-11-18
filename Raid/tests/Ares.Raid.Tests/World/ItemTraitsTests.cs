@@ -1,7 +1,9 @@
 using Ares.Common.Game.Inventory;
 using Ares.Raid.World.Inventory;
+using Ares.Raid.World.Movement;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Pendulum;
 
 namespace Ares.Raid.Tests.World;
 
@@ -21,6 +23,18 @@ public sealed class ItemTraitsTests
             [TestGameData.Items.SnapHookIndex] = TestGameData.Items.SnapHook.ItemClass,
         };
         Assert.Equal(expected.OrderBy(entry => entry.Key), TestGameData.Items.HeldItemClasses.OrderBy(entry => entry.Key));
+    }
+
+    [Fact]
+    public void Hand_item_nodes_name_the_raider_tool_and_empty_hands_by_their_usable_index()
+    {
+        IReadOnlyDictionary<int, PendulumSlot> state = PawnBlackboardFrames.State(TestGameData.Data, PawnBlackboardFrames.FirstTick, new PawnMotion(default), 0);
+
+        Assert.Equal(TestGameData.Items.RaiderToolIndex, Field(state[HandItemFields.RaiderToolHandle], HandItemFields.RaiderToolAssetField));
+        Assert.Equal(TestGameData.Items.UnarmedIndex, Field(state[WeaponProtocol.UnarmedHandle], HandItemFields.UnarmedAssetField));
+        return;
+
+        static ulong Field(PendulumSlot node, int field) => PendulumCodec.Integer(PendulumRegistry.Descriptors[node.DescriptorId!.Value].Fields[field], node.Value);
     }
 
     [Fact]

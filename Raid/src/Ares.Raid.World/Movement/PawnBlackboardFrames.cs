@@ -1,6 +1,7 @@
 using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 
@@ -211,6 +212,13 @@ public static class PawnBlackboardFrames
                         }
                     }
 
+                    break;
+                // The hand item nodes name their items by the installed build's usable index.
+                case HandItemFields.RaiderToolHandle:
+                    Replace(values, new PendulumIntegerValue(HandItemFields.RaiderToolAssetField, checked((ulong)data.Names.RaiderTool.UsableIndex)));
+                    break;
+                case WeaponProtocol.UnarmedHandle:
+                    Replace(values, new PendulumIntegerValue(HandItemFields.UnarmedAssetField, checked((ulong)data.Names.Unarmed.UsableIndex)));
                     break;
             }
 

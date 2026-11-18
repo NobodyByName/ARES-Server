@@ -7,11 +7,17 @@ namespace Ares.Structs.Game.Inventory;
 /// </summary>
 public static class HandItemFields
 {
+    /// <summary>Unarmed item node field holding the item's usable index.</summary>
+    public const int UnarmedAssetField = 7;
+
     /// <summary>Unarmed item node field linking the held item object.</summary>
     public const int UnarmedItemInstanceField = 11;
 
     /// <summary>Handle of the Raider Tool in the inventory state.</summary>
     public const int RaiderToolHandle = 5;
+
+    /// <summary>Raider Tool item node field holding the item's usable index.</summary>
+    public const int RaiderToolAssetField = 13;
 
     /// <summary>Raider Tool item node field linking the held item object.</summary>
     public const int RaiderToolItemInstanceField = 18;
