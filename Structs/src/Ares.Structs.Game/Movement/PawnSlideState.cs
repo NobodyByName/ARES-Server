@@ -16,7 +16,7 @@ public static class PawnSlideState
     public const int Size = 1;
 
     /// <summary>Descriptor of the slide-state variable.</summary>
-    public const int DescriptorId = 78;
+    public const int DescriptorId = 83;
 
     /// <summary>Field holding the X component of the velocity the slide started with (Y and Z follow).</summary>
     public const int InitialDirectionXField = 0;

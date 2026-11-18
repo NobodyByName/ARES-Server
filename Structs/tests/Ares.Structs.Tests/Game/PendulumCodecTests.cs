@@ -1,4 +1,5 @@
 using Ares.Structs.Core.Serialization;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
 
@@ -49,7 +50,7 @@ public sealed class PendulumCodecTests
 
         Assert.Equal((ulong)PendulumInput.PressRequest, PendulumCodec.Integer(fields[PendulumInput.InteractionRequestField], value));
         Assert.Equal(0x200005UL, PendulumCodec.Integer(fields[PendulumInput.InteractionTargetField], value));
-        Assert.Throws<InvalidPacketException>(() => PendulumCodec.Integer(fields.OfType<PendulumQuaternionField>().FirstOrDefault() ?? PendulumRegistry.Descriptors[101].Fields[0], new byte[256]));
+        Assert.Throws<InvalidPacketException>(() => PendulumCodec.Integer(fields.OfType<PendulumQuaternionField>().FirstOrDefault() ?? PendulumRegistry.Descriptors[WeaponProtocol.InputDescriptor].Fields[0], new byte[256]));
     }
 
     [Theory]

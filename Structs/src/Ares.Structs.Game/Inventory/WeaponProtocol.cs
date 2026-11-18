@@ -7,7 +7,7 @@ public static class WeaponProtocol
     public const int InputSlot = 3;
 
     /// <summary>InputDescriptor in the supported weapon protocol.</summary>
-    public const int InputDescriptor = 101;
+    public const int InputDescriptor = 106;
 
     /// <summary>InputFlagsField in the supported weapon protocol.</summary>
     public const int InputFlagsField = 22;
@@ -49,10 +49,10 @@ public static class WeaponProtocol
     public const int InventorySlot = 4;
 
     /// <summary>InventoryDescriptor in the supported weapon protocol.</summary>
-    public const int InventoryDescriptor = 61;
+    public const int InventoryDescriptor = 65;
 
     /// <summary>WeaponDescriptor in the supported weapon protocol.</summary>
-    public const int WeaponDescriptor = 96;
+    public const int WeaponDescriptor = 101;
 
     /// <summary>FirstWeaponSlot in the supported weapon protocol.</summary>
     public const int FirstWeaponSlot = 11;

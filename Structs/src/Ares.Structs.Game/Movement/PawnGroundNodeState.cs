@@ -10,7 +10,7 @@ public static class PawnGroundNodeState
     public const int InitialSlot = 8;
 
     /// <summary>Descriptor of the ground-node variable.</summary>
-    public const int DescriptorId = 69;
+    public const int DescriptorId = 73;
 
     /// <summary>Unknown field; it holds <see cref="UnknownField0MovingOffset"/> above its default while movement input is held.</summary>
     public const int UnknownField0 = 0;
@@ -43,20 +43,20 @@ public static class PawnGroundNodeState
     public const int StartSprintTimeField = 9;
 
     /// <summary>Field holding the node's flags.</summary>
-    public const int FlagsField = 11;
+    public const int FlagsField = 10;
 
     /// <summary>Flag of a crouched character shuffling at reduced speed.</summary>
     public const ulong ShufflingFlag = 1UL << 2;
 
     /// <summary>Field holding the eight-way direction the node moves in (<see cref="InputDirection"/>).</summary>
-    public const int ResultingInputDirectionField = 13;
+    public const int ResultingInputDirectionField = 12;
 
     /// <summary>Field holding the eight-way direction of the player's movement input (<see cref="InputDirection"/>).</summary>
-    public const int PlayerInputDirectionField = 14;
+    public const int PlayerInputDirectionField = 13;
 
     /// <summary>Field holding the node's locomotion.</summary>
-    public const int LocoModeField = 15;
+    public const int LocoModeField = 14;
 
     /// <summary>Field holding the node's stance.</summary>
-    public const int CharacterStanceField = 16;
+    public const int CharacterStanceField = 15;
 }

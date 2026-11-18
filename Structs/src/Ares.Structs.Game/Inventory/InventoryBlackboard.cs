@@ -7,7 +7,7 @@ public static class InventoryBlackboard
     public const int Slot = 10;
 
     /// <summary>Descriptor in the player container state.</summary>
-    public const int Descriptor = 35;
+    public const int Descriptor = 39;
 
     /// <summary>LoadoutSlotCount in the player container state.</summary>
     public const int LoadoutSlotCount = 5;

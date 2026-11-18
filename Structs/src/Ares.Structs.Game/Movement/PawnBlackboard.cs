@@ -218,7 +218,7 @@ public static class PawnBlackboard
     /// <summary>Initial variables, by slot. Per-frame fields are left at their defaults.</summary>
     public static IReadOnlyList<PendulumVariable> InitialState { get; } =
     [
-        new(0, 0, 1, 75, [
+        new(0, 0, 1, 80, [
             new PendulumIntegerValue(0, 2147483648UL),
             new PendulumIntegerValue(1, 2147483649UL),
             new PendulumIntegerValue(4, 2147773508UL),
@@ -227,7 +227,7 @@ public static class PawnBlackboard
             new PendulumIntegerValue(7, 536870912UL),
             new PendulumIntegerValue(9, 1UL),
         ]),
-        new(1, 1, 1, 66, [
+        new(1, 1, 1, 70, [
             new PendulumIntegerValue(0, 2147483649UL),
             new PendulumArrayValue(1,
             [
@@ -248,17 +248,17 @@ public static class PawnBlackboard
                 ]),
             ]),
         ]),
-        new(2, 2, 2, 71, [
+        new(2, 2, 2, 76, [
             new PendulumQuaternionValue(0, new PendulumQuaternion(8U, 9U, 61U, 0U, 1, 0, 1, 2)),
             new PendulumIntegerValue(21, 2147483651UL),
             new PendulumIntegerValue(22, 19261UL),
             new PendulumIntegerValue(45, 3UL),
             new PendulumIntegerValue(46, 6UL),
         ]),
-        new(3, 4, 1, 77, [
+        new(3, 4, 1, 82, [
             new PendulumIntegerValue(0, 2147483671UL),
         ]),
-        new(4, 5, 3, 61, [
+        new(4, 5, 3, 65, [
             new PendulumIntegerValue(4, 4339UL),
             new PendulumIntegerValue(7, 8958UL),
             new PendulumIntegerValue(11, 3277UL),
@@ -298,19 +298,19 @@ public static class PawnBlackboard
                 ]),
             ]),
         ]),
-        new(5, 8, 1, 67, [
+        new(5, 8, 1, 71, [
             new PendulumIntegerValue(1, 2147483675UL),
             new PendulumIntegerValue(3, 2147483649UL),
             new PendulumIntegerValue(13, 45UL),
             new PendulumIntegerValue(14, 65535UL),
         ]),
-        new(6, 9, 1, 89, [
+        new(6, 9, 1, 94, [
             new PendulumIntegerValue(1, 2147483674UL),
             new PendulumIntegerValue(3, 2147483649UL),
             new PendulumIntegerValue(7, 852UL),
             new PendulumIntegerValue(8, 65535UL),
         ]),
-        new(7, 10, 2, 68, [
+        new(7, 10, 2, 72, [
             new PendulumQuaternionValue(0, new PendulumQuaternion(10U, 3U, 26U, 0U, 15, 1, 0, 2)),
             new PendulumIntegerValue(1, 1947UL),
             new PendulumIntegerValue(2, 2190UL),
@@ -323,7 +323,7 @@ public static class PawnBlackboard
             new PendulumIntegerValue(19, 26UL),
             new PendulumQuaternionValue(31, new PendulumQuaternion(0U, 0U, 3991U, 0U, 15, 0, 1, 2)),
         ]),
-        new(8, 12, 1, 69, [
+        new(8, 12, 1, 73, [
             new PendulumIntegerValue(0, 8388616UL),
             new PendulumIntegerValue(1, 2046UL),
             new PendulumIntegerValue(2, 1331UL),
@@ -332,14 +332,14 @@ public static class PawnBlackboard
             new PendulumIntegerValue(5, 2147483648UL),
             new PendulumIntegerValue(8, 2147498328UL),
             new PendulumIntegerValue(9, 2147500408UL),
+            new PendulumIntegerValue(12, 6UL),
             new PendulumIntegerValue(13, 6UL),
-            new PendulumIntegerValue(14, 6UL),
-            new PendulumIntegerValue(15, 3UL),
+            new PendulumIntegerValue(14, 3UL),
         ]),
-        new(9, 13, 1, 60, [
+        new(9, 13, 1, 64, [
             new PendulumIntegerValue(6, 2147483670UL),
         ]),
-        new(10, 14, 19, 35, [
+        new(10, 14, 19, 39, [
             new PendulumIntegerValue(1, 7UL),
             new PendulumIntegerValue(2, 30UL),
             new PendulumIntegerValue(4, 8UL),
@@ -446,7 +446,7 @@ public static class PawnBlackboard
                 ]),
             ]),
         ]),
-        new(11, 33, 1, 96, [
+        new(11, 33, 1, 101, [
             new PendulumIntegerValue(2, 46UL),
             new PendulumIntegerValue(4, 2147483673UL),
             new PendulumIntegerValue(6, 2147483649UL),

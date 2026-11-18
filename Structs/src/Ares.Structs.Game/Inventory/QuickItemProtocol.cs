@@ -4,7 +4,7 @@ namespace Ares.Structs.Game.Inventory;
 public static class QuickItemProtocol
 {
     /// <summary>Descriptor of the node a quick-use item in hand (or being drawn or put away) has in the character state; its slot is the item's handle in the inventory state.</summary>
-    public const int ItemNodeDescriptor = 80;
+    public const int ItemNodeDescriptor = 85;
 
     /// <summary>Pages the item node takes in the character state.</summary>
     public const int ItemNodePages = 2;
@@ -82,7 +82,7 @@ public static class QuickItemProtocol
     public const int ItemUseAiming = 2;
 
     /// <summary>Descriptor of the move target a holding hook gives its owner, kept in the character state after the pull.</summary>
-    public const int MoveTargetDescriptor = 81;
+    public const int MoveTargetDescriptor = 86;
 
     /// <summary>Move target field holding the simulation time it pulls from (biased; the never time once it is removed).</summary>
     public const int MoveTargetCreatedField = 6;
@@ -91,7 +91,7 @@ public static class QuickItemProtocol
     public const int MoveTargetRemovedField = 7;
 
     /// <summary>Descriptor of the movement node that pulls the character to its move target.</summary>
-    public const int PullNodeDescriptor = 79;
+    public const int PullNodeDescriptor = 84;
 
     /// <summary>Pages the move target takes in the character state.</summary>
     public const int MoveTargetPages = 1;

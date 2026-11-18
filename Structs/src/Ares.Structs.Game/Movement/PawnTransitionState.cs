@@ -8,7 +8,7 @@ namespace Ares.Structs.Game.Movement;
 public static class PawnTransitionState
 {
     /// <summary>Descriptor of the transition variable.</summary>
-    public const int DescriptorId = 88;
+    public const int DescriptorId = 93;
 
     /// <summary>Unknown field: <see cref="SlideEntryUnknownField0Value"/> into a slide, <see cref="SlideExitUnknownField0Value"/> out of one.</summary>
     public const int UnknownField0 = 0;

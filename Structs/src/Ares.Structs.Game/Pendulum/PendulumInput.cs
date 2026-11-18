@@ -7,7 +7,7 @@ public static class PendulumInput
     public const int DirectStreamKind = 1;
 
     /// <summary>Descriptor id of each input frame slot, by slot.</summary>
-    public static IReadOnlyList<int> SlotDescriptors { get; } = [75, 66, 98, 101, 39, 97, 99, 85];
+    public static IReadOnlyList<int> SlotDescriptors { get; } = [80, 70, 103, 106, 43, 102, 104, 90];
 
     /// <summary>Slot holding character button claims and inventory commands.</summary>
     public const int CharacterClaimsSlot = 5;

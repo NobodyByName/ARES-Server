@@ -7,7 +7,7 @@ public static class InventoryInput
     public const int Slot = 5;
 
     /// <summary>Descriptor in the inventory input state.</summary>
-    public const int Descriptor = 97;
+    public const int Descriptor = 102;
 
     /// <summary>FromContainerField in the inventory input state.</summary>
     public const int FromContainerField = 0;

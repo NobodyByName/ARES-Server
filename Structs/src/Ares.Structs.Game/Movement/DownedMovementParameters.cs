@@ -105,7 +105,7 @@ public static class DownedMovementParameters
 public static class PawnDownedNodeState
 {
     /// <summary>Descriptor of the downed-node variable.</summary>
-    public const int DescriptorId = 47;
+    public const int DescriptorId = 51;
 
     /// <summary>Field holding the slope part of the crawl input.</summary>
     public const int SlopeInputScalarField = 0;
