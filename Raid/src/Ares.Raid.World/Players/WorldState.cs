@@ -79,7 +79,6 @@ public sealed class WorldState
     private readonly Lock _lock = new();
     private readonly WorldImports _imports;
     private readonly MapGameMode _gameMode;
-    private readonly double _shieldHealthPerPlate;
     private readonly Dictionary<ulong, WorldActor> _actors = [];
     private readonly Dictionary<long, WorldPlayer> _players = [];
     private ulong _nextGuid = 2;
@@ -96,7 +95,6 @@ public sealed class WorldState
         _imports = imports ?? throw new ArgumentNullException(nameof(imports));
         ArgumentNullException.ThrowIfNull(gameData);
         _gameMode = gameData.Map.GameMode;
-        _shieldHealthPerPlate = gameData.Items.ShieldHealthPerPlate;
         MatchId = matchId ?? throw new ArgumentNullException(nameof(matchId));
         ArgumentOutOfRangeException.ThrowIfNegative(sessionSeed);
         WorldActor state = Add(_gameMode.GameState.Class, default, new Dictionary<string, object?>
@@ -639,14 +637,12 @@ public sealed class WorldState
         // TODO: Apply shield damage mitigation and drain shield health when server-side damage is
         // implemented. These values only initialize/display the shield; no damage is processed yet.
         // Medium/Heavy shields, movement penalties, equip charge-up and repair are future work.
-        bool equipped = inventory.Shield is not null;
         return new StableSubobjectContent(player.Health, Replication.Encode(ClassPaths.HealthComponent, new Dictionary<string, object?>
         {
             [PropertyNames.Replicates] = true,
             [PropertyNames.IsActive] = true,
             [$"{PropertyNames.Armor}.{PropertyNames.Health}"] = inventory.ShieldHealth,
             [$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"] = inventory.ShieldHealth,
-            [$"{PropertyNames.Armor}.{PropertyNames.HealthPerPlate}"] = equipped ? _shieldHealthPerPlate : 0.0,
         }, Objects([])));
     }
 

@@ -59,7 +59,7 @@ public static class GameReplication
         ];
 }
 
-/// <summary>Entries 0 to 236 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 0 to 235 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart0
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
@@ -100,11 +100,10 @@ internal static class GameReplicationPropertiesPart0
         new("/Script/Angelscript.ArmorOverTimeState.TotalArmorToReceive", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x80010C0000201UL) { LayoutIndex = 2 },
         new("/Script/Angelscript.ArmorOverTimeState.UsedItemAssetId", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 8 },
         new("/Script/Angelscript.ArmorOverTimeState.bIsActive", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040002200UL),
-        new("/Script/Angelscript.ArmorSlot.ArmorItem", PropertyKind.ObjectProperty, "UArmorItemBase*", (PropertyFlags)0x8001080000205UL) { LayoutIndex = 4, TypePath = "/Script/Angelscript.ArmorItemBase" },
-        new("/Script/Angelscript.ArmorSlot.CurrentMaxArmor", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2 },
+        new("/Script/Angelscript.ArmorSlot.ArmorItem", PropertyKind.ObjectProperty, "UArmorItemBase*", (PropertyFlags)0x8001080000205UL) { LayoutIndex = 3, TypePath = "/Script/Angelscript.ArmorItemBase" },
+        new("/Script/Angelscript.ArmorSlot.CurrentMaxArmor", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 1 },
         new("/Script/Angelscript.ArmorSlot.Health", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL),
-        new("/Script/Angelscript.ArmorSlot.HealthPerPlate", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 1 },
-        new("/Script/Angelscript.ArmorSlot.MitigationPerPlate", PropertyKind.FloatProperty, "float", (PropertyFlags)0x80010C0000205UL) { LayoutIndex = 3 },
+        new("/Script/Angelscript.ArmorSlot.MitigationPerPlate", PropertyKind.FloatProperty, "float", (PropertyFlags)0x80010C0000205UL) { LayoutIndex = 2 },
         new("/Script/Angelscript.BaseInteractionComponent.CurrentInteractionState", PropertyKind.EnumProperty, "ECurrentInteractionState", (PropertyFlags)0x8001140000224UL) { LayoutIndex = 1, TypePath = "/Script/Angelscript.ECurrentInteractionState", Underlying = "/Script/Angelscript.BaseInteractionComponent.CurrentInteractionState.UnderlyingType" },
         new("/Script/Angelscript.BaseInteractionComponent.CurrentInteractionState.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.BaseInteractionComponent.InteractionAccess", PropertyKind.EnumProperty, "EInteractionAccess", (PropertyFlags)0x8001040000225UL) { TypePath = "/Script/Angelscript.EInteractionAccess", Underlying = "/Script/Angelscript.BaseInteractionComponent.InteractionAccess.UnderlyingType" },
@@ -304,7 +303,7 @@ internal static class GameReplicationPropertiesPart0
     ];
 }
 
-/// <summary>Entries 237 to 420 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 236 to 419 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart1
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
@@ -323,7 +322,7 @@ internal static class GameReplicationPropertiesPart1
         new("/Script/Angelscript.GameModeInfo.NPXHints", PropertyKind.ArrayProperty, "TArray", (PropertyFlags)0x2004UL) { LayoutIndex = 3, Inner = "/Script/Angelscript.GameModeInfo.NPXHints.NPXHints_Inner" },
         new("/Script/Angelscript.GameModeInfo.NPXHints.NPXHints_Inner", PropertyKind.StructProperty, "FGameplayTag", (PropertyFlags)0x8001000000000UL) { TypePath = "/Script/GameplayTags.GameplayTag", StructFlags = (StructFlags)0x4E1401U, Children = ["/Script/GameplayTags.GameplayTag.TagName"] },
         new("/Script/Angelscript.GameModeInfo.bFlag", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040002204UL),
-        new("/Script/Angelscript.HealthComponent.Armor", PropertyKind.StructProperty, "FArmorSlot", (PropertyFlags)0x24UL) { TypePath = "/Script/Angelscript.ArmorSlot", StructFlags = (StructFlags)0x1000U, Children = ["/Script/Angelscript.ArmorSlot.Health", "/Script/Angelscript.ArmorSlot.HealthPerPlate", "/Script/Angelscript.ArmorSlot.CurrentMaxArmor", "/Script/Angelscript.ArmorSlot.MitigationPerPlate", "/Script/Angelscript.ArmorSlot.ArmorItem"] },
+        new("/Script/Angelscript.HealthComponent.Armor", PropertyKind.StructProperty, "FArmorSlot", (PropertyFlags)0x24UL) { TypePath = "/Script/Angelscript.ArmorSlot", StructFlags = (StructFlags)0x1000U, Children = ["/Script/Angelscript.ArmorSlot.Health", "/Script/Angelscript.ArmorSlot.CurrentMaxArmor", "/Script/Angelscript.ArmorSlot.MitigationPerPlate", "/Script/Angelscript.ArmorSlot.ArmorItem"] },
         new("/Script/Angelscript.HealthComponent.ArmoredZone", PropertyKind.ArrayProperty, "TArray", (PropertyFlags)0x25UL) { LayoutIndex = 3, Inner = "/Script/Angelscript.HealthComponent.ArmoredZone.ArmoredZone_Inner" },
         new("/Script/Angelscript.HealthComponent.ArmoredZone.ArmoredZone_Inner", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.HealthComponent.Client_TakeDamage.Data", PropertyKind.StructProperty, "FPioneerClientDamageTakenData", (PropertyFlags)0x1000000080UL) { TypePath = "/Script/PioneerGameplay.PioneerClientDamageTakenData", StructFlags = (StructFlags)0x1601U, Children = ["/Script/PioneerGameplay.PioneerClientDamageTakenData.DamageInstigatorActor", "/Script/PioneerGameplay.PioneerClientDamageTakenData.DamageCauserActor", "/Script/PioneerGameplay.PioneerClientDamageTakenData.TotalRawDamageDealt", "/Script/PioneerGameplay.PioneerClientDamageTakenData.PhysicalDamageDealt", "/Script/PioneerGameplay.PioneerClientDamageTakenData.DamageType", "/Script/PioneerGameplay.PioneerClientDamageTakenData.CurrentHealth", "/Script/PioneerGameplay.PioneerClientDamageTakenData.PreviousHealth", "/Script/PioneerGameplay.PioneerClientDamageTakenData.AttackOrigin", "/Script/PioneerGameplay.PioneerClientDamageTakenData.ImpactLocation", "/Script/PioneerGameplay.PioneerClientDamageTakenData.ImpactNormal"] },
@@ -496,7 +495,7 @@ internal static class GameReplicationPropertiesPart1
     ];
 }
 
-/// <summary>Entries 421 to 658 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 420 to 658 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart2
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
@@ -592,7 +591,7 @@ internal static class GameReplicationPropertiesPart2
         new("/Script/Angelscript.PioneerPlayerCharacter.PlayerStatusVar", PropertyKind.EnumProperty, "EPlayerStateStatus", (PropertyFlags)0x8001140000221UL) { LayoutIndex = 7, TypePath = "/Script/Angelscript.EPlayerStateStatus", Underlying = "/Script/Angelscript.PioneerPlayerCharacter.PlayerStatusVar.UnderlyingType" },
         new("/Script/Angelscript.PioneerPlayerCharacter.PlayerStatusVar.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.PioneerPlayerCharacter.SurfaceTrackMoverId", PropertyKind.UInt16Property, "uint16", (PropertyFlags)0x8001040002220UL) { LayoutIndex = 2 },
-        new("/Script/Angelscript.PioneerPlayerCharacter.SyncedAnimationTriggerData", PropertyKind.StructProperty, "FSyncedAnimationTriggerData", (PropertyFlags)0x25UL) { TypePath = "/Script/Angelscript.SyncedAnimationTriggerData", StructFlags = (StructFlags)0x1000U, Children = ["/Script/Angelscript.SyncedAnimationTriggerData.bTriggerNewSyncedAnim", "/Script/Angelscript.SyncedAnimationTriggerData.bCancelSyncedAnim", "/Script/Angelscript.SyncedAnimationTriggerData.SyncedAnimTag", "/Script/Angelscript.SyncedAnimationTriggerData.bCanBeCanceled", "/Script/Angelscript.SyncedAnimationTriggerData.AlignTransform", "/Script/Angelscript.SyncedAnimationTriggerData.OtherPlayer"] },
+        new("/Script/Angelscript.PioneerPlayerCharacter.SyncedAnimationTriggerData", PropertyKind.StructProperty, "FSyncedAnimationTriggerData", (PropertyFlags)0x25UL) { TypePath = "/Script/Angelscript.SyncedAnimationTriggerData", StructFlags = (StructFlags)0x1000U, Children = ["/Script/Angelscript.SyncedAnimationTriggerData.bTriggerNewSyncedAnim", "/Script/Angelscript.SyncedAnimationTriggerData.SyncedAnimTag", "/Script/Angelscript.SyncedAnimationTriggerData.AlignTransform", "/Script/Angelscript.SyncedAnimationTriggerData.OtherPlayer"] },
         new("/Script/Angelscript.PioneerPlayerCharacter.bActiveActiveCamouflage", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001140000220UL) { LayoutIndex = 3 },
         new("/Script/Angelscript.PioneerPlayerCharacter.bCanReviveFromDead", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000225UL) { LayoutIndex = 8 },
         new("/Script/Angelscript.PioneerPlayerCharacter.bIsInDebug", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000225UL) { LayoutIndex = 5 },
@@ -739,6 +738,7 @@ internal static class GameReplicationPropertiesPart2
         new("/Script/Angelscript.QuantizedVectorInt8.Y", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 1 },
         new("/Script/Angelscript.QuantizedVectorInt8.Z", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 2 },
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.CurrentProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 3 },
+        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.InitialProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2 },
     ];
 }
 
@@ -747,7 +747,6 @@ internal static class GameReplicationPropertiesPart3
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
-        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.InitialProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2 },
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority", PropertyKind.EnumProperty, "EAnnouncementPriority", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 4, TypePath = "/Script/Angelscript.EAnnouncementPriority", Underlying = "/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority.UnderlyingType" },
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.QuestId", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL),
@@ -818,11 +817,9 @@ internal static class GameReplicationPropertiesPart3
         new("/Script/Angelscript.StandardInteractionComponent.bIsContinuousInteractionActive", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000221UL) { LayoutIndex = 10 },
         new("/Script/Angelscript.StandardInteractionComponent.bPersistHoldProgress", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000225UL) { LayoutIndex = 3 },
         new("/Script/Angelscript.StandardInteractionComponent.bUseAnimationContainer", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000220UL) { LayoutIndex = 9 },
-        new("/Script/Angelscript.SyncedAnimationTriggerData.AlignTransform", PropertyKind.StructProperty, "FTransform", (PropertyFlags)0x8001040000005UL) { LayoutIndex = 4, TypePath = "/Script/CoreUObject.Transform", StructFlags = (StructFlags)0x8600BU, Children = ["/Script/CoreUObject.Transform.Rotation", "/Script/CoreUObject.Transform.Translation", "/Script/CoreUObject.Transform.Scale3D"] },
-        new("/Script/Angelscript.SyncedAnimationTriggerData.OtherPlayer", PropertyKind.ObjectProperty, "APioneerPlayerCharacter*", (PropertyFlags)0x8001000000205UL) { LayoutIndex = 5, TypePath = "/Script/Angelscript.PioneerPlayerCharacter" },
-        new("/Script/Angelscript.SyncedAnimationTriggerData.SyncedAnimTag", PropertyKind.StructProperty, "FGameplayTag", (PropertyFlags)0x8001000000005UL) { LayoutIndex = 2, TypePath = "/Script/GameplayTags.GameplayTag", StructFlags = (StructFlags)0x4E1401U, Children = ["/Script/GameplayTags.GameplayTag.TagName"] },
-        new("/Script/Angelscript.SyncedAnimationTriggerData.bCanBeCanceled", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 3 },
-        new("/Script/Angelscript.SyncedAnimationTriggerData.bCancelSyncedAnim", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 1 },
+        new("/Script/Angelscript.SyncedAnimationTriggerData.AlignTransform", PropertyKind.StructProperty, "FTransform", (PropertyFlags)0x8001040000005UL) { LayoutIndex = 2, TypePath = "/Script/CoreUObject.Transform", StructFlags = (StructFlags)0x8600BU, Children = ["/Script/CoreUObject.Transform.Rotation", "/Script/CoreUObject.Transform.Translation", "/Script/CoreUObject.Transform.Scale3D"] },
+        new("/Script/Angelscript.SyncedAnimationTriggerData.OtherPlayer", PropertyKind.ObjectProperty, "APioneerPlayerCharacter*", (PropertyFlags)0x8001000000205UL) { LayoutIndex = 3, TypePath = "/Script/Angelscript.PioneerPlayerCharacter" },
+        new("/Script/Angelscript.SyncedAnimationTriggerData.SyncedAnimTag", PropertyKind.StructProperty, "FGameplayTag", (PropertyFlags)0x8001000000005UL) { LayoutIndex = 1, TypePath = "/Script/GameplayTags.GameplayTag", StructFlags = (StructFlags)0x4E1401U, Children = ["/Script/GameplayTags.GameplayTag.TagName"] },
         new("/Script/Angelscript.SyncedAnimationTriggerData.bTriggerNewSyncedAnim", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001040000205UL),
         new("/Script/Angelscript.TetherLink.BreakLength", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 13 },
         new("/Script/Angelscript.TetherLink.CreationTime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x80010C0000205UL) { LayoutIndex = 23 },
@@ -1022,17 +1019,17 @@ internal static class GameReplicationPropertiesPart3
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPackets", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 9 },
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPacketsLost", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPacketsRecovered", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 11 },
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.ConnectionTimeout", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 1 },
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.CurrentNetSpeed", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 12 },
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalBytes", PropertyKind.Int64Property, "int64", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
     ];
 }
 
-/// <summary>Entries 934 to 1215 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 934 to 1214 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart4
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.ConnectionTimeout", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 1 },
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.CurrentNetSpeed", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 12 },
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalBytes", PropertyKind.Int64Property, "int64", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalPackets", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 14 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.LastGoodPacketRealtime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 3 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.LastProcessedFrame", PropertyKind.UInt32Property, "uint32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 15 },
@@ -1312,16 +1309,16 @@ internal static class GameReplicationPropertiesPart4
         new("/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace", PropertyKind.EnumProperty, "ECameraShakePlaySpace", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 2, TypePath = "/Script/Engine.ECameraShakePlaySpace", Underlying = "/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace.UnderlyingType" },
         new("/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Engine.PlayerController.ClientStartCameraShake.Scale", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 1 },
+        new("/Script/Engine.PlayerController.ClientStartCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
+        new("/Script/Engine.PlayerController.ClientStartCameraShake.UserPlaySpaceRot", PropertyKind.StructProperty, "FRotator", (PropertyFlags)0x10001040000280UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Rotator", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Rotator.pitch", "/Script/CoreUObject.Rotator.Yaw", "/Script/CoreUObject.Rotator.Roll"] },
     ];
 }
 
-/// <summary>Entries 1216 to 1420 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1215 to 1418 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart5
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
-        new("/Script/Engine.PlayerController.ClientStartCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
-        new("/Script/Engine.PlayerController.ClientStartCameraShake.UserPlaySpaceRot", PropertyKind.StructProperty, "FRotator", (PropertyFlags)0x10001040000280UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Rotator", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Rotator.pitch", "/Script/CoreUObject.Rotator.Yaw", "/Script/CoreUObject.Rotator.Roll"] },
         new("/Script/Engine.PlayerController.ClientStopCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
         new("/Script/Engine.PlayerController.ClientStopCameraShake.bImmediately", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 1 },
         new("/Script/Engine.PlayerController.ClientStopForceFeedback.ForceFeedbackEffect", PropertyKind.ObjectProperty, "UForceFeedbackEffect*", (PropertyFlags)0x18001000000280UL) { TypePath = "/Script/Engine.ForceFeedbackEffect" },
@@ -1525,15 +1522,15 @@ internal static class GameReplicationPropertiesPart5
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesAddedAndWhileActive_WithParams.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.EffectContext", PropertyKind.StructProperty, "FGameplayEffectContextHandle", (PropertyFlags)0x10000000000080UL) { LayoutIndex = 2, TypePath = "/Script/GameplayAbilities.GameplayEffectContextHandle", StructFlags = (StructFlags)0x1403U },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.GameplayCueTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000082UL) { TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
+        new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
     ];
 }
 
-/// <summary>Entries 1421 to 1608 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1419 to 1606 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart6
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
-        new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.GameplayCueParameters", PropertyKind.StructProperty, "FGameplayCueParameters", (PropertyFlags)0x10008000000080UL) { LayoutIndex = 2, TypePath = "/Script/GameplayAbilities.GameplayCueParameters", StructFlags = (StructFlags)0x1405U, Children = ["/Script/GameplayAbilities.GameplayCueParameters.NormalizedMagnitude", "/Script/GameplayAbilities.GameplayCueParameters.RawMagnitude", "/Script/GameplayAbilities.GameplayCueParameters.EffectContext", "/Script/GameplayAbilities.GameplayCueParameters.MatchedTagName", "/Script/GameplayAbilities.GameplayCueParameters.OriginalTag", "/Script/GameplayAbilities.GameplayCueParameters.AggregatedSourceTags", "/Script/GameplayAbilities.GameplayCueParameters.AggregatedTargetTags", "/Script/GameplayAbilities.GameplayCueParameters.Location", "/Script/GameplayAbilities.GameplayCueParameters.Normal", "/Script/GameplayAbilities.GameplayCueParameters.Instigator", "/Script/GameplayAbilities.GameplayCueParameters.EffectCauser", "/Script/GameplayAbilities.GameplayCueParameters.SourceObject", "/Script/GameplayAbilities.GameplayCueParameters.PhysicalMaterial", "/Script/GameplayAbilities.GameplayCueParameters.GameplayEffectLevel", "/Script/GameplayAbilities.GameplayCueParameters.AbilityLevel", "/Script/GameplayAbilities.GameplayCueParameters.TargetAttachComponent", "/Script/GameplayAbilities.GameplayCueParameters.bReplicateLocationWhenUsingMinimalRepProxy", "/Script/GameplayAbilities.GameplayCueParameters.ServerTimestamp_Secs", "/Script/GameplayAbilities.GameplayCueParameters.AffectedPartIDs"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.GameplayCueTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000082UL) { TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
@@ -1721,15 +1718,15 @@ internal static class GameReplicationPropertiesPart6
         new("/Script/GameplayAbilities.GameplayEventData.ContextHandle", PropertyKind.StructProperty, "FGameplayEffectContextHandle", (PropertyFlags)0x10000000000005UL) { LayoutIndex = 5, TypePath = "/Script/GameplayAbilities.GameplayEffectContextHandle", StructFlags = (StructFlags)0x1403U },
         new("/Script/GameplayAbilities.GameplayEventData.EventMagnitude", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000205UL) { LayoutIndex = 8 },
         new("/Script/GameplayAbilities.GameplayEventData.EventTag", PropertyKind.StructProperty, "FGameplayTag", (PropertyFlags)0x18001000000005UL) { TypePath = "/Script/GameplayTags.GameplayTag", StructFlags = (StructFlags)0x4E1401U, Children = ["/Script/GameplayTags.GameplayTag.TagName"] },
+        new("/Script/GameplayAbilities.GameplayEventData.Instigator", PropertyKind.ObjectProperty, "TObjectPtr<AActor>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 1, TypePath = "/Script/Engine.Actor" },
     ];
 }
 
-/// <summary>Entries 1609 to 1681 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1607 to 1678 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart7
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
-        new("/Script/GameplayAbilities.GameplayEventData.Instigator", PropertyKind.ObjectProperty, "TObjectPtr<AActor>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 1, TypePath = "/Script/Engine.Actor" },
         new("/Script/GameplayAbilities.GameplayEventData.InstigatorTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000005UL) { LayoutIndex = 6, TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
         new("/Script/GameplayAbilities.GameplayEventData.OptionalObject", PropertyKind.ObjectProperty, "TObjectPtr<UObject>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Object" },
         new("/Script/GameplayAbilities.GameplayEventData.OptionalObject2", PropertyKind.ObjectProperty, "TObjectPtr<UObject>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 4, TypePath = "/Script/CoreUObject.Object" },
@@ -1810,7 +1807,7 @@ internal static class GameReplicationClassesPart0
 {
     public static IReadOnlyList<ClassSchema> Entries { get; } =
     [
-        new("/Game/Pioneer/Core/Blueprints/Player/BP_PioneerCharacter.BP_PioneerCharacter_C", (ClassFlags)0xC40804U, "/Script/Angelscript.PioneerPlayerCharacter", [], [], 0xF16D694BU),
+        new("/Game/Pioneer/Core/Blueprints/Player/BP_PioneerCharacter.BP_PioneerCharacter_C", (ClassFlags)0xC40804U, "/Script/Angelscript.PioneerPlayerCharacter", [], [], 0x674E084FU),
         new("/Game/Pioneer/Core/Blueprints/Player/BP_PioneerPlayerController.BP_PioneerPlayerController_C", (ClassFlags)0xC40804U, "/Script/Angelscript.PioneerPlayerController", [], [], 0xDDC999DBU),
         new("/Game/Pioneer/Core/Blueprints/Player/BP_PioneerPlayerState.BP_PioneerPlayerState_C", (ClassFlags)0xC40804U, "/Script/Angelscript.PioneerPlayerState", [], [], 0x4B7578DFU),
         new("/Game/Pioneer/Core/GameModes/BP_ArcRaidersGameModeSalvage.BP_ArcRaidersGameModeSalvage_C", (ClassFlags)0xC4080CU, "/Game/Pioneer/Core/GameModes/BP_PioneerGameMode.BP_PioneerGameMode_C", [], [], 0x295E1466U),
@@ -1885,7 +1882,7 @@ internal static class GameReplicationClassesPart0
                 new FunctionSchema("Client_TakeDamage", (FunctionFlags)0x50000D0U, ["/Script/Angelscript.HealthComponent.Client_TakeDamage.Data"]),
                 new FunctionSchema("Multicast_ArmorBreak", (FunctionFlags)0x4004050U, ["/Script/Angelscript.HealthComponent.Multicast_ArmorBreak.InstigatorPawn"]),
                 new FunctionSchema("Multicast_SendAnimationHitReactData", (FunctionFlags)0x40040D0U, ["/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.HitNormal", "/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.CausedBy", "/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.Damage", "/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.bIsHeadshot", "/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.DamageTypeTag", "/Script/Angelscript.HealthComponent.Multicast_SendAnimationHitReactData.bSkipLocalCauser"]),
-            ], 0x7F0FDA22U),
+            ], 0xA2672CF2U),
         new("/Script/Angelscript.HealthComponentInterface", (ClassFlags)0xE40804U, "/Script/Engine.ActorComponent", [], [], 0xCAAAEE3EU),
         new("/Script/Angelscript.IEmoteComponentInterface", (ClassFlags)0xE40805U, "/Script/Engine.ActorComponent", [], [], 0xCAAAEE3EU),
         new("/Script/Angelscript.InteractorComponent", (ClassFlags)0xE40804U, "/Script/Engine.SceneComponent", ["/Script/Angelscript.InteractorComponent.bInteractionsEnabled", "/Script/Angelscript.InteractorComponent.SpecialAccessInteractions", "/Script/Angelscript.InteractorComponent.ForcedExitInteraction", "/Script/Angelscript.InteractorComponent.LastObservedInteraction"],
@@ -1966,7 +1963,7 @@ internal static class GameReplicationClassesPart0
                 new FunctionSchema("Server_StartRequestRevive", (FunctionFlags)0x42000D0U, []),
                 new FunctionSchema("Server_StopRequestRevive", (FunctionFlags)0x42000D0U, []),
                 new FunctionSchema("ServerForceSelfDeath", (FunctionFlags)0x842000D0U, []),
-            ], 0xF16D694BU),
+            ], 0x674E084FU),
         new("/Script/Angelscript.PioneerPlayerCharacterInterface", (ClassFlags)0xC40804U, "/Script/PioneerGameplay.PioneerCharacterBase", ["/Script/Angelscript.PioneerPlayerCharacterInterface.RandomNum"],
             [
                 new FunctionSchema("MulticastResetToWorld", (FunctionFlags)0x40D0U, []),

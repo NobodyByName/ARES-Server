@@ -1036,13 +1036,11 @@ public static class PropertyNames
     public const string Attach = "bAttach";
     public const string BaseRelativePosition = "bBaseRelativePosition";
     public const string BlockingHit = "bBlockingHit";
-    public const string CanBeCanceled = "bCanBeCanceled";
     public const string CanBeDamaged = "bCanBeDamaged";
     public const string CanBeEndedByOtherInstance = "bCanBeEndedByOtherInstance";
     public const string CanExtract = "bCanExtract";
     public const string CanRespawn = "bCanRespawn";
     public const string CanReviveFromDead = "bCanReviveFromDead";
-    public const string CancelSyncedAnim = "bCancelSyncedAnim";
     public const string ClientAckCanMakeVisible = "bClientAckCanMakeVisible";
     public const string CompletedSourceAttributeCapture = "bCompletedSourceAttributeCapture";
     public const string CompletedTargetAttributeCapture = "bCompletedTargetAttributeCapture";

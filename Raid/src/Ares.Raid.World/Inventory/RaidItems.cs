@@ -108,9 +108,6 @@ public sealed class RaidItems
     /// <summary>Shield health of a full Light Shield.</summary>
     public double ShieldMaxHealth => LightShield.MaxArmorPlates * LightShield.ArmorPerPlate;
 
-    /// <summary>Shield health of one Light Shield plate.</summary>
-    public double ShieldHealthPerPlate => LightShield.ArmorPerPlate;
-
     /// <summary>Gameplay classes of the items a character can hold, by usable index, in the order the raid exports them.</summary>
     public IReadOnlyDictionary<ushort, string> HeldItemClasses { get; }
 

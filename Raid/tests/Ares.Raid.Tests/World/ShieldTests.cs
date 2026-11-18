@@ -63,7 +63,6 @@ public sealed class ShieldTests
         Dictionary<string, object?> values = ShieldProperties(session, Assert.Single(ShieldDeliveries(session)).Content);
         Assert.Equal(40.0, values[$"{PropertyNames.Armor}.{PropertyNames.Health}"]);
         Assert.Equal(40.0, values[$"{PropertyNames.Armor}.{PropertyNames.CurrentMaxArmor}"]);
-        Assert.Equal(40.0, values[$"{PropertyNames.Armor}.{PropertyNames.HealthPerPlate}"]);
         StableSubobjectExport component = Assert.Single(session.Raid.State.InventoryExports(session.Player).Records.Values.OfType<StableSubobjectExport>(), entry => entry.Guid == session.Player.Health);
         Assert.Equal("HealthComponent", component.Path);
     }
