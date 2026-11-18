@@ -21,6 +21,12 @@ public static class ProgressionPaths
     /// <summary><c>GET</c>; reply <see cref="QuestsResponse"/>.</summary>
     public const string Quests = "/v1/pioneer/quests";
 
+    /// <summary><c>GET</c>; reply <see cref="FtueResponse"/>.</summary>
+    public const string Ftue = "/v1/pioneer/ftue";
+
+    /// <summary><c>GET</c>; reply <see cref="PcCafeEventResponse"/>.</summary>
+    public const string PcCafeList = "/v1/pioneer/pc-cafe/list";
+
     /// <summary><c>POST</c>; reply <see cref="ReconcileResponse"/>.</summary>
     public const string ReconcileQuests = "/v1/pioneer/quests/reconcile";
 

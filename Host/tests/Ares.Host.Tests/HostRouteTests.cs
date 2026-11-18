@@ -3,6 +3,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Ares.Host.Services.Status;
+using Ares.Structs.Backend.Accounts;
+using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
 namespace Ares.Host.Tests;
@@ -37,6 +39,32 @@ public sealed class HostRouteTests : IAsyncLifetime
         Assert.Equal("ARES-Host", (await _host.GetJson("/health")).GetProperty("service").GetString());
         Assert.Equal(HttpStatusCode.NotImplemented, unknown.StatusCode);
         Assert.Equal("ARES-Host", unknown.Headers.Server.ToString());
+    }
+
+    [Fact]
+    public async Task Menu_sync_reads_the_players_tutorial_state_and_an_empty_cafe_event()
+    {
+        using HttpClient anonymous = _host.Anonymous();
+        foreach (string path in new[] { ProgressionPaths.Ftue, ProgressionPaths.PcCafeList })
+        {
+            using HttpResponseMessage response = await anonymous.GetAsync(path, TestContext.Current.CancellationToken);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        Assert.True((await _host.GetJson(ProgressionPaths.Ftue)).GetProperty("extracted").GetBoolean());
+        using HttpResponseMessage updated = await _host.Post(AccountPaths.SetPersistentPlayerKeys, new
+        {
+            persistentPlayerKeys = new[] { new { key = PersistentPlayerKeyNames.FirstStartupExtracted, value = "false" } },
+        });
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        Assert.False((await _host.GetJson(ProgressionPaths.Ftue)).GetProperty("extracted").GetBoolean());
+
+        JsonElement cafe = await _host.GetJson(ProgressionPaths.PcCafeList);
+        Assert.Equal(0, cafe.GetProperty("endAt").GetInt64());
+        Assert.Empty(cafe.GetProperty("attendanceReward").EnumerateArray());
+        Assert.Empty(cafe.GetProperty("missionReward").EnumerateArray());
+        Assert.Empty(cafe.GetProperty("attendance").GetProperty("claimedDays").EnumerateArray());
+        Assert.Empty(cafe.GetProperty("mission").GetProperty("claimedTimes").EnumerateArray());
     }
 
     [Fact]

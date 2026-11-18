@@ -117,6 +117,10 @@ public sealed class BackendRoutes
 
         // Progression: empty state for a fresh account.
         Player(Get, ProgressionPaths.GameData, (_, player) => player.Inventory.GameData());
+        Player(Get, ProgressionPaths.Ftue, (_, player) => new FtueResponse(player.Settings.GetKeys().Any(key =>
+            key.Key == PersistentPlayerKeyNames.FirstStartupExtracted && string.Equals(key.Value, "true", StringComparison.OrdinalIgnoreCase))));
+        Add(Get, ProgressionPaths.PcCafeList, _ => new PcCafeEventResponse([], [], new PcCafeAttendance(0, []),
+            new PcCafeMission(0, []), time.GetUtcNow().ToUnixTimeSeconds(), StartAt: 0, EndAt: 0));
         Add(Get, ProgressionPaths.Quests, new QuestsResponse([]));
         Player(Get, ProgressionPaths.Inventory, async (_, player, token) => ServiceReply.Ok(await player.Matchmaking.InventoryAsync(token).ConfigureAwait(false)));
         Player(Post, ProgressionPaths.BatchOperation, (request, player, token) =>

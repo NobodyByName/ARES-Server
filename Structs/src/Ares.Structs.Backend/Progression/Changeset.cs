@@ -81,6 +81,9 @@ public sealed record LevelState(
 /// <summary>Response of <c>GET /v1/pioneer/quests</c>.</summary>
 public sealed record QuestsResponse([property: JsonPropertyName("quests")] IReadOnlyList<UnknownQuest> Quests);
 
+/// <summary>Whether the player has completed the first-start extraction.</summary>
+public sealed record FtueResponse([property: JsonPropertyName("extracted")] bool Extracted);
+
 /// <summary>Response of <c>GET /v1/pioneer/inventory</c>.</summary>
 public sealed record InventoryResponse([property: JsonPropertyName("items")] IReadOnlyList<InventoryItem> Items);
 
