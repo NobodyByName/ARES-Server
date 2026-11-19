@@ -13,8 +13,7 @@
     "Socket.LootContainer.Nature.Resin": 0.0015,
     "Socket.LootContainer.Residential": 0.033,
     "Socket.LootContainer.Tech": 0.0385,
-    "Socket.LootContainer.Tech.Computer02.Screen": 0.0173,
-    "Socket.LootContainer.Tech.Server.Door": 0.396
+    "Socket.LootContainer.Tech.Computer02.Screen": 0.0173
   },
   "areaMultipliers": {
     "Unknown": 1.0,

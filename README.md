@@ -154,9 +154,10 @@ official game as known:
 - `loot-rules.json`: per-container decisions, below.
 
 `loot-rules.json` decides, for chosen loot containers, whether they spawn and what they hold; every other
-container follows the two files above. The shipped file has no rules yet. A rule
+container follows the two files above. The shipped rules set how many doors of each server rack and locker rack
+hold a container, as on the official game. A rule
 covers the containers it lists by id, every container whose tag is one of its tags or below it, or every
-container when it lists neither. It can set a spawn chance, the contents, or both:
+container when it lists neither. It can set a spawn chance, a group fill, the contents, or several of them:
 
 ```json
 {
@@ -184,11 +185,17 @@ container when it lists neither. It can set a spawn chance, the contents, or bot
   persistent level. Raid logs each container's id when it is first opened.
 - **`spawnChance`** (0 to 1) replaces the game's decision for the containers the rule covers: no area value,
   group cap or limiter applies to them, and a spawner with a chance runs on it instead of its group's pick.
+- **`groupFill`** (container sockets only) replaces the game's decision for a group of sockets: a weight for
+  each number of filled sockets, such as `{"0": 6, "1": 4, "2": 9}`; each group draws a number (at most its
+  sockets), then that many of its sockets at random get a container. The containers a rule lists form one group;
+  otherwise each group is the game's own (the sockets of one placed prop with the same tag). Placed containers and
+  spawners ignore it.
 - **`loot`** replaces the rolled contents: `stacks` (default: the game's usual 2 or 3, always capped by the
   container's slots) items drawn by `weight` (default 1; an item can come up more than once), each with an
   `amount` in its range (default 1, at most the item's stack size), at full durability. Items are named by
   technical name; any item players can carry in a raid is allowed.
-- Rules apply in order: for each setting, the last rule that covers a container wins.
+- Rules apply in order: for each setting, the last rule that covers a container wins (`spawnChance` and
+  `groupFill` count as one setting for sockets).
 
 Host and Raid refuse to start when a loot file names a tag, container, class, table, item or drop tag the game
 data does not have.

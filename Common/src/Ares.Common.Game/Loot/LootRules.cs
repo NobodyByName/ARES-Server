@@ -66,7 +66,12 @@ public sealed record LootList(LootRange? Stacks, IReadOnlyList<LootListItem> Ite
 /// keep it.
 /// </param>
 /// <param name="Loot">Contents of a covered container, replacing the default roll, or null to keep it.</param>
-public sealed record LootRule(string Name, IReadOnlyList<string> Tags, IReadOnlySet<string> Containers, double? SpawnChance, LootList? Loot)
+/// <param name="GroupFill">
+/// How many container sockets of each group the rule covers get a container, replacing the game's decision for them
+/// (chance, caps), or null to keep it. The containers a rule lists form one group; otherwise a group is the game's: the
+/// sockets of one placed prop with the same tag. Placed containers and spawners ignore it.
+/// </param>
+public sealed record LootRule(string Name, IReadOnlyList<string> Tags, IReadOnlySet<string> Containers, double? SpawnChance, LootList? Loot, LootFill? GroupFill = null)
 {
     /// <summary>Whether the rule covers a container.</summary>
     /// <param name="id">The container's id, or null for a container the raid spawned on request.</param>
@@ -106,11 +111,50 @@ public sealed class LootRules
     /// <returns>The chance, or null to keep the game's decision.</returns>
     public double? SpawnChance(string? id, IReadOnlyCollection<string> tags) => Rules.LastOrDefault(rule => rule.SpawnChance is not null && rule.Covers(id, tags))?.SpawnChance;
 
+    /// <summary>The rule that decides whether a container socket spawns: the last covering rule that sets a spawn chance or a group fill.</summary>
+    /// <param name="id">The socket's container id.</param>
+    /// <param name="tag">The socket's tag.</param>
+    /// <returns>The rule, or null to keep the game's decision.</returns>
+    public LootRule? SocketSpawn(string id, string tag) =>
+        Rules.LastOrDefault(rule => (rule.SpawnChance is not null || rule.GroupFill is not null) && rule.Covers(id, [tag]));
+
     /// <summary>The rule that sets a container's contents.</summary>
     /// <param name="id">The container's id, or null.</param>
     /// <param name="tag">The container's tag, or null.</param>
     /// <returns>The rule, or null to keep the default roll.</returns>
     public LootRule? LootOf(string? id, string? tag) => Rules.LastOrDefault(rule => rule.Loot is not null && rule.Covers(id, tag is null ? [] : [tag]));
+}
+
+/// <summary>How many sockets of a group get a container: a number drawn by weight, at most the group's sockets.</summary>
+/// <param name="Weights">Relative weight of each number of filled sockets.</param>
+public sealed record LootFill(IReadOnlyDictionary<int, double> Weights)
+{
+    /// <summary>Draws how many sockets of a group get a container.</summary>
+    /// <param name="sockets">Sockets of the group.</param>
+    /// <param name="random">The raid's random numbers.</param>
+    /// <returns>The number, from 0 to <paramref name="sockets"/>.</returns>
+    public int Draw(int sockets, Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+        KeyValuePair<int, double>[] entries = [.. Weights.Where(entry => entry.Value > 0).OrderBy(entry => entry.Key)];
+        if (entries.Length == 0)
+        {
+            return 0;
+        }
+
+        double roll = random.NextDouble() * entries.Sum(entry => entry.Value);
+        foreach ((int count, double weight) in entries)
+        {
+            if (roll < weight)
+            {
+                return Math.Min(count, sockets);
+            }
+
+            roll -= weight;
+        }
+
+        return Math.Min(entries[^1].Key, sockets);
+    }
 }
 
 /// <summary>Gameplay tag comparisons for loot.</summary>

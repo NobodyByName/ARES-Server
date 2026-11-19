@@ -76,12 +76,14 @@ internal sealed record LootRulesDocument(
 /// <param name="Containers">Ids of the containers it covers.</param>
 /// <param name="SpawnChance">Chance from 0 to 1 that a covered container spawns.</param>
 /// <param name="Loot">Contents of a covered container.</param>
+/// <param name="GroupFill">Weight of each number of filled sockets per group, keyed by the number.</param>
 internal sealed record LootRuleDocument(
     [property: JsonPropertyName("name")] string? Name = null,
     [property: JsonPropertyName("tags")] IReadOnlyList<string?>? Tags = null,
     [property: JsonPropertyName("containers")] IReadOnlyList<string?>? Containers = null,
     [property: JsonPropertyName("spawnChance")] double? SpawnChance = null,
-    [property: JsonPropertyName("loot")] LootListDocument? Loot = null);
+    [property: JsonPropertyName("loot")] LootListDocument? Loot = null,
+    [property: JsonPropertyName("groupFill")] IReadOnlyDictionary<string, double>? GroupFill = null);
 
 /// <summary>The contents a loot rule gives.</summary>
 /// <param name="Items">Items to draw from.</param>

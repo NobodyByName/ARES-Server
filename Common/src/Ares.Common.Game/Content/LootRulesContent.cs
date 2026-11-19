@@ -42,9 +42,9 @@ internal static class LootRulesContent
                 throw Problem("tags and containers must not hold null");
             }
 
-            if (rule is { SpawnChance: null, Loot: null })
+            if (rule is { SpawnChance: null, Loot: null, GroupFill: null })
             {
-                throw Problem("sets neither spawnChance nor loot");
+                throw Problem("sets none of spawnChance, groupFill and loot");
             }
 
             if (rule.SpawnChance is { } and not (>= 0 and <= 1))
@@ -62,8 +62,28 @@ internal static class LootRulesContent
                 throw Problem($"no map has the container {unknownId}");
             }
 
-            rules.Add(new LootRule(name, tags, containers.ToFrozenSet(StringComparer.Ordinal), rule.SpawnChance, rule.Loot is { } loot ? List(loot) : null));
+            rules.Add(new LootRule(name, tags, containers.ToFrozenSet(StringComparer.Ordinal), rule.SpawnChance, rule.Loot is { } loot ? List(loot) : null,
+                rule.GroupFill is { } fill ? Fill(fill) : null));
             continue;
+
+            LootFill Fill(IReadOnlyDictionary<string, double> weights)
+            {
+                Dictionary<int, double> counts = [];
+                foreach ((string key, double weight) in weights)
+                {
+                    if (!int.TryParse(key, NumberStyles.None, CultureInfo.InvariantCulture, out int count))
+                    {
+                        throw Problem($"groupFill key {key} must be a number of sockets (0 or more)");
+                    }
+
+                    if (!(double.IsFinite(weight) && weight >= 0) || !counts.TryAdd(count, weight))
+                    {
+                        throw Problem($"groupFill {key} must appear once with a weight of 0 or more");
+                    }
+                }
+
+                return counts.Values.Sum() > 0 ? new LootFill(counts.ToFrozenDictionary()) : throw Problem("groupFill needs a weight above 0");
+            }
 
             AresContentException Problem(string problem) => invalid($"rule {name}: {problem}");
 
