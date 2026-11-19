@@ -1,4 +1,5 @@
 using Ares.Common.Game.Content;
+using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Loot;
@@ -22,6 +23,7 @@ public sealed class RaidGameData
         Map = data.Names.Dam;
         Items = new RaidItems(data, content);
         LootRolls = new LootContentRolls(Items.Definitions, data.Loot);
+        LootRules = content.LootRules(data, Items.Definitions);
     }
 
     /// <summary>The loaded game data.</summary>
@@ -35,4 +37,7 @@ public sealed class RaidGameData
 
     /// <summary>How a loot container's contents are drawn.</summary>
     public LootContentRolls LootRolls { get; }
+
+    /// <summary>The operator's loot rules: spawn chances and contents of chosen containers.</summary>
+    public LootRules LootRules { get; }
 }

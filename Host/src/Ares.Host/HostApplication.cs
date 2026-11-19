@@ -35,6 +35,9 @@ public static class HostApplication
         HostSettings settings = configuration.Settings;
         InventoryCatalog catalog = new(gameData, configuration.Content, settings.StashUpgrades);
 
+        // Every Raid applies the loot rules; checking them here stops a bad file before the first raid.
+        _ = configuration.Content.LootRules(gameData, catalog.Items);
+
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders();
         if (loggerProvider is null)

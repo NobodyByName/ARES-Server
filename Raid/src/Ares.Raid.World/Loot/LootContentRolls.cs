@@ -1,4 +1,5 @@
 using Ares.Common.Game.Inventory;
+using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
@@ -68,12 +69,7 @@ public sealed class LootContentRolls
     /// <param name="tag">The tag.</param>
     /// <param name="parent">The other tag.</param>
     /// <returns>True when <paramref name="tag"/> equals <paramref name="parent"/> or lies below it.</returns>
-    public static bool IsTagOrBelow(string tag, string parent)
-    {
-        ArgumentNullException.ThrowIfNull(tag);
-        ArgumentNullException.ThrowIfNull(parent);
-        return tag.StartsWith(parent, StringComparison.OrdinalIgnoreCase) && (tag.Length == parent.Length || tag[parent.Length] == '.');
-    }
+    public static bool IsTagOrBelow(string tag, string parent) => LootTags.IsTagOrBelow(tag, parent);
 
     /// <summary>
     /// Whether an item's placement list accepts a container: one placement's tag is the container's tag or above it, and
@@ -120,6 +116,49 @@ public sealed class LootContentRolls
     /// <param name="containerTag">The container's tag.</param>
     /// <returns>The items, in pool order; none when no table pool covers the tag.</returns>
     public IReadOnlyList<ItemDefinition> Candidates(string containerTag) => [.. PoolCandidates(containerTag).Select(entry => entry.Item)];
+
+    /// <summary>
+    /// Draws a container's contents from an operator rule's list: the list's number of stacks (else the game's target)
+    /// capped by the slots, each an item drawn by weight with an amount in its range, at full durability.
+    /// </summary>
+    /// <param name="rule">Name of the rule, kept as the contents' pool.</param>
+    /// <param name="list">The rule's contents.</param>
+    /// <param name="slotCount">Slots of the container.</param>
+    /// <param name="random">The raid's random numbers for contents.</param>
+    /// <returns>The contents.</returns>
+    public LootContents Roll(string rule, LootList list, int slotCount, Random random)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        ArgumentNullException.ThrowIfNull(list);
+        ArgumentNullException.ThrowIfNull(random);
+        int target = list.Stacks is { } stacks ? Uniform(new LootRange(Math.Min(stacks.Min, slotCount), Math.Min(stacks.Max, slotCount)), random)
+            : Math.Min(Target(random), slotCount);
+        double total = list.Items.Sum(entry => entry.Weight);
+        List<LootStack> drawn = [];
+        while (drawn.Count < target)
+        {
+            LootListItem picked = Pick(list.Items, random.NextDouble() * total);
+            drawn.Add(new LootStack(picked.Item, Uniform(picked.Amount, random), 1.0));
+        }
+
+        return new LootContents($"rule {rule}", drawn);
+    }
+
+    // The item a weighted roll in [0, total weight) lands on.
+    private static LootListItem Pick(IReadOnlyList<LootListItem> items, double roll)
+    {
+        foreach (LootListItem item in items)
+        {
+            if (roll < item.Weight)
+            {
+                return item;
+            }
+
+            roll -= item.Weight;
+        }
+
+        return items[^1];
+    }
 
     /// <summary>Draws a container's contents.</summary>
     /// <param name="containerTag">The container's tag, or null when it has none.</param>

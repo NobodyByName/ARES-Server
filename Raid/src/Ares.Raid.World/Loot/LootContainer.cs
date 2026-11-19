@@ -34,7 +34,11 @@ public enum LootContainerSource
 /// <param name="Tag">Its container tag: its socket's tag, else the tag of the container type that lists its class; null when none does.</param>
 /// <param name="LootValue">Loot value of the area around it.</param>
 /// <param name="Contents">What it holds from its creation.</param>
-public sealed record LootContainer(int Index, LootContainerSource Source, Vector3D Location, Rotator Rotation, LootSocket? Socket, LootContainerClass Class, ulong Guid, ulong Archetype, ulong SearchAnimation, IReadOnlyList<ulong> Components, string? Tag, PointOfInterestLootValue LootValue, LootContents Contents)
+/// <param name="Id">
+/// Its id in the operator's loot rules (see <see cref="Ares.Common.Game.Loot.LootContainerIds"/>; a spawner's containers
+/// share the spawner's), or null for a container spawned on request.
+/// </param>
+public sealed record LootContainer(int Index, LootContainerSource Source, Vector3D Location, Rotator Rotation, LootSocket? Socket, LootContainerClass Class, ulong Guid, ulong Archetype, ulong SearchAnimation, IReadOnlyList<ulong> Components, string? Tag, PointOfInterestLootValue LootValue, LootContents Contents, string? Id)
 {
     /// <summary>Short name of its class (the class name without its <c>_C</c> suffix).</summary>
     public string ClassName

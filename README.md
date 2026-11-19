@@ -127,14 +127,56 @@ unusable), and raids then run without collision.
 ## ARES content
 
 Some data ARES needs is not in the installed game: the stash and loadout structures, what recycling each
-item gives, the trader offers, and item quality levels. ARES ships it in
-`content/` (`stash.json`, `loadout.json`, `item-recycling.json`, `trader-offers.json`, `item-quality-levels.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
+item gives, the trader offers, item quality levels and the loot rules. ARES ships it in
+`content/` (`stash.json`, `loadout.json`, `item-recycling.json`, `trader-offers.json`, `item-quality-levels.json`,
+`loot-rules.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
 the server's content: to change it, edit its files and restart Host. `content-dir` in `ares-host.conf` names
 the folder (default `content`). Host passes it to every Raid it starts (`--content-dir`), and each Raid loads
 it when it starts. Host and Raid refuse to start (exit code 2, with the reason on standard error) when the
 folder or one of its files is missing, a file is malformed, inconsistent or does not fit the game data, or
 the folder holds another JSON file. Stash upgrade prices stay in `stash-upgrade-coins`, which needs one price per upgrade of the
 content's stash.
+
+### Loot rules
+
+`loot-rules.json` decides, for chosen loot containers, whether they spawn and what they hold; every other
+container keeps ARES's defaults, which follow the official game. The shipped file has no rules yet. A rule
+covers the containers it lists by id, every container whose tag is one of its tags or below it, or every
+container when it lists neither. It can set a spawn chance, the contents, or both:
+
+```json
+{
+  "rules": [
+    { "name": "More tech", "tags": ["Socket.LootContainer.Tech"], "spawnChance": 0.5 },
+    {
+      "name": "Armory",
+      "containers": ["<cell>/<actor>/<component>/<socket>", "<cell>/<actor>"],
+      "spawnChance": 1,
+      "loot": {
+        "stacks": { "min": 2, "max": 4 },
+        "items": [
+          { "item": "DA_Item_BattleRifle_BreachAction_01", "weight": 1 },
+          { "item": "DA_Item_HeavyAmmo", "weight": 3, "amount": { "min": 10, "max": 30 } }
+        ]
+      }
+    }
+  ]
+}
+```
+
+- **Container ids** come from the game data's map tables: a prop socket is `cell/actor/component/socket`
+  (`loot-sockets.json`), a placed container or a dynamic loot spawner is `cell/actor` (`placed-loot.json`,
+  `dynamic-loot-spawners.json`; every container a spawner places shares its id). The cell is empty for the map's
+  persistent level. Raid logs each container's id when it is first opened.
+- **`spawnChance`** (0 to 1) replaces the game's decision for the containers the rule covers: no area value,
+  group cap or limiter applies to them, and a spawner with a chance runs on it instead of its group's pick.
+- **`loot`** replaces the rolled contents: `stacks` (default: the game's usual 2 or 3, always capped by the
+  container's slots) items drawn by `weight` (default 1; an item can come up more than once), each with an
+  `amount` in its range (default 1, at most the item's stack size), at full durability. Items are named by
+  technical name; any item players can carry in a raid is allowed.
+- Rules apply in order: for each setting, the last rule that covers a container wins.
+
+Host and Raid refuse to start when a rule names a tag, container or item the game data does not have.
 
 ## Contributing
 

@@ -62,7 +62,7 @@ public sealed class LootStates(LootCatalog catalog, RaidItems raidItems)
         string held = string.Join(", ", Items(index).OfType<ContainerItem>()
             .Select(item => string.Create(CultureInfo.InvariantCulture, $"{item.Amount}x {Name(item.AssetIndex)}")));
         string pool = (container.Contents.Pool ?? "none") + (container.Contents.Stacks.Count == 0 ? " (placeholder duck)" : "");
-        return $"#{index} {container.ClassName} tag {container.Tag ?? "-"} value {container.LootValue} pool {pool}: {(held.Length == 0 ? "empty" : held)}";
+        return $"#{index} {container.ClassName} id {container.Id ?? "-"} tag {container.Tag ?? "-"} value {container.LootValue} pool {pool}: {(held.Length == 0 ? "empty" : held)}";
     }
 
     // The technical name of a carried item, or its usable index.

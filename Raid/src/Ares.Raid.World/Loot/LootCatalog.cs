@@ -1,3 +1,4 @@
+using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
@@ -46,7 +47,8 @@ public readonly record struct LootSpawnCounts(int Sockets, int Spawned, int Inac
 /// <summary>
 /// The loot containers of a raid: among the container sockets of the active data layers whose class the server can
 /// serve, those the raid's spawn rolls pick (<see cref="LootSpawnSelection"/>); then the containers the round's dynamic
-/// loot spawners place (<see cref="DynamicLootRuns"/>); then the placed containers whose roll succeeds.
+/// loot spawners place (<see cref="DynamicLootRuns"/>); then the placed containers whose roll succeeds. The operator's
+/// loot rules (<see cref="RaidGameData.LootRules"/>) replace the spawn decision and the contents of the containers they cover.
 /// Ids continue across the sources. A connection gets each container in four steps: the class default (loadable, as the
 /// containers are not part of the map), the spawned actor at its place, the names of its components, then the state of
 /// its search.
@@ -66,6 +68,7 @@ public sealed class LootCatalog
     private readonly ReplicationContext _replication;
     private readonly LootData _loot;
     private readonly LootContentRolls _rolls;
+    private readonly LootRules _lootRules;
     private readonly double _cullDistance;
     private readonly ObjectExports _classExports;
     private readonly Dictionary<string, ulong> _exported;
@@ -109,6 +112,8 @@ public sealed class LootCatalog
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
         _loot = gameData.Data.Loot;
         _rolls = gameData.LootRolls;
+        _lootRules = gameData.LootRules;
+        LootRules lootRules = _lootRules;
         _cullDistance = _loot.ContainerDefaults.NetCullDistance;
         LootData loot = _loot;
         ArgumentNullException.ThrowIfNull(sockets);
@@ -150,7 +155,9 @@ public sealed class LootCatalog
             servable.Add((socket, supported));
         }
 
-        LootSpawnSelection selection = LootSpawnSelection.Select(loot, [.. servable.Select(entry => entry.Socket)], rules, activeDataLayers, random);
+        LootSocket[] rolled = [.. servable.Select(entry => entry.Socket)];
+        double?[] setChances = [.. rolled.Select(socket => lootRules.SpawnChance(LootContainerIds.Of(socket), [socket.ContainerTag]))];
+        LootSpawnSelection selection = LootSpawnSelection.Select(loot, rolled, rules, activeDataLayers, random, setChances);
         for (int candidate = 0; candidate < servable.Count; candidate++)
         {
             if (!selection.Spawns[candidate])
@@ -160,13 +167,13 @@ public sealed class LootCatalog
 
             (LootSocket socket, List<LootContainerClass> supported) = servable[candidate];
             LootContainerClass type = supported.Count == 1 ? supported[0] : supported[random.Next(supported.Count)];
-            Add(LootContainerSource.Socket, socket.Location, socket.Rotation, socket, type);
+            Add(LootContainerSource.Socket, socket.Location, socket.Rotation, socket, type, LootContainerIds.Of(socket));
         }
 
         int onSockets = containers.Count;
         FreeStandingLoot free = rules.FreeStanding ?? FreeStandingLoot.None;
         LootSpawnerCounts spawners = Spawners();
-        LootPlacedCounts placed = Placed(LootContainerSource.Placed, [.. free.Placed.Select(entry => (entry.Class, entry.Location, (Rotator?)entry.Rotation, entry.DataLayer))]);
+        LootPlacedCounts placed = Placed(LootContainerSource.Placed, [.. free.Placed.Select(entry => (entry.Class, entry.Location, (Rotator?)entry.Rotation, entry.DataLayer, LootContainerIds.Of(entry)))]);
 
         // Every servable class may also be spawned during the raid, so each has its export and its world item bit.
         WorldItemClasses worldItemList = gameData.Data.WorldItems;
@@ -193,27 +200,35 @@ public sealed class LootCatalog
         Counts = new LootSpawnCounts(sockets.Count, onSockets, inactive, untyped, unsupported, containers.Select(container => container.Class).Distinct().Count(), selection.SkippedByRoll, selection.SkippedByGroupCap, selection.SkippedByLimiter, Enum.GetValues<PointOfInterestLootValue>().ToDictionary(value => value, selection.Spawned), spawners, placed);
         return;
 
-        void Add(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type)
+        void Add(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type, string id)
         {
             ulong archetype = Export(type.Container.Archetype);
             ulong animation = type.SearchAnimation is { } path ? Export(path) : 0;
-            Place(source, location, rotation, socket, type, archetype, animation);
+            Place(source, location, rotation, socket, type, archetype, animation, id);
         }
 
         // The round's spawners: picked by their groups from every listed spawner, then those of inactive data layers
         // dropped; a drawn class that is not enabled or not servable places nothing (the other draws stay as they are).
+        // A spawner of the round's groups that an operator rule sets a chance for runs on that chance instead, with every
+        // servable class enabled.
         LootSpawnerCounts Spawners()
         {
             IReadOnlyList<DynamicLootSpawner> all = free.Spawners;
             IReadOnlyList<DynamicLootSpawner> picked = DynamicLootRuns.Pick(free.Groups, round, random);
+            Dictionary<DynamicLootSpawner, double?> set = all.ToDictionary(spawner => spawner, spawner => lootRules.SpawnChance(LootContainerIds.Of(spawner),
+                [.. spawner.Classes.Select(entry => LootSocketClasses.ContainerTag(loot, entry.Class)).OfType<string>()]));
+            HashSet<DynamicLootSpawner> inRound = [.. free.Groups.Where(group => group.Rounds.Contains(round, StringComparer.Ordinal)).SelectMany(group => group.Spawners)];
+            List<DynamicLootSpawner> runs = [.. picked.Where(spawner => set.GetValueOrDefault(spawner) is null),
+                .. all.Where(spawner => inRound.Contains(spawner) && set[spawner] is { } chance && random.NextDouble() < chance)];
             int layer = all.Count(spawner => spawner.DataLayer is { } name && !active.Contains(name));
             (int run, int spawned, int disabled, int unservable) = (0, 0, 0, 0);
-            foreach (DynamicLootSpawner spawner in picked.Where(spawner => spawner.DataLayer is null || active.Contains(spawner.DataLayer)))
+            foreach (DynamicLootSpawner spawner in runs.Where(spawner => spawner.DataLayer is null || active.Contains(spawner.DataLayer)))
             {
                 run++;
+                bool operatorSet = set.GetValueOrDefault(spawner) is not null;
                 foreach (DynamicLootPlacement placement in DynamicLootRuns.Run(spawner, random))
                 {
-                    if (!free.SpawnerClassEnabled(placement.Class))
+                    if (!operatorSet && !free.SpawnerClassEnabled(placement.Class))
                     {
                         disabled++;
                     }
@@ -224,7 +239,7 @@ public sealed class LootCatalog
                     else
                     {
                         spawned++;
-                        Add(LootContainerSource.Spawner, placement.Location, placement.Rotation, null, type);
+                        Add(LootContainerSource.Spawner, placement.Location, placement.Rotation, null, type, LootContainerIds.Of(spawner));
                     }
                 }
             }
@@ -232,11 +247,12 @@ public sealed class LootCatalog
             return new LootSpawnerCounts(all.Count, run, all.Count - run - layer, layer, spawned, disabled, unservable);
         }
 
-        // Containers at fixed places: each rolls the chance of its class's container tag in the area's loot value.
-        LootPlacedCounts Placed(LootContainerSource source, List<(string Class, Vector3D Location, Rotator? Rotation, string? DataLayer)> entries)
+        // Containers at fixed places: each rolls the chance an operator rule sets, else the chance of its class's
+        // container tag in the area's loot value.
+        LootPlacedCounts Placed(LootContainerSource source, List<(string Class, Vector3D Location, Rotator? Rotation, string? DataLayer, string Id)> entries)
         {
             (int spawned, int layer, int unservable, int untagged, int rolls) = (0, 0, 0, 0, 0);
-            foreach ((string path, Vector3D location, Rotator? rotation, string? dataLayer) in entries)
+            foreach ((string path, Vector3D location, Rotator? rotation, string? dataLayer, string id) in entries)
             {
                 if (dataLayer is not null && !active.Contains(dataLayer))
                 {
@@ -250,14 +266,14 @@ public sealed class LootCatalog
                 {
                     untagged++;
                 }
-                else if (rules.Rolls && random.NextDouble() >= rules.Chance(tag, _areas.At(location)))
+                else if (rules.Rolls && random.NextDouble() >= (lootRules.SpawnChance(id, [tag]) ?? rules.Chance(tag, _areas.At(location))))
                 {
                     rolls++;
                 }
                 else
                 {
                     spawned++;
-                    Add(source, location, rotation ?? default, null, type);
+                    Add(source, location, rotation ?? default, null, type, id);
                 }
             }
 
@@ -322,7 +338,7 @@ public sealed class LootCatalog
         }
 
         ulong animation = type.SearchAnimation is { } path ? _exported[path] : 0;
-        return Place(LootContainerSource.Operator, location, rotation, null, type, _exported[type.Container.Archetype], animation);
+        return Place(LootContainerSource.Operator, location, rotation, null, type, _exported[type.Container.Archetype], animation, null);
     }
 
     /// <summary>The container a search interaction belongs to.</summary>
@@ -461,16 +477,20 @@ public sealed class LootCatalog
         values[PropertyNames.UseWaitDelayForAnimationNonLocal] = false;
     }
 
-    // Gives a container the next ids, draws its contents and indexes it by its interaction and its place.
-    private LootContainer Place(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type, ulong archetype, ulong animation)
+    // Gives a container the next ids, draws its contents (from the operator rule that sets them, else the default roll)
+    // and indexes it by its interaction and its place.
+    private LootContainer Place(LootContainerSource source, Vector3D location, Rotator rotation, LootSocket? socket, LootContainerClass type, ulong archetype, ulong animation,
+        string? id)
     {
         ulong guid = _nextGuid;
         ulong[] parts = [.. type.Components.Select((_, index) => guid + (2 * (ulong)(index + 1)))];
         _nextGuid = guid + (2 * (ulong)(type.Components.Count + 1));
         string? tag = socket?.ContainerTag ?? LootSocketClasses.ContainerTag(_loot, type.Container.Class);
         PointOfInterestLootValue value = _areas.At(location);
-        LootContents contents = _rolls.Roll(tag, type.Container.Class, type.SlotCount, value, _contents);
-        LootContainer container = new(_containers.Count, source, location, rotation, socket, type, guid, archetype, animation, parts, tag, value, contents);
+        LootContents contents = _lootRules.LootOf(id, tag) is { Loot: { } list } rule
+            ? _rolls.Roll(rule.Name, list, type.SlotCount, _contents)
+            : _rolls.Roll(tag, type.Container.Class, type.SlotCount, value, _contents);
+        LootContainer container = new(_containers.Count, source, location, rotation, socket, type, guid, archetype, animation, parts, tag, value, contents, id);
         if (contents.Stacks.Count == 0)
         {
             _placeholders[container.ClassName] = _placeholders.GetValueOrDefault(container.ClassName) + 1;

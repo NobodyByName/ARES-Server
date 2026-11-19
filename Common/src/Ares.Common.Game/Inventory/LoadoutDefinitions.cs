@@ -75,6 +75,7 @@ public sealed class LoadoutDefinitions
             .ToDictionary(StringComparer.Ordinal);
         CarriedItems = [.. _carried.Select(asset => _catalogue[asset]).OrderBy(item => item.UsableIndex)];
         PlainItems = [.. plainItems.OrderBy(item => item.UsableIndex)];
+        ContainerItems = [.. CarriedItems.Where(item => PlainItems.Contains(item) || item.Category is ItemCategory.Launcher or ItemCategory.Rifle or ItemCategory.Armor)];
     }
 
     /// <summary>
@@ -110,6 +111,12 @@ public sealed class LoadoutDefinitions
     /// any slot, a loot container included, holds them as plain stacks.
     /// </summary>
     public IReadOnlyList<ItemDefinition> PlainItems { get; }
+
+    /// <summary>
+    /// The carried items a world loot container can hold, by usable index: the plain items, and the weapons and armor,
+    /// which get their mod container when a player opens the container.
+    /// </summary>
+    public IReadOnlyList<ItemDefinition> ContainerItems { get; }
 
     /// <summary>Selects the standard frame when empty, or the supported augment's frame.</summary>
     public long FrameAssetId(long? augmentAssetId) => augmentAssetId is null ? StandardFrameAssetId

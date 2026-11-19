@@ -72,7 +72,7 @@ public sealed class PlainItemTests
         Assert.Empty(every.Placeholders);
         Assert.All(every.Containers, container => Assert.NotEmpty(states.Items(container.Index).OfType<ContainerItem>()));
         LootContainer cabinet = every.Containers.First(container => container.Tag == "Socket.LootContainer.Tech.Server.Door");
-        Assert.StartsWith($"#{cabinet.Index} BP_SocketContainer_Gvt_Server_01_x400z250_Door tag Socket.LootContainer.Tech.Server.Door value Unknown pool Tech: ",
+        Assert.StartsWith($"#{cabinet.Index} BP_SocketContainer_Gvt_Server_01_x400z250_Door id {cabinet.Id} tag Socket.LootContainer.Tech.Server.Door value Unknown pool Tech: ",
             states.Describe(cabinet.Index), StringComparison.Ordinal);
 
         // A container whose tag no item accepts holds the duck, and counts as a placeholder of its class.

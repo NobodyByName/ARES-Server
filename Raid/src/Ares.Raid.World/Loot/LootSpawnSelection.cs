@@ -103,9 +103,13 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
     /// <param name="rules">Chances and limiters.</param>
     /// <param name="activeDataLayers">Names of the raid's active data layers.</param>
     /// <param name="random">The raid's random numbers.</param>
+    /// <param name="setChances">
+    /// Per socket, in the order given: the chance an operator rule sets, or null. A socket with a set chance rolls only
+    /// that chance: no group cap or limiter stops it, and it does not count towards them.
+    /// </param>
     /// <returns>The selection.</returns>
     public static LootSpawnSelection Select(LootData loot, IReadOnlyList<LootSocket> sockets, LootSpawnRules rules, IReadOnlyCollection<string> activeDataLayers,
-        Random random)
+        Random random, IReadOnlyList<double?>? setChances = null)
     {
         ArgumentNullException.ThrowIfNull(loot);
         ArgumentNullException.ThrowIfNull(sockets);
@@ -131,9 +135,16 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
         foreach (int index in order)
         {
             LootSocket socket = sockets[index];
-            if (random.NextDouble() >= rules.Chance(socket.ContainerTag, values[index]))
+            double? set = setChances?[index];
+            if (random.NextDouble() >= (set ?? rules.Chance(socket.ContainerTag, values[index])))
             {
                 rolls++;
+                continue;
+            }
+
+            if (set is not null)
+            {
+                spawns[index] = true;
                 continue;
             }
 
