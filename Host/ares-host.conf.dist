@@ -1,6 +1,6 @@
 # ARES-Host configuration
-# First launch creates ares-host.conf in the working directory. Edit it and restart Host.
-# This .conf.dist file is a reference template; it is never loaded as configuration.
+# Copy this file to ares-host.conf in Host's working directory, edit it, and start Host.
+# Host refuses to start without ares-host.conf; it never reads or copies this .conf.dist file.
 # Use --config <path> to select an existing file. Command-line options override file values.
 # Syntax: key = value, one per line; blank lines and full-line # comments are allowed.
 # Optional outer double quotes preserve surrounding spaces. No escapes, interpolation or

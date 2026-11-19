@@ -28,11 +28,10 @@ internal sealed class HostConfigurationFile
         {
             string path = System.IO.Path.GetFullPath(requested ?? DefaultName, workingDirectory);
             HostConfigurationFile result = new(arguments, path);
-            if (requested is null && !File.Exists(path))
+            if (!File.Exists(path))
             {
-                using Stream template = typeof(HostConfigurationFile).Assembly.GetManifestResourceStream("Ares.Host.ares-host.conf.dist")!;
-                using FileStream output = new(path, FileMode.CreateNew, FileAccess.Write);
-                template.CopyTo(output);
+                throw new CommandLineException(
+                    $"Cannot load Host configuration '{requested ?? DefaultName}': {path} does not exist. Copy ares-host.conf.dist (shipped next to ARES-Host) there and edit it.");
             }
 
             int lineNumber = 0;

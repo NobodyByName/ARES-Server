@@ -55,10 +55,11 @@ public sealed class ConfigurationFileTests : IDisposable
     }
 
     [Fact]
-    public void First_launch_creates_a_documented_file_with_the_existing_defaults()
+    public void A_copy_of_the_shipped_file_gives_the_existing_defaults()
     {
-        HostConfiguration configuration = Parse();
         string path = Path.Combine(_directory, HostConfigurationFile.DefaultName);
+        File.Copy(Path.Combine(AppContext.BaseDirectory, "ares-host.conf.dist"), path);
+        HostConfiguration configuration = Parse();
         Assert.Equal(path, configuration.ConfigurationFile);
         Assert.Contains("# NETWORK", File.ReadAllText(path), StringComparison.Ordinal);
         Assert.Empty(configuration.MissingSettings);
@@ -79,11 +80,10 @@ public sealed class ConfigurationFileTests : IDisposable
     }
 
     [Fact]
-    public void Generated_file_is_left_for_editing_even_when_archive_keys_are_missing()
+    public void Host_does_not_start_without_its_configuration_file_and_does_not_create_it()
     {
-        File.Delete(Path.Combine(_directory, "archive-keys.txt"));
-        Assert.Throws<CommandLineException>(() => Parse());
-        Assert.True(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
+        Assert.Contains("ares-host.conf.dist", Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(_directory, HostConfigurationFile.DefaultName)));
     }
 
     [Fact]
