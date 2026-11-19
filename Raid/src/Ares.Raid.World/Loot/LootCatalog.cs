@@ -2,6 +2,7 @@ using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
@@ -425,14 +426,16 @@ public sealed class LootCatalog
     }
 
     /// <summary>
-    /// Sends what a player sees of the container: the search's state (and its hold while this player searches), once
-    /// opened the open container and the search as opened, and the item container while this player has it open.
+    /// Sends what a player sees of the container: the search's state (and its hold while it is held), once opened the
+    /// open container and the search as opened, the item container while this player has it open, and the container's
+    /// sound while it makes one or the client still plays one.
     /// </summary>
     /// <param name="container">The container.</param>
     /// <param name="channel">Channel index.</param>
     /// <param name="view">What the player sees.</param>
+    /// <param name="clientSound">The sound the client's copy of the container has, or null when it has none yet.</param>
     /// <returns>The bunch.</returns>
-    public ChannelBunch StateBunch(LootContainer container, int channel, LootView view)
+    public ChannelBunch StateBunch(LootContainer container, int channel, LootView view, ItemContainerSoundState? clientSound = null)
     {
         ArgumentNullException.ThrowIfNull(container);
         Dictionary<string, object?> values = new()
@@ -450,13 +453,19 @@ public sealed class LootCatalog
         ActorContentBlock? actor = view.OpenedAt is { } openedAt
             ? _replication.Encode(container.Class.ActorClass, new Dictionary<string, object?> { [PropertyNames.CurrentOpenTime] = openedAt })
             : null;
-        ActorContentBlock? items = view.ItemContainer is { } id
-            ? _replication.Encode(container.ItemContainerClass, new Dictionary<string, object?>
-            {
-                [$"{PropertyNames.Content}.{PropertyNames.Id}"] = id,
-                [$"{PropertyNames.Content}.{PropertyNames.Revision}"] = (ushort)0,
-            })
-            : null;
+        Dictionary<string, object?> itemValues = [];
+        if (view.ItemContainer is { } id)
+        {
+            itemValues[$"{PropertyNames.Content}.{PropertyNames.Id}"] = id;
+            itemValues[$"{PropertyNames.Content}.{PropertyNames.Revision}"] = (ushort)0;
+        }
+
+        if (view.Sound != ItemContainerSoundState.None || clientSound is not (null or ItemContainerSoundState.None))
+        {
+            itemValues[$"{PropertyNames.SoundData}.{PropertyNames.SoundState}"] = (ulong)view.Sound;
+        }
+
+        ActorContentBlock? items = itemValues.Count > 0 ? _replication.Encode(container.ItemContainerClass, itemValues) : null;
         return Bunches.Actor(channel, writer =>
         {
             actor?.Write(writer);

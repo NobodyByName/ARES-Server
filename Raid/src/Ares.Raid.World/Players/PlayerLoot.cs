@@ -4,6 +4,7 @@ using Ares.Raid.World.Loot;
 using Ares.Raid.World.Movement;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.Pendulum;
@@ -15,8 +16,9 @@ namespace Ares.Raid.World.Players;
 
 /// <summary>
 /// The loot containers as one player sees them: containers relevant to the player delivered on their own channels
-/// (dormant once the client is up to date, woken when they change), and the player's searches and open container.
-/// The loot sees every interaction request first: a looting-menu close ends there.
+/// (dormant once the client is up to date, woken when they change), and the player's searches and open container,
+/// whose hidden items <see cref="LootReveal"/> reveals. A container another player holds shows their search and cannot
+/// be searched. The loot sees every interaction request first: a looting-menu close ends there.
 /// </summary>
 internal sealed class PlayerLoot : IPlayerFamily
 {
@@ -27,13 +29,16 @@ internal sealed class PlayerLoot : IPlayerFamily
     private const int FailureLog = 16;
 
     private readonly ChannelRange _channels;
-    private byte[] _known = [];
+    // The last state each container's client copy got, or null while the client does not have it.
+    private LootView?[] _known = [];
     private ActorChannelPool<LootLink> _links;
     private Dictionary<ulong, ReliableKey> _classExports = [];
     private HashSet<int> _dirty = [];
     private HashSet<int> _failed = [];
     private BoundedLog _failures = new(FailureLog);
     private int _openings;
+    private int _changes;
+    private LootReveal _reveal = new();
     private double _relevantAt;
     private BoundedLog _requests = new(RequestLog);
     private (LootContainer Container, bool DrawsTool)? _press;
@@ -53,16 +58,8 @@ internal sealed class PlayerLoot : IPlayerFamily
         _links = new ActorChannelPool<LootLink>(channels);
     }
 
-    // What the client knows of a loot container: nothing yet, or it keeps the actor showing it closed or opened.
-    private enum LootKnowledge : byte
-    {
-        None,
-        Closed,
-        Opened,
-    }
-
     /// <summary>Loot containers whose actor and search interaction this client has.</summary>
-    public int Ready => _known.Count(known => known != (byte)LootKnowledge.None);
+    public int Ready => _known.Count(known => known is not null);
 
     /// <summary>Loot channels open now (or on the way): containers being delivered or updated.</summary>
     public int ChannelsInUse => _links.Count;
@@ -100,20 +97,21 @@ internal sealed class PlayerLoot : IPlayerFamily
     /// <summary>Whether this client has a loot container (it keeps it while the container is dormant).</summary>
     /// <param name="container">Container index.</param>
     /// <returns>True once the container's state reached the client.</returns>
-    public bool Has(int container) => Known(container) != LootKnowledge.None;
+    public bool Has(int container) => Known(container) is not null;
 
     /// <summary>Loot containers relevant to the player that the client does not have yet.</summary>
     /// <param name="player">The player's channels.</param>
     /// <returns>Their count.</returns>
     public int Waiting(IPlayerChannelsContext player) =>
-        player.Raid.Loot.Relevant(player.RelevancePosition).Count(container => Known(container.Index) == LootKnowledge.None && !_failed.Contains(container.Index));
+        player.Raid.Loot.Relevant(player.RelevancePosition).Count(container => Known(container.Index) is null && !_failed.Contains(container.Index));
 
     /// <summary>A copy for speculative packet processing.</summary>
     /// <returns>The copy.</returns>
     public PlayerLoot Copy()
     {
         PlayerLoot copy = (PlayerLoot)MemberwiseClone();
-        copy._known = (byte[])_known.Clone();
+        copy._known = (LootView?[])_known.Clone();
+        copy._reveal = _reveal.Copy();
         copy._links = _links.Copy();
         copy._classExports = new Dictionary<ulong, ReliableKey>(_classExports);
         copy._dirty = [.. _dirty];
@@ -206,6 +204,25 @@ internal sealed class PlayerLoot : IPlayerFamily
         return true;
     }
 
+    /// <summary>
+    /// The player's connection closed: their search ends and the container they have open closes with what they left
+    /// inside, so others may search it.
+    /// </summary>
+    /// <param name="player">The player's channels.</param>
+    public void Release(IPlayerChannelsContext player)
+    {
+        if (_search is { } search)
+        {
+            player.Raid.LootStates.Release(search.Container.Index, player.Member.Id);
+            _search = null;
+        }
+
+        if (_open is { } open)
+        {
+            Close(player, open.Container);
+        }
+    }
+
     /// <inheritdoc />
     public bool Usable(IPlayerChannelsContext player, ulong target) => Searchable(player.Raid, target) is not null;
 
@@ -232,7 +249,7 @@ internal sealed class PlayerLoot : IPlayerFamily
         IReadOnlyList<int> openings = raid.LootStates.Openings;
         for (; _openings < openings.Count; _openings++)
         {
-            if (Known(openings[_openings]) != LootKnowledge.None)
+            if (Known(openings[_openings]) is not null)
             {
                 _dirty.Add(openings[_openings]);
             }
@@ -240,6 +257,16 @@ internal sealed class PlayerLoot : IPlayerFamily
 
         _links.Advance(sender, new LootSteps(this, raid));
         ServiceSearch(player, sender, now);
+
+        // A container someone holds, releases or makes a sound with changed for every client that has it.
+        IReadOnlyList<int> changes = raid.LootStates.Changes;
+        for (; _changes < changes.Count; _changes++)
+        {
+            if (Known(changes[_changes]) is not null)
+            {
+                _dirty.Add(changes[_changes]);
+            }
+        }
         foreach (int index in _dirty.ToArray())
         {
             if (_links.Contains(index))
@@ -250,7 +277,7 @@ internal sealed class PlayerLoot : IPlayerFamily
             // A dormant container shows the raid's state of it; it needs its channel again when that changed or this
             // player searches it.
             LootContainer container = raid.Loot.Containers[index];
-            bool current = !Held(container) && DefaultKnowledge(raid, container) == Known(index);
+            bool current = !Held(container) && ViewOf(raid, container) == Known(index);
             if (current || _failed.Contains(index) || Push(sender, raid, container))
             {
                 _dirty.Remove(index);
@@ -271,7 +298,7 @@ internal sealed class PlayerLoot : IPlayerFamily
                 break;
             }
 
-            if (Known(container.Index) != LootKnowledge.None || _links.Contains(container.Index) || _failed.Contains(container.Index)
+            if (Known(container.Index) is not null || _links.Contains(container.Index) || _failed.Contains(container.Index)
                 || _links.FreeChannel() is not { } channel)
             {
                 continue;
@@ -291,22 +318,17 @@ internal sealed class PlayerLoot : IPlayerFamily
         _links.Advance(sender, new LootSteps(this, raid));
     }
 
-    // The client's copy of a container after it gets this view.
-    private static LootKnowledge Knowledge(LootView view) => view.OpenedAt is null ? LootKnowledge.Closed : LootKnowledge.Opened;
-
-    // What a dormant container shows when nobody on this connection searches it.
-    private static LootKnowledge DefaultKnowledge(RaidWorld raid, LootContainer container) =>
-        raid.LootStates.OpenedAt(container.Index) is null ? LootKnowledge.Closed : LootKnowledge.Opened;
-
     // Longest time to put the held item away and draw the raider tool.
     private static double ToolDrawSeconds(RaidItems items) => items.FerroI.UnequipSeconds + items.RaiderTool.EquipSeconds;
 
     // Runs this player's search: names the character's interactor once, starts a requested search (the client
-    // lines up, then holds), cancels it on movement, opens the container when the hold ends, and closes it when
-    // the player closes the looting menu or walks away. What the player leaves inside stays in the raid's loot state.
+    // lines up, then holds) unless another player holds the container, cancels it on movement, opens the container
+    // when the hold ends, reveals its hidden items, and closes it when the player closes the looting menu or walks
+    // away. What the player leaves inside stays in the raid's loot state; the container's sound follows the search.
     private void ServiceSearch(IPlayerChannelsContext player, ReliableSender sender, double now)
     {
         RaidWorld raid = player.Raid;
+        LootStates states = raid.LootStates;
         player.ExportInteractor(sender);
         if (_press is { } press && _search is null && _open is null)
         {
@@ -315,36 +337,36 @@ internal sealed class PlayerLoot : IPlayerFamily
 
             // An opened container has no breach left: it opens again once the character is lined up. A press
             // that takes the raider tool out first lines up only once the held item is put away and the tool drawn.
-            double? opened = raid.LootStates.OpenedAt(pressed.Index);
+            double? opened = states.OpenedAt(pressed.Index);
             double draw = drawsTool && type.EquipsRaiderTool && opened is null ? ToolDrawSeconds(raid.GameData.Items) : 0;
             double requested = raid.WorldSeconds(now) + draw;
-            _search = (pressed, player.InputFrame ?? 0, requested, requested + type.AlignmentSeconds,
-                now + draw + type.AlignmentSeconds + (opened is null ? type.HoldSeconds : LootInteractions.OpenedHoldSeconds));
-            Push(sender, raid, pressed);
-            Searches++;
+            if (states.TryHold(pressed.Index, player.Member.Id, requested + type.AlignmentSeconds))
+            {
+                _search = (pressed, player.InputFrame ?? 0, requested, requested + type.AlignmentSeconds,
+                    now + draw + type.AlignmentSeconds + (opened is null ? type.HoldSeconds : LootInteractions.OpenedHoldSeconds));
+                Push(sender, raid, pressed);
+                Searches++;
+            }
         }
 
         _press = null;
         if (_search is { } search)
         {
-            (LootContainer container, uint frame, double requestedAt, _, double opensAt) = search;
+            (LootContainer container, uint frame, double requestedAt, double holdStartsAt, double opensAt) = search;
             if (player.MovedSince(frame))
             {
                 _search = null;
+                states.Release(container.Index, player.Member.Id);
                 Push(sender, raid, container);
                 CancelledSearches++;
             }
             else if (now >= opensAt && player.InteractorExported)
             {
-                int id = player.Member.Inventory.OpenWorldContainer(raid.LootStates.Items(container.Index), raid.GameData.Items.UnitWeights);
-                raid.LootStates.Open(container.Index, raid.WorldSeconds(now));
-                _search = null;
-                _open = (container, id);
-                Push(sender, raid, container);
-                sender.Queue(Bunches.Actor(ChannelLayout.Pawn, raid.State.InteractorCall(player.Player, FunctionNames.ClientLootInteractionHoldCompleted, container.Interaction, container.InteractionClass).Write));
-                player.RunInteraction(new PawnInteraction(container.Interaction, LastInteractionEvent.Restaged, requestedAt, requestedAt,
-                    requestedAt + container.Class.AlignmentSeconds, player.NextInteractionSequence(), container.Class.SearchLocation, container.SearchAnimation));
-                Opens++;
+                Open(player, sender, container, requestedAt, now);
+            }
+            else if (raid.WorldSeconds(now) >= holdStartsAt)
+            {
+                states.SetSound(container.Index, ItemContainerSoundState.Opening);
             }
         }
 
@@ -356,15 +378,61 @@ internal sealed class PlayerLoot : IPlayerFamily
                     > open.Container.CloseDistance;
             if (away || _closeRequested)
             {
-                raid.LootStates.Store(open.Container.Index, player.Member.Inventory.CloseWorldContainer());
-                _open = null;
+                Close(player, open.Container);
                 Push(sender, raid, open.Container);
                 player.SucceedInteraction();
                 sender.Queue(Bunches.Actor(ChannelLayout.Pawn, raid.State.InteractorCall(player.Player, FunctionNames.ClientEndInteractionSuccessfullyImplementation, open.Container.Interaction, open.Container.InteractionClass).Write));
             }
+            else
+            {
+                Reveal(player, open.Container, now);
+            }
         }
 
         _closeRequested = false;
+    }
+
+    // Opens the container at the end of its hold, its unseen items hidden.
+    private void Open(IPlayerChannelsContext player, ReliableSender sender, LootContainer container, double requestedAt, double now)
+    {
+        RaidWorld raid = player.Raid;
+        IReadOnlyList<ContainerItem?> items = raid.LootStates.Items(container.Index);
+        IReadOnlyList<ItemSearchStatus>? statuses = _reveal.Start(container.Index, items, now, container.RevealDelaySeconds(raid.GameData.LootRules),
+            player.Member.LootReveal.DurationMultiplier);
+        int id = player.Member.Inventory.OpenWorldContainer(items, raid.GameData.Items.UnitWeights, statuses);
+        raid.LootStates.Open(container.Index, raid.WorldSeconds(now));
+        raid.LootStates.SetSound(container.Index, _reveal.Sound(now));
+        _search = null;
+        _open = (container, id);
+        Push(sender, raid, container);
+        sender.Queue(Bunches.Actor(ChannelLayout.Pawn, raid.State.InteractorCall(player.Player, FunctionNames.ClientLootInteractionHoldCompleted, container.Interaction, container.InteractionClass).Write));
+        player.RunInteraction(new PawnInteraction(container.Interaction, LastInteractionEvent.Restaged, requestedAt, requestedAt,
+            requestedAt + container.Class.AlignmentSeconds, player.NextInteractionSequence(), container.Class.SearchLocation, container.SearchAnimation));
+        Opens++;
+    }
+
+    // Shows the hidden slots whose reveal is due.
+    private void Reveal(IPlayerChannelsContext player, LootContainer container, double now)
+    {
+        RaidInventory inventory = player.Member.Inventory;
+        LootStates states = player.Raid.LootStates;
+        double chance = player.Member.LootReveal.DoubleRevealChance;
+        while (_reveal.Next(now, inventory.LootItems, inventory.LootSearchStatuses, () => states.RollsDoubleReveal(chance)) is { } reveal)
+        {
+            inventory.RevealLootSlots(reveal.Revealed, reveal.Searching);
+        }
+
+        states.SetSound(container.Index, _reveal.Sound(now));
+    }
+
+    // Closes the open container: the reveal stops, what the player left inside stays, and anyone may search it again.
+    private void Close(IPlayerChannelsContext player, LootContainer container)
+    {
+        RaidInventory inventory = player.Member.Inventory;
+        _reveal.Stop(inventory.LootItems, inventory.LootSearchStatuses);
+        player.Raid.LootStates.Store(container.Index, inventory.CloseWorldContainer());
+        player.Raid.LootStates.Release(container.Index, player.Member.Id);
+        _open = null;
     }
 
     // Brings the client's copy of a container up to date now: on its open channel, or by opening a channel again
@@ -385,7 +453,7 @@ internal sealed class PlayerLoot : IPlayerFamily
             return true;
         }
 
-        if (Known(container.Index) == LootKnowledge.None || _links.FreeChannel() is not { } channel)
+        if (Known(container.Index) is not { } known || _links.FreeChannel() is not { } channel)
         {
             _dirty.Add(container.Index);
             return false;
@@ -393,8 +461,8 @@ internal sealed class PlayerLoot : IPlayerFamily
 
         sender.Queue(OpenBunch(sender, raid, container, channel));
         LootView view = ViewOf(raid, container);
-        _links.Set(container.Index, new LootLink(ActorChannelStage.Open, channel, sender.Queue(raid.Loot.StateBunch(container, channel, view)), view));
-        _known[container.Index] = (byte)Knowledge(view);
+        _links.Set(container.Index, new LootLink(ActorChannelStage.Open, channel, sender.Queue(raid.Loot.StateBunch(container, channel, view, known.Sound)), view));
+        _known[container.Index] = view;
         return true;
     }
 
@@ -407,8 +475,8 @@ internal sealed class PlayerLoot : IPlayerFamily
             return link;
         }
 
-        _known[container.Index] = (byte)Knowledge(view);
-        return link with { Key = sender.Queue(raid.Loot.StateBunch(container, link.Channel, view)), Sent = view };
+        _known[container.Index] = view;
+        return link with { Key = sender.Queue(raid.Loot.StateBunch(container, link.Channel, view, link.Sent.Sound)), Sent = view };
     }
 
     private ChannelBunch OpenBunch(ReliableSender sender, RaidWorld raid, LootContainer container, int channel)
@@ -417,32 +485,39 @@ internal sealed class PlayerLoot : IPlayerFamily
         return raid.Loot.OpenBunch(container, channel, sender.NextSequence(channel), raid.LootStates.OpenedAt(container.Index));
     }
 
-    // What this player's client should show of a container: this player's search or open container, else the
-    // raid's state of it.
+    // What this player's client should show of a container: this player's search or open container, else another
+    // player's hold of it (their search shows on every client), else the raid's state of it. Its sound is the same for all.
     private LootView ViewOf(RaidWorld raid, LootContainer container)
     {
         double? opened = raid.LootStates.OpenedAt(container.Index);
+        LootHold? hold = raid.LootStates.HoldOf(container.Index);
+        ItemContainerSoundState sound = hold?.Sound ?? ItemContainerSoundState.None;
         if (_open is { } open && open.Container == container)
         {
-            return new LootView(CurrentInteractionState.Ongoing, null, opened, open.ItemContainer);
+            return new LootView(CurrentInteractionState.Ongoing, null, opened, open.ItemContainer, sound);
         }
 
         if (_search is { } search && search.Container == container)
         {
-            return new LootView(CurrentInteractionState.Ongoing, search.HoldStartsAt, opened, null);
+            return new LootView(CurrentInteractionState.Ongoing, search.HoldStartsAt, opened, null, sound);
+        }
+
+        if (hold is { } other)
+        {
+            return new LootView(CurrentInteractionState.Ongoing, other.HoldStartsAt, opened, null, sound);
         }
 
         return new LootView(opened is null ? CurrentInteractionState.Idle : CurrentInteractionState.SuccessIdle, null, opened, null);
     }
 
-    private LootKnowledge Known(int index) => index < _known.Length ? (LootKnowledge)_known[index] : LootKnowledge.None;
+    private LootView? Known(int index) => index < _known.Length ? _known[index] : null;
 
     // Whether this player searches the container or has it open: its channel stays open meanwhile.
     private bool Held(LootContainer container) => _search?.Container == container || _open?.Container == container;
 
     // The loot container of a search interaction the client may use: the client has the container.
     private LootContainer? Searchable(RaidWorld raid, ulong interaction) =>
-        raid.Loot.ByInteraction(interaction) is { } container && Known(container.Index) != LootKnowledge.None && !_failed.Contains(container.Index) ? container : null;
+        raid.Loot.ByInteraction(interaction) is { } container && Known(container.Index) is not null && !_failed.Contains(container.Index) ? container : null;
 
     // A loot container's channel on this connection: its stage, the bunch it waits for and the state last sent.
     private readonly record struct LootLink(ActorChannelStage Stage, int Channel, ReliableKey? Key, LootView Sent) : IActorChannelLink;
@@ -466,7 +541,7 @@ internal sealed class PlayerLoot : IPlayerFamily
             LootContainer container = raid.Loot.Containers[index];
             LootView first = loot.ViewOf(raid, container);
             link = link with { Stage = ActorChannelStage.Open, Key = sender.Queue(raid.Loot.StateBunch(container, link.Channel, first)), Sent = first };
-            loot._known[index] = (byte)Knowledge(first);
+            loot._known[index] = first;
             return link;
         }
 
@@ -489,7 +564,7 @@ internal sealed class PlayerLoot : IPlayerFamily
         {
             if (loot._failed.Contains(index))
             {
-                loot._known[index] = (byte)LootKnowledge.None;
+                loot._known[index] = null;
             }
             else if (loot.ViewOf(raid, raid.Loot.Containers[index]) != link.Sent)
             {

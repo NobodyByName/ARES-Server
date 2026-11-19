@@ -430,13 +430,14 @@ public sealed class LootTests
         host.Service(otherAt + container.Class.AlignmentSeconds + container.Class.HoldSeconds);
         double opened = Assert.IsType<double>(host.Raid.LootStates.OpenedAt(container.Index));
 
-        // The other client keeps the dormant container: its channel opens again with the opened state, then closes.
+        // The other client keeps the dormant container: its channel opens again with the opened state (still held by the
+        // host), then closes.
         other.Sent.Clear();
         other.Service(otherAt + 5);
         Assert.Equal(opens + 1, other.Channels.LootChannelOpens);
         ChannelBunch reopen = Assert.Single(other.Sent, bunch => OpensLoot(other, bunch, container));
         Dictionary<string, object?> search = Search(container, other.Sent.Last(bunch => bunch.Channel == reopen.Channel && bunch.CloseReason is null));
-        Assert.Equal((ulong)CurrentInteractionState.SuccessIdle, search[PropertyNames.CurrentInteractionState]);
+        Assert.Equal((ulong)CurrentInteractionState.Ongoing, search[PropertyNames.CurrentInteractionState]);
         Assert.Equal(opened, search[PropertyNames.FirstOpenedServerTime]);
         other.Service(otherAt + 6);
         other.Service(otherAt + 7);
@@ -471,7 +472,7 @@ public sealed class LootTests
     }
 
     // The reference server cabinet among the raid's containers.
-    private static LootContainer Cabinet(ScriptedPlayer session) =>
+    internal static LootContainer Cabinet(ScriptedPlayer session) =>
         session.Raid.Loot.Containers.Single(container => container.Socket is { Actor: CabinetActor, Socket: CabinetSocket });
 
     // Possession, then services until map actors are allowed; returns the next input frame and service time.
@@ -484,7 +485,7 @@ public sealed class LootTests
     }
 
     // Walks the character to the container's prompt until its client has the container and no loot channel is open.
-    private static (uint Frame, double At) Reach(ScriptedPlayer session, LootContainer container, double from = 100.0)
+    internal static (uint Frame, double At) Reach(ScriptedPlayer session, LootContainer container, double from = 100.0)
     {
         (uint frame, double at) = Ready(session, from);
         for (int step = 0; step < 300 && (!session.Channels.HasLoot(container.Index) || session.Channels.LootChannelsInUse > 0); step++)
@@ -501,7 +502,7 @@ public sealed class LootTests
     private static int FirstLootChannel(ScriptedPlayer session) => 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count;
 
     // Whether a bunch opens a loot channel for the container.
-    private static bool OpensLoot(ScriptedPlayer session, ChannelBunch bunch, LootContainer container) =>
+    internal static bool OpensLoot(ScriptedPlayer session, ChannelBunch bunch, LootContainer container) =>
         bunch.Opened && bunch.Channel >= FirstLootChannel(session) && bunch.Channel < FirstLootChannel(session) + ChannelLayout.LootChannels
         && SpawnedGuid(bunch) == container.Guid;
 
@@ -514,7 +515,7 @@ public sealed class LootTests
     }
 
     // The search interaction's state in a container's state bunch.
-    private static Dictionary<string, object?> Search(LootContainer container, ChannelBunch bunch)
+    internal static Dictionary<string, object?> Search(LootContainer container, ChannelBunch bunch)
     {
         BitReader probe = new(bunch.Payload, bunch.PayloadBits);
         probe.ReadBit();

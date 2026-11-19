@@ -60,7 +60,12 @@ of them appear, with chances per container category raised in the map's medium- 
 limited per area and per prop (server and locker racks fill as many doors as on the official
 game), so a raid has a few hundred of them. Players search a container (holding
 interact, with the Raider Tool where the game breaches it), see its contents and take items into their
-own inventory; an opened container stays open for every player. Each container is filled when the raid
+own inventory; an opened container stays open for every player. After the lid opens, the items a player
+has not seen in that container yet are revealed one at a time, one per second, with the game's search
+sounds; a closed and reopened container reveals only the rest, and items a player put in show at once.
+The wait before the first reveal comes from the container's lid animation and can be set per container
+or tag in `loot-rules.json`. A container being searched or open is held by that player until they close
+it (two-player use not yet tried with the stock client). Each container is filled when the raid
 creates it, usually with two or three stacks drawn from the game's loot tables for its category; rarer
 items are more likely in the medium- and high-value areas, and a container sometimes holds one more
 ammo or healing stack. Weapon cases hold weapon mods and ammo, medical bags hold healing

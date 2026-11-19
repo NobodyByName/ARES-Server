@@ -1,4 +1,6 @@
+using Ares.Common.Game.Loot;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
@@ -78,6 +80,18 @@ public sealed record LootContainer(int Index, LootContainerSource Source, Vector
     /// </summary>
     public double CloseDistance => Class.OpenedPromptDistance + LootInteractions.ServerPromptLeeway;
 
+    /// <summary>
+    /// Seconds from the container's opening until its hidden items start to reveal: the operator's rule for it, else its
+    /// class's open delay.
+    /// </summary>
+    /// <param name="rules">The operator's loot rules.</param>
+    /// <returns>The delay before the player's reveal speed applies.</returns>
+    public double RevealDelaySeconds(LootRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        return rules.RevealDelaySeconds(Id, Tag is null ? [] : [Tag]) ?? Class.OpenDelaySeconds;
+    }
+
     private int ComponentIndex(string name)
     {
         for (int index = 0; index < Class.Components.Count; index++)
@@ -94,7 +108,11 @@ public sealed record LootContainer(int Index, LootContainerSource Source, Vector
 
 /// <summary>What a player's client shows of a loot container.</summary>
 /// <param name="State">State of the search interaction.</param>
-/// <param name="HoldStartedAt">Server time the search hold starts, while a search of this player runs.</param>
+/// <param name="HoldStartedAt">
+/// Server time the search hold starts, while a search of this player runs or while another player holds the container.
+/// </param>
 /// <param name="OpenedAt">Server time the container was first opened, once it has been.</param>
 /// <param name="ItemContainer">Id of the container among the player's containers, while this player has it open.</param>
-public readonly record struct LootView(CurrentInteractionState State, double? HoldStartedAt, double? OpenedAt, int? ItemContainer);
+/// <param name="Sound">The container's sound, the same for every player.</param>
+public readonly record struct LootView(CurrentInteractionState State, double? HoldStartedAt, double? OpenedAt, int? ItemContainer,
+    ItemContainerSoundState Sound = ItemContainerSoundState.None);

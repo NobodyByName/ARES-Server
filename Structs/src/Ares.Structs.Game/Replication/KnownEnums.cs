@@ -77,4 +77,11 @@ public static class KnownEnums
     /// known; the maximum here is the largest value five bits hold.
     /// </summary>
     public static EnumDefinition ItemSources { get; } = new(EnumPaths.EItemSources, 31, []);
+
+    /// <summary>
+    /// Item container sound states (<see cref="Inventory.ItemContainerSoundState"/>). The script enum's largest value is
+    /// OpenedSearching (3); the appended native maximum (4) sets the wire width of three bits.
+    /// </summary>
+    public static EnumDefinition ItemContainerSoundState { get; } =
+        new(EnumPaths.EItemContainerSoundState, 4, ["None", "Opening", "Opened", "OpenedSearching"]);
 }

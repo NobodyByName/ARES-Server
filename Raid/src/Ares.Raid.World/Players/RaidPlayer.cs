@@ -44,6 +44,9 @@ public sealed class RaidPlayer
     /// <summary>The player's weapon simulation.</summary>
     public RaidWeapons Weapons { get; }
 
+    /// <summary>How the player's character searches containers; the defaults until character skills apply.</summary>
+    public LootRevealModifiers LootReveal { get; set; } = new();
+
     /// <summary>The player has left the raid (surrendered, or their reservation ended); they cannot rejoin it.</summary>
     public bool Left => Volatile.Read(ref _left);
 

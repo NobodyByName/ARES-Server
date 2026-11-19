@@ -9,7 +9,7 @@ using Ares.Structs.Game.Pendulum;
 namespace Ares.Raid.World.Inventory;
 
 /// <summary>The selected Host loadout translated into this player's raid containers.</summary>
-public sealed class RaidInventory
+public sealed partial class RaidInventory
 {
     private readonly Dictionary<string, int> _handles = new(StringComparer.Ordinal);
     private readonly Dictionary<(int Container, int Slot), HashSet<int>> _allowedSlots = [];
@@ -305,8 +305,12 @@ public sealed class RaidInventory
     /// <summary>Opens a searched world container: its slots join the player's containers, any item may go in them.</summary>
     /// <param name="items">Its slots.</param>
     /// <param name="unitWeights">Unit weight of each item type it may hold, for when the player takes one.</param>
+    /// <param name="searchStatuses">
+    /// Search status of each slot (see <see cref="RevealLootSlots"/>), or null when every item shows at once.
+    /// </param>
     /// <returns>The container id the player sees.</returns>
-    public int OpenWorldContainer(IReadOnlyList<ContainerItem?> items, IReadOnlyDictionary<ushort, double> unitWeights)
+    public int OpenWorldContainer(IReadOnlyList<ContainerItem?> items, IReadOnlyDictionary<ushort, double> unitWeights,
+        IReadOnlyList<ItemSearchStatus>? searchStatuses = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         ArgumentNullException.ThrowIfNull(unitWeights);
@@ -326,7 +330,11 @@ public sealed class RaidInventory
         _countBeforeOpen = containers.Count;
         ContainerItem?[] slots = [.. items.Select(item => item is null ? null : WithModContainer(item, containers, free))];
         int id = containers.Count;
-        containers.Add(new ItemContainerState(id, Array.AsReadOnly(slots)) { Flags = InventoryBlackboard.LootContainerFlags });
+        containers.Add(new ItemContainerState(id, Array.AsReadOnly(slots))
+        {
+            Flags = InventoryBlackboard.LootContainerFlags,
+            SearchStatuses = searchStatuses is null ? null : Array.AsReadOnly([.. searchStatuses]),
+        });
         Containers = containers.AsReadOnly();
         OpenLoot = id;
         Version++;
@@ -582,7 +590,7 @@ public sealed class RaidInventory
         ContainerItem?[] contents = [.. Containers[from.Parent.Id].Items];
         contents[from.Index] = whole ? null : source with { Amount = source.Amount - command.Amount };
         ItemContainerState[] containers = [.. Containers];
-        containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(contents) };
+        containers[from.Parent.Id] = ShowingLootSlot(containers[from.Parent.Id] with { Items = Array.AsReadOnly(contents) }, from.Index);
         Containers = Array.AsReadOnly(containers);
         _dropped.Enqueue(whole ? source : source with { Id = Guid.NewGuid(), Amount = command.Amount });
         return null;
@@ -646,8 +654,8 @@ public sealed class RaidInventory
         sourceItems[from.Index] = fromItem;
         destinationItems[to.Index] = toItem;
         ItemContainerState[] containers = [.. Containers];
-        containers[from.Parent.Id] = containers[from.Parent.Id] with { Items = Array.AsReadOnly(sourceItems) };
-        containers[to.Parent.Id] = containers[to.Parent.Id] with { Items = Array.AsReadOnly(destinationItems) };
+        containers[from.Parent.Id] = ShowingLootSlot(containers[from.Parent.Id] with { Items = Array.AsReadOnly(sourceItems) }, from.Index);
+        containers[to.Parent.Id] = ShowingLootSlot(containers[to.Parent.Id] with { Items = Array.AsReadOnly(destinationItems) }, to.Index);
         Containers = Array.AsReadOnly(containers);
     }
 

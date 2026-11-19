@@ -300,6 +300,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     /// <inheritdoc />
     public void Closed()
     {
+        // Whatever the player searched or had open is free for the others again.
+        _loot.Release(this);
         if (_surrendered || _departure.Departed)
         {
             // Keep the reservation valid while the reliable return-to-menu reply (or the end of round) drains.

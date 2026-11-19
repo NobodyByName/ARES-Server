@@ -54,7 +54,8 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         Imports = new WorldImports(GameReplication.Catalog, gameData);
         Replication = new ReplicationContext(
             GameReplication.Catalog,
-            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DoorClasses.InteractionState, ExtractionClasses.StateEnum],
+            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DoorClasses.InteractionState, ExtractionClasses.StateEnum,
+                KnownEnums.ItemContainerSoundState],
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
         MapPaths paths = new(gameData.Map);
         Doors = new DoorCatalog(Replication, paths, gameData.Map);
