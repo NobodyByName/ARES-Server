@@ -20,6 +20,7 @@ internal sealed record LootContainerDataAssetDefaults(bool IgnoreMaterialOverrid
 /// <param name="SlotCount">Default <see cref="ItemContainerComponentMembers.ItemLimit"/>.</param>
 /// <param name="StandardPromptDistance">Prompt distance of the standard preset.</param>
 /// <param name="StationaryPromptDistance">Prompt distance of the standard preset while the character is immobilized.</param>
+/// <param name="OpenDelaySeconds">Default <see cref="LootContainerBlueprintMembers.WaitDelayOnFirstOpen"/>.</param>
 internal sealed record LootInteractionDefaults(
     byte InteractionType,
     double HoldSeconds,
@@ -29,7 +30,13 @@ internal sealed record LootInteractionDefaults(
     byte PromptDistancePreset,
     int SlotCount,
     double StandardPromptDistance,
-    double StationaryPromptDistance);
+    double StationaryPromptDistance,
+    double OpenDelaySeconds);
+
+/// <summary>The container actor's script defaults that decide how its lid animation sets the open delay.</summary>
+/// <param name="UseLidAnimation">Default <see cref="LootContainerBlueprintMembers.UseLidAnimationForOpenDelay"/>.</param>
+/// <param name="MinSeconds">Default <see cref="LootContainerBlueprintMembers.MinOpenDelay"/>.</param>
+internal sealed record LootOpenDelayDefaults(bool UseLidAnimation, double MinSeconds);
 
 /// <summary>
 /// Loot defaults the script cache holds: literals the constructors and default statements (<c>__InitDefaults</c>) of
@@ -122,7 +129,19 @@ internal static class LootScriptDefaults
             Optional(cache, interaction, Interaction, LootContainerBlueprintMembers.PromptDistancePreset, ByteSize)?.AsByte ?? 0,
             Optional(cache, container, Container, ItemContainerComponentMembers.ItemLimit, Int32Size)?.AsInt32 ?? 0,
             PromptDistance(cache, LootContainerBlueprintMembers.StandardPreset),
-            PromptDistance(cache, LootContainerBlueprintMembers.StationaryPreset));
+            PromptDistance(cache, LootContainerBlueprintMembers.StationaryPreset),
+            Optional(cache, interaction, Interaction, LootContainerBlueprintMembers.WaitDelayOnFirstOpen, DoubleSize)?.AsDouble ?? 0.0);
+    }
+
+    /// <summary>The container actor's open delay defaults, stored by its script constructors and default statements.</summary>
+    /// <exception cref="InvalidDataException">A default is of another size.</exception>
+    public static LootOpenDelayDefaults OpenDelay(ScriptCache cache)
+    {
+        const string Class = LootContainerBlueprintMembers.ScriptActor;
+        ScriptClassDefaults defaults = Straight(cache, Class);
+        return new LootOpenDelayDefaults(
+            Optional(cache, defaults, Class, LootContainerBlueprintMembers.UseLidAnimationForOpenDelay, ByteSize)?.AsByte is > 0,
+            Optional(cache, defaults, Class, LootContainerBlueprintMembers.MinOpenDelay, DoubleSize)?.AsDouble ?? 0.0);
     }
 
     /// <summary>

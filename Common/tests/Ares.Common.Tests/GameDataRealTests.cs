@@ -79,4 +79,13 @@ public sealed class GameDataRealTests
         Assert.All(loot.StaticValueTables.GroupBy(table => table.Name, StringComparer.OrdinalIgnoreCase),
             tables => Assert.Equal(tables.Count() == 1 ? tables.Single().Path : null, loot.FindStaticValueTable(tables.Key)?.Path));
     }
+
+    [RealDataFact]
+    public void A_lid_shorter_than_twice_the_minimum_opens_after_the_minimum_delay()
+    {
+        const string ServerRackDoor = "/Game/Pioneer/Environment/Props/Government/Server_01/BP_SocketContainer_Gvt_Server_01_x400z250_Door.BP_SocketContainer_Gvt_Server_01_x400z250_Door_C";
+
+        Assert.Equal(0.4, Data.Loot.FindContainerClass(ServerRackDoor)?.OpenDelaySeconds);
+        Assert.All(Data.Loot.ContainerClasses, type => Assert.InRange(type.OpenDelaySeconds, 0, 10));
+    }
 }

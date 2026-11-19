@@ -25,13 +25,38 @@ public static class LootContainerBlueprintMembers
 
     /// <summary>
     /// <c>FEmbarkComponentSelection</c>, a native struct naming a component of the actor (the interaction's loot and prompt
-    /// proxy selectors): a property block of two names.
+    /// proxy selectors, the lid animation's tracks): a property block of two names and an object reference.
     /// </summary>
     public static StructSchema ComponentSelection { get; } = new("EmbarkComponentSelection",
     [
         new PropertyField("Unknown0", PropertyType.Name),
         new PropertyField("Unknown1", PropertyType.Name),
+        new PropertyField("Unknown2", PropertyType.Object),
     ]);
+
+    /// <summary>Name of the lid animation component (a <see cref="AnimationScriptClass"/>).</summary>
+    public const string AnimationComponent = "SimpleAnimationSequenceComponent";
+
+    /// <summary>Script class of the lid animation component.</summary>
+    public const string AnimationScriptClass = "USimpleAnimationSequenceComponent";
+
+    /// <summary>Class path of the lid animation component.</summary>
+    public const string AnimationClassPath = "/Script/Angelscript.SimpleAnimationSequenceComponent";
+
+    /// <summary><c>USimpleAnimationSequenceComponent.AnimationTracks</c>: the animated parts.</summary>
+    public const string AnimationTracks = "AnimationTracks";
+
+    /// <summary><c>FSimpleAnimationSequenceTrack.CurveTranslateRotate</c>: the curve asset a track plays.</summary>
+    public const string TrackCurve = "CurveTranslateRotate";
+
+    /// <summary><c>ALootContainerSingle.bUseLidAnimDurationForOpenDelay</c>: whether the lid animation sets the open delay.</summary>
+    public const string UseLidAnimationForOpenDelay = "bUseLidAnimDurationForOpenDelay";
+
+    /// <summary><c>ALootContainerSingle.MinOpenDelay</c>: the shortest open delay the lid animation sets.</summary>
+    public const string MinOpenDelay = "MinOpenDelay";
+
+    /// <summary><c>ULootInteractionComponent.WaitDelayOnFirstOpen</c>: the wait before a first search opens the contents.</summary>
+    public const string WaitDelayOnFirstOpen = "WaitDelayOnFirstOpen";
 
     /// <summary>Name of the search interaction component.</summary>
     public const string InteractionComponent = "LootInteractionComponent";

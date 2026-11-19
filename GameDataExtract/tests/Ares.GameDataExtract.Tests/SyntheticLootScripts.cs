@@ -19,6 +19,8 @@ internal static class SyntheticLootScripts
     public const double StandardDistance = 120;
     public const double StationaryDistance = 180;
     public const int MaxPerGroup = 3;
+    public const double WaitSeconds = 0.75;
+    public const double MinOpenDelay = 0.4;
 
     private const uint Reflected = ScriptProperty.ReflectedFlag;
     private const long ArrayType = 0x7000;
@@ -35,6 +37,8 @@ internal static class SyntheticLootScripts
     private const int ContainerId = 13;
     private const int StandardId = 14;
     private const int BaseInteractionId = 15;
+    private const int LootInteractionId = 16;
+    private const int LootActorId = 17;
 
     private static readonly ScriptDataType s_bool = new(0, 65);
     private static readonly ScriptDataType s_int = new(0, 68);
@@ -57,6 +61,7 @@ internal static class SyntheticLootScripts
         cache.Classes.Add(new TestClass("UStaticValueLootTableDataAsset", "UPrimaryDataAsset", [new TestProperty(StaticValueLootTableMembers.Entries, s_int, Reflected)]));
         cache.Classes.Add(new TestClass("UPlayerSkillLootTableDataAsset", "UPrimaryDataAsset", [new TestProperty(SkillLootTableMembers.Entries, s_int, Reflected)]));
         cache.Classes.Add(new TestClass(B.QuestScriptClass, "UQuestComponentBase", [new TestProperty("Unused", s_bool, Reflected)]));
+        cache.Classes.Add(new TestClass(B.AnimationScriptClass, "UEmbarkActorComponent", [new TestProperty(B.AnimationTracks, new ScriptDataType(ArrayType, 5), Reflected)]));
         cache.Enums.Add((StaticValueLootTableMembers.QueryTypeEnum, ["Exact", "Query"], [0, 1]));
         cache.Enums.Add((StaticValueLootTableMembers.DistributionEnum, ["None", "RoundRobin", "MixAllPlacements"], [0, 1, 2]));
         cache.Enums.Add((SkillLootTableMembers.EntryTypeEnum, ["Nothing", SkillLootTableMembers.ItemEntry], [0, 1]));
@@ -147,7 +152,11 @@ internal static class SyntheticLootScripts
 
         Member(cache, "UStandardInteractionComponent", StandardId, B.AlignmentTime, 0x50);
         uint[] constructor = Code(Op("SetV4", 2, (uint)BitConverter.SingleToInt32Bits(AlignmentSeconds)), Op("LoadThisR", 0x50, StandardId), Op("WRTV4", 2), Op("RET"));
-        cache.Classes.Add(new TestClass(B.InteractionScriptClass, "UStandardInteractionComponent", [new TestProperty("SearchPromptText", s_int, 0)]));
+        Member(cache, B.InteractionScriptClass, LootInteractionId, B.WaitDelayOnFirstOpen, 0x60);
+        cache.Classes.Add(new TestClass(B.InteractionScriptClass, "UStandardInteractionComponent",
+            [new TestProperty("SearchPromptText", s_int, 0), new TestProperty(B.WaitDelayOnFirstOpen, s_double, Reflected)],
+            Constructors: [new TestFunction(B.InteractionScriptClass, Code(Op("SetV8", 2, Quad(WaitSeconds)), Op("LoadThisR", 0x60, LootInteractionId), Op("WRTV8", 2), Op("RET")),
+                B.InteractionScriptClass[1..])]));
         cache.Classes.Add(new TestClass("UStandardInteractionComponent", "UBaseInteractionComponent",
             [
                 new TestProperty(B.InteractionType, s_int, Reflected),
@@ -176,9 +185,20 @@ internal static class SyntheticLootScripts
             Op("CALLSYS", 0, Quad(CullKey)),
             Op("RET"));
         cache.Classes.Add(new TestClass(B.ScriptActor, "ALootContainerSingle", [new TestProperty("Unused", s_bool, Reflected)]));
+        Member(cache, "ALootContainerSingle", LootActorId, B.UseLidAnimationForOpenDelay, 0x70);
+        Member(cache, "ALootContainerSingle", LootActorId, B.MinOpenDelay, 0x78);
+        uint[] constructor = Code(
+            Op("SetV1", 2, 1), Op("LoadThisR", 0x70, LootActorId), Op("WRTV1", 2),
+            Op("SetV8", 2, Quad(MinOpenDelay)), Op("LoadThisR", 0x78, LootActorId), Op("WRTV8", 2),
+            Op("RET"));
         cache.Classes.Add(new TestClass("ALootContainerSingle", "AActor",
-            [new TestProperty("ReplicatedState", s_int, Reflected | ScriptProperty.ReplicatedFlag)],
-            [new TestFunction(ScriptClass.InitDefaults, defaults)]));
+            [
+                new TestProperty("ReplicatedState", s_int, Reflected | ScriptProperty.ReplicatedFlag),
+                new TestProperty(B.UseLidAnimationForOpenDelay, s_bool, Reflected),
+                new TestProperty(B.MinOpenDelay, s_double, Reflected),
+            ],
+            [new TestFunction(ScriptClass.InitDefaults, defaults)],
+            [new TestFunction("ALootContainerSingle", constructor, "LootContainerSingle")]));
         cache.Functions[DormancyKey] = (B.SetDefaultNetDormancy, true, 0, 1);
         cache.Functions[RelevantKey] = (B.SetAlwaysRelevant, true, 0, 1);
         cache.Functions[SquareKey] = (B.Square, false, 0, 1);

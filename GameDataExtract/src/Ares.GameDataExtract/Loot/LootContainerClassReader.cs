@@ -1,3 +1,4 @@
+using Ares.GameDataExtract.Animations;
 using Ares.GameDataExtract.Components;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
@@ -25,7 +26,9 @@ namespace Ares.GameDataExtract.Loot;
 /// The prompt location is the interaction's location through its attach chain in the root's space; the search location
 /// is that location floored to <see cref="LootContainerBlueprintMembers.SearchLocationStep"/>; the prompt distances come
 /// from the standard preset (stationary while the character is immobilized). The actor class is the nearest script class
-/// of the container actor's chain that declares replicated members.
+/// of the container actor's chain that declares replicated members. The open delay follows <see cref="LootOpenDelay"/>:
+/// the lid settings come from the Blueprints' class defaults, the lid curve from the first track of the last lid animation
+/// template that sets the tracks; both are read only up to the members they need.
 /// </summary>
 internal sealed class LootContainerClassReader
 {
@@ -46,6 +49,9 @@ internal sealed class LootContainerClassReader
 
     private readonly PackageCache _packages;
     private readonly LootInteractionDefaults _defaults;
+    private readonly LootOpenDelayDefaults _openDelay;
+    private readonly ClassSchemas _classes;
+    private readonly StructSchema _animation;
     private readonly StructSchema _interaction;
     private readonly StructSchema _container;
     private readonly StructSchema _quest;
@@ -59,6 +65,9 @@ internal sealed class LootContainerClassReader
     {
         _packages = packages;
         _defaults = LootScriptDefaults.Interaction(cache);
+        _openDelay = LootScriptDefaults.OpenDelay(cache);
+        _classes = new ClassSchemas(packages, schemas.ForPath);
+        _animation = schemas.Of(B.AnimationScriptClass);
         _interaction = schemas.Of(B.InteractionScriptClass);
         _container = schemas.Of(ItemContainerComponentMembers.ScriptClass);
         _quest = schemas.Of(B.QuestScriptClass);
@@ -90,6 +99,12 @@ internal sealed class LootContainerClassReader
             Merge(templates.Interaction, package, PropertyReader.ReadExport(package, parts[B.InteractionComponent], _interaction, B.ScriptComponentTrailer));
             Merge(templates.Container, package, PropertyReader.ReadExport(package, parts[B.ItemContainerComponent], _container, B.ScriptComponentTrailer));
             PropertyReader.ReadExport(package, parts[B.QuestComponent], _quest, B.ScriptComponentTrailer);
+            MergeActor(templates.Actor, package, ClassDefault(package, type));
+            if (parts.GetValueOrDefault(B.AnimationComponent) is { } animation)
+            {
+                MergeLid(templates, package, animation);
+            }
+
             foreach (string mesh in (string[])[B.RootComponent, B.SocketMeshComponent])
             {
                 MergeMesh(templates, mesh, package, parts[mesh]);
@@ -162,6 +177,12 @@ internal sealed class LootContainerClassReader
 
         byte type = Value(interaction, B.InteractionType, _defaults.InteractionType);
         double hold = Seconds(interaction, B.HoldDuration, _defaults.HoldSeconds);
+        bool useLid = Value(templates.Actor, B.UseLidAnimationForOpenDelay, _openDelay.UseLidAnimation);
+        float? lidEnd = useLid && templates.LidCurve is { } curve
+            ? CurveKeyReader.LatestKeyTime(curve.Package, curve.Export, AnimationFormats.TranslateRotateCurveTrailer)
+            : null;
+        double openDelay = LootOpenDelay.Seconds(useLid, Value(templates.Actor, B.MinOpenDelay, _openDelay.MinSeconds), lidEnd,
+            Value(interaction, B.WaitDelayOnFirstOpen, _defaults.OpenDelaySeconds));
         bool immobilized = Value(interaction, B.ForceImmobilize, _defaults.ForceImmobilize) || (type < _interactionTypes.Count && _interactionTypes[type] == B.ContinuousInteraction);
         string package = classPath[..classPath.LastIndexOf('.')];
         return new LootContainerClass(
@@ -173,6 +194,7 @@ internal sealed class LootContainerClassReader
             interaction.GetValueOrDefault(B.AnimationContainer) as string,
             Seconds(interaction, B.AlignmentTime, _defaults.AlignmentSeconds),
             hold,
+            openDelay,
             Value(interaction, B.EquipRaiderTool, _defaults.EquipsRaiderTool),
             immobilized || hold > 0 ? _defaults.StationaryPromptDistance : _defaults.StandardPromptDistance,
             immobilized ? _defaults.StationaryPromptDistance : _defaults.StandardPromptDistance,
@@ -228,10 +250,52 @@ internal sealed class LootContainerClassReader
     /// <summary>The subobjects of the class default of <paramref name="type"/>, by name.</summary>
     private static Dictionary<string, ZenExport> Parts(CookedPackage package, ZenExport type)
     {
+        return package.ChildrenOf(ClassDefault(package, type).Index).ToDictionary(export => export.Name, StringComparer.Ordinal);
+    }
+
+    /// <summary>The class default object of <paramref name="type"/>.</summary>
+    private static ZenExport ClassDefault(CookedPackage package, ZenExport type)
+    {
         string name = DefaultPrefix + type.Name;
-        ZenExport archetype = package.Exports.SingleOrDefault(export => export.Name == name && export.Outer.IsNull)
+        return package.Exports.SingleOrDefault(export => export.Name == name && export.Outer.IsNull)
             ?? throw new InvalidDataException($"{package.Name}: no class default {name}");
-        return package.ChildrenOf(archetype.Index).ToDictionary(export => export.Name, StringComparer.Ordinal);
+    }
+
+    /// <summary>Applies the lid settings a Blueprint's class default stores.</summary>
+    private void MergeActor(Dictionary<string, object?> values, CookedPackage package, ZenExport archetype)
+    {
+        string[] names = [B.UseLidAnimationForOpenDelay, B.MinOpenDelay];
+        PropertyBag own = SchemaPrefix.Read(package, archetype, _classes.ForObject(new ExportRef(package, archetype)), names);
+        foreach (string name in names)
+        {
+            if (own.Contains(name))
+            {
+                values[name] = own.Get<object>(name);
+            }
+        }
+    }
+
+    /// <summary>Applies the tracks a lid animation template stores: the curve asset of the first track, or none without tracks.</summary>
+    private void MergeLid(Templates templates, CookedPackage package, ZenExport export)
+    {
+        if (_packages.ScriptPath(export.Class) != B.AnimationClassPath)
+        {
+            throw new InvalidDataException($"{package.Name}: {B.AnimationComponent} is not a {B.AnimationClassPath}");
+        }
+
+        PropertyBag own = SchemaPrefix.Read(package, export, _animation, [B.AnimationTracks]);
+        if (!own.Contains(B.AnimationTracks))
+        {
+            return;
+        }
+
+        templates.LidCurve = own.Get<object[]>(B.AnimationTracks) switch
+        {
+            [] => null,
+            [PropertyBag first, ..] when first.Get(B.TrackCurve, new ObjectReference(0)) is { IsNull: false } curve
+                => _packages.Reference(package, curve.Value) ?? throw new InvalidDataException($"{package.Name}: the lid curve is a script object"),
+            _ => throw new InvalidDataException($"{package.Name}: the first lid animation track plays no curve"),
+        };
     }
 
     /// <summary>Applies a template's own values; references become the attach parent's name and the animation set's path.</summary>
@@ -366,6 +430,12 @@ internal sealed class LootContainerClassReader
         public Dictionary<string, object?> Interaction { get; } = new(StringComparer.Ordinal);
 
         public Dictionary<string, object?> Container { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>The lid settings of the class defaults.</summary>
+        public Dictionary<string, object?> Actor { get; } = new(StringComparer.Ordinal);
+
+        /// <summary>The curve asset of the first lid animation track, or <see langword="null"/> without tracks.</summary>
+        public ExportRef? LidCurve { get; set; }
 
         public Dictionary<string, Dictionary<string, object?>> Meshes { get; } = new(StringComparer.Ordinal)
         {

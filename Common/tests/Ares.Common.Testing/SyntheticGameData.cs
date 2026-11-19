@@ -134,7 +134,7 @@ public sealed class SyntheticGameData
             LootContainerClasses =
             [
                 new LootContainerClass(new ArchetypeClass(ContainerClass, "/Game/Synthetic/BP_Container.Default__BP_Container_C"), "/Script/Angelscript.LootContainer",
-                    [], new Vector3D(0, 0, 50), new Vector3D(0, 0, 50), null, 0.5, 1.0, false, 200, 150, 8),
+                    [], new Vector3D(0, 0, 50), new Vector3D(0, 0, 50), null, 0.5, 1.0, 0.4, false, 200, 150, 8),
             ],
             LootContainerDefaults = new LootContainerDefaults(20000, [new LootTargetStacks(2, 1.0)]),
             StaticLootSpawnTweakables = new LootSpawnTweakables(0.5, 1.0, 0.5, 0.4, 0.025, 0.022, new Dictionary<int, double> { [1] = 1.0 }),

@@ -51,6 +51,9 @@ public static class AnimationFormats
     /// <summary>Rich-curve key tangent weight mode <c>RCTWM_WeightedBoth</c>.</summary>
     public const byte WeightedBothTangents = 3;
 
+    /// <summary>Most zero bytes that follow the rich curves of a translate-rotate curve asset.</summary>
+    public const int TranslateRotateCurveTrailer = 8;
+
     /// <summary><c>FAnimLinkableElement</c>: where a notify or its end is linked in a montage or sequence.</summary>
     public static StructSchema AnimLinkableElement { get; } = new("AnimLinkableElement",
     [

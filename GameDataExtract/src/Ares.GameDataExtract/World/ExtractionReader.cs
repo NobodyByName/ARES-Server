@@ -5,6 +5,7 @@ using Ares.GameDataExtract.Components;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
 using Ares.GameDataExtract.Scripts;
+using Ares.Structs.Core.Assets;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.World;
@@ -32,7 +33,6 @@ internal static class ExtractionReader
     private const double MaxCoordinate = 1e7;
     private const double MaxLevelAngle = 1e-6;
     private const string SingleDigits = "G7";
-    private const int CurveTrailer = 8;
     private const int TracksIndex = 0;
     private const int PlaySpeedIndex = 1;
     private const string AudioFolder = "/Game/Pioneer/Audio/";
@@ -133,7 +133,7 @@ internal static class ExtractionReader
         {
             CookedPackage curve = sources.Load(name);
             latest = curve.Exports.Count == 1
-                ? Math.Max(latest, CurveKeyReader.LatestKeyTime(curve, curve.Exports[0], CurveTrailer))
+                ? Math.Max(latest, CurveKeyReader.LatestKeyTime(curve, curve.Exports[0], AnimationFormats.TranslateRotateCurveTrailer))
                 : throw new InvalidDataException($"{name}: expected one curve export, found {curve.Exports.Count}");
         }
 

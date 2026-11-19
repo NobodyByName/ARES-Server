@@ -18,6 +18,9 @@ public sealed record LootContainerComponent(string Name, string Class, string? A
 /// <param name="SearchAnimation">Animation set the character plays while searching, or null.</param>
 /// <param name="AlignmentSeconds">Time the character takes to line up with the container before the hold starts.</param>
 /// <param name="HoldSeconds">Hold time of a first search.</param>
+/// <param name="OpenDelaySeconds">
+/// Wait after a first search's hold before the contents show (the lid opening); the hidden items start revealing then.
+/// </param>
 /// <param name="EquipsRaiderTool">Whether a first search draws the raider tool (breach and search).</param>
 /// <param name="PromptDistance">Prompt distance while the character searches.</param>
 /// <param name="OpenedPromptDistance">Prompt distance once the container has been opened (no hold).</param>
@@ -31,6 +34,7 @@ public sealed record LootContainerClass(
     string? SearchAnimation,
     double AlignmentSeconds,
     double HoldSeconds,
+    double OpenDelaySeconds,
     bool EquipsRaiderTool,
     double PromptDistance,
     double OpenedPromptDistance,
