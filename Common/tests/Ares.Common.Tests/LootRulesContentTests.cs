@@ -65,6 +65,17 @@ public sealed class LootRulesContentTests : IDisposable
     }
 
     [RealDataFact]
+    public void A_rule_may_set_only_a_reveal_delay()
+    {
+        LootRules rules = Load($$"""{ "rules": [{ "name": "slow", "tags": [{{Json(ParentTag)}}], "revealDelaySeconds": 2.5 }] }""").LootRules(Data, Definitions);
+
+        LootRule rule = Assert.Single(rules.Rules);
+        Assert.Equal(("slow", (double?)null, (LootList?)null, (LootFill?)null, (double?)2.5), (rule.Name, rule.SpawnChance, rule.Loot, rule.GroupFill, rule.RevealDelaySeconds));
+        Assert.Equal(2.5, rules.RevealDelaySeconds(null, [Data.Loot.ContainerTypes[0].Tag]));
+        Assert.Null(rules.SpawnChance(null, [Data.Loot.ContainerTypes[0].Tag]));
+    }
+
+    [RealDataFact]
     public void A_rule_may_set_only_a_group_fill()
     {
         string socket = LootContainerIds.Of(Dam.LootSockets[0]);
@@ -170,7 +181,8 @@ public sealed class LootRulesContentTests : IDisposable
     [InlineData("""{ "rules": [{ "containers": ["{socket}/Extra"], "spawnChance": 1 }] }""", "no map has the container")]
     [InlineData("""{ "rules": [{ "spawnChance": 1.5 }] }""", "rule #1: spawnChance must be from 0 to 1")]
     [InlineData("""{ "rules": [{ "spawnChance": -0.1 }] }""", "spawnChance must be from 0 to 1")]
-    [InlineData("""{ "rules": [{ "spawnChance": 1 }, { "name": "idle", "tags": ["{tag}"] }] }""", "idle: sets none of spawnChance, groupFill and loot")]
+    [InlineData("""{ "rules": [{ "spawnChance": 1 }, { "name": "idle", "tags": ["{tag}"] }] }""", "idle: sets none of spawnChance, groupFill, loot and revealDelaySeconds")]
+    [InlineData("""{ "rules": [{ "revealDelaySeconds": -0.5 }] }""", "rule #1: revealDelaySeconds must be 0 or more")]
     [InlineData("""{ "rules": [{ "groupFill": { "one": 1 } }] }""", "rule #1: groupFill key one must be a number of sockets (0 or more)")]
     [InlineData("""{ "rules": [{ "groupFill": { "-1": 1 } }] }""", "groupFill key -1 must be a number of sockets (0 or more)")]
     [InlineData("""{ "rules": [{ "groupFill": { "1.5": 1 } }] }""", "groupFill key 1.5 must be a number of sockets (0 or more)")]

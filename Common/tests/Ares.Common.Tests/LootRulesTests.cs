@@ -119,9 +119,27 @@ public sealed class LootRulesTests
     }
 
     [Fact]
+    public void The_last_rule_that_covers_a_container_and_sets_a_reveal_delay_wins()
+    {
+        LootRules rules = new([
+            Rule(revealDelay: 2),
+            Rule(tags: [Tech], revealDelay: 0),
+            Rule(containers: [SocketId], revealDelay: 0.5),
+            Rule(tags: [Medical], chance: 1),
+        ]);
+
+        Assert.Equal(0.5, rules.RevealDelaySeconds(SocketId, [Medical]));
+        Assert.Equal(0, rules.RevealDelaySeconds(OtherId, [ServerDoor]));
+        Assert.Equal(2, rules.RevealDelaySeconds(OtherId, [Medical]));
+        Assert.Equal(2, rules.RevealDelaySeconds(null, []));
+        Assert.Null(new LootRules([Rule(tags: [Tech], revealDelay: 1)]).RevealDelaySeconds(OtherId, [Medical]));
+    }
+
+    [Fact]
     public void No_rules_keep_every_default()
     {
         Assert.Empty(LootRules.None.Rules);
+        Assert.Null(LootRules.None.RevealDelaySeconds(SocketId, [ServerDoor]));
         Assert.Null(LootRules.None.SpawnChance(SocketId, [ServerDoor]));
         Assert.Null(LootRules.None.LootOf(SocketId, ServerDoor));
         Assert.Null(LootRules.None.LootOf(null, null));
@@ -184,6 +202,7 @@ public sealed class LootRulesTests
 
     private static LootList List() => new(null, []);
 
-    private static LootRule Rule(string[]? tags = null, string[]? containers = null, double? chance = null, LootList? loot = null, LootFill? fill = null) =>
-        new("test", tags ?? [], new HashSet<string>(containers ?? [], StringComparer.Ordinal), chance, loot, fill);
+    private static LootRule Rule(string[]? tags = null, string[]? containers = null, double? chance = null, LootList? loot = null, LootFill? fill = null,
+        double? revealDelay = null) =>
+        new("test", tags ?? [], new HashSet<string>(containers ?? [], StringComparer.Ordinal), chance, loot, fill, revealDelay);
 }

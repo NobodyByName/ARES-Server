@@ -157,7 +157,8 @@ official game as known:
 container follows the two files above. The shipped rules set how many doors of each server rack and locker rack
 hold a container, as on the official game. A rule
 covers the containers it lists by id, every container whose tag is one of its tags or below it, or every
-container when it lists neither. It can set a spawn chance, a group fill, the contents, or several of them:
+container when it lists neither. It can set a spawn chance, a group fill, the contents, a reveal delay, or several
+of them:
 
 ```json
 {
@@ -194,6 +195,9 @@ container when it lists neither. It can set a spawn chance, a group fill, the co
   container's slots) items drawn by `weight` (default 1; an item can come up more than once), each with an
   `amount` in its range (default 1, at most the item's stack size), at full durability. Items are named by
   technical name; any item players can carry in a raid is allowed.
+- **`revealDelaySeconds`** (0 or more) replaces the container's own wait between the end of a first search's hold
+  and the start of the reveal (the game's lid opening time, from the game data), after which the hidden items show
+  one at a time.
 - Rules apply in order: for each setting, the last rule that covers a container wins (`spawnChance` and
   `groupFill` count as one setting for sockets).
 

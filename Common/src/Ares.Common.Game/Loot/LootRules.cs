@@ -71,7 +71,18 @@ public sealed record LootList(LootRange? Stacks, IReadOnlyList<LootListItem> Ite
 /// (chance, caps), or null to keep it. The containers a rule lists form one group; otherwise a group is the game's: the
 /// sockets of one placed prop with the same tag. Placed containers and spawners ignore it.
 /// </param>
-public sealed record LootRule(string Name, IReadOnlyList<string> Tags, IReadOnlySet<string> Containers, double? SpawnChance, LootList? Loot, LootFill? GroupFill = null)
+/// <param name="RevealDelaySeconds">
+/// Wait in seconds after a first search's hold before a covered container's contents start to reveal, replacing the
+/// container class's own delay, or null to keep it.
+/// </param>
+public sealed record LootRule(
+    string Name,
+    IReadOnlyList<string> Tags,
+    IReadOnlySet<string> Containers,
+    double? SpawnChance,
+    LootList? Loot,
+    LootFill? GroupFill = null,
+    double? RevealDelaySeconds = null)
 {
     /// <summary>Whether the rule covers a container.</summary>
     /// <param name="id">The container's id, or null for a container the raid spawned on request.</param>
@@ -123,6 +134,13 @@ public sealed class LootRules
     /// <param name="tag">The container's tag, or null.</param>
     /// <returns>The rule, or null to keep the default roll.</returns>
     public LootRule? LootOf(string? id, string? tag) => Rules.LastOrDefault(rule => rule.Loot is not null && rule.Covers(id, tag is null ? [] : [tag]));
+
+    /// <summary>The reveal delay the rules set for a container.</summary>
+    /// <param name="id">The container's id, or null.</param>
+    /// <param name="tags">The container's tags.</param>
+    /// <returns>The delay in seconds, or null to keep the container class's own.</returns>
+    public double? RevealDelaySeconds(string? id, IReadOnlyCollection<string> tags) =>
+        Rules.LastOrDefault(rule => rule.RevealDelaySeconds is not null && rule.Covers(id, tags))?.RevealDelaySeconds;
 }
 
 /// <summary>How many sockets of a group get a container: a number drawn by weight, at most the group's sockets.</summary>

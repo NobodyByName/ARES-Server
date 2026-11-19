@@ -42,14 +42,19 @@ internal static class LootRulesContent
                 throw Problem("tags and containers must not hold null");
             }
 
-            if (rule is { SpawnChance: null, Loot: null, GroupFill: null })
+            if (rule is { SpawnChance: null, Loot: null, GroupFill: null, RevealDelaySeconds: null })
             {
-                throw Problem("sets none of spawnChance, groupFill and loot");
+                throw Problem("sets none of spawnChance, groupFill, loot and revealDelaySeconds");
             }
 
             if (rule.SpawnChance is { } and not (>= 0 and <= 1))
             {
                 throw Problem("spawnChance must be from 0 to 1");
+            }
+
+            if (rule.RevealDelaySeconds is { } delay && !(double.IsFinite(delay) && delay >= 0))
+            {
+                throw Problem("revealDelaySeconds must be 0 or more");
             }
 
             if (tags.FirstOrDefault(tag => !Array.Exists(containerTags, known => LootTags.IsTagOrBelow(known, tag))) is { } unknownTag)
@@ -63,7 +68,7 @@ internal static class LootRulesContent
             }
 
             rules.Add(new LootRule(name, tags, containers.ToFrozenSet(StringComparer.Ordinal), rule.SpawnChance, rule.Loot is { } loot ? List(loot) : null,
-                rule.GroupFill is { } fill ? Fill(fill) : null));
+                rule.GroupFill is { } fill ? Fill(fill) : null, rule.RevealDelaySeconds));
             continue;
 
             LootFill Fill(IReadOnlyDictionary<string, double> weights)
