@@ -27,12 +27,24 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
     /// <summary>Container flags: <see cref="InventoryBlackboard.ContainerFlags"/> for the player's own containers.</summary>
     public int Flags { get; init; } = InventoryBlackboard.ContainerFlags;
 
+    /// <summary>
+    /// Search status of each slot, in the order of <see cref="Items"/>; <see langword="null"/> when every slot is shown.
+    /// A hidden slot sends only its status, none of its item; empty slots are always shown.
+    /// </summary>
+    public IReadOnlyList<ItemSearchStatus>? SearchStatuses { get; init; }
+
     /// <summary>Encodes the complete container set into its pawn blackboard variable.</summary>
     /// <param name="containers">Containers in order.</param>
-    /// <param name="mutation">Mutation counter shared by these containers.</param>
+    /// <param name="mutation">Modification counter shared by these containers.</param>
     /// <param name="open">The world container the player has open, if any (one of <paramref name="containers"/>).</param>
+    /// <param name="revealTime">Time one hidden slot takes to reveal; <see cref="ItemRevealTime.Default"/> when omitted.</param>
+    /// <param name="dirtyCount">
+    /// Update counter of the whole set, which the client follows to apply any change, including one that leaves every
+    /// container's modification counter alone (a search status); <paramref name="mutation"/> when omitted.
+    /// </param>
     /// <returns>The blackboard variable.</returns>
-    public static PendulumVariable Encode(IReadOnlyList<ItemContainerState> containers, uint mutation = 1, int? open = null)
+    public static PendulumVariable Encode(IReadOnlyList<ItemContainerState> containers, uint mutation = 1, int? open = null,
+        ItemRevealTime? revealTime = null, uint? dirtyCount = null)
     {
         ArgumentNullException.ThrowIfNull(containers);
         PendulumVariable template = PawnBlackboard.InitialState.Single(variable => variable.Slot == InventoryBlackboard.Slot);
@@ -42,7 +54,8 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
         int slotCount = containers.Sum(container => container.Items.Count);
         if (containers.Count > containerArray.Capacity || slotCount > itemArray.Capacity
             || containers.Any(container => container.Id < 0) || containers.Select(container => container.Id).Distinct().Count() != containers.Count
-            || (open is { } openId && containers.All(container => container.Id != openId)))
+            || (open is { } openId && containers.All(container => container.Id != openId))
+            || !containers.All(HasValidSearchStatuses))
         {
             throw new InvalidPacketException("Invalid player container set");
         }
@@ -62,8 +75,9 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
                 new PendulumIntegerValue(InventoryBlackboard.ContainerRevisionField, 0),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerSizeField, (ulong)container.Items.Count),
             ]));
-            foreach (ContainerItem? item in container.Items)
+            for (int index = 0; index < container.Items.Count; index++)
             {
+                ContainerItem? item = container.Items[index];
                 if (item is not null)
                 {
                     PendulumScalarField amount = (PendulumScalarField)itemArray.ElementFields[InventoryBlackboard.AmountField];
@@ -75,33 +89,10 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
                         throw new InvalidPacketException("Invalid player container item");
                     }
 
-                    List<PendulumValue> values =
-                    [
-                        new PendulumIntegerValue(InventoryBlackboard.AmountField, (ulong)item.Amount),
-                        new PendulumIntegerValue(InventoryBlackboard.QualityField, 128),
-                        new PendulumIntegerValue(InventoryBlackboard.DurabilityField, (ulong)Math.Round(item.Durability * InventoryBlackboard.DurabilityScale) + 128),
-                        new PendulumIntegerValue(InventoryBlackboard.AssetIndexField, item.AssetIndex),
-                        new PendulumIntegerValue(InventoryBlackboard.AmmoField, (ulong)item.AmmoInClip),
-                    ];
-                    if (item.ModContainerId is { } modContainer)
-                    {
-                        values.Add(new PendulumIntegerValue(InventoryBlackboard.SubcontainerField, (ulong)positions[modContainer]));
-                    }
-
-                    string guid = item.Id.ToString("N");
-                    for (int word = 0; word < 4; word++)
-                    {
-                        uint value = uint.Parse(guid.AsSpan(word * 8, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
-                        ulong encoded = value ^ 0x80000000U;
-                        if (encoded == uint.MaxValue)
-                        {
-                            throw new InvalidPacketException("Item identity outside the container encoding range");
-                        }
-
-                        values.Add(new PendulumIntegerValue(InventoryBlackboard.GuidAField + word, encoded));
-                    }
-
-                    items.Add(new PendulumArrayElement(slot, values));
+                    ItemSearchStatus status = container.SearchStatuses?[index] ?? ItemSearchStatus.Shown;
+                    items.Add(new PendulumArrayElement(slot, status == ItemSearchStatus.Shown
+                        ? ItemValues(item, positions)
+                        : [new PendulumIntegerValue(InventoryBlackboard.SearchStatusField, (ulong)status)]));
                 }
 
                 slot++;
@@ -116,15 +107,56 @@ public sealed record ItemContainerState(int Id, IReadOnlyList<ContainerItem?> It
             Values =
             [
                 .. current,
-                new PendulumIntegerValue(InventoryBlackboard.RevealTimeField, 0),
+                new PendulumIntegerValue(InventoryBlackboard.RevealTimeField, RevealTimeValue(revealTime ?? ItemRevealTime.Default, fields)),
                 new PendulumIntegerValue(InventoryBlackboard.ContainerCountField, (ulong)containers.Count),
                 new PendulumIntegerValue(InventoryBlackboard.SlotCountField, (ulong)slotCount),
-                new PendulumIntegerValue(InventoryBlackboard.DirtyCountField, (ushort)mutation),
+                new PendulumIntegerValue(InventoryBlackboard.DirtyCountField, (ushort)(dirtyCount ?? mutation)),
                 new PendulumArrayValue(InventoryBlackboard.ContainersField, encodedContainers),
                 new PendulumArrayValue(InventoryBlackboard.SlotsField, items),
             ],
         };
     }
+
+    private static bool HasValidSearchStatuses(ItemContainerState container) => container.SearchStatuses is not { } statuses
+        || (statuses.Count == container.Items.Count
+            && Enumerable.Range(0, statuses.Count).All(index => statuses[index] == ItemSearchStatus.Shown
+                || (Enum.IsDefined(statuses[index]) && container.Items[index] is not null)));
+
+    private static List<PendulumValue> ItemValues(ContainerItem item, Dictionary<int, int> positions)
+    {
+        List<PendulumValue> values =
+        [
+            new PendulumIntegerValue(InventoryBlackboard.AmountField, (ulong)item.Amount),
+            new PendulumIntegerValue(InventoryBlackboard.QualityField, 128),
+            new PendulumIntegerValue(InventoryBlackboard.DurabilityField, (ulong)Math.Round(item.Durability * InventoryBlackboard.DurabilityScale) + 128),
+            new PendulumIntegerValue(InventoryBlackboard.AssetIndexField, item.AssetIndex),
+            new PendulumIntegerValue(InventoryBlackboard.AmmoField, (ulong)item.AmmoInClip),
+        ];
+        if (item.ModContainerId is { } modContainer)
+        {
+            values.Add(new PendulumIntegerValue(InventoryBlackboard.SubcontainerField, (ulong)positions[modContainer]));
+        }
+
+        string guid = item.Id.ToString("N");
+        for (int word = 0; word < 4; word++)
+        {
+            uint value = uint.Parse(guid.AsSpan(word * 8, 8), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
+            ulong encoded = value ^ 0x80000000U;
+            if (encoded == uint.MaxValue)
+            {
+                throw new InvalidPacketException("Item identity outside the container encoding range");
+            }
+
+            values.Add(new PendulumIntegerValue(InventoryBlackboard.GuidAField + word, encoded));
+        }
+
+        return values;
+    }
+
+    // The default reveal time is the field's default value, the only encoding known.
+    private static ulong RevealTimeValue(ItemRevealTime revealTime, IReadOnlyList<PendulumField> fields) => revealTime == ItemRevealTime.Default
+        ? ((PendulumScalarField)fields[InventoryBlackboard.RevealTimeField]).Default
+        : throw new InvalidPacketException("Reveal time outside the container encoding range");
 
     private static ulong Signed(int value) => (uint)value ^ 0x80000000U;
 }

@@ -21,7 +21,7 @@ public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization, the elevators, the
     // game state's world item classes and the first loot containers around the start.
-    private const string ReferenceTrace = "40b917f0371896e39ce24c5c925cc60674c72e44ace8c587cdd7b63c8bf85bfd";
+    private const string ReferenceTrace = "a3b5ae72dd155419a273002c0f64c8eececb4643f853d4bbbae610c76b5f62fa";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()

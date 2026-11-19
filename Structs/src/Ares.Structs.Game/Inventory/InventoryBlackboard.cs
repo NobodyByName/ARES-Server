@@ -87,6 +87,9 @@ public static class InventoryBlackboard
     /// <summary>SubcontainerField in the player container state.</summary>
     public const int SubcontainerField = 11;
 
+    /// <summary>SearchStatusField in the player container state.</summary>
+    public const int SearchStatusField = 13;
+
     /// <summary>ContainerFlags in the player container state.</summary>
     public const int ContainerFlags = 5;
 
