@@ -18,6 +18,9 @@ public sealed class RaidInventory
     private readonly Dictionary<Guid, InventoryItem> _brought = [];
     private readonly ContainerItem? _augment;
 
+    // Container count before the open world container and the mod containers its opening added.
+    private int _countBeforeOpen;
+
     // Maximum durability of an item new in this raid: Host stores durability as a fraction of a maximum of 1.
     private const double NewItemMaxDurability = 1.0;
 
@@ -78,23 +81,9 @@ public sealed class RaidInventory
         Add(nameof(Belt), Branch(places.QuickUse), places.QuickUse);
         Add(nameof(SafePouch), Branch(places.SafePockets), places.SafePockets);
         Add(nameof(Auxiliary), []);
-        // The client indexes the container list with every weapon's and armor item's mod container and stops
-        // its whole character tick when the index is invalid. Each such item gets its own empty mod container,
-        // which no move can fill.
         for (int container = 0, count = containers.Count; container < count; container++)
         {
-            ContainerItem?[] contents = [.. containers[container].Items];
-            for (int slot = 0; slot < contents.Length; slot++)
-            {
-                if (contents[slot] is not { } item || items.Traits.Of(item.AssetIndex).ModSlotCount is not { } modSlots)
-                {
-                    continue;
-                }
-
-                contents[slot] = item with { ModContainerId = containers.Count };
-                containers.Add(new ItemContainerState(containers.Count, Array.AsReadOnly(new ContainerItem?[modSlots])));
-            }
-
+            ContainerItem?[] contents = [.. containers[container].Items.Select(item => item is null ? null : WithModContainer(item, containers, []))];
             containers[container] = containers[container] with { Items = Array.AsReadOnly(contents) };
         }
 
@@ -331,8 +320,14 @@ public sealed class RaidInventory
             throw new InvalidOperationException("A container is already open");
         }
 
-        int id = Containers.Count;
-        Containers = Array.AsReadOnly([.. Containers, new ItemContainerState(id, Array.AsReadOnly<ContainerItem?>([.. items])) { Flags = InventoryBlackboard.LootContainerFlags }]);
+        // Its weapons and armor items get their mod containers before it, so it stays the last container.
+        List<ItemContainerState> containers = [.. Containers];
+        List<int> free = FreeModContainers();
+        _countBeforeOpen = containers.Count;
+        ContainerItem?[] slots = [.. items.Select(item => item is null ? null : WithModContainer(item, containers, free))];
+        int id = containers.Count;
+        containers.Add(new ItemContainerState(id, Array.AsReadOnly(slots)) { Flags = InventoryBlackboard.LootContainerFlags });
+        Containers = containers.AsReadOnly();
         OpenLoot = id;
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
@@ -340,12 +335,24 @@ public sealed class RaidInventory
     }
 
     /// <summary>Closes the open world container.</summary>
+    /// <remarks>
+    /// The mod containers its opening added for items that stay behind go with it when they end the set; the returned
+    /// items still name their mod containers in this set.
+    /// </remarks>
     /// <returns>Its slots as the player left them.</returns>
     public IReadOnlyList<ContainerItem?> CloseWorldContainer()
     {
         IReadOnlyList<ContainerItem?> items = LootItems;
         Containers = [.. Containers.Take(Containers.Count - 1)];
         OpenLoot = null;
+        List<int> free = FreeModContainers();
+        int kept = Containers.Count;
+        while (kept > _countBeforeOpen && free.Contains(kept - 1))
+        {
+            kept--;
+        }
+
+        Containers = [.. Containers.Take(kept)];
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version);
         return items;
@@ -369,7 +376,7 @@ public sealed class RaidInventory
 
         int remaining = item.Amount;
         int maximum = Items.MaxAmounts.GetValueOrDefault(item.AssetIndex);
-        ItemContainerState[] updated = [.. Containers];
+        List<ItemContainerState> updated = [.. Containers];
         foreach (int handle in (int[])[Backpack, Belt, SafePouch])
         {
             ContainerItem?[] contents = [.. updated[handle].Items];
@@ -397,9 +404,14 @@ public sealed class RaidInventory
         {
             ContainerItem?[] contents = [.. updated[Backpack].Items];
             int empty = Array.FindIndex(contents, slot => slot is null);
-            if (empty >= 0 && Allows(new ItemContainerSlot(new ItemContainerHandle(Backpack, 0), (ushort)empty), item))
+            List<ItemContainerState> withMods = [.. updated];
+            ContainerItem placed = WithModContainer(item with { Amount = remaining }, withMods, FreeModContainers());
+            // A new mod container cannot follow an open world container, which must stay last.
+            if (empty >= 0 && Allows(new ItemContainerSlot(new ItemContainerHandle(Backpack, 0), (ushort)empty), item)
+                && (OpenLoot is null || withMods.Count == updated.Count))
             {
-                contents[empty] = item with { Amount = remaining };
+                contents[empty] = placed;
+                updated = withMods;
                 updated[Backpack] = updated[Backpack] with { Items = Array.AsReadOnly(contents) };
                 remaining = 0;
             }
@@ -411,7 +423,7 @@ public sealed class RaidInventory
             return taken;
         }
 
-        Containers = Array.AsReadOnly(updated);
+        Containers = updated.AsReadOnly();
         Version++;
         Blackboard = ItemContainerState.Encode(Containers, Version, OpenLoot);
         return taken;
@@ -708,6 +720,36 @@ public sealed class RaidInventory
     }
 
     private static double DurabilityFraction(InventoryItem item) => item.MaxDurability == 0 ? 1 : item.Durability / item.MaxDurability;
+
+    // The client indexes the container list with every weapon's and armor item's mod container and stops its whole
+    // character tick when the index is invalid. An item entering the set with mod slots gets an empty mod container of
+    // its own, which no move can fill: a free one of its slot count (taken from the list), else a new one at the end of
+    // the set. Other items name none.
+    private ContainerItem WithModContainer(ContainerItem item, List<ItemContainerState> containers, List<int> free)
+    {
+        if (Items.Traits.Of(item.AssetIndex).ModSlotCount is not { } modSlots)
+        {
+            return item with { ModContainerId = null };
+        }
+
+        int reused = free.FindIndex(id => containers[id].Items.Count == modSlots);
+        if (reused >= 0)
+        {
+            int id = free[reused];
+            free.RemoveAt(reused);
+            return item with { ModContainerId = id };
+        }
+
+        containers.Add(new ItemContainerState(containers.Count, Array.AsReadOnly(new ContainerItem?[modSlots])));
+        return item with { ModContainerId = containers.Count - 1 };
+    }
+
+    // Mod containers no item of the set names, in id order.
+    private List<int> FreeModContainers()
+    {
+        HashSet<int> named = [.. Containers.SelectMany(container => container.Items).OfType<ContainerItem>().Select(item => item.ModContainerId).OfType<int>()];
+        return [.. Enumerable.Range(0, Containers.Count).Where(id => id != OpenLoot && !_handles.ContainsValue(id) && !named.Contains(id))];
+    }
 
     private bool Valid(ItemContainerSlot slot) => slot.Parent is { Revision: 0, Id: >= 0 }
         && slot.Parent.Id < Containers.Count && slot.Index < Containers[slot.Parent.Id].Items.Count;

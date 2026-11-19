@@ -68,14 +68,14 @@ public sealed class LootStates(LootCatalog catalog, RaidItems raidItems)
     // The technical name of a carried item, or its usable index.
     private string Name(ushort index) => raidItems.Carried.TryGetValue(index, out ItemDefinition? item) ? item.TechnicalName : $"item {index}";
 
-    /// <summary>Keeps what a player left in a container.</summary>
+    /// <summary>Keeps what a player left in a container, without the mod containers items had in that player's set.</summary>
     /// <param name="index">Container index.</param>
     /// <param name="items">Its slots.</param>
     public void Store(int index, IReadOnlyList<ContainerItem?> items)
     {
         ArgumentNullException.ThrowIfNull(items);
         _ = Items(index);
-        _items[index] = Array.AsReadOnly([.. items]);
+        _items[index] = Array.AsReadOnly([.. items.Select(item => item is null ? null : item with { ModContainerId = null })]);
     }
 
     /// <summary>When a container was first opened, if it has been.</summary>
