@@ -84,6 +84,9 @@ public static class InventoryBlackboard
     /// <summary>AmmoField in the player container state.</summary>
     public const int AmmoField = 9;
 
+    /// <summary>ItemSourceField in the player container state.</summary>
+    public const int ItemSourceField = 10;
+
     /// <summary>SubcontainerField in the player container state.</summary>
     public const int SubcontainerField = 11;
 

@@ -56,6 +56,36 @@ public sealed class LootRevealTests
     }
 
     [Fact]
+    public void A_revealed_item_sends_that_it_came_from_a_loot_box_and_keeps_it_when_taken_or_left()
+    {
+        ScriptedPlayer session = new();
+        LootContainer container = LootTests.Cabinet(session);
+        (uint frame, double at) = LootTests.Reach(session, container);
+        double delay = container.RevealDelaySeconds(session.Raid.GameData.LootRules);
+        (frame, double opened) = Open(session, container, frame, at);
+        int first = Occupied(session)[0];
+        Assert.Equal(InventoryBlackboard.SearchStatusField, Assert.Single(LootSlot(session, first).Values).Field);
+
+        double revealed = opened + delay + ItemRevealTime.Default.Seconds + Late;
+        session.Service(revealed);
+        Assert.Equal(ItemSearchStatus.Shown, Statuses(session)[first]);
+        PendulumIntegerValue source = Assert.IsType<PendulumIntegerValue>(LootSlot(session, first).Values
+            .Single(value => value.Field == InventoryBlackboard.ItemSourceField));
+        Assert.Equal((ulong)ItemSource.PickupLootBox, source.Value);
+
+        RaidInventory inventory = session.Member.Inventory;
+        int loot = Assert.IsType<int>(inventory.OpenLoot);
+        int empty = Enumerable.Range(0, inventory.Containers[inventory.Backpack].Items.Count).First(index => inventory.Containers[inventory.Backpack].Items[index] is null);
+        session.Input(frame, frame + 3, focus: container.Interaction, position: container.Prompt, inventory: new InventoryCommand(InventoryCommandType.SwapItems,
+            new ItemContainerSlot(new ItemContainerHandle(loot, 0), (ushort)first), new ItemContainerSlot(new ItemContainerHandle(inventory.Backpack, 0), (ushort)empty), 0,
+            new ItemContainerHandle(-1, ushort.MaxValue)));
+        Assert.Equal(ItemSource.PickupLootBox, inventory.Containers[inventory.Backpack].Items[empty]?.Source);
+
+        Close(session, container, frame + 3, revealed + 0.1);
+        Assert.All(session.Raid.LootStates.Items(container.Index).OfType<ContainerItem>(), item => Assert.Equal(ItemSource.PickupLootBox, item.Source));
+    }
+
+    [Fact]
     public void Closing_mid_search_and_reopening_reveals_only_the_rest_after_the_delay_again()
     {
         ScriptedPlayer session = new();
@@ -371,6 +401,15 @@ public sealed class LootRevealTests
     {
         IReadOnlyList<ContainerItem?> items = session.Member.Inventory.LootItems;
         return [.. Enumerable.Range(0, items.Count).Where(slot => items[slot] is not null)];
+    }
+
+    // The blackboard element of a slot of the open container (slots are numbered across the whole container set).
+    private static PendulumArrayElement LootSlot(ScriptedPlayer session, int slot)
+    {
+        RaidInventory inventory = session.Member.Inventory;
+        int index = inventory.Containers.Take(Assert.IsType<int>(inventory.OpenLoot)).Sum(container => container.Items.Count) + slot;
+        PendulumArrayValue slots = Assert.IsType<PendulumArrayValue>(inventory.Blackboard.Values.Single(value => value.Field == InventoryBlackboard.SlotsField));
+        return slots.Elements.Single(element => element.Index == index);
     }
 
     // The container set value before and after each of the player's own pawn blackboard frames sent from the given

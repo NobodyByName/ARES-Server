@@ -73,10 +73,16 @@ public static class KnownEnums
         new(EnumPaths.EViewTargetBlendFunction, 5, ["VTBlend_Linear", "VTBlend_Cubic", "VTBlend_EaseIn", "VTBlend_EaseOut", "VTBlend_PreBlended"]);
 
     /// <summary>
-    /// Item sources (<c>EItemSources</c>): five bits on the wire. The value names and the enum's own maximum are not
-    /// known; the maximum here is the largest value five bits hold.
+    /// Item sources (<see cref="Inventory.ItemSource"/>). The script enum's largest value is
+    /// Pickup_Environment_Initial (22); the appended native maximum (23) sets the wire width of five bits.
     /// </summary>
-    public static EnumDefinition ItemSources { get; } = new(EnumPaths.EItemSources, 31, []);
+    public static EnumDefinition ItemSources { get; } = new(EnumPaths.EItemSources, 23,
+    [
+        "Unknown", "Pickup", "Assigned", "Debug", "SplitStack", "Crafted", "StartingEquipment", "CraftedField",
+        "CraftedBench", "Pickup_LootBox", "Pickup_Enemy", "Pickup_Environment", "Pickup_OtherPlayer", "Pickup_Self",
+        "Assigned_Enemy", "Assigned_Environment", "BroughtToSession", "Unload", "Salvaged", "TemporaryStackDeposit",
+        "Pickup_Environment_Buried", "Pickup_Environment_BreachGift", "Pickup_Environment_Initial",
+    ]);
 
     /// <summary>
     /// Item container sound states (<see cref="Inventory.ItemContainerSoundState"/>). The script enum's largest value is

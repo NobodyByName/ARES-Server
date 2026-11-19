@@ -37,6 +37,7 @@ public sealed class LootStates(LootCatalog catalog, RaidItems raidItems)
 
     /// <summary>
     /// A container's slots: its drawn stacks from the first slot on, or one placeholder rubber duck when it drew none.
+    /// Its items come from a loot box (<see cref="ItemSource.PickupLootBox"/>) and keep that source wherever they go.
     /// </summary>
     /// <param name="index">Container index.</param>
     /// <returns>Its slots.</returns>
@@ -54,12 +55,15 @@ public sealed class LootStates(LootCatalog catalog, RaidItems raidItems)
         IReadOnlyList<LootStack> stacks = container.Contents.Stacks;
         if (stacks.Count == 0)
         {
-            slots[0] = new ContainerItem(raidItems.RubberDuckIndex, Guid.NewGuid(), 1, 1);
+            slots[0] = new ContainerItem(raidItems.RubberDuckIndex, Guid.NewGuid(), 1, 1) { Source = ItemSource.PickupLootBox };
         }
 
         for (int slot = 0; slot < stacks.Count && slot < slots.Length; slot++)
         {
-            slots[slot] = new ContainerItem(checked((ushort)stacks[slot].Item.UsableIndex), Guid.NewGuid(), stacks[slot].Amount, stacks[slot].Durability);
+            slots[slot] = new ContainerItem(checked((ushort)stacks[slot].Item.UsableIndex), Guid.NewGuid(), stacks[slot].Amount, stacks[slot].Durability)
+            {
+                Source = ItemSource.PickupLootBox,
+            };
         }
 
         return _items[index] = Array.AsReadOnly(slots);

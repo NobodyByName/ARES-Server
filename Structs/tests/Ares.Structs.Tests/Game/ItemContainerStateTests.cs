@@ -79,6 +79,22 @@ public sealed class ItemContainerStateTests
     }
 
     [Fact]
+    public void A_shown_item_sends_its_source_when_it_has_one()
+    {
+        ContainerItem plain = new(InventoryBlackboard.RubberDuckIndex, Guid.Parse("01234567-89ab-cdef-1234-56789abcdef0"), 1, 1);
+        ContainerItem looted = plain with { Source = ItemSource.PickupLootBox };
+        PendulumIntegerValue source = Assert.IsType<PendulumIntegerValue>(PlainSlot(looted).Values.Single(value => value.Field == InventoryBlackboard.ItemSourceField));
+        Assert.Equal((ulong)ItemSource.PickupLootBox, source.Value);
+        Assert.Equal(PlainSlot(plain).Values, PlainSlot(looted).Values.Where(value => value.Field != InventoryBlackboard.ItemSourceField));
+        Assert.DoesNotContain(PlainSlot(plain).Values, value => value.Field == InventoryBlackboard.ItemSourceField);
+
+        PendulumArrayElement hidden = PlainSlot(looted, ItemSearchStatus.HiddenSearching);
+        Assert.Equal(InventoryBlackboard.SearchStatusField, Assert.Single(hidden.Values).Field);
+        RoundTrips(ItemContainerState.Encode([new ItemContainerState(0, [looted])]));
+        Assert.Throws<InvalidPacketException>(() => ItemContainerState.Encode([new ItemContainerState(0, [plain with { Source = (ItemSource)23 }])]));
+    }
+
+    [Fact]
     public void The_dirty_count_follows_the_modification_counter_unless_given()
     {
         ItemContainerState[] containers = [new(0, new ContainerItem?[2]), new(3, new ContainerItem?[1])];
