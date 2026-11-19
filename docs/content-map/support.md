@@ -57,7 +57,8 @@ the items have not been tried with the stock client.
 Dam raids have loot containers: drawers, lockers, cabinets, car trunks, crates and the other containers
 on the map's props, plus free-standing weapon cases and the placed machine doors. Each raid rolls which
 of them appear, with chances per container category raised in the map's medium- and high-value areas and
-limited per area and per prop, so a raid has a few hundred of them. Players search a container (holding
+limited per area and per prop (server and locker racks fill as many doors as on the official
+game), so a raid has a few hundred of them. Players search a container (holding
 interact, with the Raider Tool where the game breaches it), see its contents and take items into their
 own inventory; an opened container stays open for every player. Each container is filled when the raid
 creates it, usually with two or three stacks drawn from the game's loot tables for its category; rarer
@@ -65,7 +66,10 @@ items are more likely in the medium- and high-value areas, and a container somet
 ammo or healing stack. Weapon cases hold weapon mods and ammo, medical bags hold healing
 items, and the other free-standing containers follow their type. How much loot each area gets and the
 chances for ammo, grenades, mods and blueprints are ARES defaults, so drop rates are provisional.
-Weapons are not placed in containers yet. In the Raid inventory, stacks can also be split and merged up
+All of it is operator content (`content/loot-spawn.json`, `loot-contents.json`, `loot-rules.json`):
+spawn chances, pools and tiers, and per-container or per-group rules that set whether a container
+spawns and exactly what it holds. The shipped content places no weapons; a rule can put the Ferro I or
+the Light Shield in containers, where players take, carry and bring them home (automated coverage only). In the Raid inventory, stacks can also be split and merged up
 to their stack limit. Searching several kinds of containers, taking items, splitting and bringing the
 loot home by extraction are stock-client verified with one player.
 
@@ -149,7 +153,7 @@ Limitations:
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
 - ARCs do not spawn by themselves. Operators can place a stationary Wasp (`spawn-arc`), not yet
   verified in the game; it does not move, attack or take damage.
-- Loot drop rates are provisional and weapons never appear in containers. Plants and other nature
+- Loot drop rates are provisional, and a weapon found in a raid cannot be equipped in that raid. Plants and other nature
   containers, ARC wrecks, weapon racks (they need the Security Breach skill) and keycard rooms are not
   supported, and containers are only in Dam.
 - Broken-elevator repair and other extraction types are not implemented.
