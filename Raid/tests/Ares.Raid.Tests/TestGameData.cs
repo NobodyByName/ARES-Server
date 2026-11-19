@@ -17,7 +17,7 @@ namespace Ares.Raid.Tests;
 /// </summary>
 internal static class TestGameData
 {
-    private static readonly Lazy<RaidGameData> s_raid = new(() => new RaidGameData(RealGameData.Data, AresContent.Defaults), LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<RaidGameData> s_raid = new(() => new RaidGameData(RealGameData.Data, ShippedContent.Value), LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>The loaded game data.</summary>
     public static GameDataSet Data => RealGameData.Require();
@@ -33,7 +33,7 @@ internal static class TestGameData
     }
 
     /// <summary>The loadout structure of the default ARES content.</summary>
-    public static LoadoutContent Loadout => AresContent.Defaults.Loadout;
+    public static LoadoutContent Loadout => ShippedContent.Value.Loadout;
 
     /// <summary>The rubber duck, the plain item the tests carry.</summary>
     public static ItemDefinition RubberDuck => Data.Items.ByTechnicalName[ItemTechnicalNames.RubberDuck];

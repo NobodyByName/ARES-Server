@@ -62,11 +62,11 @@ raid-lighting =
 game-data-dir =
 
 # CONTENT
-# Folder with ARES content files (see "ARES content" in the README): each JSON file there replaces
-# the built-in default of the same name (stash.json, loadout.json, item-recycling.json,
-# trader-offers.json, item-quality-levels.json). The defaults ship next to ARES-Host in default-content/.
-# Host passes the folder to every raid it starts. Empty: the built-in defaults.
-content-dir =
+# Folder with the ARES content files (see "ARES content" in the README): stash.json, loadout.json,
+# item-recycling.json, trader-offers.json, item-quality-levels.json. ARES ships it
+# next to ARES-Host as content/, as close to the official game as known; edit the files there.
+# Every file must be present. Host passes the folder to every raid it starts.
+content-dir = content
 
 # ECONOMY
 # Coin price of each stash upgrade (tier 2 to tier 12, 64 to 328 slots, 24 more each),

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Ares.Common.Game.Inventory;
+using Ares.Common.Testing;
 using Ares.Host.Services;
 using Ares.Host.Services.Inventory;
 using Ares.Structs.Backend;
@@ -107,7 +108,7 @@ public sealed class StashUpgradeTests : IDisposable
     [Fact]
     public void Operator_prices_are_announced_and_charged()
     {
-        StashUpgradePrices prices = new(TestCatalog.Content.Stash, [1234, .. StashUpgradePrices.Default.Coins.Skip(1)]);
+        StashUpgradePrices prices = new(TestCatalog.Content.Stash, [1234, .. StashUpgradePrices.Of(ShippedContent.Value.Stash).Coins.Skip(1)]);
         InventoryStore store = new(_database.Store, TestDatabase.UserId, new InventoryCatalog(TestCatalog.Data, TestCatalog.Content, prices));
         store.InitializeLayout(DateTimeOffset.UnixEpoch);
         store.AddItem(ItemTechnicalNames.Coins, DateTimeOffset.UnixEpoch, 2000);

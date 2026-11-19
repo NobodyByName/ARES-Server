@@ -1,4 +1,3 @@
-using Ares.Common.Game.Content;
 using Ares.Common.Game.Inventory;
 using Ares.Common.GameData;
 using Ares.Common.Testing;
@@ -10,7 +9,7 @@ namespace Ares.Common.Tests;
 /// <summary>Real-data tier: which catalogue items the item rules of the default ARES content carry.</summary>
 public sealed class CarriedItemTests
 {
-    private static readonly Lazy<LoadoutDefinitions> s_definitions = new(() => AresContent.Defaults.ItemDefinitions(RealGameData.Data));
+    private static readonly Lazy<LoadoutDefinitions> s_definitions = new(() => ShippedContent.Value.ItemDefinitions(RealGameData.Data));
 
     private static LoadoutDefinitions Definitions => s_definitions.Value;
 

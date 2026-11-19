@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Ares.Common.CommandLine;
 using Ares.Common.Game.Content;
+using Ares.Common.Testing;
 using Ares.Host.Services;
 using Ares.Structs.Backend;
 using Ares.Structs.Backend.Progression;
@@ -18,6 +19,7 @@ public sealed class ConfigurationFileTests : IDisposable
     {
         Directory.CreateDirectory(_directory);
         File.WriteAllText(Path.Combine(_directory, "archive-keys.txt"), ArchiveKeysTests.DummyFile);
+        ShippedContent.CopyTo(Path.Combine(_directory, "content"));
     }
 
     public void Dispose() => Directory.Delete(_directory, recursive: true);
@@ -204,12 +206,11 @@ public sealed class ConfigurationFileTests : IDisposable
     }
 
     [Fact]
-    public void The_content_folder_replaces_default_files_and_its_stash_sets_the_upgrade_prices()
+    public void The_content_folder_is_the_content_and_its_stash_sets_the_upgrade_prices()
     {
-        // A stash of the first two default tiers: one upgrade.
-        StashContent defaults = AresContent.Defaults.Stash;
+        // A stash of the first two shipped tiers: one upgrade.
+        StashContent defaults = ShippedContent.Value.Stash;
         long contentSlot = ((ItemSlotArray)defaults.Tiers[0].SlotConfig!).SlotAssetId;
-        Directory.CreateDirectory(Path.Combine(_directory, "content"));
         File.WriteAllText(Path.Combine(_directory, "content", AresContent.StashFile), JsonSerializer.Serialize(new
         {
             stashSlot = defaults.SlotAssetId,
@@ -224,7 +225,6 @@ public sealed class ConfigurationFileTests : IDisposable
         Write("content-dir = content");
         HostConfiguration configuration = Parse();
         Assert.Equal(Path.Combine(_directory, "content"), configuration.Content.Directory);
-        Assert.Equal([AresContent.StashFile], configuration.Content.Overrides);
         Assert.Equal(2, configuration.Content.Stash.Tiers.Count);
         Assert.Equal([5000L], configuration.Settings.StashUpgrades.Coins);
         Write("content-dir = content\nstash-upgrade-coins = 7");
@@ -233,7 +233,9 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Contains("--stash-upgrade-coins expects 1 comma-separated", Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
         Write("content-dir = missing");
         Assert.Contains("does not exist", Assert.Throws<AresContentException>(() => Parse()).Message, StringComparison.Ordinal);
-        Assert.Same(AresContent.Defaults, new HostConfiguration { Settings = configuration.Settings, Bind = IPAddress.Loopback, Port = 1 }.Content);
+        File.Delete(Path.Combine(_directory, "content", AresContent.TraderOffersFile));
+        Write("content-dir = content");
+        Assert.Contains($"has no {AresContent.TraderOffersFile}", Assert.Throws<AresContentException>(() => Parse()).Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -287,6 +289,7 @@ public sealed class ConfigurationFileTests : IDisposable
         string folder = Path.Combine(_directory, "other");
         Directory.CreateDirectory(folder);
         File.Copy(Path.Combine(_directory, "archive-keys.txt"), Path.Combine(folder, "archive-keys.txt"));
+        ShippedContent.CopyTo(Path.Combine(folder, "content"));
         File.WriteAllText(Path.Combine(folder, "custom.conf"), "log-file = host.log" + MongoConfiguration);
         HostConfiguration configuration = Parse("--config", "other/custom.conf");
         Assert.Equal(Path.Combine(folder, "host.log"), configuration.LogFile);

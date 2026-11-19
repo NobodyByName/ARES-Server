@@ -42,11 +42,8 @@ public sealed record HostConfiguration
     /// </summary>
     public string? GameDataDirectory { get; private init; }
 
-    /// <summary>
-    /// The ARES content Host serves: the defaults, with the files of the operator's content folder (<c>content-dir</c>)
-    /// in their place.
-    /// </summary>
-    public AresContent Content { get; init; } = AresContent.Defaults;
+    /// <summary>The ARES content Host serves, from the content folder (<c>content-dir</c>).</summary>
+    public required AresContent Content { get; init; }
 
     /// <summary>Optional structured log file, independent of terminal output.</summary>
     public string? LogFile { get; private init; }
@@ -222,7 +219,7 @@ public sealed record HostConfiguration
     }
 
     private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
-        int controlPort, string? lighting, string? gameDataDirectory, string? contentDirectory, IPAddress bind, string advertiseHost, int hostPort)
+        int controlPort, string? lighting, string? gameDataDirectory, string contentDirectory, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {

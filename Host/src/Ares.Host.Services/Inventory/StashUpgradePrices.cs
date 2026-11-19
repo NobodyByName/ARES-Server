@@ -25,9 +25,6 @@ public sealed class StashUpgradePrices
         Coins = new ReadOnlyCollection<long>([.. coins]);
     }
 
-    /// <summary>The prices of the default stash content.</summary>
-    public static StashUpgradePrices Default { get; } = Of(AresContent.Defaults.Stash);
-
     /// <summary>Price of each upgrade, from the first tier on.</summary>
     public IReadOnlyList<long> Coins { get; }
 

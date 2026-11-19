@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Ares.Common.Game.Content;
 using Ares.Common.Testing;
 using Ares.Host.Services.Content;
 using Ares.Host.Services.Inventory;
@@ -16,14 +15,14 @@ public sealed class ServedGameDataTests
     public void Host_serves_the_definitions_of_the_default_content_and_the_extracted_zipline_without_holding_it()
     {
         InventoryCatalog catalog = TestCatalog.Real;
-        StashUpgradePrices prices = StashUpgradePrices.Default;
-        IReadOnlyList<ItemDescription> tiers = AresContent.Defaults.Stash.Tiers;
+        StashUpgradePrices prices = StashUpgradePrices.Of(ShippedContent.Value.Stash);
+        IReadOnlyList<ItemDescription> tiers = ShippedContent.Value.Stash.Tiers;
         Dictionary<long, ItemUpgradeDescription> upgrades = tiers.Zip(prices.Coins).ToDictionary(pair => pair.First.GameAssetId, pair => pair.First.Upgrade! with
         {
             CostPackage = new OfferCostPackage([new OfferCostItem(TestCatalog.Data.Names.Coins.AssetId, pair.Second, 1.0)]),
             Cost = new ItemAmountsOfferCost([new ItemAssetAmount(TestCatalog.Data.Names.Coins.AssetId, pair.Second)]),
         });
-        GameDataResponse expected = BackendContent.GameData(AresContent.Defaults.TraderOffers, AresContent.Defaults.ItemDefinitions(TestCatalog.Data).All.Select(definition =>
+        GameDataResponse expected = BackendContent.GameData(ShippedContent.Value.TraderOffers, ShippedContent.Value.ItemDefinitions(TestCatalog.Data).All.Select(definition =>
             upgrades.TryGetValue(definition.GameAssetId, out ItemUpgradeDescription? upgrade) ? definition with { Upgrade = upgrade } : definition));
         ItemDefinition zipline = TestCatalog.Data.Items.ByTechnicalName["DA_Item_Zipline"];
 

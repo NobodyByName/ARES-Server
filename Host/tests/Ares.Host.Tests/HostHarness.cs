@@ -93,8 +93,10 @@ internal sealed class HostHarness : IAsyncLifetime
                 ArchiveKeys = ArchiveKeys.Parse(ArchiveKeysTests.DummyFile),
                 MongoDbUri = TestDatabase.ConnectionUri,
                 MongoDbDatabase = Database.Name,
+                StashUpgrades = StashUpgradePrices.Of(ShippedContent.Value.Stash),
                 RouteDelayScale = 0,
             },
+            Content = ShippedContent.Value,
             Bind = IPAddress.Loopback,
             Port = 18080,
         };

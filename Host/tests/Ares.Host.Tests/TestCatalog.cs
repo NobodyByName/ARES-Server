@@ -14,7 +14,7 @@ namespace Ares.Host.Tests;
 /// </summary>
 internal static class TestCatalog
 {
-    private static readonly Lazy<InventoryCatalog> s_real = new(() => new InventoryCatalog(RealGameData.Data, AresContent.Defaults, StashUpgradePrices.Default),
+    private static readonly Lazy<InventoryCatalog> s_real = new(() => new InventoryCatalog(RealGameData.Data, ShippedContent.Value, StashUpgradePrices.Of(ShippedContent.Value.Stash)),
         LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>The real game data; skips the calling test without it.</summary>
@@ -34,7 +34,7 @@ internal static class TestCatalog
     internal static LoadoutDefinitions Definitions => Real.Items;
 
     /// <summary>The default content.</summary>
-    internal static AresContent Content => AresContent.Defaults;
+    internal static AresContent Content => ShippedContent.Value;
 
     internal static long StashSlot => Content.Stash.SlotAssetId;
 

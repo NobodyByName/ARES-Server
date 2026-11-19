@@ -109,7 +109,7 @@ log.Write(new JsonObject
     ["lighting"] = configuration.Lighting ?? "weighted",
     ["max_players"] = configuration.MaxPlayers,
     ["fill_seconds"] = configuration.FillSeconds,
-    ["content"] = content.Source,
+    ["content"] = content.Directory,
 });
 
 RaidServer server = new(socket, connections, log, Clock, admin, () => worlds.Current);

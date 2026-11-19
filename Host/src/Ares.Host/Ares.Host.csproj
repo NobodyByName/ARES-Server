@@ -12,7 +12,7 @@
     <EmbeddedResource Include="../../ares-host.conf.dist" LogicalName="Ares.Host.ares-host.conf.dist" />
     <None Include="../../THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="../../ares-host.conf.dist" Link="ares-host.conf.dist" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="../../../Common/src/Ares.Common.Game/Content/Defaults/*.json" Link="default-content/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="../../../content/*.json" Link="content/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

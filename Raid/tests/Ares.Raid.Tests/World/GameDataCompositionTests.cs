@@ -1,4 +1,3 @@
-using Ares.Common.Game.Content;
 using Ares.Common.Testing;
 using Ares.Raid.World;
 
@@ -10,7 +9,7 @@ public sealed class GameDataCompositionTests
     [Fact]
     public void The_world_host_and_the_raid_rules_require_game_data_and_content()
     {
-        Assert.Throws<ArgumentNullException>(() => new RaidGameData(null!, AresContent.Defaults));
+        Assert.Throws<ArgumentNullException>(() => new RaidGameData(null!, ShippedContent.Value));
         Assert.Throws<ArgumentNullException>(() => new RaidGameData(SyntheticGameData.Create(), null!));
         Assert.Throws<ArgumentNullException>(() => new DamWorlds(null!, () => 1));
     }

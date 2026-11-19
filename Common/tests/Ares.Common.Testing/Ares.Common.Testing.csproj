@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <RootNamespace>Ares.Common.Testing</RootNamespace>
-    <Description>Test support shared by the ARES test projects: the real game data tier and synthetic game data.</Description>
+    <Description>Test support shared by the ARES test projects: the real game data tier, synthetic game data and the shipped ARES content.</Description>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +13,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Ares.Common.GameData/Ares.Common.GameData.csproj" />
+    <ProjectReference Include="../../src/Ares.Common.Game/Ares.Common.Game.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="../../../content/*.json" Link="content/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

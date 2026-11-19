@@ -85,7 +85,7 @@ log.Write(new JsonObject
     ["raid_capacity"] = configuration.Settings.RaidCapacity,
     ["raid_players"] = configuration.Raids?.Players,
     ["mongodb_database"] = configuration.Settings.MongoDbDatabase,
-    ["content"] = configuration.Content.Source,
+    ["content"] = configuration.Content.Directory,
     ["identity_tokens"] = configuration.Settings.IdentityKey is not null ? "operator-key" : "per-run-key",
 });
 if (configuration.MissingSettings.Count > 0)

@@ -68,8 +68,6 @@ internal sealed record RecyclingRow(
 /// <summary>Reads content files: strict JSON in the backend's wire format, unknown members refused.</summary>
 internal static class AresContentReader
 {
-    private const string ResourcePrefix = "Ares.Common.Game.Content.Defaults.";
-
     private static readonly JsonSerializerOptions s_options = new()
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
@@ -80,34 +78,33 @@ internal static class AresContentReader
         AllowOutOfOrderMetadataProperties = true,
     };
 
-    /// <summary>Reads a content file from <paramref name="directory"/> when it has one, else the built-in default.</summary>
-    /// <param name="directory">The operator's content folder, or null.</param>
+    /// <summary>Reads a content file from a content folder.</summary>
+    /// <param name="directory">The content folder.</param>
     /// <param name="file">The content file name.</param>
-    /// <param name="overridden">Whether the file came from <paramref name="directory"/>.</param>
-    /// <exception cref="AresContentException">The file cannot be read or is not valid for <typeparamref name="T"/>.</exception>
-    public static T Read<T>(string? directory, string file, out bool overridden)
+    /// <exception cref="AresContentException">The file is missing, cannot be read or is not valid for <typeparamref name="T"/>.</exception>
+    public static T Read<T>(string directory, string file)
     {
-        string? path = directory is null ? null : Path.Combine(directory, file);
-        overridden = path is not null && File.Exists(path);
-        string source = overridden ? path! : $"the built-in {file}";
+        string path = Path.Combine(directory, file);
+        if (!File.Exists(path))
+        {
+            throw new AresContentException($"The content folder {directory} has no {file}. Every content file must be there; ARES ships them in content/.");
+        }
+
         try
         {
-            using Stream stream = overridden ? File.OpenRead(path!)
-                : typeof(AresContentReader).Assembly.GetManifestResourceStream(ResourcePrefix + file)
-                    ?? throw new AresContentException($"The built-in content file {file} is missing from this ARES build.");
-            return JsonSerializer.Deserialize<T>(stream, s_options) ?? throw new AresContentException($"{source} is empty (null).");
+            using Stream stream = File.OpenRead(path);
+            return JsonSerializer.Deserialize<T>(stream, s_options) ?? throw new AresContentException($"{path} is empty (null).");
         }
         catch (JsonException error)
         {
-            throw new AresContentException($"{source} is not valid content: {error.Message}", error);
+            throw new AresContentException($"{path} is not valid content: {error.Message}", error);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
-            throw new AresContentException($"Cannot read {source}: {error.Message}", error);
+            throw new AresContentException($"Cannot read {path}: {error.Message}", error);
         }
     }
 
     /// <summary>The error for a file whose content contradicts itself.</summary>
-    public static AresContentException Invalid(string? directory, string file, bool overridden, string problem) =>
-        new($"{(overridden ? Path.Combine(directory!, file) : $"The built-in {file}")}: {problem}");
+    public static AresContentException Invalid(string directory, string file, string problem) => new($"{Path.Combine(directory, file)}: {problem}");
 }

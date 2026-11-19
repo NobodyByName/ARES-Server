@@ -10,8 +10,8 @@ namespace Ares.Common.Tests;
 /// <summary>Real-data tier: the loadout tree of the default ARES content over the loaded game data.</summary>
 public sealed class LoadoutTreeTests
 {
-    private static readonly LoadoutContent s_loadout = AresContent.Defaults.Loadout;
-    private static readonly Lazy<LoadoutDefinitions> s_definitions = new(() => AresContent.Defaults.ItemDefinitions(RealGameData.Data));
+    private static readonly LoadoutContent s_loadout = ShippedContent.Value.Loadout;
+    private static readonly Lazy<LoadoutDefinitions> s_definitions = new(() => ShippedContent.Value.ItemDefinitions(RealGameData.Data));
 
     private static LoadoutDefinitions Definitions => s_definitions.Value;
 

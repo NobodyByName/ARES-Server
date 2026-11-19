@@ -8,10 +8,10 @@ namespace Ares.Common.Game.Content;
 
 /// <summary>
 /// ARES content: the backend data the game's menu reads from its backend and the installed game does not hold (the
-/// stash and loadout structures, recycling yields, the trader offers and item quality levels). The default values
-/// are built into ARES from <c>Content/Defaults/</c>; an operator's content folder (<c>content-dir</c>,
-/// which Host passes to every Raid it starts) replaces a default file by holding a file of the same name. Every file is
-/// JSON in the backend's wire format. Host and Raid load it once at startup; it is independent of the game data, against
+/// stash and loadout structures, recycling yields, the trader offers and item quality levels).
+/// It lives in one folder, the content folder (<c>content-dir</c>, which Host passes to every Raid it starts):
+/// ARES ships it as <c>content/</c>, as close to the official game as known, and an operator edits it in place. Every
+/// file must be there. Every file is JSON (the backend's wire format where the backend serves it). Host and Raid load it once at startup; it is independent of the game data, against
 /// which <see cref="ItemContent"/> and <see cref="ItemDefinitions"/> resolve it.
 /// </summary>
 public sealed class AresContent
@@ -31,18 +31,14 @@ public sealed class AresContent
     /// <summary>The quality level of item menu descriptions, by technical name.</summary>
     public const string QualityLevelsFile = "item-quality-levels.json";
 
-    private static readonly Lazy<AresContent> s_defaults = new(() => Load(null), LazyThreadSafetyMode.ExecutionAndPublication);
-
-    private AresContent(string? directory)
+    private AresContent(string directory)
     {
         Directory = directory;
-        List<string> overrides = [];
         StashDocument stash = Read<StashDocument>(StashFile);
         LoadoutDocument loadout = Read<LoadoutDocument>(LoadoutFile);
         IReadOnlyList<RecyclingRow> recycling = Read<IReadOnlyList<RecyclingRow>>(RecyclingFile);
         TraderOffers = Read<IReadOnlyList<OfferDescription>>(TraderOffersFile);
         QualityLevels = Read<IReadOnlyDictionary<string, long>>(QualityLevelsFile);
-        Overrides = overrides.AsReadOnly();
         Stash = new StashContent(stash, problem => Invalid(StashFile, problem));
         Loadout = new LoadoutContent(loadout, problem => Invalid(LoadoutFile, problem));
         if (Stash.Definitions.Concat(Loadout.Definitions).GroupBy(definition => definition.GameAssetId).FirstOrDefault(group => group.Count() > 1) is { } shared)
@@ -64,18 +60,9 @@ public sealed class AresContent
 
         return;
 
-        T Read<T>(string file)
-        {
-            T value = AresContentReader.Read<T>(directory, file, out bool overridden);
-            if (overridden)
-            {
-                overrides.Add(file);
-            }
+        T Read<T>(string file) => AresContentReader.Read<T>(directory, file);
 
-            return value;
-        }
-
-        AresContentException Invalid(string file, string problem) => AresContentReader.Invalid(directory, file, overrides.Contains(file), problem);
+        AresContentException Invalid(string file, string problem) => AresContentReader.Invalid(directory, file, problem);
 
         ReadOnlyDictionary<long, TValue> Unique<TValue>(IEnumerable<(long Key, TValue Value)> rows, string file, string what)
         {
@@ -95,14 +82,8 @@ public sealed class AresContent
     /// <summary>Every content file, by name.</summary>
     public static IReadOnlyList<string> FileNames { get; } = [StashFile, LoadoutFile, RecyclingFile, TraderOffersFile, QualityLevelsFile];
 
-    /// <summary>The built-in defaults, without operator overrides.</summary>
-    public static AresContent Defaults => s_defaults.Value;
-
-    /// <summary>Full path of the operator's content folder, or null when only the defaults are used.</summary>
-    public string? Directory { get; }
-
-    /// <summary>The files taken from <see cref="Directory"/> instead of the defaults, in <see cref="FileNames"/> order.</summary>
-    public IReadOnlyList<string> Overrides { get; }
+    /// <summary>Full path of the content folder it was loaded from.</summary>
+    public string Directory { get; }
 
     /// <summary>The stash structure.</summary>
     public StashContent Stash { get; }
@@ -119,18 +100,17 @@ public sealed class AresContent
     /// <summary>Quality level of an item's menu description, by technical name; items absent here have quality 0.</summary>
     public IReadOnlyDictionary<string, long> QualityLevels { get; }
 
-    /// <summary>
-    /// Loads the content: each file from <paramref name="directory"/> when it holds one, else the built-in default.
-    /// </summary>
-    /// <param name="directory">The operator's content folder, or null for the defaults alone.</param>
+    /// <summary>Loads the content of a content folder, which must hold every content file.</summary>
+    /// <param name="directory">The content folder.</param>
     /// <exception cref="AresContentException">
-    /// The folder is missing or holds a JSON file that is not a content file, or a file is malformed or inconsistent.
+    /// No folder is given, the folder or one of its files is missing, it holds a JSON file that is not a content file,
+    /// or a file is malformed or inconsistent.
     /// </exception>
     public static AresContent Load(string? directory)
     {
         if (directory is null)
         {
-            return new AresContent(null);
+            throw new AresContentException("No ARES content folder is set (content-dir).");
         }
 
         string full = Path.GetFullPath(directory);
@@ -157,17 +137,12 @@ public sealed class AresContent
         foreach ((string name, long level) in QualityLevels)
         {
             qualityLevels[data.Items.ByTechnicalName.TryGetValue(name, out ItemDefinition? item) ? item.AssetId
-                : throw AresContentReader.Invalid(Directory, QualityLevelsFile, Overrides.Contains(QualityLevelsFile),
-                    $"the game data has no item {name}")] = level;
+                : throw AresContentReader.Invalid(Directory, QualityLevelsFile, $"the game data has no item {name}")] = level;
         }
 
         return new BackendItemContent(Stash.Definitions, Loadout.Definitions, Loadout.FrameSlotAssetId, Loadout.StandardFrameAssetId, RecycleOutputs,
             qualityLevels.AsReadOnly());
     }
-
-    /// <summary>Where the content came from, for the startup log: the built-in defaults, or the folder and the files it overrides.</summary>
-    public string Source => Directory is null ? "built-in defaults"
-        : $"{Directory}: {(Overrides.Count == 0 ? "no overrides" : string.Join(", ", Overrides))}";
 
     /// <summary>The shared item definitions of the game data and this content.</summary>
     /// <param name="data">The game data.</param>

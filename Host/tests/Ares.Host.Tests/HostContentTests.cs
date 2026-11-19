@@ -24,7 +24,6 @@ public sealed class HostContentTests : IDisposable
         IReadOnlyDictionary<long, ItemDescription> served = catalog.Items.ByAsset;
         long duck = SyntheticHost.Asset(ItemTechnicalNames.RubberDuck);
 
-        Assert.Equal(AresContent.FileNames, AresContent.Load(_directory).Overrides);
         Assert.Equal(SyntheticHost.OfferId, Assert.Single(catalog.GameData.OfferDescriptions.OfferDescriptions).OfferId);
         Assert.Equal(1, served[duck].QualityLevel);
         Assert.Equal(0, served[SyntheticHost.Asset(ItemTechnicalNames.Wires)].QualityLevel);

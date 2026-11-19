@@ -45,7 +45,7 @@ public sealed record HostSettings
     public string MongoDbDatabase { get; init; } = "ares_host";
 
     /// <summary>Coin price of each stash upgrade, for the tiers of the stash content Host serves.</summary>
-    public StashUpgradePrices StashUpgrades { get; init; } = StashUpgradePrices.Default;
+    public required StashUpgradePrices StashUpgrades { get; init; }
 
     /// <summary>Scale factor applied to the bootstrap reply delays some routes need (tests use 0).</summary>
     public double RouteDelayScale { get; init; } = 1.0;
