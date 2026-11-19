@@ -1,0 +1,31 @@
+{
+  "chances": {
+    "Socket.LootContainer": 0.038,
+    "Socket.LootContainer.Commercial": 0.094,
+    "Socket.LootContainer.Commercial.GvtDesk.Drawer": 0.451,
+    "Socket.LootContainer.Commercial.Wrh.FilingCabinet.Drawer": 0.0023,
+    "Socket.LootContainer.Electrical": 0.0071,
+    "Socket.LootContainer.Industrial": 0.0138,
+    "Socket.LootContainer.Mechanical": 0.033,
+    "Socket.LootContainer.Medical": 0.08,
+    "Socket.LootContainer.Nature": 0.023,
+    "Socket.LootContainer.Nature.Mushroom": 0.135,
+    "Socket.LootContainer.Nature.Resin": 0.0015,
+    "Socket.LootContainer.Residential": 0.033,
+    "Socket.LootContainer.Tech": 0.0385,
+    "Socket.LootContainer.Tech.Computer02.Screen": 0.0173,
+    "Socket.LootContainer.Tech.Server.Door": 0.396
+  },
+  "areaMultipliers": {
+    "Unknown": 1.0,
+    "Medium": 4.6,
+    "High": 3.4
+  },
+  "groupCaps": true,
+  "limiters": true,
+  "spawnerClasses": [
+    "/Game/Pioneer/Environment/Props/Raider/AmmoBox_01/BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier.BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier_C",
+    "/Game/Pioneer/Environment/Props/Raider/WeaponCase_01/BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh.BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh_C",
+    "/Game/Pioneer/Environment/Props/Research/WeaponsRack_01/BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic.BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic_C"
+  ]
+}

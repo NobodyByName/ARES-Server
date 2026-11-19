@@ -61,8 +61,8 @@ public sealed class PlainItemTests
         ScriptedPlayer session = new();
         ReplicationContext replication = session.Worlds.Current!.State.Replication;
         string round = TestGameData.Dam.Rounds[0].Name;
-        LootCatalog first = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam));
-        LootCatalog second = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam));
+        LootCatalog first = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn));
+        LootCatalog second = new(TestGameData.Raid, replication, round, [], 1234, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn));
         Assert.Equal(first.Containers.Select(Contents), second.Containers.Select(Contents));
         Assert.Contains(first.Containers, container => container.Contents.Stacks.Count >= 2);
 

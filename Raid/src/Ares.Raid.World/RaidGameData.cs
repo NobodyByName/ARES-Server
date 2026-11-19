@@ -22,7 +22,8 @@ public sealed class RaidGameData
         ArgumentNullException.ThrowIfNull(content);
         Map = data.Names.Dam;
         Items = new RaidItems(data, content);
-        LootRolls = new LootContentRolls(Items.Definitions, data.Loot);
+        LootSpawn = content.LootSpawn(data);
+        LootRolls = new LootContentRolls(Items.Definitions, data.Loot, content.LootContents(data));
         LootRules = content.LootRules(data, Items.Definitions);
     }
 
@@ -34,6 +35,9 @@ public sealed class RaidGameData
 
     /// <summary>The item rules and facts.</summary>
     public RaidItems Items { get; }
+
+    /// <summary>How loot containers spawn.</summary>
+    public LootSpawnSettings LootSpawn { get; }
 
     /// <summary>How a loot container's contents are drawn.</summary>
     public LootContentRolls LootRolls { get; }

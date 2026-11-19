@@ -1,0 +1,576 @@
+{
+  "excludedDropTags": [
+    "Item.Drop.Category.Map"
+  ],
+  "tiers": [
+    {
+      "name": "Common",
+      "dropTag": "Item.Drop.Type.Salvage.Material.Common",
+      "weight": 3
+    },
+    {
+      "name": "Uncommon",
+      "dropTag": "Item.Drop.Type.Salvage.Material.Uncommon",
+      "weight": 3
+    },
+    {
+      "name": "Rare",
+      "dropTag": "Item.Drop.Type.Salvage.Material.Rare",
+      "weight": 2,
+      "areaMultipliers": {
+        "Medium": 1.5,
+        "High": 2
+      }
+    },
+    {
+      "name": "Epic",
+      "dropTag": "Item.Drop.Type.Salvage.Material.Epic",
+      "weight": 0.25,
+      "areaMultipliers": {
+        "Medium": 2,
+        "High": 3
+      }
+    },
+    {
+      "name": "Recyclables",
+      "dropTag": "Item.Drop.Type.Salvage.Recyclables",
+      "weight": 2
+    },
+    {
+      "name": "Trinkets",
+      "dropTag": "Item.Drop.Type.Salvage.Trinket",
+      "weight": 1
+    },
+    {
+      "name": "Other",
+      "weight": 2
+    }
+  ],
+  "firstStackTier": "Common",
+  "tablePools": [
+    {
+      "name": "Tech",
+      "tag": "Socket.LootContainer.Tech",
+      "tables": [
+        "StaticValueLootTable_ElectricalTechMixedMaterialsAll",
+        "StaticValueLootTable_BasicMaterialsElectrical",
+        "StaticValueLootTable_RareMaterialsTechnological",
+        "StaticValueLootTable_RecyclablesTechnological",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Electrical",
+      "tag": "Socket.LootContainer.Electrical",
+      "tables": [
+        "StaticValueLootTable_ElectricalAll",
+        "StaticValueLootTable_BasicMaterialsElectrical",
+        "StaticValueLootTable_ElectricalTechMixedMaterials",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Mechanical",
+      "tag": "Socket.LootContainer.Mechanical",
+      "tables": [
+        "StaticValueLootTable_MechanicalAll",
+        "StaticValueLootTable_BasicMaterialsMechanical",
+        "StaticValueLootTable_MechanicalIndustrialMixedAll",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Industrial",
+      "tag": "Socket.LootContainer.Industrial",
+      "tables": [
+        "StaticValueLootTable_IndustrialAll",
+        "StaticValueLootTable_BasicMaterialsMechanical",
+        "StaticValueLootTable_MechanicalIndustrialMixedAll",
+        "StaticValueLootTable_SecurityAll",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Commercial",
+      "tag": "Socket.LootContainer.Commercial",
+      "tables": [
+        "StaticValueLootTable_CommercialAll",
+        "StaticValueLootTable_CivilianMixedMaterials",
+        "StaticValueLootTable_TrinketsCommercial",
+        "StaticValueLootTable_RecyclablesCommercial",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Residential",
+      "tag": "Socket.LootContainer.Residential",
+      "tables": [
+        "StaticValueLootTable_ResidentialAll",
+        "StaticValueLootTable_CivilianMixedMaterials",
+        "StaticValueLootTable_TrinketsResidential",
+        "StaticValueLootTable_RecyclablesResidential",
+        "StaticValueLootTable_RecyclablesFabricBased",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Medical",
+      "tag": "Socket.LootContainer.Medical",
+      "tables": [
+        "StaticValueLootTable_MedicalMixed",
+        "StaticValueLootTable_RecyclablesMedical",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Security",
+      "tag": "Socket.LootContainer.Security",
+      "tables": [
+        "StaticValueLootTable_SecurityAll",
+        "StaticValueLootTable_SecurityMaterials",
+        "StaticValueLootTable_RecyclablesSecurity",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "OldWorld",
+      "tag": "Socket.LootContainer.OldWorld",
+      "tables": [
+        "StaticValueLootTable_TrinketsOldWorld",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Exodus",
+      "tag": "Socket.LootContainer.Exodus",
+      "tables": [
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "Generic",
+      "tag": "Socket.LootContainer.Generic",
+      "tables": [
+        "StaticValueLootTable_CivilianMixedAll",
+        "StaticValueLootTable_GlobalCommonMaterials",
+        "StaticValueLootTable_GlobalUncommonMaterials",
+        "StaticValueLootTable_GlobalRareMaterials",
+        "StaticValueLootTable_GlobalEpicMaterials",
+        "StaticValueLootTable_GlobalOutpostMaterials",
+        "StaticValueLootTable_GlobalRecyclables",
+        "StaticValueLootTable_GlobalRecyclablesLow",
+        "StaticValueLootTable_GlobalRecyclablesMid",
+        "StaticValueLootTable_GlobalTrinkets",
+        "StaticValueLootTable_GlobalTrinketsLow",
+        "StaticValueLootTable_GlobalTrinketsMid",
+        "StaticValueLootTable_GlobalTrinketsHigh",
+        "StaticValueLootTable_OldWorldAll",
+        "StaticValueLootTable_ExodusMixed",
+        "StaticValueLootTable_UncommonMaterialsExodus",
+        "StaticValueLootTable_EpicMaterialsExodus",
+        "StaticValueLootTable_RecyclablesExodus_HighTier"
+      ]
+    },
+    {
+      "name": "ARC",
+      "tag": "Socket.LootContainer.ARC",
+      "tables": [
+        "StaticValueLootTable_ARC"
+      ],
+      "extraStack": false
+    },
+    {
+      "name": "Nature",
+      "tag": "Socket.LootContainer.Nature",
+      "tables": [
+        "StaticValueLootTable_Nature"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 1
+      },
+      "extraStack": false
+    }
+  ],
+  "extraStack": {
+    "chance": 0.15,
+    "entries": [
+      {
+        "dropTag": "Item.Drop.Type.Ammo",
+        "amount": {
+          "min": 10,
+          "max": 30
+        },
+        "weight": 1
+      },
+      {
+        "dropTag": "Item.Drop.Type.Consumable.Healing",
+        "amount": {
+          "min": 1,
+          "max": 2
+        },
+        "weight": 1
+      }
+    ]
+  },
+  "typePools": [
+    {
+      "name": "RaiderAmmo",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/Raider/AmmoBox_01/BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier.BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier_C"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Ammo",
+          "amount": {
+            "min": 10,
+            "max": 30
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderMedical",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/Raider/MedicalBag_01/BP_SocketContainer_Raider_MedicalBag_01_Lid_A__Dynamic.BP_SocketContainer_Raider_MedicalBag_01_Lid_A__Dynamic_C"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Consumable.Healing",
+          "amount": {
+            "min": 1,
+            "max": 3
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderGrenades",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/Raider/GrenadeContainer_01/BP_SocketContainer_Raider_GrenadeContainer_01_Lid_A_Dynamic.BP_SocketContainer_Raider_GrenadeContainer_01_Lid_A_Dynamic_C"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Consumable.Throwable.Grenade",
+          "amount": {
+            "min": 1,
+            "max": 3
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderWeaponsHigh",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/Raider/WeaponCase_01/BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh.BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh_C"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Equipment.Modification.Weapon",
+          "amount": {
+            "min": 1,
+            "max": 1
+          },
+          "weight": 1,
+          "excludedDropTags": [
+            "Item.Drop.Tier.Low"
+          ]
+        },
+        {
+          "dropTag": "Item.Drop.Type.Ammo",
+          "amount": {
+            "min": 10,
+            "max": 30
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderWeapons",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/Raider/WeaponCase_01/BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_Dynamic.BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_Dynamic_C",
+        "/Game/Pioneer/Environment/Props/Research/WeaponsRack_01/BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic.BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic_C"
+      ],
+      "tags": [
+        "Socket.LootContainer.Raider.WeaponCase",
+        "Socket.LootContainer.Military.WeaponLocker"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Equipment.Modification.Weapon",
+          "amount": {
+            "min": 1,
+            "max": 1
+          },
+          "weight": 1,
+          "excludedDropTags": [
+            "Item.Drop.Tier.High"
+          ]
+        },
+        {
+          "dropTag": "Item.Drop.Type.Ammo",
+          "amount": {
+            "min": 10,
+            "max": 30
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderBackpack",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/_Generic/HikingBag/BP_SocketContainer_Raider_Backpack_Dynamic.BP_SocketContainer_Raider_Backpack_Dynamic_C"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Material.Common",
+          "amount": {
+            "min": 2,
+            "max": 5
+          },
+          "weight": 3
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Recyclables",
+          "amount": {
+            "min": 1,
+            "max": 1
+          },
+          "weight": 2
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Trinket",
+          "amount": {
+            "min": 1,
+            "max": 1
+          },
+          "weight": 1
+        },
+        {
+          "dropTag": "Item.Drop.Type.Consumable.Healing",
+          "amount": {
+            "min": 1,
+            "max": 2
+          },
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "name": "RaiderFruit",
+      "classes": [
+        "/Game/Pioneer/Environment/Props/_Generic/FruitBasket_01/BP_SocketContainer_Raider_FruitBasket_01_Dynamic.BP_SocketContainer_Raider_FruitBasket_01_Dynamic_C"
+      ],
+      "tags": [
+        "Socket.LootContainer.Nature.FruitBasket"
+      ],
+      "stacks": {
+        "min": 1,
+        "max": 3
+      },
+      "entries": [
+        {
+          "dropTag": "Item.Drop.Category.Area.Nature",
+          "amount": {
+            "min": 1,
+            "max": 3
+          },
+          "weight": 1,
+          "excludedDropTags": [
+            "Item.Drop.Type.Salvage.Rock",
+            "Item.Drop.Type.Salvage.Material"
+          ]
+        }
+      ]
+    }
+  ]
+}

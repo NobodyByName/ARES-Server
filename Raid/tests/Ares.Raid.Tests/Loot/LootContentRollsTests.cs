@@ -72,9 +72,9 @@ public sealed class LootContentRollsTests
                 Assert.InRange(contents.Stacks.Count, 1, 4);
                 Assert.InRange(contents.Stacks.Count - salvage.Count, 0, 1);
                 Assert.Equal(contents.Stacks.Count, contents.Stacks.Select(stack => stack.Item).Distinct().Count());
-                if (candidates.Any(item => LootContentRolls.TierOf(item) == LootTier.Common))
+                if (candidates.Any(item => TestGameData.Raid.LootRolls.TierOf(item).Name == "Common"))
                 {
-                    Assert.Contains(salvage, stack => LootContentRolls.TierOf(stack.Item) == LootTier.Common);
+                    Assert.Contains(salvage, stack => TestGameData.Raid.LootRolls.TierOf(stack.Item).Name == "Common");
                 }
 
                 Assert.All(contents.Stacks, stack =>
@@ -127,12 +127,12 @@ public sealed class LootContentRollsTests
         }
 
         // Weapon lockers on sockets use the Raider weapon pool.
-        Assert.Equal("RaiderWeapons", LootContentRolls.TypePool("Socket.LootContainer.Military.WeaponLocker.DoorLeft", "")?.Name);
+        Assert.Equal("RaiderWeapons", TestGameData.Raid.LootRolls.TypePool("Socket.LootContainer.Military.WeaponLocker.DoorLeft", "")?.Name);
     }
 
     // Rare stacks in 2000 server cabinets of an area's loot value.
     private static int Rare(PointOfInterestLootValue value, Random random) => Enumerable.Range(0, 2000)
-        .Sum(_ => TestGameData.Raid.LootRolls.Roll(ServerCabinet, "", 8, value, random).Stacks.Count(stack => LootContentRolls.TierOf(stack.Item) == LootTier.Rare));
+        .Sum(_ => TestGameData.Raid.LootRolls.Roll(ServerCabinet, "", 8, value, random).Stacks.Count(stack => TestGameData.Raid.LootRolls.TierOf(stack.Item).Name == "Rare"));
 
     private static ItemDefinition Item(string name) => TestGameData.Items.Definitions.CarriedItems.Single(item => item.TechnicalName == name);
 

@@ -34,7 +34,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
     /// <param name="clock">Monotonic clock in seconds.</param>
     /// <param name="lighting">Lighting tag for every raid; null picks one by the authored weights.</param>
     /// <param name="random">Random numbers from 0 to 2^31 - 2 (seeds, lighting); a secure generator by default.</param>
-    /// <param name="lootRules">How each raid picks the sockets that get a container; the map's default rules (<see cref="LootSpawnRules.Of"/>) by default.</param>
+    /// <param name="lootRules">How each raid picks the sockets that get a container; the map's rules with the content's spawn settings (<see cref="LootSpawnRules.Of"/>) by default.</param>
     /// <param name="collision">The map's static collision, or null when the operator has none; each raid indexes it.</param>
     public DamWorlds(RaidGameData gameData, Func<double> clock, string? lighting = null, Func<int>? random = null, LootSpawnRules? lootRules = null,
         MapCollision? collision = null)
@@ -50,7 +50,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
 
         _lighting = lighting;
         MapCollision = collision;
-        LootRules = lootRules ?? LootSpawnRules.Of(gameData.Map);
+        LootRules = lootRules ?? LootSpawnRules.Of(gameData.Map, gameData.LootSpawn);
         Imports = new WorldImports(GameReplication.Catalog, gameData);
         Replication = new ReplicationContext(
             GameReplication.Catalog,

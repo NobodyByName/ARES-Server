@@ -1,5 +1,9 @@
+using Ares.Common.Game.Content;
+using Ares.Common.Game.Loot;
+using Ares.Common.Testing;
 using Ares.Raid.World;
 using Ares.Raid.World.Loot;
+using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
@@ -15,7 +19,7 @@ public sealed class LootSpawnSelectionTests
     ]);
 
     private static readonly Lazy<LootSpawnSelection[]> s_damSelections = new(() => [
-        .. Enumerable.Range(1, Seeds).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam), [], new Random(seed))),
+        .. Enumerable.Range(1, Seeds).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn), [], new Random(seed))),
     ]);
 
     [Fact]
@@ -129,7 +133,7 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void A_seed_always_selects_the_same_sockets()
     {
-        LootSpawnSelection again = LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam), [], new Random(1));
+        LootSpawnSelection again = LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn), [], new Random(1));
         Assert.Equal(s_damSelections.Value[0], again with { Spawns = s_damSelections.Value[0].Spawns, Values = s_damSelections.Value[0].Values });
         Assert.Equal(s_damSelections.Value[0].Values, again.Values);
         Assert.Equal(s_damSelections.Value[0].Spawns, again.Spawns);
@@ -156,6 +160,41 @@ public sealed class LootSpawnSelectionTests
     }
 
     [Fact]
+    public void Spawn_settings_without_group_caps_or_limiters_lift_those_caps_for_the_same_seed()
+    {
+        // Every socket hits, so only the caps keep containers out.
+        LootSpawnRules shipped = LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Chance = (_, _) => 1 };
+        LootSpawnRules uncapped = LootSpawnRules.Of(TestGameData.Dam, EditedSpawn("\"groupCaps\": true", "\"groupCaps\": false")) with { Chance = (_, _) => 1 };
+        LootSpawnRules unlimited = LootSpawnRules.Of(TestGameData.Dam, EditedSpawn("\"limiters\": true", "\"limiters\": false")) with { Chance = (_, _) => 1 };
+        Assert.True(shipped.GroupCaps);
+        Assert.NotEmpty(shipped.Limiters);
+        Assert.False(uncapped.GroupCaps);
+        Assert.NotEmpty(uncapped.Limiters);
+        Assert.True(unlimited.GroupCaps);
+        Assert.Empty(unlimited.Limiters);
+
+        for (int seed = 1; seed <= 3; seed++)
+        {
+            LootSpawnSelection capped = Select(shipped, seed);
+            LootSpawnSelection noGroupCaps = Select(uncapped, seed);
+            LootSpawnSelection noLimiters = Select(unlimited, seed);
+            Assert.True(capped is { SkippedByGroupCap: > 0, SkippedByLimiter: > 0 });
+            Assert.Equal(0, noGroupCaps.SkippedByGroupCap);
+            Assert.True(noGroupCaps.SkippedByLimiter > 0);
+            Assert.Equal(0, noLimiters.SkippedByLimiter);
+            Assert.True(noLimiters.SkippedByGroupCap > 0);
+            Assert.True(Spawned(noGroupCaps) > Spawned(capped));
+            Assert.True(Spawned(noLimiters) > Spawned(capped));
+        }
+
+        return;
+
+        static LootSpawnSelection Select(LootSpawnRules rules, int seed) => LootSpawnSelection.Select(TestGameData.Loot, s_damSockets.Value, rules, [], new Random(seed));
+
+        static int Spawned(LootSpawnSelection selection) => selection.Spawns.Count(spawns => spawns);
+    }
+
+    [Fact]
     public void Dam_server_racks_never_get_more_than_two_containers()
     {
         foreach (LootSpawnSelection selection in s_damSelections.Value)
@@ -174,16 +213,16 @@ public sealed class LootSpawnSelectionTests
     public void Dam_sockets_roll_their_chance_and_group_caps_take_at_most_two_fifths_of_the_hits_outside_limiters()
     {
         bool[] limited = [.. s_damSockets.Value.Select(socket => TestGameData.Dam.LootLimiters.Any(limiter => limiter.Limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location)))];
-        foreach (IGrouping<double, int> sameChance in Enumerable.Range(0, s_damSockets.Value.Length).GroupBy(index => LootSpawnDefaults.Chance(s_damSockets.Value[index].ContainerTag, s_damSelections.Value[0].Values[index])))
+        foreach (IGrouping<double, int> sameChance in Enumerable.Range(0, s_damSockets.Value.Length).GroupBy(index => TestGameData.Raid.LootSpawn.Chance(s_damSockets.Value[index].ContainerTag, s_damSelections.Value[0].Values[index])))
         {
             double chance = sameChance.Key;
             int rolls = sameChance.Count() * Seeds;
             int spawned = s_damSelections.Value.Sum(selection => sameChance.Count(index => selection.Spawns[index]));
             Assert.True(spawned / (double)rolls <= chance + (4 * Math.Sqrt(chance * (1 - chance) / rolls)), $"{chance}");
 
-            // Area caps take a large part of the hits and a chance of 1 leaves the group cap alone to decide, while the
-            // five-socket server racks lose up to about 37% of their hits at a chance near 0.4; so the lower bound is
-            // checked on sockets no limiter caps, at chances below one half.
+            // Area caps take a large part of the hits and a chance of 1 leaves the group cap alone to decide, while a
+            // group cap takes a growing share of the hits of a many-socket prop as the chance rises; so the lower bound
+            // is checked on sockets no limiter caps, at chances below one half.
             int[] free = [.. sameChance.Where(index => !limited[index])];
             if (free.Length == 0 || chance >= 0.5)
             {
@@ -196,7 +235,7 @@ public sealed class LootSpawnSelectionTests
 
         // Every roll is counted once: as a spawn or under the reason it did not spawn.
         double hits = s_damSelections.Value.Average(selection => selection.Spawns.Count(spawns => spawns) + selection.SkippedByGroupCap + selection.SkippedByLimiter);
-        double expected = s_damSockets.Value.Select((socket, index) => LootSpawnDefaults.Chance(socket.ContainerTag, s_damSelections.Value[0].Values[index])).Sum();
+        double expected = s_damSockets.Value.Select((socket, index) => TestGameData.Raid.LootSpawn.Chance(socket.ContainerTag, s_damSelections.Value[0].Values[index])).Sum();
         Assert.InRange(hits, expected * 0.97, expected * 1.03);
         Assert.All(s_damSelections.Value, selection => Assert.Equal(s_damSockets.Value.Length, selection.Spawns.Count(spawns => spawns) + selection.SkippedByRoll + selection.SkippedByGroupCap + selection.SkippedByLimiter));
     }
@@ -204,9 +243,16 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void A_dam_raid_fills_about_one_socket_in_fourteen()
     {
-        double share = s_damSelections.Value.Average(selection => selection.Spawns.Count(spawns => spawns)) / s_damSockets.Value.Length;
+        // A raid also lets the shipped loot rules decide some sockets (server and locker racks fill by group), so the
+        // share is measured on whole raids.
+        string round = TestGameData.Dam.Rounds[0].Name;
+        ReplicationContext replication = new ScriptedPlayer().Worlds.Current!.State.Replication;
+        LootSpawnCounts[] raids = [.. Enumerable.Range(1, Seeds).Select(seed => new LootCatalog(TestGameData.Raid, replication, round, [], seed, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn)).Counts)];
+        Assert.All(raids, counts => Assert.Equal(s_damSockets.Value.Length, counts.Spawned + counts.SkippedByRoll + counts.SkippedByGroupCap + counts.SkippedByLimiter));
+
+        double share = raids.Average(counts => counts.Spawned) / s_damSockets.Value.Length;
         Assert.InRange(share, 0.06, 0.085);
-        Assert.All(s_damSelections.Value, selection => Assert.True(selection.SkippedByGroupCap + selection.SkippedByLimiter > 0));
+        Assert.All(raids, counts => Assert.True(counts.SkippedByGroupCap + counts.SkippedByLimiter > 0));
     }
 
     [Fact]
@@ -220,6 +266,25 @@ public sealed class LootSpawnSelectionTests
         Assert.Equal(counts.Spawned, counts.SpawnedByLootValue.Values.Sum());
         Assert.True(counts.SpawnedByLootValue[PointOfInterestLootValue.High] > 0);
         Assert.Equal(counts.Sockets, counts.Spawned + counts.InactiveLayer + counts.NoContainerType + counts.Unsupported + counts.SkippedByRoll + counts.SkippedByGroupCap + counts.SkippedByLimiter);
+    }
+
+    // The spawn settings of a copy of the shipped content whose loot-spawn.json has one text replaced.
+    private static LootSpawnSettings EditedSpawn(string shipped, string edited)
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "ares-loot-spawn-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            ShippedContent.CopyTo(directory);
+            string path = Path.Combine(directory, AresContent.LootSpawnFile);
+            string text = File.ReadAllText(path);
+            Assert.Contains(shipped, text, StringComparison.Ordinal);
+            File.WriteAllText(path, text.Replace(shipped, edited, StringComparison.Ordinal));
+            return AresContent.Load(directory).LootSpawn(TestGameData.Data);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     private static LootSocket Socket(string actor, string socket, string tag, Vector3D location) =>

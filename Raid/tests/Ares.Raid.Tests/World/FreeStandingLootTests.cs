@@ -16,9 +16,9 @@ public sealed class FreeStandingLootTests
     private static readonly Lazy<string[]> s_spawnerClasses = new(() => [.. TestGameData.Dam.DynamicLootSpawners.SelectMany(spawner => spawner.Classes).Select(entry => entry.Class).Distinct()]);
 
     // A class a spawner may place and the server serves; one it serves but ARES does not enable; one enabled but not served.
-    private static readonly Lazy<string> s_enabled = new(() => s_spawnerClasses.Value.First(path => DynamicLootDefaults.Enabled(path) && LootSocketClasses.Served(TestGameData.Loot, path) is not null));
-    private static readonly Lazy<string> s_disabled = new(() => s_spawnerClasses.Value.First(path => !DynamicLootDefaults.Enabled(path) && LootSocketClasses.Served(TestGameData.Loot, path) is not null));
-    private static readonly Lazy<string> s_unsupported = new(() => s_spawnerClasses.Value.First(path => DynamicLootDefaults.Enabled(path) && LootSocketClasses.Served(TestGameData.Loot, path) is null));
+    private static readonly Lazy<string> s_enabled = new(() => s_spawnerClasses.Value.First(path => TestGameData.Raid.LootSpawn.SpawnerClasses.Contains(path) && LootSocketClasses.Served(TestGameData.Loot, path) is not null));
+    private static readonly Lazy<string> s_disabled = new(() => s_spawnerClasses.Value.First(path => !TestGameData.Raid.LootSpawn.SpawnerClasses.Contains(path) && LootSocketClasses.Served(TestGameData.Loot, path) is not null));
+    private static readonly Lazy<string> s_unsupported = new(() => s_spawnerClasses.Value.First(path => TestGameData.Raid.LootSpawn.SpawnerClasses.Contains(path) && LootSocketClasses.Served(TestGameData.Loot, path) is null));
 
     [Fact]
     public void A_group_picks_between_its_min_and_max_spawners_the_same_way_for_a_seed()
@@ -103,7 +103,7 @@ public sealed class FreeStandingLootTests
     {
         DynamicLootSpawner[] spawners = [Spawner("Enabled", s_enabled.Value), Spawner("Disabled", s_disabled.Value), Spawner("Unsupported", s_unsupported.Value), Spawner("Layered", s_enabled.Value) with { DataLayer = "DataLayer_Inactive" }, Spawner("Elsewhere", s_enabled.Value)];
         DynamicLootGroup[] groups = [Group("All/0", ["Root"], 4, 4, spawners[..4]), Group("Other/0", ["Root"], 1, 1, spawners[4..], rounds: ["Coldsnap"])];
-        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], DynamicLootDefaults.Enabled), LootSpawnRules.EverySocket);
+        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], TestGameData.Raid.LootSpawn.SpawnerClasses.Contains), LootSpawnRules.EverySocket);
 
         LootSpawnerCounts counts = catalog.Counts.Spawners;
         Assert.Equal(new LootSpawnerCounts(5, 3, 1, 1, 1, 1, 1), counts);
@@ -115,7 +115,7 @@ public sealed class FreeStandingLootTests
     [Fact]
     public void Placed_machine_doors_roll_their_tag_and_snowpiles_skip_a_round_without_their_layer()
     {
-        LootCatalog always = Catalog(FreeStandingLoot.Of(TestGameData.Dam) with { Groups = [] }, new LootSpawnRules([], [], (_, _) => 1, true));
+        LootCatalog always = Catalog(FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Groups = [] }, new LootSpawnRules([], [], (_, _) => 1, true));
         LootPlacedCounts placed = always.Counts.Placed;
         int snowpiles = TestGameData.Dam.PlacedLoot.Count(container => container.DataLayer is not null);
         Assert.Equal((TestGameData.Dam.PlacedLoot.Length, TestGameData.Dam.PlacedLoot.Length - snowpiles, snowpiles, 0, 0, 0), (placed.Containers, placed.Spawned, placed.InactiveLayer, placed.Unsupported, placed.NoContainerType, placed.SkippedByRoll));
@@ -124,14 +124,14 @@ public sealed class FreeStandingLootTests
 
         // The roll uses the chance of the door's container tag.
         List<string> tags = [];
-        LootCatalog never = Catalog(FreeStandingLoot.Of(TestGameData.Dam) with { Groups = [] }, new LootSpawnRules([], [], (tag, _) => { tags.Add(tag); return 0; }, true));
+        LootCatalog never = Catalog(FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Groups = [] }, new LootSpawnRules([], [], (tag, _) => { tags.Add(tag); return 0; }, true));
         Assert.Equal(TestGameData.Dam.PlacedLoot.Length - snowpiles, never.Counts.Placed.SkippedByRoll);
         Assert.Empty(never.Containers);
         Assert.All(tags, tag => Assert.StartsWith("Socket.LootContainer.Mechanical.", tag, StringComparison.Ordinal));
 
         // With the snow layer active the snowpiles stay out: the server cannot serve them yet.
         string[] snow = [.. TestGameData.Dam.PlacedLoot.Select(container => container.DataLayer).OfType<string>().Distinct()];
-        LootCatalog snowy = Catalog(FreeStandingLoot.Of(TestGameData.Dam) with { Groups = [] }, new LootSpawnRules([], [], (_, _) => 1, true), snow);
+        LootCatalog snowy = Catalog(FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Groups = [] }, new LootSpawnRules([], [], (_, _) => 1, true), snow);
         Assert.Equal((0, snowpiles), (snowy.Counts.Placed.InactiveLayer, snowy.Counts.Placed.Unsupported));
 
     }
@@ -142,11 +142,11 @@ public sealed class FreeStandingLootTests
         string rack = s_spawnerClasses.Value.Single(path => path.Contains("WeaponsRack", StringComparison.Ordinal));
         for (int seed = 1; seed <= 20; seed++)
         {
-            LootCatalog catalog = new(TestGameData.Raid, s_replication.Value, TestGameData.Dam.LootSockets, TestGameData.Dam.LootSocketMeshes, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam) with { Chance = (_, _) => 1 });
+            LootCatalog catalog = new(TestGameData.Raid, s_replication.Value, TestGameData.Dam.LootSockets, TestGameData.Dam.LootSocketMeshes, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Chance = (_, _) => 1 });
             LootSpawnCounts counts = catalog.Counts;
             LootContainer[] dynamic = [.. catalog.Containers.Where(container => container.Source == LootContainerSource.Spawner)];
             Assert.Equal(counts.Spawners.Spawned, dynamic.Length);
-            Assert.All(dynamic, container => Assert.True(DynamicLootDefaults.Enabled(container.Class.Container.Class)));
+            Assert.All(dynamic, container => Assert.True(TestGameData.Raid.LootSpawn.SpawnerClasses.Contains(container.Class.Container.Class)));
             Assert.InRange(dynamic.Count(container => container.Class.Container.Class == rack), 5, 6);
             Assert.Equal(counts.Spawners.Spawners, counts.Spawners.Run + counts.Spawners.NotPicked + counts.Spawners.InactiveLayer);
             Assert.Equal(TestGameData.Dam.PlacedLoot.Count(container => container.DataLayer is null), counts.Placed.Spawned);
@@ -162,7 +162,7 @@ public sealed class FreeStandingLootTests
                 continue;
             }
 
-            LootCatalog again = new(TestGameData.Raid, s_replication.Value, TestGameData.Dam.LootSockets, TestGameData.Dam.LootSocketMeshes, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam) with { Chance = (_, _) => 1 });
+            LootCatalog again = new(TestGameData.Raid, s_replication.Value, TestGameData.Dam.LootSockets, TestGameData.Dam.LootSocketMeshes, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Chance = (_, _) => 1 });
             Assert.Equal(catalog.Containers.Select(container => (container.Source, container.Location, container.Class)), again.Containers.Select(container => (container.Source, container.Location, container.Class)));
         }
     }
@@ -172,7 +172,7 @@ public sealed class FreeStandingLootTests
     {
         for (int seed = 1; seed <= 20; seed++)
         {
-            LootCatalog catalog = new(TestGameData.Raid, s_replication.Value, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam) with { Chance = (_, _) => 1 });
+            LootCatalog catalog = new(TestGameData.Raid, s_replication.Value, s_round.Value, [], seed, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) with { Chance = (_, _) => 1 });
             Assert.Equal(seed, catalog.Seed);
             Assert.Equal(catalog.Containers.Count(container => container.Source != LootContainerSource.Socket), catalog.FreeStanding.Count);
             foreach (FreeStandingContainer entry in catalog.FreeStanding)

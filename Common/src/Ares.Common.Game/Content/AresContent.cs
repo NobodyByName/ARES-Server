@@ -9,8 +9,8 @@ namespace Ares.Common.Game.Content;
 
 /// <summary>
 /// ARES content: the backend data the game's menu reads from its backend and the installed game does not hold (the
-/// stash and loadout structures, recycling yields, the trader offers and item quality levels), and the per-container
-/// loot rules. It lives in one folder, the content folder (<c>content-dir</c>, which Host passes to every Raid it starts):
+/// stash and loadout structures, recycling yields, the trader offers and item quality levels), and how loot spawns,
+/// what it holds and the per-container loot rules. It lives in one folder, the content folder (<c>content-dir</c>, which Host passes to every Raid it starts):
 /// ARES ships it as <c>content/</c>, as close to the official game as known, and an operator edits it in place. Every
 /// file must be there. Every file is JSON (the backend's wire format where the backend serves it). Host and Raid load it once at startup; it is independent of the game data, against
 /// which <see cref="ItemContent"/> and <see cref="ItemDefinitions"/> resolve it.
@@ -32,9 +32,17 @@ public sealed class AresContent
     /// <summary>The quality level of item menu descriptions, by technical name.</summary>
     public const string QualityLevelsFile = "item-quality-levels.json";
 
+    /// <summary>How loot containers spawn.</summary>
+    public const string LootSpawnFile = "loot-spawn.json";
+
+    /// <summary>What loot containers hold.</summary>
+    public const string LootContentsFile = "loot-contents.json";
+
     /// <summary>Loot rules: spawn chances and contents of chosen containers.</summary>
     public const string LootRulesFile = "loot-rules.json";
 
+    private readonly LootSpawnDocument _lootSpawn;
+    private readonly LootContentsDocument _lootContents;
     private readonly LootRulesDocument _lootRules;
 
     private AresContent(string directory)
@@ -45,6 +53,8 @@ public sealed class AresContent
         IReadOnlyList<RecyclingRow> recycling = Read<IReadOnlyList<RecyclingRow>>(RecyclingFile);
         TraderOffers = Read<IReadOnlyList<OfferDescription>>(TraderOffersFile);
         QualityLevels = Read<IReadOnlyDictionary<string, long>>(QualityLevelsFile);
+        _lootSpawn = Read<LootSpawnDocument>(LootSpawnFile);
+        _lootContents = Read<LootContentsDocument>(LootContentsFile);
         _lootRules = Read<LootRulesDocument>(LootRulesFile);
         Stash = new StashContent(stash, problem => Invalid(StashFile, problem));
         Loadout = new LoadoutContent(loadout, problem => Invalid(LoadoutFile, problem));
@@ -87,7 +97,7 @@ public sealed class AresContent
     }
 
     /// <summary>Every content file, by name.</summary>
-    public static IReadOnlyList<string> FileNames { get; } = [StashFile, LoadoutFile, RecyclingFile, TraderOffersFile, QualityLevelsFile, LootRulesFile];
+    public static IReadOnlyList<string> FileNames { get; } = [StashFile, LoadoutFile, RecyclingFile, TraderOffersFile, QualityLevelsFile, LootSpawnFile, LootContentsFile, LootRulesFile];
 
     /// <summary>Full path of the content folder it was loaded from.</summary>
     public string Directory { get; }
@@ -150,6 +160,18 @@ public sealed class AresContent
         return new BackendItemContent(Stash.Definitions, Loadout.Definitions, Loadout.FrameSlotAssetId, Loadout.StandardFrameAssetId, RecycleOutputs,
             qualityLevels.AsReadOnly());
     }
+
+    /// <summary>How loot containers spawn, checked against the game data.</summary>
+    /// <param name="data">The game data: container tags and classes.</param>
+    /// <exception cref="AresContentException">The file is inconsistent or names something the game data does not have.</exception>
+    public LootSpawnSettings LootSpawn(GameDataSet data) =>
+        LootSettingsContent.Spawn(_lootSpawn, data, problem => AresContentReader.Invalid(Directory, LootSpawnFile, problem));
+
+    /// <summary>What loot containers hold, checked against the game data.</summary>
+    /// <param name="data">The game data: container tags and classes, loot tables and item drop tags.</param>
+    /// <exception cref="AresContentException">The file is inconsistent or names something the game data does not have.</exception>
+    public LootContentSettings LootContents(GameDataSet data) =>
+        LootSettingsContent.Contents(_lootContents, data, problem => AresContentReader.Invalid(Directory, LootContentsFile, problem));
 
     /// <summary>The loot rules, checked against the game data.</summary>
     /// <param name="data">The game data: container tags and the maps' container ids.</param>

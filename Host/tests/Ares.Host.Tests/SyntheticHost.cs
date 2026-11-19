@@ -14,7 +14,8 @@ namespace Ares.Host.Tests;
 /// Tiny made-up game data and content that Host runs on, for tests that need no real items: the synthetic game data
 /// (<see cref="SyntheticGameData"/>) with every item <see cref="ItemTechnicalNames"/> names (stacks of up to 1000), loadout frames of seven
 /// branches and the augment structures, and content files written to a folder (so they load as operator overrides) with
-/// a two-tier stash, the standard frame, one recycling yield, one offer and one quality level. Values are invented.
+/// a two-tier stash, the standard frame, one recycling yield, one offer, one quality level and loot settings that spawn and
+/// fill nothing. Values are invented.
 /// </summary>
 internal static class SyntheticHost
 {
@@ -98,6 +99,24 @@ internal static class SyntheticHost
                 1, OfferDescription.NoDate, OfferDescription.NoDate, new OfferLimit(0, 0)),
         });
         Write(directory, AresContent.QualityLevelsFile, new Dictionary<string, long> { [ItemTechnicalNames.RubberDuck] = 1 });
+        Write(directory, AresContent.LootSpawnFile, new
+        {
+            chances = new Dictionary<string, double>(),
+            areaMultipliers = new Dictionary<string, double>(),
+            groupCaps = true,
+            limiters = true,
+            spawnerClasses = Array.Empty<string>(),
+        });
+        Write(directory, AresContent.LootContentsFile, new
+        {
+            excludedDropTags = Array.Empty<string>(),
+            tiers = new[] { new { name = "Other", weight = 1 } },
+            firstStackTier = (string?)null,
+            tablePools = Array.Empty<object>(),
+            extraStack = new { chance = 0, entries = Array.Empty<object>() },
+            typePools = Array.Empty<object>(),
+        });
+        Write(directory, AresContent.LootRulesFile, new { rules = Array.Empty<object>() });
         return AresContent.Load(directory);
     }
 

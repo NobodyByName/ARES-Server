@@ -37,7 +37,7 @@ public sealed class WorldItemClassTests
     [InlineData("/BP_SocketContainer_Wrh_Machine_M_02_DoorLeft.BP_SocketContainer_Wrh_Machine_M_02_DoorLeft_C")]
     public void A_dam_raid_flags_its_free_standing_container_classes(string classSuffix)
     {
-        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam)).Raid.Loot;
+        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn)).Raid.Loot;
         string path = Assert.Single(TestGameData.Data.WorldItems.Classes, item => item.EndsWith(classSuffix, StringComparison.Ordinal));
 
         Assert.True(IsFlagged(catalog.WorldItemClassBits, path));
@@ -46,7 +46,7 @@ public sealed class WorldItemClassTests
     [Fact]
     public void Every_container_class_the_raid_can_spawn_is_flagged()
     {
-        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam)).Raid.Loot;
+        LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn)).Raid.Loot;
 
         Assert.Equal(TestGameData.Data.WorldItems.WordCount, catalog.WorldItemClassBits.Count);
         Assert.Equal(12, TestGameData.Data.WorldItems.WordCount);

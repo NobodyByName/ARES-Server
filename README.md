@@ -127,9 +127,9 @@ unusable), and raids then run without collision.
 ## ARES content
 
 Some data ARES needs is not in the installed game: the stash and loadout structures, what recycling each
-item gives, the trader offers, item quality levels and the loot rules. ARES ships it in
+item gives, the trader offers, item quality levels, and how loot spawns and what it holds. ARES ships it in
 `content/` (`stash.json`, `loadout.json`, `item-recycling.json`, `trader-offers.json`, `item-quality-levels.json`,
-`loot-rules.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
+`loot-spawn.json`, `loot-contents.json`, `loot-rules.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
 the server's content: to change it, edit its files and restart Host. `content-dir` in `ares-host.conf` names
 the folder (default `content`). Host passes it to every Raid it starts (`--content-dir`), and each Raid loads
 it when it starts. Host and Raid refuse to start (exit code 2, with the reason on standard error) when the
@@ -137,10 +137,24 @@ folder or one of its files is missing, a file is malformed, inconsistent or does
 the folder holds another JSON file. Stash upgrade prices stay in `stash-upgrade-coins`, which needs one price per upgrade of the
 content's stash.
 
-### Loot rules
+### Loot
+
+The game files say where loot containers can stand and what each loot table can give, but not how often
+containers spawn or which tables fill which container, so all of that is content, shipped as close to the
+official game as known:
+
+- `loot-spawn.json`: the spawn chance per container tag (a tag without an entry uses its nearest parent's),
+  a multiplier per area loot value (`Unknown` is outside every valued area), whether the game's per-group caps
+  (`groupCaps`) and placement limiters (`limiters`) apply, and the container classes dynamic spawners may place
+  (`spawnerClasses`).
+- `loot-contents.json`: item drop tags no container gets, the item tiers (drop tag, weight, per-area
+  multipliers; the tier without a drop tag takes every other item) and the tier of a container's first stack,
+  the loot tables each container category draws from (`tablePools`), the extra stack some containers get, and
+  the item pools of containers without tables (`typePools`).
+- `loot-rules.json`: per-container decisions, below.
 
 `loot-rules.json` decides, for chosen loot containers, whether they spawn and what they hold; every other
-container keeps ARES's defaults, which follow the official game. The shipped file has no rules yet. A rule
+container follows the two files above. The shipped file has no rules yet. A rule
 covers the containers it lists by id, every container whose tag is one of its tags or below it, or every
 container when it lists neither. It can set a spawn chance, the contents, or both:
 
@@ -176,7 +190,8 @@ container when it lists neither. It can set a spawn chance, the contents, or bot
   technical name; any item players can carry in a raid is allowed.
 - Rules apply in order: for each setting, the last rule that covers a container wins.
 
-Host and Raid refuse to start when a rule names a tag, container or item the game data does not have.
+Host and Raid refuse to start when a loot file names a tag, container, class, table, item or drop tag the game
+data does not have.
 
 ## Contributing
 

@@ -64,7 +64,7 @@ public sealed class LootValueAreasTests
         LootSocket[] plain = [.. Enumerable.Range(0, 100).Select(index => Socket($"Plain{index}", new Vector3D(5000, 50, 50)))];
         LootSocket[] middle = [.. Enumerable.Range(0, 100).Select(index => Socket($"Middle{index}", new Vector3D(50, 50, 50)))];
         LootSocket[] best = [.. Enumerable.Range(0, 100).Select(index => Socket($"Best{index}", new Vector3D(250, 250, 250)))];
-        LootSpawnRules rules = new([], [medium, high], LootSpawnDefaults.Chance, true);
+        LootSpawnRules rules = new([], [medium, high], TestGameData.Raid.LootSpawn.Chance, true);
         LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, [.. plain, .. middle, .. best], rules, [], new Random(seed)))];
 
         (double untiered, double mediumShare, double highShare) = (Share(selections, PointOfInterestLootValue.Unknown, 100), Share(selections, PointOfInterestLootValue.Medium, 100), Share(selections, PointOfInterestLootValue.High, 100));
@@ -79,7 +79,7 @@ public sealed class LootValueAreasTests
     public void Dam_raids_fill_a_loot_value_area_more_than_the_open_map_without_breaking_a_cap()
     {
         LootSocket[] sockets = [.. TestGameData.Dam.LootSockets.Where(socket => socket.DataLayer is null && LootSocketClasses.Supported(TestGameData.Data, socket).Count > 0)];
-        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, sockets, LootSpawnRules.Of(TestGameData.Dam), [], new Random(seed)))];
+        LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, sockets, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn), [], new Random(seed)))];
         double untiered = Share(selections, PointOfInterestLootValue.Unknown, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.Unknown));
         double medium = Share(selections, PointOfInterestLootValue.Medium, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.Medium));
         double high = Share(selections, PointOfInterestLootValue.High, selections[0].Values.Count(entry => entry == PointOfInterestLootValue.High));

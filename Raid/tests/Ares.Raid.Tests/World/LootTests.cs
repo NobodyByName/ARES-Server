@@ -271,7 +271,7 @@ public sealed class LootTests
     [Fact]
     public void A_spawner_container_is_searched_like_a_socket_container()
     {
-        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam) });
+        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) });
         LootContainer container = session.Raid.Loot.Containers.First(container => container.Source == LootContainerSource.Spawner);
         Assert.Null(container.Socket);
         (uint frame, double at) = Reach(session, container);
@@ -295,7 +295,7 @@ public sealed class LootTests
     [Fact]
     public void A_loot_channel_the_client_closes_is_counted_named_and_not_delivered_again()
     {
-        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam) });
+        ScriptedPlayer session = new(lootRules: LootSpawnRules.EverySocket with { FreeStanding = FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn) });
         LootContainer container = session.Raid.Loot.Containers.First(container => container.Source == LootContainerSource.Spawner);
         (uint frame, double at) = Ready(session);
         ChannelBunch? open = null;

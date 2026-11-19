@@ -1,3 +1,4 @@
+using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Loot;
@@ -67,15 +68,19 @@ public static class LootLimiterRules
 /// chance of their class's container tag (or all spawn without rolls); limiters and group caps apply to sockets only.
 /// Null for none.
 /// </param>
-public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls, FreeStandingLoot? FreeStanding = null)
+/// <param name="GroupCaps">Whether the game's most containers per group (<see cref="LootContainerType.MaxPerGroup"/>) apply.</param>
+public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls,
+    FreeStandingLoot? FreeStanding = null, bool GroupCaps = true)
 {
-    /// <summary>A map's limiters and free-standing containers with ARES's default chances.</summary>
+    /// <summary>A map's rules with the content's spawn settings: their chances, and limiters and group caps when they enable them.</summary>
     /// <param name="map">The map's data.</param>
+    /// <param name="spawn">The spawn settings.</param>
     /// <returns>The rules.</returns>
-    public static LootSpawnRules Of(MapData map)
+    public static LootSpawnRules Of(MapData map, LootSpawnSettings spawn)
     {
         ArgumentNullException.ThrowIfNull(map);
-        return new LootSpawnRules(map.LootLimiters, map.PointsOfInterest, LootSpawnDefaults.Chance, true, FreeStandingLoot.Of(map));
+        ArgumentNullException.ThrowIfNull(spawn);
+        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps);
     }
 
     /// <summary>A container on every socket, and none off the sockets.</summary>
@@ -150,7 +155,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
 
             (string, string, string, string) group = (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant());
             int inGroup = groups.GetValueOrDefault(group);
-            if (inGroup >= (loot.FindContainerType(socket.ContainerTag)?.MaxPerGroup ?? int.MaxValue))
+            if (rules.GroupCaps && inGroup >= (loot.FindContainerType(socket.ContainerTag)?.MaxPerGroup ?? int.MaxValue))
             {
                 groupCaps++;
                 continue;

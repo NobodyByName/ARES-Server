@@ -63,7 +63,8 @@ game-data-dir =
 
 # CONTENT
 # Folder with the ARES content files (see "ARES content" in the README): stash.json, loadout.json,
-# item-recycling.json, trader-offers.json, item-quality-levels.json, loot-rules.json. ARES ships it
+# item-recycling.json, trader-offers.json, item-quality-levels.json, loot-spawn.json,
+# loot-contents.json, loot-rules.json. ARES ships it
 # next to ARES-Host as content/, as close to the official game as known; edit the files there.
 # Every file must be present. Host passes the folder to every raid it starts.
 content-dir = content

@@ -1,3 +1,4 @@
+using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
@@ -13,13 +14,15 @@ public sealed record FreeStandingLoot(
     IReadOnlyList<PlacedLootContainer> Placed,
     Func<string, bool> SpawnerClassEnabled)
 {
-    /// <summary>A map's spawners and placed containers with ARES's default spawner classes.</summary>
+    /// <summary>A map's spawners and placed containers, with the spawner classes the spawn settings enable.</summary>
     /// <param name="map">The map's data.</param>
+    /// <param name="spawn">The spawn settings.</param>
     /// <returns>The containers.</returns>
-    public static FreeStandingLoot Of(MapData map)
+    public static FreeStandingLoot Of(MapData map, LootSpawnSettings spawn)
     {
         ArgumentNullException.ThrowIfNull(map);
-        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, DynamicLootDefaults.Enabled);
+        ArgumentNullException.ThrowIfNull(spawn);
+        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, spawn.SpawnerClasses.Contains);
     }
 
     /// <summary>No free-standing containers.</summary>

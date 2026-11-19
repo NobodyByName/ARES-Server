@@ -19,18 +19,23 @@ public sealed record LootStack(ItemDefinition Item, int Amount, double Durabilit
 public sealed record LootContents(string? Pool, IReadOnlyList<LootStack> Stacks);
 
 /// <summary>
-/// Draws the contents of a loot container from <see cref="LootContentDefaults"/>. A table pool offers the carried items
-/// its tables select whose own placement list accepts the container's tag; the container gets 2 or 3 stacks (the
-/// game's weighted targets, or the pool's own range), at most one per slot: a common material first when there is
-/// one, then by tier weight (scaled by the loot value of the area), each item at most once and never next to an item
-/// of a group either one avoids. Some containers then get one extra ammunition or healing stack. A type pool draws its
-/// stacks from its entries. Only items any slot holds as plain stacks qualify (see <see cref="LoadoutDefinitions.PlainItems"/>).
+/// Draws the contents of a loot container from the content's loot settings (<see cref="LootContentSettings"/>). A table
+/// pool offers the carried items its tables select whose own placement list accepts the container's tag; the container
+/// gets 2 or 3 stacks (the game's weighted targets, or the pool's own range), at most one per slot: one of the first
+/// stack's tier first when there is one, then by tier weight (scaled by the loot value of the area), each item at most
+/// once and never next to an item of a group either one avoids. Some containers then get the extra stack. A type pool
+/// draws its stacks from its entries. Only items any slot holds as plain stacks qualify (see <see cref="LoadoutDefinitions.PlainItems"/>).
 /// Built once from the game data and shared by the raids.
 /// </summary>
 public sealed class LootContentRolls
 {
     private readonly LootData _loot;
+    private readonly LootContentSettings _settings;
     private readonly ItemDefinition[] _items;
+
+    // Positions in the settings' tiers: the first stack's tier (or -1), and the tier of items no other tier takes.
+    private readonly int _firstTier;
+    private readonly int _otherTier;
 
     // Every drop tag of each item with the tags above them, which avoid groups are matched against.
     private readonly Dictionary<ItemDefinition, HashSet<string>> _dropTagGroups;
@@ -45,23 +50,27 @@ public sealed class LootContentRolls
 
     private readonly Dictionary<LootTypeEntry, ItemDefinition[]> _typeItems;
 
-    /// <summary>Prepares the pools from the game data.</summary>
+    /// <summary>Prepares the pools from the game data and the loot settings.</summary>
     /// <param name="definitions">The shared item definitions: their plain items are the items a container may hold.</param>
     /// <param name="loot">The loot definitions: container types, value loot tables and the container defaults.</param>
-    public LootContentRolls(LoadoutDefinitions definitions, LootData loot)
+    /// <param name="settings">The loot content settings.</param>
+    public LootContentRolls(LoadoutDefinitions definitions, LootData loot, LootContentSettings settings)
     {
         ArgumentNullException.ThrowIfNull(definitions);
         _loot = loot ?? throw new ArgumentNullException(nameof(loot));
-        _items = [.. definitions.PlainItems.Where(item => !item.DropTags.Any(tag => LootContentDefaults.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded))))];
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _firstTier = settings.FirstStackTier is { } first ? settings.Tiers.ToList().FindIndex(tier => tier.Name == first) : -1;
+        _otherTier = settings.Tiers.ToList().FindIndex(tier => tier.DropTag is null);
+        _items = [.. definitions.PlainItems.Where(item => !item.DropTags.Any(tag => settings.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded))))];
         _dropTagGroups = _items.ToDictionary<ItemDefinition, ItemDefinition, HashSet<string>>(item => item,
             item => new HashSet<string>(item.DropTags.SelectMany(TagAndParents), StringComparer.OrdinalIgnoreCase), ReferenceEqualityComparer.Instance);
-        _tableSelections = LootContentDefaults.TablePools
+        _tableSelections = settings.TablePools
             .SelectMany(pool => pool.Tables).Distinct(StringComparer.OrdinalIgnoreCase)
             .ToDictionary(name => name, Selections, StringComparer.OrdinalIgnoreCase);
-        _tablePools = LootContentDefaults.TablePools.ToDictionary(pool => pool.Tag, Prepare, StringComparer.OrdinalIgnoreCase);
+        _tablePools = settings.TablePools.ToDictionary(pool => pool.Tag, Prepare, StringComparer.OrdinalIgnoreCase);
         _typeCandidates = loot.ContainerTypes.ToDictionary(type => type.Tag, type => FilterCandidates(type.Tag), StringComparer.OrdinalIgnoreCase);
-        _typeItems = LootContentDefaults.TypePools
-            .SelectMany(pool => pool.Entries).Concat(LootContentDefaults.ExtraStackEntries).Distinct()
+        _typeItems = settings.TypePools
+            .SelectMany(pool => pool.Entries).Concat(settings.ExtraStack.Entries).Distinct()
             .ToDictionary(entry => entry, entry => _items.Where(item => Matches(item, entry)).ToArray());
     }
 
@@ -86,15 +95,10 @@ public sealed class LootContentRolls
             && !placement.ExcludeTags.Any(excluded => IsTagOrBelow(containerTag, excluded)));
     }
 
-    /// <summary>The tier of an item: the first tier of <see cref="LootContentDefaults.TierWeights"/> whose drop tag it carries.</summary>
+    /// <summary>The tier of an item: the first tier whose drop tag it carries, else the tier without a drop tag.</summary>
     /// <param name="item">The item.</param>
-    /// <returns>The tier, <see cref="LootTier.Other"/> when it carries none.</returns>
-    public static LootTier TierOf(ItemDefinition item)
-    {
-        ArgumentNullException.ThrowIfNull(item);
-        return LootContentDefaults.TierWeights.FirstOrDefault(tier => tier.DropTag is { } tag && item.DropTags.Any(drop => IsTagOrBelow(drop, tag)))?.Tier
-            ?? LootTier.Other;
-    }
+    /// <returns>The tier.</returns>
+    public LootTier TierOf(ItemDefinition item) => _settings.Tiers[TierIndex(item)];
 
     /// <summary>The table pool of a container tag: the pool of the tag itself, else of its nearest parent tag.</summary>
     /// <param name="containerTag">The container's tag.</param>
@@ -105,11 +109,11 @@ public sealed class LootContentRolls
     /// <param name="containerTag">The container's tag, or null when it has none.</param>
     /// <param name="containerClass">The container's class path.</param>
     /// <returns>The pool, or null.</returns>
-    public static LootTypePool? TypePool(string? containerTag, string containerClass)
+    public LootTypePool? TypePool(string? containerTag, string containerClass)
     {
         ArgumentNullException.ThrowIfNull(containerClass);
-        return LootContentDefaults.TypePools.FirstOrDefault(pool => pool.Classes.Contains(containerClass, StringComparer.Ordinal))
-            ?? (containerTag is null ? null : LootContentDefaults.TypePools.FirstOrDefault(pool => pool.Tags.Any(tag => IsTagOrBelow(containerTag, tag))));
+        return _settings.TypePools.FirstOrDefault(pool => pool.Classes.Contains(containerClass, StringComparer.Ordinal))
+            ?? (containerTag is null ? null : _settings.TypePools.FirstOrDefault(pool => pool.Tags.Any(tag => IsTagOrBelow(containerTag, tag))));
     }
 
     /// <summary>The items a container of a tag may get from its table pool.</summary>
@@ -199,8 +203,8 @@ public sealed class LootContentRolls
         int stackTarget = Math.Min(pool.Pool.Stacks is { } range ? Uniform(range, random) : Target(random), slotCount);
         while (drawn.Count < stackTarget && available.Count > 0)
         {
-            LootTier tier = drawn.Count == 0 && available.Exists(entry => entry.Tier == LootTier.Common)
-                ? LootTier.Common
+            int tier = drawn.Count == 0 && _firstTier >= 0 && available.Exists(entry => entry.Tier == _firstTier)
+                ? _firstTier
                 : PickTier([.. available.Select(entry => entry.Tier).Distinct().Order()], value, random);
             PoolItem[] inTier = [.. available.Where(entry => entry.Tier == tier)];
             PoolItem picked = inTier[random.Next(inTier.Length)];
@@ -208,8 +212,8 @@ public sealed class LootContentRolls
             available.RemoveAll(entry => !Fits(entry.Item, picked.Item));
         }
 
-        if (pool.Pool.ExtraStack && drawn.Count < slotCount && random.NextDouble() < LootContentDefaults.ExtraStackChance
-            && Draw(LootContentDefaults.ExtraStackEntries, drawn, true, random) is { } extra)
+        if (pool.Pool.ExtraStack && drawn.Count < slotCount && random.NextDouble() < _settings.ExtraStack.Chance
+            && Draw(_settings.ExtraStack.Entries, drawn, true, random) is { } extra)
         {
             drawn.Add(extra);
         }
@@ -251,8 +255,8 @@ public sealed class LootContentRolls
         return new LootStack(item, Amount(item, chosen.StackSize, random), 1);
     }
 
-    // A tier by weight among those present; the area's loot value scales the weights.
-    private static LootTier PickTier(IReadOnlyList<LootTier> tiers, PointOfInterestLootValue value, Random random)
+    // A tier (by position) by weight among those present; the area's loot value scales the weights.
+    private int PickTier(IReadOnlyList<int> tiers, PointOfInterestLootValue value, Random random)
     {
         double[] weights = [.. tiers.Select(tier => Weight(tier, value))];
         double roll = random.NextDouble() * weights.Sum();
@@ -269,9 +273,24 @@ public sealed class LootContentRolls
         return tiers[^1];
     }
 
-    private static double Weight(LootTier tier, PointOfInterestLootValue value) =>
-        LootContentDefaults.TierWeights.Where(entry => entry.Tier == tier).Select(entry => entry.Weight).DefaultIfEmpty(0).First()
-        * LootContentDefaults.TierMultipliers.Where(entry => entry.Value == value && entry.Tier == tier).Aggregate(1.0, (product, entry) => product * entry.Multiplier);
+    private double Weight(int tier, PointOfInterestLootValue value) =>
+        _settings.Tiers[tier].Weight * _settings.Tiers[tier].AreaMultipliers.GetValueOrDefault(value, 1);
+
+    // Position of an item's tier: the first tier whose drop tag it carries, else the tier without a drop tag.
+    private int TierIndex(ItemDefinition item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        IReadOnlyList<LootTier> tiers = _settings.Tiers;
+        for (int index = 0; index < tiers.Count; index++)
+        {
+            if (tiers[index].DropTag is { } tag && item.DropTags.Any(drop => IsTagOrBelow(drop, tag)))
+            {
+                return index;
+            }
+        }
+
+        return _otherTier;
+    }
 
     // The game's weighted target number of stacks.
     private int Target(Random random)
@@ -353,7 +372,7 @@ public sealed class LootContentRolls
         {
             if (seen.Add(item))
             {
-                items.Add(new PoolItem(item, TierOf(item), entry.StackSize, entry.Durability));
+                items.Add(new PoolItem(item, TierIndex(item), entry.StackSize, entry.Durability));
             }
         }
 
@@ -373,7 +392,7 @@ public sealed class LootContentRolls
             .SelectMany(entry => _items.Where(item => entry.Selects(item.TechnicalName, item.DropTags)).Select(item => (item, entry)))];
     }
 
-    private sealed record PoolItem(ItemDefinition Item, LootTier Tier, LootRange StackSize, LootRange Durability);
+    private sealed record PoolItem(ItemDefinition Item, int Tier, LootRange StackSize, LootRange Durability);
 
     private sealed record PreparedPool(LootTablePool Pool, IReadOnlyList<PoolItem> Items);
 }
