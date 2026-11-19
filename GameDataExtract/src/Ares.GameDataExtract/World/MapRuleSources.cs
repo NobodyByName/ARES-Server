@@ -89,7 +89,7 @@ internal sealed class MapRuleSources
             UnversionedHeader header = UnversionedHeader.Read(current.Package.Data, CookedPackage.StartOf(current.Export));
             foreach (string name in names.Where(name => !flags.ContainsKey(name)))
             {
-                int index = IndexOf(schema, name);
+                int index = SchemaPrefix.IndexOf(schema, name);
                 if (schema.At(index).Field?.Type.Kind != PropertyKind.Bool)
                 {
                     throw new InvalidDataException($"{schema.Name}.{name} is not a bool");
@@ -107,20 +107,7 @@ internal sealed class MapRuleSources
 
     /// <summary>The members <paramref name="names"/> that <paramref name="target"/> itself stores (no archetype).</summary>
     /// <exception cref="InvalidDataException">A member is not in the chain, or the object stores an unknown member before one of them.</exception>
-    public PropertyBag Own(ExportRef target, IReadOnlyList<string> names)
-    {
-        StructSchema schema = _classes.ForObject(target);
-        int last = names.Max(name => IndexOf(schema, name));
-        StructSchema truncated = Truncated(schema, last);
-        int start = CookedPackage.StartOf(target.Export);
-        UnversionedHeader header = UnversionedHeader.Read(target.Package.Data, start);
-        if (header.Members.FirstOrDefault(member => member.IsNonZero && member.Index <= last && truncated.At(member.Index).Field is null) is { IsNonZero: true } unknown)
-        {
-            throw new InvalidDataException($"{target.Path} stores the unknown member {unknown.Index} of {schema.Name} before {string.Join(", ", names)}");
-        }
-
-        return PropertyReader.ReadPrefix(target.Package, start, truncated, out _);
-    }
+    public PropertyBag Own(ExportRef target, IReadOnlyList<string> names) => SchemaPrefix.Read(target.Package, target.Export, _classes.ForObject(target), names);
 
     /// <summary>
     /// The literal the script default statements of <paramref name="scriptClass"/>'s chain store last into
@@ -210,38 +197,4 @@ internal sealed class MapRuleSources
 
     /// <summary>The name of a stored gameplay tag (a struct holding its name).</summary>
     public static string Tag(PropertyBag tag) => tag.Get<string>(RoundConfigurationMembers.TagName);
-
-    private static int IndexOf(StructSchema schema, string name)
-    {
-        for (int i = 0; i < schema.ChainLength; i++)
-        {
-            if (schema.At(i) is { Field.Name: var found, Element: 0 } && found == name)
-            {
-                return i;
-            }
-        }
-
-        throw new InvalidDataException($"{schema.Name} has no member {name}");
-    }
-
-    /// <summary>The chain of <paramref name="schema"/> up to index <paramref name="last"/>: later members read as unknown.</summary>
-    private static StructSchema Truncated(StructSchema schema, int last)
-    {
-        List<PropertyField?> members = [];
-        for (int i = 0; i <= last; i++)
-        {
-            (PropertyField? field, int element) = schema.At(i);
-            if (field is null)
-            {
-                members.Add(null);
-            }
-            else if (element == 0)
-            {
-                members.Add(field);
-                i += field.ArrayDim - 1;
-            }
-        }
-
-        return new StructSchema(schema.Name, members);
-    }
 }
