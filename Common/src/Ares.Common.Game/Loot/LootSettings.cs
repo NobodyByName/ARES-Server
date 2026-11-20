@@ -1,3 +1,4 @@
+using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
@@ -126,6 +127,7 @@ public sealed record LootExtraStack(double Chance, IReadOnlyList<LootTypeEntry> 
 /// <param name="TablePools">Table pools by container category.</param>
 /// <param name="ExtraStack">The extra stack.</param>
 /// <param name="TypePools">Type pools.</param>
+/// <param name="Profiles">Contents profiles by container or loose item socket type; the other members are the defaults they change.</param>
 /// <param name="LooseItems">What loose item sockets hold.</param>
 public sealed record LootContentSettings(
     IReadOnlyList<string> ExcludedDropTags,
@@ -134,7 +136,93 @@ public sealed record LootContentSettings(
     IReadOnlyList<LootTablePool> TablePools,
     LootExtraStack ExtraStack,
     IReadOnlyList<LootTypePool> TypePools,
+    IReadOnlyList<LootProfile> Profiles,
     LooseItemSettings LooseItems);
+
+/// <summary>Items a profile entry concerns: those carrying a drop tag (or one below it), or one item. Exactly one is set.</summary>
+/// <param name="DropTag">The drop tag, or null.</param>
+/// <param name="Item">The item's technical name, or null.</param>
+public sealed record LootMatch(string? DropTag, string? Item)
+{
+    /// <summary>Whether the match covers an item.</summary>
+    /// <param name="item">The item.</param>
+    /// <returns>True when the item carries the drop tag (or one below it), or is the named item.</returns>
+    public bool Matches(ItemDefinition item)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        return DropTag is { } tag
+            ? item.DropTags.Any(drop => LootTags.IsTagOrBelow(drop, tag))
+            : string.Equals(item.TechnicalName, Item, StringComparison.Ordinal);
+    }
+
+    /// <summary>Whether two matches are the same key: the same drop tag (ignoring case) or the same item.</summary>
+    /// <param name="other">The other match.</param>
+    /// <returns>True for the same key.</returns>
+    public bool SameKey(LootMatch other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        return DropTag is not null
+            ? other.DropTag is { } otherTag && string.Equals(DropTag, otherTag, StringComparison.OrdinalIgnoreCase)
+            : other.DropTag is null && string.Equals(Item, other.Item, StringComparison.Ordinal);
+    }
+
+    /// <summary>The drop tag or item name, as messages show it.</summary>
+    /// <returns>The key.</returns>
+    public override string ToString() => DropTag ?? Item ?? string.Empty;
+}
+
+/// <summary>A factor on the pick weight of the items a match covers; 0 removes them.</summary>
+/// <param name="Match">The items.</param>
+/// <param name="Multiplier">The factor, 0 or more.</param>
+public sealed record LootProfileWeight(LootMatch Match, double Multiplier);
+
+/// <summary>
+/// Items a profile adds to what the item source offers, whatever their own placement lists accept. A drop tag adds every
+/// item with it except those with a root excluded drop tag; a named item joins even with one.
+/// </summary>
+/// <param name="Match">The items.</param>
+/// <param name="Amount">Items per stack, drawn uniformly and capped at the item's largest stack.</param>
+/// <param name="Tier">Name of the tier the items count in; null for each item's own tier.</param>
+public sealed record LootProfileAdd(LootMatch Match, LootRange Amount, string? Tier);
+
+/// <summary>
+/// The extra stack as a profile sets it; each part left null keeps the inherited one. Setting it, even with no part, lets
+/// the container get the extra stack.
+/// </summary>
+/// <param name="Chance">Chance from 0 to 1 of the extra stack, or null.</param>
+/// <param name="Entries">What it draws from, or null.</param>
+public sealed record LootProfileExtraStack(double? Chance, IReadOnlyList<LootTypeEntry>? Entries);
+
+/// <summary>The first stack's tier as a profile sets it.</summary>
+/// <param name="Tier">Name of the tier, or null to force no tier.</param>
+public sealed record LootFirstStackTier(string? Tier);
+
+/// <summary>
+/// A contents profile: how the contents of one container or loose item socket type differ from the defaults. A type is
+/// a tag (the socket's tag or its nearest parent, ignoring case) or a container class. Every member left null or empty
+/// keeps what the profiles above it, or the defaults, set.
+/// </summary>
+/// <param name="Name">Unique name, as logs show it.</param>
+/// <param name="Tag">Container (<c>Socket.LootContainer</c> and below) or loose item socket (<c>Socket.Loot</c> and below) tag, or null.</param>
+/// <param name="Class">Container class path, or null; exactly one of <paramref name="Tag"/> and this is set.</param>
+/// <param name="Only">The source keeps only items one of these matches cover; null keeps every item.</param>
+/// <param name="Weights">Factors on item pick weights.</param>
+/// <param name="Add">Items added to the source.</param>
+/// <param name="Tiers">Factor on a tier's weight by tier name (not on a forced first stack).</param>
+/// <param name="FirstStackTier">The first stack's tier, or null to keep the inherited one (containers).</param>
+/// <param name="Stacks">Number of stacks, drawn uniformly and capped by the slots, or null (containers).</param>
+/// <param name="ExtraStack">The extra stack, or null (containers); a profile that sets it lets the container get it.</param>
+public sealed record LootProfile(
+    string Name,
+    string? Tag,
+    string? Class,
+    IReadOnlyList<LootMatch>? Only,
+    IReadOnlyList<LootProfileWeight> Weights,
+    IReadOnlyList<LootProfileAdd> Add,
+    IReadOnlyDictionary<string, double> Tiers,
+    LootFirstStackTier? FirstStackTier,
+    LootRange? Stacks,
+    LootProfileExtraStack? ExtraStack);
 
 /// <summary>
 /// Items a loose item socket of some tags may hold besides the table items: the pool's entries, drawn against the

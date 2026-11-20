@@ -116,6 +116,7 @@ internal static class SyntheticHost
             tablePools = Array.Empty<object>(),
             extraStack = new { chance = 0, entries = Array.Empty<object>() },
             typePools = Array.Empty<object>(),
+            profiles = Array.Empty<object>(),
             looseItems = new { tables = Array.Empty<string>(), amount = new { min = 1, max = 1 }, pools = Array.Empty<object>() },
         });
         Write(directory, AresContent.LootRulesFile, new { rules = Array.Empty<object>() });

@@ -25,13 +25,21 @@ public sealed record LootContents(string? Pool, IReadOnlyList<LootStack> Stacks)
 /// stack's tier first when there is one, then by tier weight (scaled by the loot value of the area), each item at most
 /// once and never next to an item of a group either one avoids. Some containers then get the extra stack. A type pool
 /// draws its stacks from its entries. Only items any slot holds as plain stacks qualify (see <see cref="LoadoutDefinitions.PlainItems"/>).
-/// Built once from the game data and shared by the raids.
+/// The container's contents profile (<see cref="MergedLootProfile"/>) shapes both: it filters and weights the items, adds
+/// items whatever their placement lists, and may set the stacks, the first stack's tier, the tier weights and the extra
+/// stack. Built once from the game data and shared by the raids.
 /// </summary>
 public sealed class LootContentRolls
 {
+    // Durability, in percent, of an added item's stack.
+    private static readonly LootRange s_fullDurability = new(100, 100);
+
     private readonly LootData _loot;
     private readonly LootContentSettings _settings;
     private readonly ItemDefinition[] _items;
+
+    // Every given item, root excluded drop tags or not: the items a profile may add by name.
+    private readonly ItemDefinition[] _plainItems;
 
     // Positions in the settings' tiers: the first stack's tier (or -1), and the tier of items no other tier takes.
     private readonly int _firstTier;
@@ -55,14 +63,24 @@ public sealed class LootContentRolls
     /// <param name="loot">The loot definitions: container types, value loot tables and the container defaults.</param>
     /// <param name="settings">The loot content settings.</param>
     public LootContentRolls(LoadoutDefinitions definitions, LootData loot, LootContentSettings settings)
+        : this((definitions ?? throw new ArgumentNullException(nameof(definitions))).PlainItems, loot, settings)
     {
-        ArgumentNullException.ThrowIfNull(definitions);
+    }
+
+    /// <summary>Prepares the pools from the items a container may hold and the loot settings.</summary>
+    /// <param name="items">The items a container may hold: plain items.</param>
+    /// <param name="loot">The loot definitions: container types, value loot tables and the container defaults.</param>
+    /// <param name="settings">The loot content settings.</param>
+    public LootContentRolls(IEnumerable<ItemDefinition> items, LootData loot, LootContentSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(items);
         _loot = loot ?? throw new ArgumentNullException(nameof(loot));
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-        _firstTier = settings.FirstStackTier is { } first ? settings.Tiers.ToList().FindIndex(tier => tier.Name == first) : -1;
+        _firstTier = TierNamed(settings.FirstStackTier);
         _otherTier = settings.Tiers.ToList().FindIndex(tier => tier.DropTag is null);
-        _items = [.. definitions.PlainItems.Where(item => !item.DropTags.Any(tag => settings.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded))))];
-        _dropTagGroups = _items.ToDictionary<ItemDefinition, ItemDefinition, HashSet<string>>(item => item,
+        _plainItems = [.. items];
+        _items = [.. _plainItems.Where(item => !item.DropTags.Any(tag => settings.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded))))];
+        _dropTagGroups = _plainItems.ToDictionary<ItemDefinition, ItemDefinition, HashSet<string>>(item => item,
             item => new HashSet<string>(item.DropTags.SelectMany(TagAndParents), StringComparer.OrdinalIgnoreCase), ReferenceEqualityComparer.Instance);
         _tableSelections = settings.TablePools
             .SelectMany(pool => pool.Tables).Distinct(StringComparer.OrdinalIgnoreCase)
@@ -70,7 +88,7 @@ public sealed class LootContentRolls
         _tablePools = settings.TablePools.ToDictionary(pool => pool.Tag, Prepare, StringComparer.OrdinalIgnoreCase);
         _typeCandidates = loot.ContainerTypes.ToDictionary(type => type.Tag, type => FilterCandidates(type.Tag), StringComparer.OrdinalIgnoreCase);
         _typeItems = settings.TypePools
-            .SelectMany(pool => pool.Entries).Concat(settings.ExtraStack.Entries).Distinct()
+            .SelectMany(pool => pool.Entries).Concat(settings.ExtraStack.Entries).Concat(settings.Profiles.SelectMany(profile => profile.ExtraStack?.Entries ?? [])).Distinct()
             .ToDictionary(entry => entry, entry => _items.Where(item => Matches(item, entry)).ToArray());
     }
 
@@ -120,6 +138,16 @@ public sealed class LootContentRolls
     /// <param name="containerTag">The container's tag.</param>
     /// <returns>The items, in pool order; none when no table pool covers the tag.</returns>
     public IReadOnlyList<ItemDefinition> Candidates(string containerTag) => [.. PoolCandidates(containerTag).Select(entry => entry.Item)];
+
+    /// <summary>The contents profile of a container: the profiles of its tag's chain, then of its class, merged.</summary>
+    /// <param name="containerTag">The container's tag, or null when it has none.</param>
+    /// <param name="containerClass">The container's class path.</param>
+    /// <returns>The merged profile.</returns>
+    public MergedLootProfile Profile(string? containerTag, string containerClass)
+    {
+        ArgumentNullException.ThrowIfNull(containerClass);
+        return MergedLootProfile.Resolve(_settings.Profiles, containerTag, containerClass);
+    }
 
     /// <summary>
     /// Draws a container's contents from an operator rule's list: the list's number of stacks (else the game's target)
@@ -175,16 +203,10 @@ public sealed class LootContentRolls
     {
         ArgumentNullException.ThrowIfNull(containerClass);
         ArgumentNullException.ThrowIfNull(random);
+        MergedLootProfile profile = Profile(containerTag, containerClass);
         if (TypePool(containerTag, containerClass) is { } type)
         {
-            List<LootStack> stacks = [];
-            int target = Math.Min(Uniform(type.Stacks, random), slotCount);
-            while (stacks.Count < target && Draw(type.Entries, stacks, false, random) is { } stack)
-            {
-                stacks.Add(stack);
-            }
-
-            return new LootContents(type.Name, stacks);
+            return RollType(type, profile, slotCount, random);
         }
 
         if (containerTag is null || FindTablePool(containerTag) is not { } pool)
@@ -192,28 +214,33 @@ public sealed class LootContentRolls
             return new LootContents(null, []);
         }
 
-        PoolItem[] candidates = PoolCandidates(containerTag);
-        if (candidates.Length == 0)
+        List<PoolItem> available = ProfileCandidates(containerTag, profile);
+        if (available.Count == 0)
         {
             return new LootContents(pool.Pool.Name, []);
         }
 
         List<LootStack> drawn = [];
-        List<PoolItem> available = [.. candidates];
-        int stackTarget = Math.Min(pool.Pool.Stacks is { } range ? Uniform(range, random) : Target(random), slotCount);
+        LootRange? stacks = profile.Stacks ?? pool.Pool.Stacks;
+        int stackTarget = Math.Min(stacks is { } range ? Uniform(range, random) : Target(random), slotCount);
+        int firstTier = profile.FirstStackTier is { } first ? TierNamed(first.Tier) : _firstTier;
         while (drawn.Count < stackTarget && available.Count > 0)
         {
-            int tier = drawn.Count == 0 && _firstTier >= 0 && available.Exists(entry => entry.Tier == _firstTier)
-                ? _firstTier
-                : PickTier([.. available.Select(entry => entry.Tier).Distinct().Order()], value, random);
+            int tier = drawn.Count == 0 && firstTier >= 0 && available.Exists(entry => entry.Tier == firstTier)
+                ? firstTier
+                : PickTier([.. available.Select(entry => entry.Tier).Distinct().Order()], value, profile, random);
+            if (tier < 0)
+            {
+                break;
+            }
+
             PoolItem[] inTier = [.. available.Where(entry => entry.Tier == tier)];
-            PoolItem picked = inTier[random.Next(inTier.Length)];
+            PoolItem picked = MergedLootProfile.Pick(inTier, entry => entry.Multiplier, random);
             drawn.Add(new LootStack(picked.Item, Amount(picked.Item, picked.StackSize, random), Uniform(picked.Durability, random) / 100.0));
             available.RemoveAll(entry => !Fits(entry.Item, picked.Item));
         }
 
-        if (pool.Pool.ExtraStack && drawn.Count < slotCount && random.NextDouble() < _settings.ExtraStack.Chance
-            && Draw(_settings.ExtraStack.Entries, drawn, true, random) is { } extra)
+        if ((pool.Pool.ExtraStack || profile.SetsExtraStack) && ExtraStack(drawn, slotCount, profile, random) is { } extra)
         {
             drawn.Add(extra);
         }
@@ -224,42 +251,81 @@ public sealed class LootContentRolls
         return new LootContents(pool.Pool.Name, shuffled);
     }
 
-    // One stack from weighted drop-tag entries: an entry that still has an item not in the container, then one of its
-    // items evenly. Null when no entry has one left.
-    private LootStack? Draw(IReadOnlyList<LootTypeEntry> entries, List<LootStack> present, bool avoidGroups, Random random)
+    // A type pool's stacks: its entries' items and the profile's added items (an entry of weight 1 each), filtered and
+    // weighted by the profile; then the extra stack when a profile sets it.
+    private LootContents RollType(LootTypePool type, MergedLootProfile profile, int slotCount, Random random)
     {
-        (LootTypeEntry Entry, ItemDefinition[] Items)[] open =
+        DrawEntry[] entries =
         [
-            .. entries.Select(entry => (Entry: entry, Items: _typeItems[entry].Where(item => avoidGroups ? Fits(item, present) : present.TrueForAll(stack => !ReferenceEquals(stack.Item, item))).ToArray()))
-                .Where(entry => entry.Items.Length > 0 && entry.Entry.Weight > 0),
+            .. type.Entries.Select(entry => Entry(entry, profile)),
+            .. profile.Add.Select(add => new DrawEntry(1, [.. AddedItems(add).Where(profile.Keeps)], add.Amount)),
+        ];
+        List<LootStack> stacks = [];
+        int target = Math.Min(Uniform(profile.Stacks ?? type.Stacks, random), slotCount);
+        while (stacks.Count < target && Draw(entries, stacks, false, profile, random) is { } stack)
+        {
+            stacks.Add(stack);
+        }
+
+        if (profile.SetsExtraStack && ExtraStack(stacks, slotCount, profile, random) is { } extra)
+        {
+            stacks.Add(extra);
+        }
+
+        return new LootContents(type.Name, stacks);
+    }
+
+    // The extra stack, when the container has a free slot and the chance roll succeeds.
+    private LootStack? ExtraStack(List<LootStack> drawn, int slotCount, MergedLootProfile profile, Random random) =>
+        drawn.Count < slotCount && random.NextDouble() < (profile.ExtraStackChance ?? _settings.ExtraStack.Chance)
+            ? Draw([.. (profile.ExtraStackEntries ?? _settings.ExtraStack.Entries).Select(entry => Entry(entry, profile))], drawn, true, profile, random)
+            : null;
+
+    private DrawEntry Entry(LootTypeEntry entry, MergedLootProfile profile) => new(entry.Weight, [.. _typeItems[entry].Where(profile.Keeps)], entry.StackSize);
+
+    // One stack from weighted entries: an entry that still has an item not in the container, then one of its items by
+    // the profile's multiplier. Null when no entry has one left.
+    private LootStack? Draw(IReadOnlyList<DrawEntry> entries, List<LootStack> present, bool avoidGroups, MergedLootProfile profile, Random random)
+    {
+        DrawEntry[] open =
+        [
+            .. entries.Select(entry => entry with { Items = [.. entry.Items.Where(item => avoidGroups ? Fits(item, present) : present.TrueForAll(stack => !ReferenceEquals(stack.Item, item)))] })
+                .Where(entry => entry.Items.Count > 0 && entry.Weight > 0),
         ];
         if (open.Length == 0)
         {
             return null;
         }
 
-        double roll = random.NextDouble() * open.Sum(entry => entry.Entry.Weight);
-        (LootTypeEntry chosen, ItemDefinition[] items) = open[^1];
-        foreach ((LootTypeEntry Entry, ItemDefinition[] Items) entry in open)
+        double roll = random.NextDouble() * open.Sum(entry => entry.Weight);
+        DrawEntry chosen = open[^1];
+        foreach (DrawEntry entry in open)
         {
-            if (roll < entry.Entry.Weight)
+            if (roll < entry.Weight)
             {
-                (chosen, items) = entry;
+                chosen = entry;
                 break;
             }
 
-            roll -= entry.Entry.Weight;
+            roll -= entry.Weight;
         }
 
-        ItemDefinition item = items[random.Next(items.Length)];
-        return new LootStack(item, Amount(item, chosen.StackSize, random), 1);
+        ItemDefinition item = MergedLootProfile.Pick(chosen.Items, profile.Multiplier, random);
+        return new LootStack(item, Amount(item, chosen.AmountRange, random), 1);
     }
 
-    // A tier (by position) by weight among those present; the area's loot value scales the weights.
-    private int PickTier(IReadOnlyList<int> tiers, PointOfInterestLootValue value, Random random)
+    // A tier (by position) by weight among those present; the area's loot value and the profile scale the weights.
+    // Tiers weighing 0 are never picked; -1 when no tier present weighs more than 0.
+    private int PickTier(IReadOnlyList<int> tiers, PointOfInterestLootValue value, MergedLootProfile profile, Random random)
     {
-        double[] weights = [.. tiers.Select(tier => Weight(tier, value))];
-        double roll = random.NextDouble() * weights.Sum();
+        double[] weights = [.. tiers.Select(tier => Weight(tier, value) * profile.TierMultiplier(_settings.Tiers[tier].Name))];
+        double total = weights.Sum();
+        if (total <= 0)
+        {
+            return -1;
+        }
+
+        double roll = random.NextDouble() * total;
         for (int index = 0; index < tiers.Count; index++)
         {
             if (roll < weights[index])
@@ -270,7 +336,7 @@ public sealed class LootContentRolls
             roll -= weights[index];
         }
 
-        return tiers[^1];
+        return tiers[Array.FindLastIndex(weights, weight => weight > 0)];
     }
 
     private double Weight(int tier, PointOfInterestLootValue value) =>
@@ -336,6 +402,39 @@ public sealed class LootContentRolls
     private static bool Matches(ItemDefinition item, LootTypeEntry entry) =>
         item.DropTags.Any(tag => IsTagOrBelow(tag, entry.DropTag)) && !item.DropTags.Any(tag => entry.ExcludedDropTags.Any(excluded => IsTagOrBelow(tag, excluded)));
 
+    // Position of a tier by name, or -1 for none.
+    private int TierNamed(string? name) => name is null ? -1 : _settings.Tiers.ToList().FindIndex(tier => tier.Name == name);
+
+    // The items an add brings: by name any given item, by drop tag those without a root excluded drop tag.
+    private IEnumerable<ItemDefinition> AddedItems(LootProfileAdd add) => (add.Match.DropTag is null ? _plainItems : _items).Where(add.Match.Matches);
+
+    // The pool's candidates with the profile's added items (the first add bringing an item sets its amount and tier, and
+    // replaces the item's pool entry), then only those the profile keeps, each with its multiplier.
+    private List<PoolItem> ProfileCandidates(string containerTag, MergedLootProfile profile)
+    {
+        List<PoolItem> candidates = [.. PoolCandidates(containerTag)];
+        HashSet<ItemDefinition> added = new(ReferenceEqualityComparer.Instance);
+        foreach (LootProfileAdd add in profile.Add)
+        {
+            int tier = TierNamed(add.Tier);
+            foreach (ItemDefinition item in AddedItems(add).Where(added.Add))
+            {
+                PoolItem entry = new(item, tier >= 0 ? tier : TierIndex(item), add.Amount, s_fullDurability);
+                int existing = candidates.FindIndex(candidate => ReferenceEquals(candidate.Item, item));
+                if (existing >= 0)
+                {
+                    candidates[existing] = entry;
+                }
+                else
+                {
+                    candidates.Add(entry);
+                }
+            }
+        }
+
+        return [.. candidates.Where(entry => profile.Keeps(entry.Item)).Select(entry => entry with { Multiplier = profile.Multiplier(entry.Item) })];
+    }
+
     private PoolItem[] PoolCandidates(string containerTag)
     {
         ArgumentNullException.ThrowIfNull(containerTag);
@@ -392,7 +491,10 @@ public sealed class LootContentRolls
             .SelectMany(entry => _items.Where(item => entry.Selects(item.TechnicalName, item.DropTags)).Select(item => (item, entry)))];
     }
 
-    private sealed record PoolItem(ItemDefinition Item, int Tier, LootRange StackSize, LootRange Durability);
+    private sealed record PoolItem(ItemDefinition Item, int Tier, LootRange StackSize, LootRange Durability, double Multiplier = 1);
+
+    // Weighted items a stack may come from, with their amount range.
+    private sealed record DrawEntry(double Weight, IReadOnlyList<ItemDefinition> Items, LootRange AmountRange);
 
     private sealed record PreparedPool(LootTablePool Pool, IReadOnlyList<PoolItem> Items);
 }

@@ -151,6 +151,14 @@ official game as known:
   multipliers; the tier without a drop tag takes every other item) and the tier of a container's first stack,
   the loot tables each container category draws from (`tablePools`), the extra stack some containers get, and
   the item pools of containers without tables (`typePools`).
+  Its `profiles` change those defaults per container or loose item socket type: each profile names one `tag`
+  (`Socket.LootContainer…` or `Socket.Loot…`; it also covers the tags below it) or one container `class`. A profile can
+  keep `only` items matching a drop tag or item name, scale an item's pick weight (`weights`, `multiplier` 0 removes it),
+  `add` items the tables do not offer (with an `amount` and optional `tier`; their own placement lists are not checked),
+  scale tier weights (`tiers`), and for containers set `firstStackTier` (`null` turns it off), `stacks` and
+  `extraStack` (`chance`, `entries`; setting it gives the extra stack even to pools without one). A container combines
+  the profiles of its tag and every parent tag, then of its class, the nearer one winning for each setting; weights of
+  several profiles multiply. A `loot-rules.json` contents list still replaces everything.
 - `loot-rules.json`: per-container decisions, below.
 
 `loot-rules.json` decides, for chosen loot containers, whether they spawn and what they hold; every other

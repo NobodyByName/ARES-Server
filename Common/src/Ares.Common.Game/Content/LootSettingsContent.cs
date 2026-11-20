@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
@@ -24,7 +25,8 @@ internal sealed record LootContentsDocument(
     [property: JsonPropertyName("tablePools")] IReadOnlyList<LootTablePoolDocument> TablePools,
     [property: JsonPropertyName("extraStack")] LootExtraStackDocument ExtraStack,
     [property: JsonPropertyName("typePools")] IReadOnlyList<LootTypePoolDocument> TypePools,
-    [property: JsonPropertyName("looseItems")] LooseItemsDocument LooseItems);
+    [property: JsonPropertyName("looseItems")] LooseItemsDocument LooseItems,
+    [property: JsonPropertyName("profiles")] IReadOnlyList<LootProfileDocument>? Profiles = null);
 
 /// <summary>What loose item sockets hold, in <c>loot-contents.json</c>.</summary>
 internal sealed record LooseItemsDocument(
@@ -73,6 +75,45 @@ internal sealed record LootTypePoolDocument(
     [property: JsonPropertyName("entries")] IReadOnlyList<LootTypeEntryDocument> Entries,
     [property: JsonPropertyName("classes")] IReadOnlyList<string>? Classes = null,
     [property: JsonPropertyName("tags")] IReadOnlyList<string>? Tags = null);
+
+/// <summary>
+/// A contents profile of <c>loot-contents.json</c>. <see cref="FirstStackTier"/> stays a raw value: an absent member
+/// inherits, <c>null</c> forces no tier.
+/// </summary>
+internal sealed record LootProfileDocument(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("tag")] string? Tag = null,
+    [property: JsonPropertyName("class")] string? Class = null,
+    [property: JsonPropertyName("only")] IReadOnlyList<LootMatchDocument>? Only = null,
+    [property: JsonPropertyName("weights")] IReadOnlyList<LootProfileWeightDocument>? Weights = null,
+    [property: JsonPropertyName("add")] IReadOnlyList<LootProfileAddDocument>? Add = null,
+    [property: JsonPropertyName("tiers")] IReadOnlyDictionary<string, double>? Tiers = null,
+    [property: JsonPropertyName("firstStackTier")] JsonElement FirstStackTier = default,
+    [property: JsonPropertyName("stacks")] LootCountDocument? Stacks = null,
+    [property: JsonPropertyName("extraStack")] LootProfileExtraStackDocument? ExtraStack = null);
+
+/// <summary>A match of a profile's <c>only</c> list: a drop tag or an item.</summary>
+internal sealed record LootMatchDocument(
+    [property: JsonPropertyName("dropTag")] string? DropTag = null,
+    [property: JsonPropertyName("item")] string? Item = null);
+
+/// <summary>A weight of a profile: a match and its multiplier.</summary>
+internal sealed record LootProfileWeightDocument(
+    [property: JsonPropertyName("multiplier")] double Multiplier,
+    [property: JsonPropertyName("dropTag")] string? DropTag = null,
+    [property: JsonPropertyName("item")] string? Item = null);
+
+/// <summary>An added item of a profile: a match, its amount and optionally its tier.</summary>
+internal sealed record LootProfileAddDocument(
+    [property: JsonPropertyName("amount")] LootCountDocument Amount,
+    [property: JsonPropertyName("dropTag")] string? DropTag = null,
+    [property: JsonPropertyName("item")] string? Item = null,
+    [property: JsonPropertyName("tier")] string? Tier = null);
+
+/// <summary>The extra stack of a profile; each absent part inherits.</summary>
+internal sealed record LootProfileExtraStackDocument(
+    [property: JsonPropertyName("chance")] double? Chance = null,
+    [property: JsonPropertyName("entries")] IReadOnlyList<LootTypeEntryDocument>? Entries = null);
 
 /// <summary>Turns <c>loot-spawn.json</c> and <c>loot-contents.json</c> into settings, refusing anything the game data does not have.</summary>
 internal static class LootSettingsContent
@@ -197,7 +238,172 @@ internal static class LootSettingsContent
         }
 
         return new LootContentSettings(document.ExcludedDropTags, tiers, document.FirstStackTier, tablePools, extra, typePools,
-            LooseItems(document.LooseItems, names, invalid));
+            Profiles(document.Profiles ?? [], tiers, names, invalid), LooseItems(document.LooseItems, names, invalid));
+    }
+
+    private static List<LootProfile> Profiles(IReadOnlyList<LootProfileDocument> documents, List<LootTier> tiers, Names names, Func<string, AresContentException> invalid)
+    {
+        names.NoNulls(documents, "profiles");
+        List<LootProfile> profiles = [];
+        foreach (LootProfileDocument document in documents)
+        {
+            string where = $"profile {document.Name}";
+            if (profiles.Exists(other => string.Equals(other.Name, document.Name, StringComparison.Ordinal)))
+            {
+                throw invalid($"profiles list {document.Name} twice");
+            }
+
+            if ((document.Tag is null) == (document.Class is null))
+            {
+                throw invalid($"{where} must set exactly one of tag and class");
+            }
+
+            bool loose = false;
+            if (document.Tag is { } tag)
+            {
+                loose = names.ProfileTag(tag, where);
+                if (profiles.Exists(other => other.Tag is { } otherTag && string.Equals(otherTag, tag, StringComparison.OrdinalIgnoreCase)))
+                {
+                    throw invalid($"two profiles have the tag {tag}");
+                }
+            }
+            else if (document.Class is { } path)
+            {
+                names.ServedContainerClass(path, where);
+                if (profiles.Exists(other => string.Equals(other.Class, path, StringComparison.Ordinal)))
+                {
+                    throw invalid($"two profiles have the class {path}");
+                }
+            }
+
+            if (loose && (document.FirstStackTier.ValueKind != JsonValueKind.Undefined || document.Stacks is not null || document.ExtraStack is not null))
+            {
+                throw invalid($"{where}: a loose item socket profile cannot set firstStackTier, stacks or extraStack");
+            }
+
+            profiles.Add(new LootProfile(document.Name, document.Tag, document.Class, Only(document.Only, names, where), Weights(document.Weights ?? [], names, invalid, where),
+                Adds(document.Add ?? [], tiers, names, invalid, where), ProfileTiers(document.Tiers, tiers, names, invalid, where),
+                FirstStackTier(document.FirstStackTier, tiers, invalid, where), Stacks(document.Stacks, invalid, where), ExtraStack(document.ExtraStack, names, where)));
+        }
+
+        return profiles;
+    }
+
+    private static List<LootMatch>? Only(IReadOnlyList<LootMatchDocument>? only, Names names, string where)
+    {
+        if (only is null)
+        {
+            return null;
+        }
+
+        names.NoNulls(only, $"{where} only");
+        return [.. only.Select(match => names.Match(match.DropTag, match.Item, where))];
+    }
+
+    private static List<LootProfileWeight> Weights(IReadOnlyList<LootProfileWeightDocument> weights, Names names, Func<string, AresContentException> invalid, string where)
+    {
+        names.NoNulls(weights, $"{where} weights");
+        List<LootProfileWeight> result = [];
+        foreach (LootProfileWeightDocument weight in weights)
+        {
+            LootMatch match = names.Match(weight.DropTag, weight.Item, where);
+            if (result.Exists(other => other.Match.SameKey(match)))
+            {
+                throw invalid($"{where}: weights list {match} twice");
+            }
+
+            names.Weight(weight.Multiplier, $"{where}: the multiplier of {match}");
+            result.Add(new LootProfileWeight(match, weight.Multiplier));
+        }
+
+        return result;
+    }
+
+    private static List<LootProfileAdd> Adds(IReadOnlyList<LootProfileAddDocument> adds, List<LootTier> tiers, Names names, Func<string, AresContentException> invalid, string where)
+    {
+        names.NoNulls(adds, $"{where} add");
+        List<LootProfileAdd> result = [];
+        foreach (LootProfileAddDocument add in adds)
+        {
+            LootMatch match = names.Match(add.DropTag, add.Item, where);
+            if (result.Exists(other => other.Match.SameKey(match)))
+            {
+                throw invalid($"{where}: add lists {match} twice");
+            }
+
+            if (add.Tier is { } tier)
+            {
+                Tier(tier, tiers, invalid, where);
+            }
+
+            result.Add(new LootProfileAdd(match, names.Count(add.Amount, $"{where}: the amount of {match}"), add.Tier));
+        }
+
+        return result;
+    }
+
+    private static FrozenDictionary<string, double> ProfileTiers(IReadOnlyDictionary<string, double>? factors, List<LootTier> tiers, Names names,
+        Func<string, AresContentException> invalid, string where)
+    {
+        if (factors is null)
+        {
+            return FrozenDictionary<string, double>.Empty;
+        }
+
+        foreach ((string tier, double factor) in factors)
+        {
+            Tier(tier, tiers, invalid, where);
+            names.Weight(factor, $"{where}: the multiplier of tier {tier}");
+        }
+
+        return factors.ToFrozenDictionary(StringComparer.Ordinal);
+    }
+
+    private static LootFirstStackTier? FirstStackTier(JsonElement value, List<LootTier> tiers, Func<string, AresContentException> invalid, string where)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.Undefined:
+                return null;
+            case JsonValueKind.Null:
+                return new LootFirstStackTier(null);
+            case JsonValueKind.String:
+                string tier = value.GetString()!;
+                Tier(tier, tiers, invalid, where);
+                return new LootFirstStackTier(tier);
+            default:
+                throw invalid($"{where}: firstStackTier must be a tier name or null");
+        }
+    }
+
+    private static LootRange? Stacks(LootCountDocument? stacks, Func<string, AresContentException> invalid, string where) => stacks switch
+    {
+        null => null,
+        { Min: >= 0 } when stacks.Max >= stacks.Min => new LootRange(stacks.Min, stacks.Max),
+        _ => throw invalid($"{where} stacks must have 0 <= min <= max"),
+    };
+
+    private static LootProfileExtraStack? ExtraStack(LootProfileExtraStackDocument? extra, Names names, string where)
+    {
+        if (extra is null)
+        {
+            return null;
+        }
+
+        if (extra.Chance is { } chance)
+        {
+            names.Fraction(chance, $"{where}: the extra stack's chance");
+        }
+
+        return new LootProfileExtraStack(extra.Chance, extra.Entries is { } entries ? names.Entries(entries, $"{where} extra stack") : null);
+    }
+
+    private static void Tier(string tier, List<LootTier> tiers, Func<string, AresContentException> invalid, string where)
+    {
+        if (!tiers.Exists(known => string.Equals(known.Name, tier, StringComparison.Ordinal)))
+        {
+            throw invalid($"{where}: {tier} is not a tier");
+        }
     }
 
     private static LooseItemSettings LooseItems(LooseItemsDocument document, Names names, Func<string, AresContentException> invalid)
@@ -261,6 +467,49 @@ internal static class LootSettingsContent
             {
                 throw invalid($"{where}: the game data has no loot table {table}");
             }
+        }
+
+        // Whether a profile's tag is a loose item socket tag (else a container tag): a tag at least one socket of that kind
+        // has (or a tag below it), and no parent of both kinds.
+        public bool ProfileTag(string tag, string where)
+        {
+            if (LooseItemTags.IsLooseItemTag(tag))
+            {
+                LooseTag(tag, where);
+                return true;
+            }
+
+            ContainerTag(tag, where);
+            return _looseTags.Any(known => LootTags.IsTagOrBelow(known, tag))
+                ? throw invalid($"{where}: the tag {tag} covers both containers and loose item sockets")
+                : false;
+        }
+
+        public void ServedContainerClass(string path, string where)
+        {
+            if (!LootContainerSupport.IsSupported(path) || data.Loot.FindContainerClass(path) is null)
+            {
+                throw invalid($"{where}: ARES serves no container class {path}");
+            }
+        }
+
+        public LootMatch Match(string? dropTag, string? item, string where)
+        {
+            if ((dropTag is null) == (item is null))
+            {
+                throw invalid($"{where}: a match must set exactly one of dropTag and item");
+            }
+
+            if (dropTag is not null)
+            {
+                DropTag(dropTag, where);
+            }
+            else if (item is not null && !data.Items.ByTechnicalName.ContainsKey(item))
+            {
+                throw invalid($"{where}: the game data has no item {item}");
+            }
+
+            return new LootMatch(dropTag, item);
         }
 
         public void ContainerClass(string path, string where)
