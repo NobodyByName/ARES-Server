@@ -202,7 +202,11 @@ when it lists neither. It can set a spawn chance, a group fill, the contents, a 
   group's pick.
 - **`groupFill`** (container sockets only) replaces the game's decision for a group of sockets: a weight for
   each number of filled sockets, such as `{"0": 6, "1": 4, "2": 9}`; each group draws a number (at most its
-  sockets), then that many of its sockets at random get a container. The containers a rule lists form one group;
+  sockets), then that many of its sockets at random get a container. The weights are those outside every area with a
+  loot value: in an area, the weight of each number is multiplied by the area's `areaMultipliers` factor (from
+  `loot-spawn.json`, taken at the group's first socket) to the power of that number, which multiplies every
+  socket's odds by the factor and keeps the group's shape (with the shipped ×2 Medium, a locker rack's 32.6 % chance of
+  2 filled doors and 2.6 % of 5 become 20.8 % and 13.3 %; ×3 High: 10.9 % and 23.4 %). The containers a rule lists form one group;
   otherwise each group is the game's own (the sockets of one placed prop with the same tag). Placed containers,
   spawners and loose item sockets ignore it.
 - **`loot`** replaces the rolled contents: `stacks` (default: the game's usual 2 or 3, always capped by the

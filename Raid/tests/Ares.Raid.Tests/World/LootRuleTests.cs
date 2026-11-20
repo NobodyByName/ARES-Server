@@ -257,35 +257,54 @@ public sealed class LootRuleTests : IDisposable
         Assert.Equal((placeable - 1, 1), (always.Counts.Placed.Spawned, always.Counts.Placed.SkippedByRoll));
     }
 
-    [Theory]
-    [InlineData("Socket.LootContainer.Tech.Server.Door", new[] { 6.0, 4, 9 })]
-    [InlineData("Socket.LootContainer.Industrial.Lockers.Door", new[] { 32.0, 5, 3 })]
-    public void Shipped_racks_get_0_1_or_2_containers_by_the_shipped_weights(string tag, double[] weights)
+    [Fact]
+    public void Shipped_group_fills_fill_their_racks_by_the_shipped_weights_scaled_by_their_area()
     {
+        // Every shipped rule that fills the sockets of a tag by group (server and locker racks at least), with the
+        // weights the content gives it: each rack is the sockets of one prop that the rule decides.
         const int Raids = 200;
-        IGrouping<(string, string, string), LootSocket>[] racks = [.. ServableSockets()
-            .Where(socket => string.Equals(socket.ContainerTag, tag, StringComparison.OrdinalIgnoreCase))
-            .GroupBy(socket => (socket.Cell, socket.Actor, socket.Component))];
-        Assert.NotEmpty(racks);
-        Assert.All(racks, rack => Assert.True(rack.Count() >= 2, $"{rack.Key} has {rack.Count()} sockets"));
-        int[] histogram = new int[3];
-        for (int seed = 1; seed <= Raids; seed++)
-        {
-            HashSet<LootSocket> spawned = [.. Catalog(TestGameData.Raid, seed).Containers.Select(container => container.Socket).OfType<LootSocket>()];
-            foreach (IGrouping<(string, string, string), LootSocket> rack in racks)
-            {
-                int filled = rack.Count(spawned.Contains);
-                Assert.InRange(filled, 0, 2);
-                histogram[filled]++;
-            }
-        }
+        LootRules shipped = TestGameData.Raid.LootRules;
+        LootRule[] fills = [.. shipped.Rules.Where(rule => rule.GroupFill is not null && rule.Containers.Count == 0)];
+        Assert.Contains(fills, rule => rule.Tags.Contains("Socket.LootContainer.Tech.Server.Door", StringComparer.OrdinalIgnoreCase));
+        Assert.Contains(fills, rule => rule.Tags.Contains("Socket.LootContainer.Industrial.Lockers.Door", StringComparer.OrdinalIgnoreCase));
+        LootValueAreas areas = new(TestGameData.Dam.PointsOfInterest);
+        (LootRule Rule, LootSocket[][] Racks)[] decided = [.. fills.Select(rule => (rule, ServableSockets()
+            .Where(socket => ReferenceEquals(shipped.SocketSpawn(LootContainerIds.Of(socket), socket.ContainerTag), rule))
+            .GroupBy(socket => (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant()))
+            .Select(rack => rack.ToArray()).ToArray()))];
+        Assert.All(decided, entry => Assert.Contains(entry.Racks, rack => rack.Length >= 2));
 
-        int draws = racks.Length * Raids;
-        for (int count = 0; count < 3; count++)
+        HashSet<LootSocket>[] raids = [.. Enumerable.Range(1, Raids).Select(seed => Catalog(TestGameData.Raid, seed).Containers.Select(container => container.Socket).OfType<LootSocket>().ToHashSet())];
+        foreach ((LootRule rule, LootSocket[][] racks) in decided)
         {
-            double expected = weights[count] / weights.Sum();
-            double margin = 4 * Math.Sqrt(expected * (1 - expected) / draws);
-            Assert.InRange(histogram[count] / (double)draws, expected - margin, expected + margin);
+            // Each rack's chances in the area of its first socket, averaged over the racks.
+            int most = racks.Max(rack => rack.Length);
+            double[] expected = new double[most + 1];
+            foreach (LootSocket[] rack in racks)
+            {
+                (int Count, double Weight)[] chances = rule.GroupFill!.InArea(rack.Length, TestGameData.Raid.LootSpawn.Multiplier(areas.At(rack[0].Location)));
+                foreach ((int count, double weight) in chances)
+                {
+                    expected[count] += weight / chances.Sum(entry => entry.Weight) / racks.Length;
+                }
+            }
+
+            int[] histogram = new int[most + 1];
+            foreach (HashSet<LootSocket> spawned in raids)
+            {
+                foreach (LootSocket[] rack in racks)
+                {
+                    histogram[rack.Count(spawned.Contains)]++;
+                }
+            }
+
+            int draws = racks.Length * Raids;
+            for (int count = 0; count <= most; count++)
+            {
+                double margin = 4 * Math.Sqrt(expected[count] * (1 - expected[count]) / draws);
+                Assert.True(Math.Abs((histogram[count] / (double)draws) - expected[count]) <= margin,
+                    $"{rule.Name}: {count} filled in {histogram[count]} of {draws} racks, expected {expected[count]:P1}");
+            }
         }
     }
 
@@ -325,6 +344,24 @@ public sealed class LootRuleTests : IDisposable
             Assert.DoesNotContain(after.Containers, container => IsBelow(container, tag));
             Assert.Contains(after.Containers, container => container.Source == LootContainerSource.Socket);
         }
+    }
+
+    [Fact]
+    public void A_group_fill_scales_with_the_area_multiplier_of_its_group()
+    {
+        const string Tag = "Socket.LootContainer.Tech.Server.Door";
+        RaidGameData data = Raid($$"""{ "rules": [{ "tags": [{{Json(Tag)}}], "groupFill": { "0": 1, "1": 1 } }] }""");
+        LootSpawnRules settings = LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn);
+        Assert.Equal(TestGameData.Raid.LootSpawn.Multiplier(PointOfInterestLootValue.High), settings.GroupFillMultiplier(PointOfInterestLootValue.High));
+        int racks = ServableSockets().Where(socket => string.Equals(socket.ContainerTag, Tag, StringComparison.OrdinalIgnoreCase))
+            .DistinctBy(socket => (socket.Cell, socket.Actor, socket.Component)).Count();
+        Assert.True(racks > 1);
+
+        // Factor 0 empties every rack; a huge factor gives each rack its one door.
+        LootCatalog empty = Catalog(data, Seed, settings with { AreaMultiplier = _ => 0 });
+        Assert.DoesNotContain(empty.Containers, container => IsBelow(container, Tag));
+        LootCatalog full = Catalog(data, Seed, settings with { AreaMultiplier = _ => 1e12 });
+        Assert.Equal(racks, full.Containers.Count(container => IsBelow(container, Tag)));
     }
 
     [Fact]

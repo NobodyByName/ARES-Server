@@ -186,6 +186,28 @@ public sealed class LootRulesTests
     }
 
     [Fact]
+    public void An_area_multiplies_each_sockets_odds_in_a_group_fill()
+    {
+        LootFill fill = new(new Dictionary<int, double> { [0] = 6, [1] = 4, [2] = 9 });
+
+        // Weight × factor^filled: 6, 12, 81 at ×3.
+        Assert.Equal([(0, 6.0), (1, 4.0), (2, 9.0)], fill.InArea(5, 1));
+        double[] tripled = Shares(fill.InArea(5, 3));
+        Assert.Equal([6 / 99.0, 12 / 99.0, 81 / 99.0], tripled, (left, right) => Math.Abs(left - right) < 1e-12);
+
+        // The factor applies to the sockets a number fills, so a group of 1 counts 2 as 1: 6, 12, 27.
+        Assert.Equal([6 / 45.0, 12 / 45.0, 27 / 45.0], Shares(fill.InArea(1, 3)), (left, right) => Math.Abs(left - right) < 1e-12);
+
+        // A factor of 0 leaves every group empty; a huge one fills it without overflowing.
+        Random random = new(7);
+        Assert.All(Enumerable.Range(0, 200), _ => Assert.Equal(0, fill.Draw(5, random, 0)));
+        Assert.All(Enumerable.Range(0, 200), _ => Assert.Equal(2, fill.Draw(5, random, 1e300)));
+        return;
+
+        static double[] Shares((int Count, double Weight)[] entries) => [.. entries.Select(entry => entry.Weight / entries.Sum(other => other.Weight))];
+    }
+
+    [Fact]
     public void The_rule_deciding_a_socket_is_the_last_covering_one_setting_a_chance_or_a_group_fill()
     {
         LootFill fill = new(new Dictionary<int, double> { [1] = 1 });

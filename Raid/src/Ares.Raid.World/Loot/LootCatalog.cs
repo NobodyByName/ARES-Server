@@ -160,7 +160,7 @@ public sealed class LootCatalog
         }
 
         LootSocket[] rolled = [.. servable.Select(entry => entry.Socket)];
-        double?[] setChances = SocketDecisions(rolled, lootRules, new Random(seed ^ GroupFillSeedSalt));
+        double?[] setChances = SocketDecisions(rolled, lootRules, socket => rules.GroupFillMultiplier(_areas.At(socket.Location)), new Random(seed ^ GroupFillSeedSalt));
         LootSpawnSelection selection = LootSpawnSelection.Select(loot, rolled, rules, activeDataLayers, random, setChances);
         for (int candidate = 0; candidate < servable.Count; candidate++)
         {
@@ -521,9 +521,9 @@ public sealed class LootCatalog
     }
 
     // What the rules decide for each socket: the chance a rule sets, or 1 or 0 for the sockets of groups a rule's group
-    // fill filled or left empty (each group draws its number, then that many of its sockets at random); null to keep
-    // the game's decision.
-    private static double?[] SocketDecisions(LootSocket[] sockets, LootRules rules, Random random)
+    // fill filled or left empty (each group draws its number, its weights scaled by the area multiplier of its first
+    // socket, then that many of its sockets at random); null to keep the game's decision.
+    private static double?[] SocketDecisions(LootSocket[] sockets, LootRules rules, Func<LootSocket, double> areaMultiplier, Random random)
     {
         double?[] decisions = new double?[sockets.Length];
         Dictionary<LootRule, int> positions = new(ReferenceEqualityComparer.Instance);
@@ -533,7 +533,7 @@ public sealed class LootCatalog
         }
 
         // Groups in the order of their first socket, so the draws follow the socket order.
-        List<(LootFill Fill, List<int> Members)> groups = [];
+        List<(LootFill Fill, double Multiplier, List<int> Members)> groups = [];
         Dictionary<(int Rule, string Group), int> groupIndex = [];
         for (int index = 0; index < sockets.Length; index++)
         {
@@ -556,15 +556,15 @@ public sealed class LootCatalog
             if (!groupIndex.TryGetValue(key, out int group))
             {
                 groupIndex[key] = group = groups.Count;
-                groups.Add((fill, []));
+                groups.Add((fill, areaMultiplier(socket), []));
             }
 
             groups[group].Members.Add(index);
         }
 
-        foreach ((LootFill fill, List<int> members) in groups)
+        foreach ((LootFill fill, double multiplier, List<int> members) in groups)
         {
-            int filled = fill.Draw(members.Count, random);
+            int filled = fill.Draw(members.Count, random, multiplier);
             int[] order = [.. members];
             random.Shuffle(order);
             for (int position = 0; position < order.Length; position++)

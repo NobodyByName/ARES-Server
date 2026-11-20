@@ -73,9 +73,19 @@ public static class LootLimiterRules
 /// Chance from 0 to 1 that a loose item socket of a tag gets an item, given the loot value of the area around it; null
 /// for no loose items.
 /// </param>
+/// <param name="AreaMultiplier">
+/// Factor of a loot value (<see cref="LootSpawnSettings.Multiplier"/>) that scales the group fills of operator rules
+/// (<see cref="LootFill.Draw"/>); null for 1 everywhere.
+/// </param>
 public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls,
-    FreeStandingLoot? FreeStanding = null, bool GroupCaps = true, Func<string, PointOfInterestLootValue, double>? LooseChance = null)
+    FreeStandingLoot? FreeStanding = null, bool GroupCaps = true, Func<string, PointOfInterestLootValue, double>? LooseChance = null,
+    Func<PointOfInterestLootValue, double>? AreaMultiplier = null)
 {
+    /// <summary>The factor a group fill's weights get in an area of a loot value: <see cref="AreaMultiplier"/>'s, else 1.</summary>
+    /// <param name="value">The loot value of the area around the group.</param>
+    /// <returns>The factor.</returns>
+    public double GroupFillMultiplier(PointOfInterestLootValue value) => AreaMultiplier?.Invoke(value) ?? 1;
+
     /// <summary>A map's rules with the content's spawn settings: their chances, and limiters and group caps when they enable them.</summary>
     /// <param name="map">The map's data.</param>
     /// <param name="spawn">The spawn settings.</param>
@@ -84,7 +94,7 @@ public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOn
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(spawn);
-        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps, spawn.LooseChance);
+        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps, spawn.LooseChance, spawn.Multiplier);
     }
 
     /// <summary>A container on every socket, none off the sockets, and no loose items.</summary>

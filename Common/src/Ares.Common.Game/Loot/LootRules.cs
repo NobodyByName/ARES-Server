@@ -159,35 +159,71 @@ public sealed class LootRules
         Rules.LastOrDefault(rule => rule.RevealDelaySeconds is not null && rule.Covers(id, tags))?.RevealDelaySeconds;
 }
 
-/// <summary>How many sockets of a group get a container: a number drawn by weight, at most the group's sockets.</summary>
-/// <param name="Weights">Relative weight of each number of filled sockets.</param>
+/// <summary>
+/// How many sockets of a group get a container: a number drawn by weight, at most the group's sockets. In an area with a
+/// loot value, the weight of each number is scaled by the area's multiplier to the power of the sockets it fills: every
+/// socket's odds of a container are multiplied by the area's factor, as a lone socket's chance is (alike at low
+/// chances), and the group keeps its shape.
+/// </summary>
+/// <param name="Weights">Relative weight of each number of filled sockets outside every area with a loot value (multiplier 1).</param>
 public sealed record LootFill(IReadOnlyDictionary<int, double> Weights)
 {
     /// <summary>Draws how many sockets of a group get a container.</summary>
     /// <param name="sockets">Sockets of the group.</param>
     /// <param name="random">The raid's random numbers.</param>
+    /// <param name="areaMultiplier">Factor of the loot value of the group's area (<see cref="LootSpawnSettings.Multiplier"/>).</param>
     /// <returns>The number, from 0 to <paramref name="sockets"/>.</returns>
-    public int Draw(int sockets, Random random)
+    public int Draw(int sockets, Random random, double areaMultiplier = 1)
     {
         ArgumentNullException.ThrowIfNull(random);
-        KeyValuePair<int, double>[] entries = [.. Weights.Where(entry => entry.Value > 0).OrderBy(entry => entry.Key)];
-        if (entries.Length == 0)
+        (int Count, double Weight)[] entries = InArea(sockets, areaMultiplier);
+        double total = entries.Sum(entry => entry.Weight);
+        if (entries.Length == 0 || !(total > 0))
         {
             return 0;
         }
 
-        double roll = random.NextDouble() * entries.Sum(entry => entry.Value);
+        double roll = random.NextDouble() * total;
         foreach ((int count, double weight) in entries)
         {
             if (roll < weight)
             {
-                return Math.Min(count, sockets);
+                return count;
             }
 
             roll -= weight;
         }
 
-        return Math.Min(entries[^1].Key, sockets);
+        return entries[^1].Count;
+    }
+
+    /// <summary>
+    /// The weights in an area: each number above 0 (at most <paramref name="sockets"/>) with its weight times
+    /// <paramref name="areaMultiplier"/> to the power of that number, in ascending order of the configured numbers.
+    /// The weights are scaled together so the largest stays finite; only their shares matter.
+    /// </summary>
+    /// <param name="sockets">Sockets of the group.</param>
+    /// <param name="areaMultiplier">Factor of the loot value of the group's area.</param>
+    /// <returns>The numbers, capped at <paramref name="sockets"/>, with their weights.</returns>
+    public (int Count, double Weight)[] InArea(int sockets, double areaMultiplier)
+    {
+        (int Count, double Weight)[] entries = [.. Weights.Where(entry => entry.Value > 0).OrderBy(entry => entry.Key)
+            .Select(entry => (Count: Math.Min(entry.Key, Math.Max(sockets, 0)), Weight: entry.Value))];
+        if (areaMultiplier is 1d || entries.Length == 0)
+        {
+            return entries;
+        }
+
+        if (!(areaMultiplier > 0))
+        {
+            return [.. entries.Select(entry => (entry.Count, entry.Count == 0 ? entry.Weight : 0))];
+        }
+
+        // In logarithms, less the largest, so a high factor on a large group cannot overflow.
+        double factor = Math.Log(areaMultiplier);
+        double[] logs = [.. entries.Select(entry => Math.Log(entry.Weight) + (entry.Count * factor))];
+        double largest = logs.Max();
+        return [.. entries.Select((entry, index) => (entry.Count, Math.Exp(logs[index] - largest)))];
     }
 }
 
