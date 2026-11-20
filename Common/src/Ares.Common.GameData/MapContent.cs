@@ -25,6 +25,9 @@ public sealed record MapContent
     /// <summary><see cref="MapTables.LootSockets"/>.</summary>
     public ImmutableArray<LootSocket> LootSockets { get; init; } = [];
 
+    /// <summary><see cref="MapTables.LooseItemSockets"/>.</summary>
+    public ImmutableArray<LooseItemSocket> LooseItemSockets { get; init; } = [];
+
     /// <summary><see cref="MapTables.PlacedLoot"/>.</summary>
     public ImmutableArray<PlacedLootContainer> PlacedLoot { get; init; } = [];
 

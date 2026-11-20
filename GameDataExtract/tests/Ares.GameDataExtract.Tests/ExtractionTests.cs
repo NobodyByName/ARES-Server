@@ -59,7 +59,8 @@ public sealed class ExtractionTests : IDisposable
         string[] tables =
         [
             MapTables.World(GameNames.Maps.Dam), MapTables.StreamingCells(GameNames.Maps.Dam), MapTables.LootSocketMeshes(GameNames.Maps.Dam),
-            MapTables.LootSockets(GameNames.Maps.Dam), MapTables.PlacedLoot(GameNames.Maps.Dam), MapTables.PlayerStarts(GameNames.Maps.Dam),
+            MapTables.LootSockets(GameNames.Maps.Dam), MapTables.LooseItemSockets(GameNames.Maps.Dam), MapTables.PlacedLoot(GameNames.Maps.Dam),
+            MapTables.PlayerStarts(GameNames.Maps.Dam),
             MapTables.Ladders(GameNames.Maps.Dam), MapTables.LadderLogic(GameNames.Maps.Dam), MapTables.ZiplineLines(GameNames.Maps.Dam),
             MapTables.ZiplineLaunchers(GameNames.Maps.Dam), MapTables.PointsOfInterest(GameNames.Maps.Dam), MapTables.LootLimiters(GameNames.Maps.Dam),
             MapTables.DynamicLootSpawners(GameNames.Maps.Dam), MapTables.DynamicLootGroups(GameNames.Maps.Dam),
@@ -81,6 +82,7 @@ public sealed class ExtractionTests : IDisposable
             Assert.Single(data.ReadTable(MapTables.World(GameNames.Maps.Dam), GameDataJsonContext.Default.MapWorldObjects)));
         Assert.Equal([Cell(BaseCell), Cell(LayeredCell)], data.ReadTable(MapTables.StreamingCells(GameNames.Maps.Dam), GameDataJsonContext.Default.String));
         Assert.Empty(data.ReadTable(MapTables.LootSockets(GameNames.Maps.Dam), GameDataJsonContext.Default.LootSocket));
+        Assert.Empty(data.ReadTable(MapTables.LooseItemSockets(GameNames.Maps.Dam), GameDataJsonContext.Default.LooseItemSocket));
         Assert.Empty(data.ReadTable(MapTables.PlacedLoot(GameNames.Maps.Dam), GameDataJsonContext.Default.PlacedLootContainer));
         Assert.Empty(data.ReadTable(MapTables.PlayerStarts(GameNames.Maps.Dam), GameDataJsonContext.Default.PlayerStart));
         Assert.Empty(data.ReadTable(MapTables.Ladders(GameNames.Maps.Dam), GameDataJsonContext.Default.LadderPlacement));

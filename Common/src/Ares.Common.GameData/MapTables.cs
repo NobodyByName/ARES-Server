@@ -30,6 +30,12 @@ public static partial class MapTables
     public static string LootSockets(string mapName) => GameDataFiles.MapFile(mapName, "loot-sockets.json");
 
     /// <summary>
+    /// The map's loose item sockets (<see cref="LooseItemSocket"/>), ordered by cell, actor, component and socket name (ordinal).
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string LooseItemSockets(string mapName) => GameDataFiles.MapFile(mapName, "loose-item-sockets.json");
+
+    /// <summary>
     /// The loot container actors the map places itself (<see cref="PlacedLootContainer"/>), ordered by cell and actor name (ordinal).
     /// </summary>
     /// <param name="mapName">The map's world name.</param>

@@ -10,11 +10,12 @@ using Ares.Structs.Game.World;
 namespace Ares.GameDataExtract.World;
 
 /// <summary>
-/// Reads a map's loot container sockets (<see cref="LootSocket"/>): the sockets tagged <c>Socket.LootContainer.*</c> of
-/// the static meshes that placed static mesh components show (a placed actor's direct components). A socket's world
-/// transform is its relative transform composed over the component's world transform. Locations are rounded to 2
-/// decimal places, rotations (degrees) to 3 and scales to 4. Read every cell with <see cref="ReadCell"/>, then
-/// <see cref="Build"/>.
+/// Reads a map's loot container sockets (<see cref="LootSocket"/>) and loose item sockets (<see cref="LooseItemSocket"/>):
+/// the sockets tagged <c>Socket.LootContainer.*</c>, or else <c>Socket.Loot.*</c>, of the static meshes that placed
+/// static mesh components show (a placed actor's direct components). A socket's world transform is its relative
+/// transform composed over the component's world transform. Locations are rounded to 2 decimal places, rotations
+/// (degrees) to 3 and scales to 4. A loose item socket's options come from its <c>Socket.LootOptions.*</c> tags. Read
+/// every cell with <see cref="ReadCell"/>, then <see cref="Build"/>.
 /// </summary>
 internal sealed class LootSocketReader
 {
@@ -33,6 +34,7 @@ internal sealed class LootSocketReader
     private readonly string _mapPackage;
     private readonly Dictionary<string, MeshEntry> _meshes = new(StringComparer.Ordinal);
     private readonly List<(LootSocket Socket, string MeshPath)> _sockets = [];
+    private readonly List<LooseItemSocket> _looseSockets = [];
 
     /// <summary>A reader for the cells of map package <paramref name="mapPackage"/>.</summary>
     public LootSocketReader(ComponentReader components, PackageCache packages, string mapPackage)
@@ -68,11 +70,11 @@ internal sealed class LootSocketReader
     }
 
     /// <summary>
-    /// The meshes that carry the sockets, ordered by path, and the sockets ordered by cell, actor, component and socket
-    /// name (ordinal), each indexing its mesh.
+    /// The meshes that carry container sockets, ordered by path; the container sockets, each indexing its mesh; and the
+    /// loose item sockets. Sockets are ordered by cell, actor, component and socket name (ordinal).
     /// </summary>
-    /// <exception cref="InvalidDataException">Two sockets have the same cell, actor, component and socket name.</exception>
-    public (ImmutableArray<LootSocketMesh> Meshes, ImmutableArray<LootSocket> Sockets) Build()
+    /// <exception cref="InvalidDataException">Two sockets of a kind have the same cell, actor, component and socket name.</exception>
+    public (ImmutableArray<LootSocketMesh> Meshes, ImmutableArray<LootSocket> Sockets, ImmutableArray<LooseItemSocket> LooseSockets) Build()
     {
         string[] paths = [.. _sockets.Select(entry => entry.MeshPath).Distinct().Order(StringComparer.Ordinal)];
         Dictionary<string, int> index = paths.Select((path, i) => (path, i)).ToDictionary(entry => entry.path, entry => entry.i, StringComparer.Ordinal);
@@ -90,10 +92,25 @@ internal sealed class LootSocketReader
             }
         }
 
-        return ([.. paths.Select(path => new LootSocketMesh(path, _meshes[path].Materials))], sockets);
+        ImmutableArray<LooseItemSocket> loose = [.. _looseSockets
+            .OrderBy(socket => socket.Cell, StringComparer.Ordinal)
+            .ThenBy(socket => socket.Actor, StringComparer.Ordinal)
+            .ThenBy(socket => socket.Component, StringComparer.Ordinal)
+            .ThenBy(socket => socket.Socket, StringComparer.Ordinal)];
+        for (int i = 1; i < loose.Length; i++)
+        {
+            if (Key(loose[i - 1]) == Key(loose[i]))
+            {
+                throw new InvalidDataException($"Two loose item sockets are {Key(loose[i])}");
+            }
+        }
+
+        return ([.. paths.Select(path => new LootSocketMesh(path, _meshes[path].Materials))], sockets, loose);
     }
 
     private static (string, string, string, string) Key(LootSocket socket) => (socket.Cell, socket.Actor, socket.Component, socket.Socket);
+
+    private static (string, string, string, string) Key(LooseItemSocket socket) => (socket.Cell, socket.Actor, socket.Component, socket.Socket);
 
     private void ReadComponent(CookedPackage package, ZenExport export, ZenExport actor, string cellName, string? dataLayer)
     {
@@ -108,12 +125,32 @@ internal sealed class LootSocketReader
         }
 
         MeshEntry entry = Mesh(mesh);
-        if (entry.Containers.IsEmpty)
+        if (entry.Containers.IsEmpty && entry.Loose.IsEmpty)
         {
             return;
         }
 
         Transform world = _components.Scenes.WorldTransform(package, export);
+        foreach ((MeshSocket socket, string tag, LooseItemOptions options) in entry.Loose)
+        {
+            Transform placed = TransformMath.Compose(socket.Transform, world);
+            _looseSockets.Add(new LooseItemSocket(
+                cellName,
+                actor.Name,
+                export.Name,
+                socket.Name!,
+                tag,
+                DecimalRounding.Round(placed.Translation, LocationDigits),
+                DecimalRounding.Round(TransformMath.ToRotator(placed.Rotation), RotationDigits),
+                options,
+                dataLayer));
+        }
+
+        if (entry.Containers.IsEmpty)
+        {
+            return;
+        }
+
         ImmutableArray<string?> overrides = [.. (_components.OverrideMaterials(package, export) ?? []).Select(PathOf)];
         foreach ((MeshSocket socket, string tag) in entry.Containers)
         {
@@ -143,11 +180,17 @@ internal sealed class LootSocketReader
         }
 
         ImmutableArray<(MeshSocket, string)>.Builder containers = ImmutableArray.CreateBuilder<(MeshSocket, string)>();
+        ImmutableArray<(MeshSocket, string, LooseItemOptions)>.Builder loose = ImmutableArray.CreateBuilder<(MeshSocket, string, LooseItemOptions)>();
         foreach (MeshSocket socket in SceneResolver.Sockets(mesh))
         {
             string[] tags = [.. socket.Tags.Where(tag => tag.StartsWith(ContainerTagFamily, StringComparison.OrdinalIgnoreCase))];
             if (tags.Length == 0)
             {
+                if (LooseItem(path, socket) is { } item)
+                {
+                    loose.Add(item);
+                }
+
                 continue;
             }
 
@@ -160,9 +203,36 @@ internal sealed class LootSocketReader
         }
 
         ImmutableArray<string?> materials = containers.Count == 0 ? [] : MeshMaterials(mesh);
-        entry = new MeshEntry(path, containers.ToImmutable(), materials);
+        entry = new MeshEntry(path, containers.ToImmutable(), loose.ToImmutable(), materials);
         _meshes[path] = entry;
         return entry;
+    }
+
+    // A loose item socket of a mesh: one Socket.Loot.* tag, with the options its Socket.LootOptions.* tags set; null for
+    // a socket without such a tag.
+    private static (MeshSocket Socket, string Tag, LooseItemOptions Options)? LooseItem(string path, MeshSocket socket)
+    {
+        string[] tags = [.. socket.Tags.Where(LooseItemTags.IsLooseItemTag)];
+        if (tags.Length == 0)
+        {
+            return null;
+        }
+
+        if (tags.Length != 1 || string.IsNullOrEmpty(socket.Name))
+        {
+            throw new InvalidDataException($"{path}: socket {socket.Name} has {tags.Length} loose item tags");
+        }
+
+        LooseItemOptions options = LooseItemOptions.None;
+        foreach ((LooseItemOptions option, string tag) in LooseItemTags.Options)
+        {
+            if (socket.Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+            {
+                options |= option;
+            }
+        }
+
+        return (socket, tags[0], options);
     }
 
     private ImmutableArray<string?> MeshMaterials(ExportRef mesh)
@@ -180,5 +250,9 @@ internal sealed class LootSocketReader
             : (_packages.Reference(reference) ?? throw new InvalidDataException($"Material reference {reference.Value} of {reference.Package.Name} is not an export")).Path;
     }
 
-    private sealed record MeshEntry(string Path, ImmutableArray<(MeshSocket Socket, string Tag)> Containers, ImmutableArray<string?> Materials);
+    private sealed record MeshEntry(
+        string Path,
+        ImmutableArray<(MeshSocket Socket, string Tag)> Containers,
+        ImmutableArray<(MeshSocket Socket, string Tag, LooseItemOptions Options)> Loose,
+        ImmutableArray<string?> Materials);
 }

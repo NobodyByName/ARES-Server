@@ -227,7 +227,7 @@ internal sealed class ExtractCommand
             string manifest = writer.WriteManifest(GameBuild.GameDataBuildId, AresVersion.Current);
             summary.Write(output);
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.PlacedLoot.Length:N0} placed loot containers, {world.PlayerStarts.Length:N0} player starts, {world.Ladders.Length:N0} ladders, {world.ZiplineLines.Length:N0} ziplines, {world.ZiplineLaunchers.Length:N0} zipline launchers"));
+                $"World tables: {world.StreamingCells.Length:N0} streaming cells, {world.LootSockets.Length:N0} loot sockets on {world.LootSocketMeshes.Length:N0} meshes, {world.LooseItemSockets.Length:N0} loose item sockets, {world.PlacedLoot.Length:N0} placed loot containers, {world.PlayerStarts.Length:N0} player starts, {world.Ladders.Length:N0} ladders, {world.ZiplineLines.Length:N0} ziplines, {world.ZiplineLaunchers.Length:N0} zipline launchers"));
             if (items is not null)
             {
                 output.WriteLine(string.Create(CultureInfo.InvariantCulture,
@@ -280,6 +280,7 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.StreamingCells(mapName), world.StreamingCells, json.String);
         writer.WriteTable(MapTables.LootSocketMeshes(mapName), world.LootSocketMeshes, json.LootSocketMesh);
         writer.WriteTable(MapTables.LootSockets(mapName), world.LootSockets, json.LootSocket);
+        writer.WriteTable(MapTables.LooseItemSockets(mapName), world.LooseItemSockets, json.LooseItemSocket);
         writer.WriteTable(MapTables.PlacedLoot(mapName), world.PlacedLoot, json.PlacedLootContainer);
         writer.WriteTable(MapTables.PlayerStarts(mapName), world.PlayerStarts, json.PlayerStart);
         writer.WriteTable(MapTables.Ladders(mapName), world.Ladders, json.LadderPlacement);

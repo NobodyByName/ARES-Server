@@ -12,6 +12,7 @@ namespace Ares.GameDataExtract.World;
 /// <param name="StreamingCells">The map's generated cell packages, in ordinal order.</param>
 /// <param name="LootSocketMeshes">The meshes that carry loot container sockets, by path.</param>
 /// <param name="LootSockets">The loot container sockets.</param>
+/// <param name="LooseItemSockets">The loose item sockets.</param>
 /// <param name="PlacedLoot">The loot container actors the map places.</param>
 /// <param name="PlayerStarts">The authored player starts of the persistent level.</param>
 /// <param name="Ladders">The climbable ladders placed in the cells.</param>
@@ -23,6 +24,7 @@ internal sealed record MapWorldData(
     ImmutableArray<string> StreamingCells,
     ImmutableArray<LootSocketMesh> LootSocketMeshes,
     ImmutableArray<LootSocket> LootSockets,
+    ImmutableArray<LooseItemSocket> LooseItemSockets,
     ImmutableArray<PlacedLootContainer> PlacedLoot,
     ImmutableArray<PlayerStart> PlayerStarts,
     ImmutableArray<LadderPlacement> Ladders,
@@ -32,7 +34,7 @@ internal sealed record MapWorldData(
 
 /// <summary>
 /// Extracts a World Partition map's world tables from its map package and generated cell packages: the persistent world
-/// objects, the cell list, the loot container sockets, the placed loot containers, the player starts, the ladders and the
+/// objects, the cell list, the loot container and loose item sockets, the placed loot containers, the player starts, the ladders and the
 /// ziplines.
 /// </summary>
 internal static partial class MapWorldExtractor
@@ -62,7 +64,7 @@ internal static partial class MapWorldExtractor
             ziplines.ReadCell(cell, package);
         }
 
-        (ImmutableArray<LootSocketMesh> meshes, ImmutableArray<LootSocket> socketRows) = sockets.Build();
+        (ImmutableArray<LootSocketMesh> meshes, ImmutableArray<LootSocket> socketRows, ImmutableArray<LooseItemSocket> looseRows) = sockets.Build();
         (ImmutableArray<LadderPlacement> ladderRows, ArchetypeClass? ladderLogic) = ladders.Build();
         (ImmutableArray<ZiplinePlacement> lines, ImmutableArray<ActivatableZiplinePlacement> launchers) = ziplines.Build();
         return new MapWorldData(
@@ -70,6 +72,7 @@ internal static partial class MapWorldExtractor
             [.. cellPackages.Order(StringComparer.Ordinal)],
             meshes,
             socketRows,
+            looseRows,
             placed.Build(),
             PlayerStartReader.Read(level, components.Scenes),
             ladderRows,

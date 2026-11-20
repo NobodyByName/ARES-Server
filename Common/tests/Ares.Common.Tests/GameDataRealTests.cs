@@ -70,6 +70,21 @@ public sealed class GameDataRealTests
     }
 
     [RealDataFact]
+    public void The_dam_loose_item_sockets_are_apart_from_its_container_sockets()
+    {
+        MapData dam = Data.Map(GameNames.Maps.Dam);
+        HashSet<(string, string, string, string)> containers = [.. dam.LootSockets.Select(socket => (socket.Cell, socket.Actor, socket.Component, socket.Socket))];
+
+        Assert.NotEmpty(dam.LooseItemSockets);
+        Assert.All(dam.LooseItemSockets, socket => Assert.True(LooseItemTags.IsLooseItemTag(socket.Tag), socket.Tag));
+        Assert.DoesNotContain(dam.LooseItemSockets, socket => containers.Contains((socket.Cell, socket.Actor, socket.Component, socket.Socket)));
+        Assert.Equal(dam.LooseItemSockets.Length, dam.LooseItemSockets.Select(socket => (socket.Cell, socket.Actor, socket.Component, socket.Socket)).Distinct().Count());
+        Assert.Contains(dam.LooseItemSockets, socket => socket.Options.HasFlag(LooseItemOptions.EnablePhysics));
+        Assert.Contains(dam.LooseItemSockets, socket => socket.Options == LooseItemOptions.None);
+        Assert.All(dam.LooseItemSockets, socket => Assert.Contains(socket.Cell, dam.StreamingCells.Select(cell => cell[(cell.LastIndexOf('/') + 1)..]).Append(string.Empty)));
+    }
+
+    [RealDataFact]
     public void Loot_lookups_ignore_case_and_find_every_table()
     {
         LootData loot = Data.Loot;

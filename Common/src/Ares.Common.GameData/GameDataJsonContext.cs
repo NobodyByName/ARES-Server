@@ -27,6 +27,7 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(MapWorldObjects))]
 [JsonSerializable(typeof(LootSocketMesh))]
 [JsonSerializable(typeof(LootSocket))]
+[JsonSerializable(typeof(LooseItemSocket))]
 [JsonSerializable(typeof(PlacedLootContainer))]
 [JsonSerializable(typeof(PlayerStart))]
 [JsonSerializable(typeof(LadderPlacement))]

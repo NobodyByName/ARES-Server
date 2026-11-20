@@ -30,7 +30,8 @@ public sealed class SyntheticGameDataTests
     {
         MapData dam = SyntheticGameData.Create().Map(GameNames.Maps.Dam);
 
-        Assert.Equal((1, 1, 1, 1, 1), (dam.Doors.Length, dam.Ladders.Length, dam.LootSockets.Length, dam.PlacedLoot.Length, dam.PlayerStarts.Length));
+        Assert.Equal((1, 1, 1, 1, 1, 1), (dam.Doors.Length, dam.Ladders.Length, dam.LootSockets.Length, dam.LooseItemSockets.Length, dam.PlacedLoot.Length, dam.PlayerStarts.Length));
+        Assert.Equal(SyntheticGameData.LooseItemTag, dam.LooseItemSockets[0].Tag);
         Assert.Equal("/Game/Synthetic/Maps/TheDam_02_P", dam.MapPackage);
         Assert.NotNull(dam.LadderLogic);
         Assert.Same(dam.LootSocketMeshes[dam.LootSockets[0].Mesh], dam.LootSocketMeshes.Single());

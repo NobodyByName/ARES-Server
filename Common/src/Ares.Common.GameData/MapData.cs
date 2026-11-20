@@ -24,6 +24,7 @@ public sealed class MapData
             throw Malformed($"loot socket {socketWithoutMesh.Actor}.{socketWithoutMesh.Socket} names mesh {socketWithoutMesh.Mesh} of {LootSocketMeshes.Length}");
         }
 
+        LooseItemSockets = content.LooseItemSockets;
         PlacedLoot = content.PlacedLoot;
         PlayerStarts = content.PlayerStarts;
         PlayerStartCapsule = content.PlayerStartCapsule;
@@ -81,6 +82,9 @@ public sealed class MapData
 
     /// <summary>The loot container sockets.</summary>
     public ImmutableArray<LootSocket> LootSockets { get; }
+
+    /// <summary>The loose item sockets.</summary>
+    public ImmutableArray<LooseItemSocket> LooseItemSockets { get; }
 
     /// <summary>The loot container actors the map places itself.</summary>
     public ImmutableArray<PlacedLootContainer> PlacedLoot { get; }

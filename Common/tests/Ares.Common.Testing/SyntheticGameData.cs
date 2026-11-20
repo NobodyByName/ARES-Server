@@ -24,6 +24,9 @@ public sealed class SyntheticGameData
     /// <summary>Container type of the made-up loot socket and its loot container class.</summary>
     public const string ContainerTag = "Socket.LootContainer.Synthetic";
 
+    /// <summary>Tag of the made-up loose item socket.</summary>
+    public const string LooseItemTag = "Socket.Loot.Synthetic";
+
     /// <summary>Class path of the made-up loot container class.</summary>
     public const string ContainerClass = "/Game/Synthetic/BP_Container.BP_Container_C";
 
@@ -192,6 +195,7 @@ public sealed class SyntheticGameData
             StreamingCells = [Cell],
             LootSocketMeshes = [new LootSocketMesh("/Game/Synthetic/SM_Shelf.SM_Shelf", [null])],
             LootSockets = [new LootSocket(Cell, "Shelf_1", "StaticMeshComponent0", "LootSocket_1", ContainerTag, new Vector3D(100, 0, 0), new Rotator(0, 0, 0), Vector3D.One, 0, [], null)],
+            LooseItemSockets = [new LooseItemSocket(Cell, "Table_1", "StaticMeshComponent0", "LootSocket_1", LooseItemTag, new Vector3D(150, 0, 80), new Rotator(0, 45, 0), LooseItemOptions.None, null)],
             PlacedLoot = [new PlacedLootContainer(Cell, "Container_1", ContainerClass, new Vector3D(200, 0, 0), new Rotator(0, 90, 0), Vector3D.One, null)],
             PlayerStarts = [new PlayerStart("PlayerStart_1", "PlayerStart", [], "CollisionCapsule", new Vector3D(0, 0, 100), new Rotator(0, 0, 0), [])],
             PlayerStartCapsule = new PlayerStartCapsule(92, 40),

@@ -19,6 +19,18 @@ public sealed class WorldDataTests
         Assert.All(DamProtocol.GlobalActors, actor => Assert.True(Catalog.IsA(actor.Class, ClassPaths.Actor), actor.Name));
     }
 
+    [Theory]
+    [InlineData("Socket.Loot", true)]
+    [InlineData("Socket.Loot.Console", true)]
+    [InlineData("socket.loot.nature.pine", true)]
+    [InlineData("Socket.LootContainer.Tech", false)]
+    [InlineData("Socket.LootOptions.EnablePhysics", false)]
+    [InlineData("Socket", false)]
+    public void Loose_item_tags_are_the_loot_tag_and_the_tags_below_it(string tag, bool loose)
+    {
+        Assert.Equal(loose, LooseItemTags.IsLooseItemTag(tag));
+    }
+
     [Fact]
     public void Ladders_climb_whole_cycles_and_end_below_their_top()
     {

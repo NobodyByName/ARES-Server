@@ -63,6 +63,7 @@ internal static class GameDataReader
             StreamingCells = directory.ReadTable(MapTables.StreamingCells(map), s_json.String),
             LootSocketMeshes = directory.ReadTable(MapTables.LootSocketMeshes(map), s_json.LootSocketMesh),
             LootSockets = directory.ReadTable(MapTables.LootSockets(map), s_json.LootSocket),
+            LooseItemSockets = directory.ReadTable(MapTables.LooseItemSockets(map), s_json.LooseItemSocket),
             PlacedLoot = directory.ReadTable(MapTables.PlacedLoot(map), s_json.PlacedLootContainer),
             PlayerStarts = directory.ReadTable(MapTables.PlayerStarts(map), s_json.PlayerStart),
             PlayerStartCapsule = Single(directory, MapTables.PlayerStartCapsule(map), s_json.PlayerStartCapsule),
