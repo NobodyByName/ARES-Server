@@ -48,6 +48,7 @@ internal sealed class LootTableReader
             (CookedPackage package, PropertyBag bag) = LootAssets.Read(_packages, asset, schema);
             string where = asset.PackageName;
             List<StaticValueLootTableEntry> entries = [];
+            int unshippedItems = 0;
             foreach (object element in Elements(bag, M.Entries, where))
             {
                 PropertyBag entry = LootAssets.Complete(element, where, M.ItemQuery, M.QualityLevel, M.StackSize, M.DurabilityConfig, M.DistributionMethod);
@@ -55,7 +56,15 @@ internal sealed class LootTableReader
                 PropertyBag durability = LootAssets.Complete(entry.Get<PropertyBag>(M.DurabilityConfig), where, M.DurabilityRange, M.DurabilityCapRange);
                 LootItemQueryType type = LootAssets.EnumValue<LootItemQueryType>(queryTypes, query.Get<byte>(M.ItemQueryType), where);
                 GameplayTagQuery? tags = LootAssets.Query(query.Get<PropertyBag>(M.TagQuery), where);
-                string? item = LootAssets.Item(_packages, package, query.Get<object>(M.ExactItem), _items);
+                object exactItem = query.Get<object>(M.ExactItem);
+                bool unshipped = IsUnshipped(package, exactItem);
+                if (unshipped && type == LootItemQueryType.Exact)
+                {
+                    unshippedItems++;
+                    continue;
+                }
+
+                string? item = unshipped ? null : LootAssets.Item(_packages, package, exactItem, _items);
                 if ((type == LootItemQueryType.Exact && item is null) || (type == LootItemQueryType.Query && tags is null))
                 {
                     throw new InvalidDataException($"{where}: a {type} entry without its item or query");
@@ -72,7 +81,14 @@ internal sealed class LootTableReader
                     LootAssets.EnumValue<LootDistributionMethod>(distributions, entry.Get<byte>(M.DistributionMethod), where)));
             }
 
-            tables.Add(entries.Count > 0 ? new StaticValueLootTable(asset.AssetName, asset.PackageName, entries) : throw new InvalidDataException($"{where}: no entries"));
+            if (entries.Count > 0)
+            {
+                tables.Add(new StaticValueLootTable(asset.AssetName, asset.PackageName, entries));
+            }
+            else if (unshippedItems == 0)
+            {
+                throw new InvalidDataException($"{where}: no entries");
+            }
         }
 
         return tables;
@@ -101,7 +117,13 @@ internal sealed class LootTableReader
                     foreach (object itemElement in Elements(group, S.Items, where))
                     {
                         PropertyBag entry = LootAssets.Complete(itemElement, where, S.Weight, S.EntryType, S.ItemDataAsset, S.StackSize, S.QualityLevel);
-                        string? item = LootAssets.Item(_packages, package, entry.Get<object>(S.ItemDataAsset), _items);
+                        object itemAsset = entry.Get<object>(S.ItemDataAsset);
+                        if (IsUnshipped(package, itemAsset))
+                        {
+                            continue;
+                        }
+
+                        string? item = LootAssets.Item(_packages, package, itemAsset, _items);
                         byte kind = entry.Get<byte>(S.EntryType);
                         if (kind >= entryTypes.Names.Count || (entryTypes.Names[kind] == S.ItemEntry) != (item is not null))
                         {
@@ -122,6 +144,10 @@ internal sealed class LootTableReader
 
         return tables;
     }
+
+    /// <summary>Whether an item reference points into a package the install does not ship; such entries are left out.</summary>
+    private bool IsUnshipped(CookedPackage package, object reference) =>
+        reference is ObjectReference value && _packages.ImportsUnshippedPackage(package, value.Value);
 
     private StructSchema Schema(string classPath) => _schemas.ForPath(classPath) ?? throw new InvalidDataException($"No script class {classPath}");
 

@@ -87,6 +87,23 @@ internal sealed class PackageCache
     }
 
     /// <summary>
+    /// Whether object reference <paramref name="value"/> of <paramref name="package"/> imports from a package no
+    /// container has (a reference to content the install does not ship).
+    /// </summary>
+    public bool ImportsUnshippedPackage(CookedPackage package, int value)
+    {
+        if (value >= 0 || !package.IsImportReference(value))
+        {
+            return false;
+        }
+
+        PackageObjectIndex index = package.Header.Imports[-value - 1];
+        return index.Kind == PackageObjectKind.PackageImport
+            && index.ImportedPackageIndex < package.Header.ImportedPackageNames.Count
+            && Load(package.Header.ImportedPackageNames[index.ImportedPackageIndex]) is null;
+    }
+
+    /// <summary>
     /// The export a property's object reference <paramref name="value"/> refers to: 0 none, a positive value export
     /// <c>value − 1</c>, a negative value import <c>−value − 1</c>. <see langword="null"/> for none and script objects.
     /// </summary>

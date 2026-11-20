@@ -35,6 +35,20 @@ public sealed class PackageTests : IDisposable
     }
 
     [Fact]
+    public void An_import_from_a_package_no_container_has_is_unshipped()
+    {
+        CookedPackage map = CookedPackage.Parse(MapPackage());
+        CookedPackage mesh = CookedPackage.Parse(SyntheticArchives.Package(MeshPath, [("Rock", PackageObjectIndex.Null, s_meshComponent, RockHash, [])]));
+        PackageCache shipped = new(path => path == MeshPath ? mesh : null, _ => null);
+        PackageCache missing = new(_ => null, _ => null);
+
+        Assert.False(shipped.ImportsUnshippedPackage(map, -1));
+        Assert.True(missing.ImportsUnshippedPackage(map, -1));
+        Assert.False(missing.ImportsUnshippedPackage(map, 1));
+        Assert.False(missing.ImportsUnshippedPackage(map, 0));
+    }
+
+    [Fact]
     public void A_game_folder_opens_and_packages_resolve()
     {
         string paks = GameArchive.ContainerDirectory(_game);
