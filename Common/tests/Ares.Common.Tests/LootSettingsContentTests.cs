@@ -35,10 +35,16 @@ public sealed class LootSettingsContentTests : IDisposable
 
         Assert.True(spawn.GroupCaps);
         Assert.True(spawn.Limiters);
-        Assert.Equal(0.451, spawn.Chance("Socket.LootContainer.Commercial.GvtDesk.Drawer"));
-        Assert.Equal(0.094, spawn.Chance("Socket.LootContainer.Commercial.Centerbench.Drawers"));
-        Assert.Equal(0.080, spawn.Chance("Socket.LootCOntainer.Medical.RsrCartShelf.Drawer01"));
-        Assert.Equal(0.038, spawn.Chance("Socket.LootContainer.ARC.Courier"));
+        // Every container type rolls the chance of its nearest tag the file lists (itself or a parent; the root tag is
+        // listed, so none is left without one), ignoring case.
+        JsonObject chances = JsonNode.Parse(File.ReadAllText(Path.Combine(ShippedContent.Directory, AresContent.LootSpawnFile)))!["chances"]!.AsObject();
+        Assert.True(chances.ContainsKey("Socket.LootContainer"));
+        Assert.All(Data.Loot.ContainerTypes, type =>
+        {
+            Assert.Equal(NearestListed(chances, type.Tag), spawn.Chance(type.Tag));
+            Assert.InRange(spawn.Chance(type.Tag), double.Epsilon, 1);
+            Assert.Equal(spawn.Chance(type.Tag), spawn.Chance(type.Tag.ToUpperInvariant()));
+        });
         Assert.Equal(1, spawn.Multiplier(PointOfInterestLootValue.Unknown));
         Assert.Equal(1, spawn.Multiplier(PointOfInterestLootValue.Low));
         Assert.Equal(["Common", "Uncommon", "Rare", "Epic", "Recyclables", "Trinkets", "Other"], contents.Tiers.Select(tier => tier.Name));
@@ -174,6 +180,18 @@ public sealed class LootSettingsContentTests : IDisposable
         }
 
         File.WriteAllText(target, root.ToJsonString());
+    }
+
+    // The chance of the tag or its nearest parent among the listed ones, compared without case.
+    private static double NearestListed(JsonObject chances, string tag)
+    {
+        for (string current = tag; ; current = current[..current.LastIndexOf('.')])
+        {
+            if (chances.FirstOrDefault(entry => string.Equals(entry.Key, current, StringComparison.OrdinalIgnoreCase)).Value is { } chance)
+            {
+                return chance.GetValue<double>();
+            }
+        }
     }
 
     private static JsonNode Step(JsonNode node, string step) => Index(step) is ({ } name, { } index) ? node[name]![index]! : node[step]!;

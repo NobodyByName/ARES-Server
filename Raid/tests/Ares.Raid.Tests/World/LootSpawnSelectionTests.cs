@@ -241,7 +241,7 @@ public sealed class LootSpawnSelectionTests
     }
 
     [Fact]
-    public void A_dam_raid_fills_about_one_socket_in_fourteen()
+    public void A_dam_raid_fills_about_one_socket_in_five()
     {
         // A raid also lets the shipped loot rules decide some sockets (server and locker racks fill by group), so the
         // share is measured on whole raids.
@@ -251,7 +251,7 @@ public sealed class LootSpawnSelectionTests
         Assert.All(raids, counts => Assert.Equal(s_damSockets.Value.Length, counts.Spawned + counts.SkippedByRoll + counts.SkippedByGroupCap + counts.SkippedByLimiter));
 
         double share = raids.Average(counts => counts.Spawned) / s_damSockets.Value.Length;
-        Assert.InRange(share, 0.06, 0.085);
+        Assert.InRange(share, 0.18, 0.23);
         Assert.All(raids, counts => Assert.True(counts.SkippedByGroupCap + counts.SkippedByLimiter > 0));
     }
 
@@ -260,9 +260,15 @@ public sealed class LootSpawnSelectionTests
     {
         DamWorlds worlds = new(TestGameData.Raid, () => 0, DamWorlds.LightingsOf(TestGameData.Dam)[0], () => 123456789);
         worlds.Prepare("match", [1]);
-        LootSpawnCounts counts = worlds.Current!.Loot.Counts;
-        Assert.InRange(counts.Spawned, 150, 350);
-        Assert.True(counts.SkippedByRoll > 3000);
+        RaidWorld raid = worlds.Current!;
+        LootSpawnCounts counts = raid.Loot.Counts;
+
+        // The same raid with the Dam's rules and the shipped spawn settings given explicitly picks the same sockets.
+        string round = TestGameData.Dam.Rounds[raid.Seed % TestGameData.Dam.Rounds.Length].Name;
+        LootSpawnCounts dam = new LootCatalog(TestGameData.Raid, raid.State.Replication, round, raid.ActiveDataLayers, raid.Seed, LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn)).Counts;
+        Assert.Equal((dam.Spawned, dam.SkippedByRoll, dam.SkippedByGroupCap, dam.SkippedByLimiter), (counts.Spawned, counts.SkippedByRoll, counts.SkippedByGroupCap, counts.SkippedByLimiter));
+        Assert.True(counts.Spawned > 0);
+        Assert.True(counts.SkippedByRoll > 0);
         Assert.Equal(counts.Spawned, counts.SpawnedByLootValue.Values.Sum());
         Assert.True(counts.SpawnedByLootValue[PointOfInterestLootValue.High] > 0);
         Assert.Equal(counts.Sockets, counts.Spawned + counts.InactiveLayer + counts.NoContainerType + counts.Unsupported + counts.SkippedByRoll + counts.SkippedByGroupCap + counts.SkippedByLimiter);

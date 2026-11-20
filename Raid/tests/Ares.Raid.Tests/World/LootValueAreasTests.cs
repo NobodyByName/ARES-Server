@@ -67,10 +67,13 @@ public sealed class LootValueAreasTests
         LootSpawnRules rules = new([], [medium, high], TestGameData.Raid.LootSpawn.Chance, true);
         LootSpawnSelection[] selections = [.. Enumerable.Range(1, 100).Select(seed => LootSpawnSelection.Select(TestGameData.Loot, [.. plain, .. middle, .. best], rules, [], new Random(seed)))];
 
+        // The shipped multipliers favour both valuable area kinds; each area fills at the tag's chance times its factor.
+        Assert.True(TestGameData.Raid.LootSpawn.Multiplier(PointOfInterestLootValue.Medium) > 1);
+        Assert.True(TestGameData.Raid.LootSpawn.Multiplier(PointOfInterestLootValue.High) > 1);
         (double untiered, double mediumShare, double highShare) = (Share(selections, PointOfInterestLootValue.Unknown, 100), Share(selections, PointOfInterestLootValue.Medium, 100), Share(selections, PointOfInterestLootValue.High, 100));
-        Assert.InRange(untiered, 0.094 * 0.9, 0.094 * 1.1);
-        Assert.InRange(mediumShare, 0.094 * 4.6 * 0.9, 0.094 * 4.6 * 1.1);
-        Assert.InRange(highShare, 0.094 * 3.4 * 0.9, 0.094 * 3.4 * 1.1);
+        Assert.InRange(untiered, Expected(PointOfInterestLootValue.Unknown) * 0.9, Expected(PointOfInterestLootValue.Unknown) * 1.1);
+        Assert.InRange(mediumShare, Expected(PointOfInterestLootValue.Medium) * 0.9, Expected(PointOfInterestLootValue.Medium) * 1.1);
+        Assert.InRange(highShare, Expected(PointOfInterestLootValue.High) * 0.9, Expected(PointOfInterestLootValue.High) * 1.1);
         Assert.True(untiered < mediumShare);
         Assert.True(untiered < highShare);
     }
@@ -91,6 +94,8 @@ public sealed class LootValueAreasTests
             selections.Sum(selection => selection.Spawns.Count(spawns => spawns)),
             selections.Sum(selection => Enum.GetValues<PointOfInterestLootValue>().Sum(selection.Spawned)));
     }
+
+    private static double Expected(PointOfInterestLootValue value) => TestGameData.Raid.LootSpawn.Chance(Tag, value);
 
     private static double Share(LootSpawnSelection[] selections, PointOfInterestLootValue value, int sockets) => selections.Average(selection => selection.Spawned(value)) / sockets;
 

@@ -58,11 +58,24 @@ public sealed class LootRulesContentTests : IDisposable
         Assert.Contains(AresContent.LootRulesFile, AresContent.FileNames);
         LootRules rules = ShippedContent.Value.LootRules(Data, Definitions);
 
-        Assert.Equal(["Server racks", "Locker racks"], rules.Rules.Select(rule => rule.Name));
-        Assert.Equal([["Socket.LootContainer.Tech.Server.Door"], ["Socket.LootContainer.Industrial.Lockers.Door"]], rules.Rules.Select(rule => rule.Tags));
-        Assert.All(rules.Rules, rule => Assert.Equal((0, (double?)null, (LootList?)null), (rule.Containers.Count, rule.SpawnChance, rule.Loot)));
-        Assert.Equal([(0, 6.0), (1, 4.0), (2, 9.0)], Weights(rules.Rules[0]));
-        Assert.Equal([(0, 32.0), (1, 5.0), (2, 3.0)], Weights(rules.Rules[1]));
+        // Every shipped rule fills the props of container tags by group, and only that.
+        Assert.All(rules.Rules, rule =>
+        {
+            Assert.Equal((0, (double?)null, (LootList?)null), (rule.Containers.Count, rule.SpawnChance, rule.Loot));
+            Assert.NotEmpty(rule.Tags);
+            Assert.True(Weights(rule).Sum(entry => entry.Weight) > 0, rule.Name);
+        });
+
+        // Server racks (5 doors) fill none, one or two of their doors.
+        LootRule servers = Assert.Single(rules.Rules, rule => rule.Name == "Server racks");
+        Assert.Equal(["Socket.LootContainer.Tech.Server.Door"], servers.Tags);
+        Assert.Equal([(0, 6.0), (1, 4.0), (2, 9.0)], Weights(servers));
+
+        // Locker racks (6 doors) can fill any number of their doors, and an empty rack is the exception.
+        LootRule lockers = Assert.Single(rules.Rules, rule => rule.Name == "Locker racks");
+        Assert.Equal(["Socket.LootContainer.Industrial.Lockers.Door"], lockers.Tags);
+        Assert.Equal(Enumerable.Range(0, 7), Weights(lockers).Select(entry => entry.Count));
+        Assert.True(Weights(lockers)[0].Weight < Weights(lockers).Skip(1).Sum(entry => entry.Weight));
     }
 
     [RealDataFact]
