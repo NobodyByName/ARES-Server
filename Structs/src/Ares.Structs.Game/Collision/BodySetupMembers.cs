@@ -29,27 +29,27 @@ public static class BodySetupMembers
     public const int Unknown7 = 7;
 
     /// <summary><c>PhysMaterial</c>: object reference (4 bytes), the physical material of the simple shapes.</summary>
-    public const int PhysMaterial = 10;
+    public const int PhysMaterial = 12;
 
     /// <summary><c>WalkableSlopeOverride</c>: an <c>FWalkableSlopeOverride</c> struct (see <see cref="WalkableSlopeOverrideMembers"/>).</summary>
-    public const int WalkableSlopeOverride = 11;
+    public const int WalkableSlopeOverride = 13;
 
     /// <summary><c>DefaultInstance</c>: an <c>FBodyInstance</c> struct (see <see cref="BodyInstanceMembers"/>), the collision of components that use the body's defaults.</summary>
-    public const int DefaultInstance = 12;
+    public const int DefaultInstance = 14;
 
     /// <summary><c>BuildScale3D</c>: vector of three doubles.</summary>
-    public const int BuildScale3D = 13;
+    public const int BuildScale3D = 15;
 
     /// <summary>Unknown member, one byte.</summary>
-    public const int Unknown15 = 15;
+    public const int Unknown17 = 17;
 
     /// <summary><c>CollisionTraceFlag</c>: one byte, a <see cref="Collision.CollisionTraceFlag"/>.</summary>
-    public const int CollisionTraceFlag = 16;
+    public const int CollisionTraceFlag = 18;
 
     /// <summary>Bytes of the value of a fixed-size member; <see langword="null"/> for structs and unknown members.</summary>
     public static int? FixedValueSize(int member) => member switch
     {
-        Unknown4 or Unknown7 or Unknown15 or CollisionTraceFlag => 1,
+        Unknown4 or Unknown7 or Unknown17 or CollisionTraceFlag => 1,
         PhysMaterial => 4,
         BuildScale3D => 24,
         _ => null,
