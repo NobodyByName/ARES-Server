@@ -28,12 +28,12 @@ public enum LootLimiterShape
 /// (<c>Socket.LootContainer.Tech</c> covers <c>Socket.LootContainer.Tech.Server.Door</c>); tag names compare without
 /// case.
 /// </param>
-/// <param name="Unlimited">True when the entry caps nothing.</param>
+/// <param name="Unlimited">True when the entry caps nothing; null when the entry does not set it.</param>
 /// <param name="Limit">
 /// Placements the limiter allows for the tag: once that many have spawned on its sockets of the tag, no more spawn
-/// there.
+/// there. Null when the entry does not set it.
 /// </param>
-public sealed record LootLimit(string Tag, bool Unlimited, int Limit);
+public sealed record LootLimit(string Tag, bool? Unlimited, int? Limit);
 
 /// <summary>A bounding plane in world space: points with <c>Normal · point &lt;= Distance</c> are on its inner side.</summary>
 /// <param name="Normal">Unit normal, pointing out of the hull.</param>
@@ -60,10 +60,10 @@ public sealed record LootLimiterVolume(string Actor, IReadOnlyList<LootVolumeHul
 /// <param name="Actor">The limiter actor.</param>
 /// <param name="Name">The name the map gives the limiter (usually the area it covers).</param>
 /// <param name="DataLayer">Data layer that streams the limiter, or null when it is always present.</param>
-/// <param name="Shape">Which points the limiter covers.</param>
+/// <param name="Shape">Which points the limiter covers, or null when the limiter does not set it.</param>
 /// <param name="Location">World location of the covered area's centre (sphere and box shapes).</param>
 /// <param name="Rotation">World rotation of the covered box, in degrees.</param>
-/// <param name="Radius">Sphere radius, or twice the box's half extent.</param>
+/// <param name="Radius">Sphere radius, or twice the box's half extent; null when the limiter does not set it.</param>
 /// <param name="Volumes">Volumes the limiter covers (volume shape).</param>
 /// <param name="Limits">Caps per gameplay tag; every matching entry that is not unlimited applies.</param>
 public sealed record LootLimiter(
@@ -71,9 +71,9 @@ public sealed record LootLimiter(
     string Actor,
     string Name,
     string? DataLayer,
-    LootLimiterShape Shape,
+    LootLimiterShape? Shape,
     Vector3D Location,
     Rotator Rotation,
-    double Radius,
+    double? Radius,
     IReadOnlyList<LootLimiterVolume> Volumes,
     IReadOnlyList<LootLimit> Limits);

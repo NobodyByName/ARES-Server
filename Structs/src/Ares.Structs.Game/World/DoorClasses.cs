@@ -41,8 +41,8 @@ public static class DoorClasses
 
 /// <summary>
 /// The start flags of a door (members of the door script class <c>ADoorBase</c>), by script member name. Each is a bool
-/// member of the door's property chain: a placed door or a Blueprint default that lists it sets it; otherwise the script
-/// constructor's value applies.
+/// member of the door's property chain: a placed door or a Blueprint default that lists it sets it; otherwise the class
+/// default (<see cref="Defaults"/>) applies.
 /// </summary>
 public static class DoorStartFlagMembers
 {
@@ -60,4 +60,14 @@ public static class DoorStartFlagMembers
 
     /// <summary>Opens once breached (<see cref="DoorPlacement.BreachOpensDoor"/>).</summary>
     public const string BreachOpensDoor = "bBreachOpensDoor";
+
+    /// <summary>The start flags with the value a door whose header and Blueprint defaults list none of them takes.</summary>
+    public static IReadOnlyList<(string Member, bool Default)> Defaults { get; } =
+    [
+        (StartAsOpened, false),
+        (StartAsLocked, false),
+        (StartAsSealed, false),
+        (StartAsPowered, true),
+        (BreachOpensDoor, false),
+    ];
 }

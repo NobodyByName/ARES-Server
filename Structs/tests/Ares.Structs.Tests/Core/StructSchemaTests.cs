@@ -1,5 +1,6 @@
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Scripts;
 
 namespace Ares.Structs.Tests.Core;
 
@@ -30,13 +31,13 @@ public sealed class StructSchemaTests
     [Fact]
     public void Item_data_assets_chain_their_native_bases_after_the_script_members()
     {
-        StructSchema item = ItemAssetSchemas.ItemDataAsset;
+        ScriptTypeSchemas schemas = new(ItemAssetSchemas.Natives);
+        StructSchema item = schemas.Of("UItemDataAsset");
 
         Assert.Equal("bIsUpgradedVariation", item.At(0).Field!.Name);
         Assert.Equal("PersistenceDataAsset", item.At(item.Members.Count).Field!.Name);
         Assert.Equal("NativeClass", item.At(item.ChainLength - 1).Field!.Name);
-        Assert.Same(item, ItemAssetSchemas.AugmentItemDataAsset.Super);
-        Assert.All(ItemAssetSchemas.ByClassPath.Keys, path => Assert.StartsWith("/Script/Angelscript.", path, StringComparison.Ordinal));
+        Assert.Same(item, schemas.ForPath(ItemAssetSchemas.AugmentItemDataAssetClass)!.Super);
     }
 
     [Fact]

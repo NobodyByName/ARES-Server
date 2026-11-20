@@ -2,7 +2,7 @@ namespace Ares.Structs.Game.Inventory;
 
 /// <summary>
 /// The authored values of a firearm item class (a Blueprint deriving from <c>UFirearmItem</c>): its class default
-/// object's members, or the script class defaults where it sets none.
+/// object's members, or <see cref="WeaponItemDefaults"/> where it sets none.
 /// </summary>
 /// <param name="ItemClass">Class path of the firearm item, as <see cref="ItemDefinition.ItemClass"/> names it.</param>
 /// <param name="ClipSize">Rounds the magazine holds (<c>BaseClipSize</c>).</param>
@@ -25,6 +25,28 @@ public sealed record FirearmDefinition(
     double ZoomSeconds,
     double PartialReloadSeconds,
     IReadOnlyList<long> ModSlots);
+
+/// <summary>
+/// The class defaults of the weapon item scripts (<c>UWeaponItem</c>, and <c>UItemBase</c> for the zoom time) that a
+/// firearm item class whose class default object sets none of them takes.
+/// </summary>
+public static class WeaponItemDefaults
+{
+    /// <summary><c>BaseClipSize</c>.</summary>
+    public const double ClipSize = 5;
+
+    /// <summary><c>BaseFireRate</c>, in shots per minute.</summary>
+    public const double FireRate = 120;
+
+    /// <summary><c>BaseReloadTime</c>, in seconds.</summary>
+    public const double BaseReloadSeconds = 1;
+
+    /// <summary><c>BaseCameraZoomTime</c>, in seconds.</summary>
+    public const double ZoomSeconds = 0.35;
+
+    /// <summary><c>PartialReloadDuration</c>, in seconds.</summary>
+    public const double PartialReloadSeconds = 1;
+}
 
 /// <summary>
 /// The authored values of a shield (armor) item class: its class default object's members, or the script class

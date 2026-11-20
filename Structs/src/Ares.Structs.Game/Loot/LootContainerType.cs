@@ -14,9 +14,9 @@ public sealed record LootContainerVariant(string Material, IReadOnlyList<Archety
 /// Classes per material instance of the socketed prop. Empty when the asset ignores material overrides.
 /// A prop whose material is not listed uses <paramref name="Classes"/>.
 /// </param>
-/// <param name="MaxPerGroup">Limit on the containers of this type per group.</param>
+/// <param name="MaxPerGroup">Limit on the containers of this type per group, or null when the asset does not set one.</param>
 public sealed record LootContainerType(
     string Tag,
     IReadOnlyList<ArchetypeClass> Classes,
     IReadOnlyList<LootContainerVariant> Variants,
-    int MaxPerGroup);
+    int? MaxPerGroup);

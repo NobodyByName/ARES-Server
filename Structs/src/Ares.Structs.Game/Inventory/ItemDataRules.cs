@@ -1,10 +1,9 @@
 namespace Ares.Structs.Game.Inventory;
 
 /// <summary>
-/// Rules of the item data asset scripts that item definitions follow, written out by hand from the script code (the
-/// script cache holds them as bytecode with branches): <c>ItemCategory::GetDefaultWeight</c>,
-/// <c>UItemDataAsset::ItemHasDurability</c>, <c>CalculateMaxLoadoutWeight</c> (a free script function, which the
-/// extractor's script cache reader does not keep) and the defaults of members whose values cooked assets leave out.
+/// Rules of the item data asset scripts that item definitions follow, written out by hand from the script code:
+/// <c>ItemCategory::GetDefaultWeight</c>, <c>UItemDataAsset::ItemHasDurability</c>, <c>CalculateMaxLoadoutWeight</c>
+/// (a free script function) and the defaults of members whose values cooked assets leave out.
 /// </summary>
 public static class ItemDataRules
 {
@@ -16,6 +15,21 @@ public static class ItemDataRules
 
     /// <summary>Carrying limit without an equipped augment (the literal of <c>CalculateMaxLoadoutWeight</c>).</summary>
     public const double DefaultMaxLoadoutWeight = 30.0;
+
+    /// <summary><c>EquipTime</c> of an item data asset that sets none, in seconds.</summary>
+    public const double DefaultEquipSeconds = 0.5;
+
+    /// <summary><c>UnequipTime</c> of an item data asset that sets none, in seconds.</summary>
+    public const double DefaultUnequipSeconds = 0.3;
+
+    /// <summary><c>UnequipTimeToItems</c> of an item data asset that sets none, in seconds.</summary>
+    public const double DefaultUnequipToItemsSeconds = 0.1;
+
+    /// <summary><c>ReEquipTimeFromItem</c> of an item data asset that sets none, in seconds.</summary>
+    public const double DefaultReEquipFromItemSeconds = 0.2;
+
+    /// <summary><c>MaxWeight</c> of an augment data asset (<c>UAugmentItemDataAsset</c>) that sets none.</summary>
+    public const double DefaultAugmentMaxWeight = 50.0;
 
     /// <summary>Prefix of every loot drop tag (<see cref="ItemDefinition.DropTags"/>).</summary>
     public const string DropTagPrefix = "Item.Drop.";

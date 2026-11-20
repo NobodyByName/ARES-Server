@@ -74,6 +74,18 @@ public static class DodgeRollParameters
     /// <summary>Root distance the skill roll's animation was authored for.</summary>
     public const double NinjaAuthoredDistance = 400;
 
+    /// <summary><see cref="DodgeRollSequence.Distance"/> of a variant whose metrics leave it out (the <c>FDodgeRollSequenceData</c> default).</summary>
+    public const double DefaultDistance = 500;
+
+    /// <summary><see cref="DodgeRollSequence.Speed"/> of a variant whose metrics leave it out.</summary>
+    public const double DefaultSpeed = 1;
+
+    /// <summary><see cref="DodgeRollSequence.StaminaCost"/> of a variant whose metrics leave it out.</summary>
+    public const double DefaultStaminaCost = 20;
+
+    /// <summary><see cref="DodgeRollSequence.ContactAnimationSeconds"/> of a variant whose metrics leave it out.</summary>
+    public const double DefaultContactAnimationSeconds = 0.5;
+
     /// <summary>Minimum sum of absolute movement axes to start a roll.</summary>
     public const double EntryInputThreshold = 0.1f;
 

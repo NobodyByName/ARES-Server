@@ -28,12 +28,10 @@ public enum ExtractionButtonRole
     Repair,
 }
 
-/// <summary>An interaction component of an extraction elevator, and how it starts.</summary>
+/// <summary>An interaction component of an extraction elevator.</summary>
 /// <param name="Component">Component name on the elevator actor.</param>
 /// <param name="Role">What the button does.</param>
 /// <param name="Class">Class of the component.</param>
-/// <param name="StartEnabled">Whether the button can be used from the start.</param>
-/// <param name="Prompt">Name of the prompt text the button shows, or null.</param>
 /// <param name="InteractionType">Press or hold; null for repair buttons.</param>
 /// <param name="HoldSeconds">Seconds the button is held, after its alignment (0 for a press).</param>
 /// <param name="AlignmentSeconds">Seconds the character aligns with the button before the hold starts.</param>
@@ -42,8 +40,6 @@ public readonly record struct ExtractionButton(
     string Component,
     ExtractionButtonRole Role,
     string Class,
-    bool StartEnabled,
-    string? Prompt,
     StandardInteractionType? InteractionType,
     double HoldSeconds,
     double AlignmentSeconds,
@@ -66,15 +62,9 @@ public readonly record struct ExtractionPointPlacement(
     Vector3D Location,
     Rotator Rotation);
 
-/// <summary>Timings of an extraction point settings asset, in seconds.</summary>
-/// <param name="DefaultExtractionSeconds">Extraction timer once the point is ready.</param>
-/// <param name="ShutdownMaxExtractionSeconds">Longest extraction time left when a planned shutdown starts.</param>
-/// <param name="TimeToExtractReadySeconds">Time from calling to the doors opening.</param>
+/// <summary>Hold times of an extraction point settings asset, in seconds.</summary>
 /// <param name="SummonHoldSeconds">Hold time of the call button.</param>
 /// <param name="ExtractionHoldSeconds">Hold time of a descend switch.</param>
 public readonly record struct ExtractionSettings(
-    double DefaultExtractionSeconds,
-    double ShutdownMaxExtractionSeconds,
-    double TimeToExtractReadySeconds,
     double SummonHoldSeconds,
     double ExtractionHoldSeconds);

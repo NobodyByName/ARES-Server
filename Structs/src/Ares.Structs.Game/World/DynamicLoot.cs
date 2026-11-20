@@ -25,7 +25,7 @@ public sealed record DynamicLootPoint(Vector3D Location, Rotator Rotation, doubl
 /// <param name="DataLayer">Data layer that streams the spawner, or null when it is always present.</param>
 /// <param name="Classes">Container classes the spawner draws from.</param>
 /// <param name="Points">Candidate points; never empty.</param>
-/// <param name="Count">Containers one run places; never more than the number of points.</param>
+/// <param name="Count">Containers one run places, never more than the number of points; null when the spawner does not set it.</param>
 /// <param name="RandomRotation">True when the spawned container gets a random yaw (0 to 360 degrees) instead of the point's rotation.</param>
 public sealed record DynamicLootSpawner(
     string Cell,
@@ -33,7 +33,7 @@ public sealed record DynamicLootSpawner(
     string? DataLayer,
     IReadOnlyList<DynamicLootClass> Classes,
     IReadOnlyList<DynamicLootPoint> Points,
-    int Count,
+    int? Count,
     bool RandomRotation);
 
 /// <summary>A partial choice of subnodes on the path to a group: fewer of its children are active than it has.</summary>

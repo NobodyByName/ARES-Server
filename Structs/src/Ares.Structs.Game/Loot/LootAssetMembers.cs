@@ -42,6 +42,15 @@ public static class LootContainerDataAssetMembers
 
     /// <summary>The availability the repository registers outside development mode.</summary>
     public const string RegisteredAvailability = "UserFacing";
+
+    /// <summary>
+    /// <see cref="DevelopmentAvailability"/> of an asset that sets none: entry 1 of <see cref="AvailabilityEnum"/>
+    /// (<c>DeveloperOnly</c>), so such an asset is not registered.
+    /// </summary>
+    public const byte DefaultAvailability = 1;
+
+    /// <summary><see cref="IgnoreMaterialOverrides"/> of an asset that sets none.</summary>
+    public const bool DefaultIgnoreMaterialOverrides = false;
 }
 
 /// <summary>
@@ -144,10 +153,7 @@ public static class LootItemAssetClasses
         ["/Script/Angelscript.ItemDataAsset", "/Script/Angelscript.AugmentItemDataAsset"];
 }
 
-/// <summary>
-/// The loot container's item container component (<c>UItemContainerComponent</c>): its slot count, and the weighted
-/// target stack counts its default statements add (<c>StaticLootSpawnTargetStacks.Add(FItemContainerTargetStackWeight(target, weight))</c>).
-/// </summary>
+/// <summary>The loot container's item container component (<c>UItemContainerComponent</c>): its slot count.</summary>
 public static class ItemContainerComponentMembers
 {
     /// <summary>Script class name.</summary>
@@ -155,49 +161,6 @@ public static class ItemContainerComponentMembers
 
     /// <summary>Slot count of the container.</summary>
     public const string ItemLimit = "ItemLimit";
-
-    /// <summary>The weighted target stack counts.</summary>
-    public const string StaticLootSpawnTargetStacks = "StaticLootSpawnTargetStacks";
-
-    /// <summary>The struct of one target stack count, constructed from (target, weight).</summary>
-    public const string TargetStackWeight = "FItemContainerTargetStackWeight";
-
-    /// <summary>The array method the default statements call.</summary>
-    public const string AddMethod = "Add";
-}
-
-/// <summary>
-/// The static loot spawn manager's tweakables (<c>UStaticLootSpawnManagerTweakables</c>): six double weights stored by
-/// its constructor and the contents weight map its default statements fill (<c>ContainerContentsWeightMap.Add(key, weight)</c>).
-/// </summary>
-public static class StaticLootSpawnManagerTweakablesMembers
-{
-    /// <summary>Script class name.</summary>
-    public const string ScriptClass = "UStaticLootSpawnManagerTweakables";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumPlacementsWeight"/>.</summary>
-    public const string NumPlacementsWeight = "NumPlacementsWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumTargetItemsWeight"/>.</summary>
-    public const string NumTargetItemsWeight = "NumTargetItemsWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumAvoidItemsWeight"/>.</summary>
-    public const string NumAvoidItemsWeight = "NumAvoidItemsWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumMissingTargetStacksWeight"/>.</summary>
-    public const string NumMissingTargetStacksWeight = "NumMissingTargetStacksWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumStacksWeight"/>.</summary>
-    public const string NumStacksWeight = "NumStacksWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.NumItemsWeight"/>.</summary>
-    public const string NumItemsWeight = "NumItemsWeight";
-
-    /// <summary>Member name of <see cref="LootSpawnTweakables.ContainerContentsWeights"/>.</summary>
-    public const string ContainerContentsWeightMap = "ContainerContentsWeightMap";
-
-    /// <summary>The map method the default statements call.</summary>
-    public const string AddMethod = "Add";
 }
 
 /// <summary>Layout facts shared by the loot data assets.</summary>

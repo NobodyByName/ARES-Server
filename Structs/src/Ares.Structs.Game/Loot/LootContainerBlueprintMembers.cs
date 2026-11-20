@@ -130,27 +130,6 @@ public static class LootContainerBlueprintMembers
     /// <summary>The distance config of the standard preset while the character is immobilized.</summary>
     public const string StationaryPreset = "StandardStationary";
 
-    /// <summary>Struct of the prompt distance configs, and namespace of the preset globals.</summary>
-    public const string PromptDistanceConfig = "FInteractionPromptDistanceConfig";
-
-    /// <summary>Member of <see cref="PromptDistanceConfig"/> holding the prompt distance.</summary>
-    public const string PromptDistance = "PromptDistance";
-
-    /// <summary>Engine setter of the actor's squared net cull distance, called by the script default statements.</summary>
-    public const string SetNetCullDistanceSquared = "SetNetCullDistanceSquared";
-
-    /// <summary>Engine setter of the actor's net dormancy, called by the script default statements.</summary>
-    public const string SetDefaultNetDormancy = "SetDefaultNetDormancy";
-
-    /// <summary>Engine setter of whether the actor is always relevant, called by the script default statements.</summary>
-    public const string SetAlwaysRelevant = "SetbAlwaysRelevant";
-
-    /// <summary>Script function squaring the cull distance passed to <see cref="SetNetCullDistanceSquared"/>.</summary>
-    public const string Square = "Square";
-
-    /// <summary><c>ENetDormancy::DORM_Initial</c>: the server sends a dormant actor once, then only its changes.</summary>
-    public const byte NetDormancyInitial = 4;
-
     /// <summary>
     /// Step of a search location as the interactor reports it: each coordinate floored to a multiple of the interactor
     /// field step, <see cref="PawnBlackboard.InteractionTimeRange"/> over 2^23.

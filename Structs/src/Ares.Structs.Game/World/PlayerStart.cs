@@ -32,4 +32,8 @@ public static class PlayerStartClassNames
 /// <summary>Capsule of a group start's generated spawn points.</summary>
 /// <param name="HalfHeight">Capsule half height; spawn points are raised by it along their up vector.</param>
 /// <param name="Radius">Capsule radius.</param>
-public readonly record struct PlayerStartCapsule(double HalfHeight, double Radius);
+public readonly record struct PlayerStartCapsule(double HalfHeight, double Radius)
+{
+    /// <summary>The capsule every group player start (<c>APioneerPlayerStartBase</c>) gives its spawn points.</summary>
+    public static PlayerStartCapsule Group { get; } = new(92, 40);
+}

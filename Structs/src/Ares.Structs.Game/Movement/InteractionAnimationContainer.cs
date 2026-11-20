@@ -38,6 +38,34 @@ public sealed record InteractionAnimationContainer(
     bool FinishesWithAnimations,
     bool Unending);
 
+/// <summary>
+/// The class defaults of <c>UInteractionAnimationContainer</c>: the members a container data asset that does not set
+/// them takes.
+/// </summary>
+public static class InteractionAnimationContainerDefaults
+{
+    /// <summary><c>StopInteractionResponse</c>: entry 0 (<c>AbortImmediately</c>), a stopped interaction aborts at once.</summary>
+    public const byte StopInteractionResponse = 0;
+
+    /// <summary><c>AttachmentAlignmentType</c>.</summary>
+    public const InteractionAlignment AttachmentAlignmentType = InteractionAlignment.None;
+
+    /// <summary><c>bAllowFloatingAlignment</c>.</summary>
+    public const bool AllowFloatingAlignment = false;
+
+    /// <summary><c>bFullBodyInteraction</c>.</summary>
+    public const bool FullBodyInteraction = false;
+
+    /// <summary><c>HeightThresholdToTriggerCrouch</c>.</summary>
+    public const double HeightThresholdToTriggerCrouch = 50;
+
+    /// <summary><c>bFinishInteractionWhenAnimationsFinished</c>.</summary>
+    public const bool FinishInteractionWhenAnimationsFinished = true;
+
+    /// <summary><c>bUnendingInteraction</c>.</summary>
+    public const bool UnendingInteraction = false;
+}
+
 /// <summary>A semantic-tag entry of the character's fallback containers.</summary>
 /// <param name="SemanticTags">Semantic tags of the interaction that select the entry (none: never selected by tag).</param>
 /// <param name="Container">Object path of the container.</param>

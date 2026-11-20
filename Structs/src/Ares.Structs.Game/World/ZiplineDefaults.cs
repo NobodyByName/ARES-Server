@@ -51,16 +51,3 @@ public static class CharacterMeshMembers
     /// <summary>Index of the scene part.</summary>
     public const int ScenePart = 256;
 }
-
-/// <summary>Members of a group player start (<c>APioneerPlayerStartBase</c>) the generated spawn point capsule comes from.</summary>
-public static class PlayerStartCapsuleMembers
-{
-    /// <summary>Script class whose constructor sets the capsule.</summary>
-    public const string ScriptClass = "APioneerPlayerStartBase";
-
-    /// <summary>Capsule half height (a double).</summary>
-    public const string CapsuleHalfHeight = "CapsuleHalfHeight";
-
-    /// <summary>Capsule radius (a double).</summary>
-    public const string CapsuleRadius = "CapsuleRadius";
-}

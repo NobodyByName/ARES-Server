@@ -16,7 +16,7 @@ public sealed record MapGameMode(string GameModeClass, ArchetypeClass GameState,
 /// </summary>
 public static class WorldSettingsMembers
 {
-    /// <summary>Name of the native world settings base class (the script cache's native super of the world settings class).</summary>
+    /// <summary>Name of the native world settings base class (the native super class of the world settings script class).</summary>
     public const string NativeBase = "AEmbarkWorldSettingsBase";
 
     /// <summary>Unknown member 11: int32.</summary>
@@ -67,19 +67,6 @@ public static class WorldSettingsMembers
         members[DefaultGameMode] = new PropertyField(nameof(DefaultGameMode), PropertyType.Object);
         return members;
     }
-}
-
-/// <summary>Members of the game mode classes the map tables read.</summary>
-public static class GameModeMembers
-{
-    /// <summary>
-    /// Byte offset of <c>AGameModeBase.GameStateClass</c> (a native class reference) in a game mode object: the script
-    /// default statements assign the game state class there (<c>opAssign</c> of a script type's static class).
-    /// </summary>
-    public const int GameStateClassOffset = 0x3D8;
-
-    /// <summary>Prefix of the script globals that hold a script class's static class (followed by the class name with its prefix).</summary>
-    public const string StaticTypePrefix = "__StaticType_";
 }
 
 /// <summary>Members of a map's level script class (<c>APioneerLevelScript</c>) and engine structs its Blueprint holds.</summary>
