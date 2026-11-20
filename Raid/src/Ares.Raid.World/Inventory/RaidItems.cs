@@ -31,7 +31,8 @@ public sealed class RaidItems
         FerroIFirearm = names.FerroIFirearm;
         HeavyAmmo = names.HeavyAmmo;
         SnapHook = names.SnapHook;
-        LightShield = names.LightShieldClass;
+        Shields = data.Items.All.Where(item => data.Items.ShieldsByClass.ContainsKey(item.ItemClass))
+            .ToDictionary(item => checked((ushort)item.UsableIndex), item => data.Items.ShieldsByClass[item.ItemClass]);
         UnarmedIndex = checked((ushort)Unarmed.UsableIndex);
         RaiderToolIndex = checked((ushort)RaiderTool.UsableIndex);
         FerroIIndex = checked((ushort)FerroI.UsableIndex);
@@ -75,8 +76,8 @@ public sealed class RaidItems
     /// <summary>The Snap Hook.</summary>
     public ItemDefinition SnapHook { get; }
 
-    /// <summary>The Light Shield's shield class.</summary>
-    public ShieldDefinition LightShield { get; }
+    /// <summary>The shield class of each shield item, by usable index.</summary>
+    public IReadOnlyDictionary<ushort, ShieldDefinition> Shields { get; }
 
     /// <summary>Usable index of the empty-handed item.</summary>
     public ushort UnarmedIndex { get; }
@@ -104,9 +105,6 @@ public sealed class RaidItems
 
     /// <summary>Number of mod slots on the Ferro I.</summary>
     public int FerroModSlotCount => FerroIFirearm.ModSlots.Count;
-
-    /// <summary>Shield health of a full Light Shield.</summary>
-    public double ShieldMaxHealth => LightShield.MaxArmorPlates * LightShield.ArmorPerPlate;
 
     /// <summary>Gameplay classes of the items a character can hold, by usable index, in the order the raid exports them.</summary>
     public IReadOnlyDictionary<ushort, string> HeldItemClasses { get; }

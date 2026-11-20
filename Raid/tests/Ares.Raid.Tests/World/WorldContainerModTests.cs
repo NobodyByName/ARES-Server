@@ -13,7 +13,7 @@ public sealed class WorldContainerModTests
     public void A_weapon_or_shield_in_a_world_container_gets_a_mod_container_before_it_and_can_be_taken_home(bool shield)
     {
         ushort index = shield ? checked((ushort)TestGameData.Data.Names.LightShield.UsableIndex) : TestGameData.Items.FerroIIndex;
-        int modSlots = shield ? TestGameData.Items.LightShield.ModSlotCount : TestGameData.Items.FerroModSlotCount;
+        int modSlots = shield ? 0 : TestGameData.Items.FerroModSlotCount;
         LootStates states = new ScriptedPlayer().Raid.LootStates;
         ContainerItem found = new(index, Guid.NewGuid(), 1, .5) { ModContainerId = 99 };
         states.Store(0, [found, null]);

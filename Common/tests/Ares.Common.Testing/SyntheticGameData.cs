@@ -108,7 +108,7 @@ public sealed class SyntheticGameData
             Augments = [.. augments.OrderBy(augment => Named(augment.TechnicalName).UsableIndex)],
             LoadoutFrames = [.. frames.OrderBy(frame => frame.TechnicalName, StringComparer.Ordinal)],
             Firearms = [new FirearmDefinition(Named(GameNames.Items.FerroI).ItemClass, 1, 50, 2.5, [0.5], 1.0, 1.5, [3_000_001, 3_000_002, 3_000_003])],
-            Shields = [new ShieldDefinition(Named(GameNames.Items.LightShield).ItemClass, 1, 40, 0.4, 40, 0)],
+            Shields = [new ShieldDefinition(Named(GameNames.Items.LightShield).ItemClass, 40, 0.4)],
             MenuAugments =
             [
                 .. augments.Select(augment => Menu(Named(augment.TechnicalName))),

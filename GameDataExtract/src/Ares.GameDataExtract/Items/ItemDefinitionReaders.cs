@@ -31,11 +31,8 @@ internal static class ItemDefinitionReaders
         {
             PropertyBag values = classes.Defaults(type);
             return new ShieldDefinition(type.Path,
-                sources.Integer(values, type.ScriptClass, "MaxArmorPlates"),
-                sources.Number(values, type.ScriptClass, "ArmorPerPlate"),
-                sources.Number(values, type.ScriptClass, "DamageMitigationPerPlate"),
-                sources.Number(values, type.ScriptClass, "BaseArmorValue"),
-                values.Get<object[]>(ModSlotsMember, []).Length);
+                sources.Number(values, type.ScriptClass, "MaxArmorHealth"),
+                sources.Number(values, type.ScriptClass, "DamageMitigationPerPlate"));
         })];
     }
 

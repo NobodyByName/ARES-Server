@@ -53,10 +53,9 @@ public sealed class ItemTraitsTests
             }
         }
 
-        Assert.Equal([(TestGameData.Data.Names.LightShield.UsableIndex, TestGameData.Items.LightShield.ModSlotCount), (TestGameData.Items.FerroIIndex, TestGameData.Items.FerroModSlotCount)],
+        Assert.Equal([(TestGameData.Data.Names.LightShield.UsableIndex, 0), (TestGameData.Items.FerroIIndex, TestGameData.Items.FerroModSlotCount)],
             modSlots.OrderBy(entry => entry.Key).Select(entry => (entry.Key, entry.Value)));
         Assert.Equal(3, TestGameData.Items.FerroModSlotCount);
-        Assert.Equal(0, TestGameData.Items.LightShield.ModSlotCount);
     }
 
     [Fact]

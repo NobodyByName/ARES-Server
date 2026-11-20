@@ -239,11 +239,11 @@ public sealed partial class RaidInventory
         }
     }
 
-    /// <summary>The equipped Light Shield; a broken shield remains equipped with no available health.</summary>
+    /// <summary>The equipped shield; a broken shield remains equipped with no available health.</summary>
     public ContainerItem? Shield => Containers[Loadout].Items[InventoryBlackboard.ArmorSlot];
 
-    /// <summary>Available shield capacity. Positive item durability permits the full authored capacity.</summary>
-    public double ShieldHealth => Shield is { Durability: > 0 } ? Items.ShieldMaxHealth : 0;
+    /// <summary>Available shield capacity: the equipped shield's full health while its durability is positive.</summary>
+    public double ShieldHealth => Shield is { Durability: > 0 } shield && Items.Shields.TryGetValue(shield.AssetIndex, out ShieldDefinition? type) ? type.MaxArmorHealth : 0;
 
     /// <summary>Equipment container handle.</summary>
     public int Loadout => _handles[nameof(Loadout)];

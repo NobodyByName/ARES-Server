@@ -626,7 +626,7 @@ public sealed class WorldState
         return new StableSubobjectContent(player.EndOfRound, Replication.Calls().Call(ClassPaths.EndOfRoundComponent, function, parameters, RpcDirection.Client));
     }
 
-    /// <summary>Replicates the equipped Light Shield's initial health for the Raid HUD.</summary>
+    /// <summary>Replicates the equipped shield's initial health for the Raid HUD.</summary>
     /// <param name="player">The player.</param>
     /// <param name="inventory">The current loadout.</param>
     /// <returns>The health component properties.</returns>
@@ -636,7 +636,7 @@ public sealed class WorldState
         ArgumentNullException.ThrowIfNull(inventory);
         // TODO: Apply shield damage mitigation and drain shield health when server-side damage is
         // implemented. These values only initialize/display the shield; no damage is processed yet.
-        // Medium/Heavy shields, movement penalties, equip charge-up and repair are future work.
+        // Movement penalties, equip charge-up and repair are future work.
         return new StableSubobjectContent(player.Health, Replication.Encode(ClassPaths.HealthComponent, new Dictionary<string, object?>
         {
             [PropertyNames.Replicates] = true,

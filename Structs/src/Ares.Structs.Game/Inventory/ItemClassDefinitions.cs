@@ -53,18 +53,9 @@ public static class WeaponItemDefaults
 /// defaults where it sets none.
 /// </summary>
 /// <param name="ItemClass">Class path of the shield item, as <see cref="ItemDefinition.ItemClass"/> names it.</param>
-/// <param name="MaxArmorPlates">Number of plates (<c>MaxArmorPlates</c>).</param>
-/// <param name="ArmorPerPlate">Shield health of one plate (<c>ArmorPerPlate</c>).</param>
-/// <param name="DamageMitigationPerPlate">Fraction of damage one plate absorbs (<c>DamageMitigationPerPlate</c>).</param>
-/// <param name="BaseArmorValue">Shield health of a full shield (<c>BaseArmorValue</c>).</param>
-/// <param name="ModSlotCount">Number of mod slots on the shield.</param>
-public sealed record ShieldDefinition(
-    string ItemClass,
-    int MaxArmorPlates,
-    double ArmorPerPlate,
-    double DamageMitigationPerPlate,
-    double BaseArmorValue,
-    int ModSlotCount);
+/// <param name="MaxArmorHealth">Shield health of a full shield (<c>MaxArmorHealth</c>).</param>
+/// <param name="DamageMitigationPerPlate">Fraction of incoming damage the shield absorbs (<c>DamageMitigationPerPlate</c>).</param>
+public sealed record ShieldDefinition(string ItemClass, double MaxArmorHealth, double DamageMitigationPerPlate);
 
 /// <summary>An augment: the loadout frame it gives the raider and its carrying limit.</summary>
 /// <param name="TechnicalName">Name of the augment's item data asset.</param>
