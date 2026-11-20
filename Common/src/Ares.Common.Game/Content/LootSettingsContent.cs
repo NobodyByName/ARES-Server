@@ -13,7 +13,8 @@ internal sealed record LootSpawnDocument(
     [property: JsonPropertyName("areaMultipliers")] IReadOnlyDictionary<string, double> AreaMultipliers,
     [property: JsonPropertyName("groupCaps")] bool GroupCaps,
     [property: JsonPropertyName("limiters")] bool Limiters,
-    [property: JsonPropertyName("spawnerClasses")] IReadOnlyList<string> SpawnerClasses);
+    [property: JsonPropertyName("spawnerClasses")] IReadOnlyList<string> SpawnerClasses,
+    [property: JsonPropertyName("looseChances")] IReadOnlyDictionary<string, double> LooseChances);
 
 /// <summary><c>loot-contents.json</c>: what loot containers hold.</summary>
 internal sealed record LootContentsDocument(
@@ -22,7 +23,21 @@ internal sealed record LootContentsDocument(
     [property: JsonPropertyName("firstStackTier")] string? FirstStackTier,
     [property: JsonPropertyName("tablePools")] IReadOnlyList<LootTablePoolDocument> TablePools,
     [property: JsonPropertyName("extraStack")] LootExtraStackDocument ExtraStack,
-    [property: JsonPropertyName("typePools")] IReadOnlyList<LootTypePoolDocument> TypePools);
+    [property: JsonPropertyName("typePools")] IReadOnlyList<LootTypePoolDocument> TypePools,
+    [property: JsonPropertyName("looseItems")] LooseItemsDocument LooseItems);
+
+/// <summary>What loose item sockets hold, in <c>loot-contents.json</c>.</summary>
+internal sealed record LooseItemsDocument(
+    [property: JsonPropertyName("tables")] IReadOnlyList<string> Tables,
+    [property: JsonPropertyName("amount")] LootCountDocument Amount,
+    [property: JsonPropertyName("pools")] IReadOnlyList<LooseItemPoolDocument> Pools);
+
+/// <summary>A pool of loose item sockets.</summary>
+internal sealed record LooseItemPoolDocument(
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("tags")] IReadOnlyList<string> Tags,
+    [property: JsonPropertyName("entries")] IReadOnlyList<LootTypeEntryDocument> Entries,
+    [property: JsonPropertyName("tableWeight")] double TableWeight = 1);
 
 /// <summary>A tier of <c>loot-contents.json</c>.</summary>
 internal sealed record LootTierDocument(
@@ -77,6 +92,17 @@ internal static class LootSettingsContent
             }
         }
 
+        Dictionary<string, double> looseChances = new(StringComparer.OrdinalIgnoreCase);
+        foreach ((string tag, double chance) in document.LooseChances)
+        {
+            names.LooseTag(tag, "looseChances");
+            names.Fraction(chance, $"the chance of {tag}");
+            if (!looseChances.TryAdd(tag, chance))
+            {
+                throw invalid($"looseChances lists {tag} twice");
+            }
+        }
+
         names.NoNulls(document.SpawnerClasses, "spawnerClasses");
         foreach (string path in document.SpawnerClasses)
         {
@@ -84,7 +110,8 @@ internal static class LootSettingsContent
         }
 
         return new LootSpawnSettings(chances.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase), names.AreaFactors(document.AreaMultipliers, "areaMultipliers"),
-            document.GroupCaps, document.Limiters, document.SpawnerClasses.ToFrozenSet(StringComparer.Ordinal));
+            document.GroupCaps, document.Limiters, document.SpawnerClasses.ToFrozenSet(StringComparer.Ordinal),
+            looseChances.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>Checks the content settings.</summary>
@@ -140,11 +167,7 @@ internal static class LootSettingsContent
             names.NoNulls(pool.Tables, where);
             foreach (string table in pool.Tables)
             {
-                // A name may belong to tables in several folders; a pool draws from all of them.
-                if (!data.Loot.StaticValueTables.Any(known => string.Equals(known.Name, table, StringComparison.OrdinalIgnoreCase)))
-                {
-                    throw invalid($"{where}: the game data has no loot table {table}");
-                }
+                names.Table(table, where);
             }
 
             tablePools.Add(new LootTablePool(pool.Name, pool.Tag, pool.Tables, pool.Stacks is { } stacks ? names.Count(stacks, $"{where} stacks") : null, pool.ExtraStack));
@@ -173,7 +196,39 @@ internal static class LootSettingsContent
             typePools.Add(new LootTypePool(pool.Name, classes, tags, names.Count(pool.Stacks, $"{where} stacks"), names.Entries(pool.Entries, where)));
         }
 
-        return new LootContentSettings(document.ExcludedDropTags, tiers, document.FirstStackTier, tablePools, extra, typePools);
+        return new LootContentSettings(document.ExcludedDropTags, tiers, document.FirstStackTier, tablePools, extra, typePools,
+            LooseItems(document.LooseItems, names, invalid));
+    }
+
+    private static LooseItemSettings LooseItems(LooseItemsDocument document, Names names, Func<string, AresContentException> invalid)
+    {
+        names.NoNulls(document.Tables, "looseItems tables");
+        names.NoNulls(document.Pools, "looseItems pools");
+        foreach (string table in document.Tables)
+        {
+            names.Table(table, "looseItems");
+        }
+
+        List<LooseItemPool> pools = [];
+        HashSet<string> listed = new(StringComparer.OrdinalIgnoreCase);
+        foreach (LooseItemPoolDocument pool in document.Pools)
+        {
+            string where = $"loose item pool {pool.Name}";
+            names.NoNulls(pool.Tags, where);
+            foreach (string tag in pool.Tags)
+            {
+                names.LooseTag(tag, where);
+                if (!listed.Add(tag))
+                {
+                    throw invalid($"loose item pools list the tag {tag} twice");
+                }
+            }
+
+            names.Weight(pool.TableWeight, $"{where}: tableWeight");
+            pools.Add(new LooseItemPool(pool.Name, pool.Tags, pool.TableWeight, names.Entries(pool.Entries, where)));
+        }
+
+        return new LooseItemSettings(document.Tables, names.Count(document.Amount, "looseItems amount"), pools);
     }
 
     // Checks of names against the game data, and of numbers.
@@ -181,12 +236,30 @@ internal static class LootSettingsContent
     {
         private readonly string[] _containerTags = [.. data.Loot.ContainerTypes.Select(type => type.Tag)];
         private readonly HashSet<string> _dropTags = new(data.Items.All.SelectMany(item => item.DropTags), StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _looseTags = new(data.Maps.SelectMany(map => map.LooseItemSockets).Select(socket => socket.Tag), StringComparer.OrdinalIgnoreCase);
 
         public void ContainerTag(string tag, string where)
         {
             if (!Array.Exists(_containerTags, known => LootTags.IsTagOrBelow(known, tag)))
             {
                 throw invalid($"{where}: no container has the tag {tag} or a tag below it");
+            }
+        }
+
+        public void LooseTag(string tag, string where)
+        {
+            if (!_looseTags.Any(known => LootTags.IsTagOrBelow(known, tag)))
+            {
+                throw invalid($"{where}: no loose item socket has the tag {tag} or a tag below it");
+            }
+        }
+
+        public void Table(string table, string where)
+        {
+            // A name may belong to tables in several folders; a pool draws from all of them.
+            if (!data.Loot.StaticValueTables.Any(known => string.Equals(known.Name, table, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw invalid($"{where}: the game data has no loot table {table}");
             }
         }
 

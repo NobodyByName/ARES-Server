@@ -45,6 +45,22 @@ public sealed class LootSettingsContentTests : IDisposable
         Assert.Equal("Common", contents.FirstStackTier);
         Assert.NotEmpty(contents.TablePools);
         Assert.NotEmpty(contents.TypePools);
+        Assert.Equal(0.082, spawn.LooseChance("Socket.Loot.Console"));
+        Assert.Equal(0.004, spawn.LooseChance("Socket.Loot.Nature.Pine"));
+        Assert.Equal(0, spawn.LooseChance("Socket.LootContainer.Tech"));
+        Assert.Equal(new LootRange(1, 2), contents.LooseItems.Amount);
+        Assert.Equal(["Supplies", "Medical", "Tables"], contents.LooseItems.Pools.Select(pool => pool.Name));
+    }
+
+    [RealDataFact]
+    public void The_shipped_defaults_for_what_the_game_data_leaves_unset_are_the_official_ones()
+    {
+        LootSpawnSettings spawn = ShippedContent.Value.LootSpawn(Data);
+
+        Assert.Equal(2, spawn.MaxPerGroup);
+        Assert.Equal(new LootLimiterDefaults(LootLimiterShape.Sphere, 1000, true, 0), spawn.LimiterDefaults);
+        Assert.Equal(1, spawn.SpawnerCount);
+        Assert.Equal([new LootTargetStacks(2, 2), new LootTargetStacks(3, 3)], ShippedContent.Value.LootContents(Data).TargetStacks);
     }
 
     [RealDataFact]
@@ -121,6 +137,8 @@ public sealed class LootSettingsContentTests : IDisposable
     [InlineData(AresContent.LootContentsFile, "tablePools[0]/stacks", """{ "min": 1, "max": 2, "mean": 1 }""")]
     [InlineData(AresContent.LootContentsFile, "extraStack/entries[0]/count", "1")]
     [InlineData(AresContent.LootContentsFile, "typePools[0]/stacks", """{ "min": 1 }""")]
+    [InlineData(AresContent.LootSpawnFile, "looseChances", "null")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/pools[0]/weight", "1")]
     public void A_file_with_an_unknown_missing_or_mistyped_member_is_refused_when_loaded(string file, string path, string value)
     {
         Write(file, path, value);

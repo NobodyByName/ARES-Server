@@ -3,7 +3,7 @@ using Ares.Structs.Game.World;
 
 namespace Ares.Common.Tests;
 
-/// <summary>Logic tier: how spawn settings turn a container tag and an area's loot value into a chance. Values are invented.</summary>
+/// <summary>Logic tier: how spawn settings turn a container or loose item tag and an area's loot value into a chance. Values are invented.</summary>
 public sealed class LootSpawnSettingsTests
 {
     private const string Drawer = "Socket.Test.Desk.Drawer";
@@ -23,7 +23,12 @@ public sealed class LootSpawnSettingsTests
         },
         GroupCaps: true,
         Limiters: true,
-        new HashSet<string>(StringComparer.Ordinal));
+        new HashSet<string>(StringComparer.Ordinal),
+        new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Socket.Loot"] = 0.1,
+            ["Socket.Loot.Nature"] = 0.01,
+        });
 
     [Fact]
     public void A_tag_takes_its_own_chance_else_its_nearest_parents_else_none()
@@ -68,5 +73,34 @@ public sealed class LootSpawnSettingsTests
         Assert.All(
             s_settings.Chances.Keys.SelectMany(tag => Enum.GetValues<PointOfInterestLootValue>().Select(value => s_settings.Chance(tag, value))),
             chance => Assert.InRange(chance, 0, 1));
+    }
+
+    [Fact]
+    public void A_loose_item_tag_takes_its_own_chance_else_its_nearest_parents_scaled_by_the_area()
+    {
+        Assert.Equal(0.01, s_settings.LooseChance("Socket.Loot.Nature.Pine"));
+        Assert.Equal(0.1, s_settings.LooseChance("Socket.Loot.Console"));
+        Assert.Equal(0.1, s_settings.LooseChance("socket.loot"));
+        Assert.Equal(0, s_settings.LooseChance("Socket.LootContainer.Tech"));
+        Assert.Equal(0, s_settings.LooseChance(Drawer));
+        Assert.Equal(0, s_settings.Chance("Socket.Loot.Console"));
+        Assert.Equal(0.1 * 2, s_settings.LooseChance("Socket.Loot.Console", PointOfInterestLootValue.Medium), 12);
+        Assert.Equal(0.01 * 0.5, s_settings.LooseChance("Socket.Loot.Nature.Pine", PointOfInterestLootValue.Low), 12);
+    }
+
+    [Fact]
+    public void Limiter_defaults_fill_only_what_the_limiter_and_its_limits_leave_unset()
+    {
+        LootLimiterDefaults defaults = new(LootLimiterShape.Sphere, 1000, true, 0);
+        LootLimiter unset = new("", "Limiter", "Name", null, null, default, default, null, [],
+            [new LootLimit("Socket.LootContainer", null, null), new LootLimit("Socket.Loot", false, 3)]);
+        LootLimiter set = unset with { Shape = LootLimiterShape.Box, Radius = 200, Limits = [new LootLimit("Socket.LootContainer", false, null)] };
+
+        LootLimiter resolved = defaults.Apply(unset);
+        Assert.Equal((LootLimiterShape.Sphere, 1000.0), (resolved.Shape, resolved.Radius));
+        Assert.Equal([new LootLimit("Socket.LootContainer", true, 0), new LootLimit("Socket.Loot", false, 3)], resolved.Limits);
+        LootLimiter kept = defaults.Apply(set);
+        Assert.Equal((LootLimiterShape.Box, 200.0), (kept.Shape, kept.Radius));
+        Assert.Equal([new LootLimit("Socket.LootContainer", false, 0)], kept.Limits);
     }
 }

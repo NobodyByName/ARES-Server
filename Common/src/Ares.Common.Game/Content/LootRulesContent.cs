@@ -8,7 +8,10 @@ using Ares.Structs.Game.Loot;
 
 namespace Ares.Common.Game.Content;
 
-/// <summary>Turns <c>loot-rules.json</c> into <see cref="LootRules"/>, refusing anything the game data does not have.</summary>
+/// <summary>
+/// Turns <c>loot-rules.json</c> into <see cref="LootRules"/>, refusing anything the game data does not have: tags and ids
+/// must name a container or a loose item socket of a map.
+/// </summary>
 internal static class LootRulesContent
 {
     /// <summary>Checks the rules and resolves their items.</summary>
@@ -24,10 +27,13 @@ internal static class LootRulesContent
             return LootRules.None;
         }
 
-        string[] containerTags = [.. data.Loot.ContainerTypes.Select(type => type.Tag)];
+        string[] knownTags = [.. data.Loot.ContainerTypes.Select(type => type.Tag)
+            .Concat(data.Maps.SelectMany(map => map.LooseItemSockets.Select(socket => socket.Tag)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
         HashSet<string> ids = new(data.Maps.SelectMany(map => map.LootSockets.Select(LootContainerIds.Of)
             .Concat(map.PlacedLoot.Select(LootContainerIds.Of))
-            .Concat(map.DynamicLootSpawners.Select(LootContainerIds.Of))), StringComparer.Ordinal);
+            .Concat(map.DynamicLootSpawners.Select(LootContainerIds.Of))
+            .Concat(map.LooseItemSockets.Select(LootContainerIds.Of))), StringComparer.Ordinal);
         Dictionary<string, ItemDefinition> containerItems = items.ContainerItems.ToDictionary(item => item.TechnicalName, StringComparer.Ordinal);
         List<LootRule> rules = [];
         foreach ((LootRuleDocument? entry, int position) in document.Rules.Select((rule, index) => ((LootRuleDocument?)rule, index + 1)))
@@ -57,14 +63,14 @@ internal static class LootRulesContent
                 throw Problem("revealDelaySeconds must be 0 or more");
             }
 
-            if (tags.FirstOrDefault(tag => !Array.Exists(containerTags, known => LootTags.IsTagOrBelow(known, tag))) is { } unknownTag)
+            if (tags.FirstOrDefault(tag => !Array.Exists(knownTags, known => LootTags.IsTagOrBelow(known, tag))) is { } unknownTag)
             {
-                throw Problem($"no container has the tag {unknownTag} or a tag below it");
+                throw Problem($"no container or loose item socket has the tag {unknownTag} or a tag below it");
             }
 
             if (containers.FirstOrDefault(id => !ids.Contains(id)) is { } unknownId)
             {
-                throw Problem($"no map has the container {unknownId}");
+                throw Problem($"no map has the container or loose item socket {unknownId}");
             }
 
             rules.Add(new LootRule(name, tags, containers.ToFrozenSet(StringComparer.Ordinal), rule.SpawnChance, rule.Loot is { } loot ? List(loot) : null,

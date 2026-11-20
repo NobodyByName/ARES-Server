@@ -572,5 +572,120 @@
         }
       ]
     }
-  ]
+  ],
+  "looseItems": {
+    "tables": [
+      "StaticValueLootTable_ElectricalTechMixedMaterialsAll",
+      "StaticValueLootTable_BasicMaterialsElectrical",
+      "StaticValueLootTable_RareMaterialsTechnological",
+      "StaticValueLootTable_RecyclablesTechnological",
+      "StaticValueLootTable_GlobalCommonMaterials",
+      "StaticValueLootTable_GlobalUncommonMaterials",
+      "StaticValueLootTable_GlobalRareMaterials",
+      "StaticValueLootTable_GlobalEpicMaterials",
+      "StaticValueLootTable_GlobalOutpostMaterials",
+      "StaticValueLootTable_GlobalRecyclables",
+      "StaticValueLootTable_GlobalRecyclablesLow",
+      "StaticValueLootTable_GlobalRecyclablesMid",
+      "StaticValueLootTable_GlobalTrinkets",
+      "StaticValueLootTable_GlobalTrinketsLow",
+      "StaticValueLootTable_GlobalTrinketsMid",
+      "StaticValueLootTable_GlobalTrinketsHigh",
+      "StaticValueLootTable_OldWorldAll",
+      "StaticValueLootTable_ExodusMixed",
+      "StaticValueLootTable_UncommonMaterialsExodus",
+      "StaticValueLootTable_EpicMaterialsExodus",
+      "StaticValueLootTable_RecyclablesExodus_HighTier",
+      "StaticValueLootTable_ElectricalAll",
+      "StaticValueLootTable_ElectricalTechMixedMaterials",
+      "StaticValueLootTable_MechanicalAll",
+      "StaticValueLootTable_BasicMaterialsMechanical",
+      "StaticValueLootTable_MechanicalIndustrialMixedAll",
+      "StaticValueLootTable_IndustrialAll",
+      "StaticValueLootTable_SecurityAll",
+      "StaticValueLootTable_CommercialAll",
+      "StaticValueLootTable_CivilianMixedMaterials",
+      "StaticValueLootTable_TrinketsCommercial",
+      "StaticValueLootTable_RecyclablesCommercial",
+      "StaticValueLootTable_ResidentialAll",
+      "StaticValueLootTable_TrinketsResidential",
+      "StaticValueLootTable_RecyclablesResidential",
+      "StaticValueLootTable_RecyclablesFabricBased",
+      "StaticValueLootTable_MedicalMixed",
+      "StaticValueLootTable_RecyclablesMedical",
+      "StaticValueLootTable_SecurityMaterials",
+      "StaticValueLootTable_RecyclablesSecurity",
+      "StaticValueLootTable_TrinketsOldWorld",
+      "StaticValueLootTable_CivilianMixedAll",
+      "StaticValueLootTable_ARC",
+      "StaticValueLootTable_Nature"
+    ],
+    "amount": {
+      "min": 1,
+      "max": 2
+    },
+    "pools": [
+      {
+        "name": "Supplies",
+        "tags": [
+          "Socket.Loot.Cabinet",
+          "Socket.Loot.Console",
+          "Socket.Loot.StorageRack"
+        ],
+        "tableWeight": 1,
+        "entries": [
+          {
+            "dropTag": "Item.Drop.Type.Ammo",
+            "amount": {
+              "min": 10,
+              "max": 22
+            },
+            "weight": 1
+          },
+          {
+            "dropTag": "Item.Drop.Type.Consumable.Healing",
+            "amount": {
+              "min": 1,
+              "max": 2
+            },
+            "weight": 0.5
+          }
+        ]
+      },
+      {
+        "name": "Medical",
+        "tags": [
+          "Socket.Loot.Medical"
+        ],
+        "tableWeight": 1,
+        "entries": [
+          {
+            "dropTag": "Item.Drop.Type.Consumable.Healing",
+            "amount": {
+              "min": 1,
+              "max": 2
+            },
+            "weight": 1
+          }
+        ]
+      },
+      {
+        "name": "Tables",
+        "tags": [
+          "Socket.Loot.Table"
+        ],
+        "tableWeight": 3,
+        "entries": [
+          {
+            "dropTag": "Item.Drop.Type.Consumable.Healing",
+            "amount": {
+              "min": 1,
+              "max": 2
+            },
+            "weight": 1
+          }
+        ]
+      }
+    ]
+  }
 }

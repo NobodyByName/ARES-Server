@@ -7,6 +7,7 @@ using Ares.Common.GameData;
 using Ares.Common.Testing;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Loot;
+using Ares.Structs.Game.World;
 
 namespace Ares.Common.Tests;
 
@@ -98,13 +99,14 @@ public sealed class LootRulesContentTests : IDisposable
     }
 
     [RealDataFact]
-    public void Every_container_id_of_the_dam_names_one_container()
+    public void Every_container_and_loose_item_socket_id_of_the_dam_names_one_of_them()
     {
         string[] ids =
         [
             .. Dam.LootSockets.Select(LootContainerIds.Of),
             .. Dam.PlacedLoot.Select(LootContainerIds.Of),
             .. Dam.DynamicLootSpawners.Select(LootContainerIds.Of),
+            .. Dam.LooseItemSockets.Select(LootContainerIds.Of),
         ];
 
         Assert.Equal(ids.Length, ids.Distinct(StringComparer.Ordinal).Count());
@@ -167,6 +169,29 @@ public sealed class LootRulesContentTests : IDisposable
     }
 
     [RealDataFact]
+    public void Loose_item_tags_and_ids_are_accepted_and_resolve_like_container_ones()
+    {
+        LooseItemSocket socket = Dam.LooseItemSockets[0];
+        (string Id, string Tag) loose = (LootContainerIds.Of(socket), socket.Tag);
+        string text = $$"""
+            {
+              "rules": [
+                { "name": "loose family", "tags": ["socket.loot"], "spawnChance": 0.25 },
+                { "name": "loose tag", "tags": [{{Json(loose.Tag)}}], "loot": { "items": [{ "item": {{Json(Single.TechnicalName)}} }] } },
+                { "name": "loose id", "containers": [{{Json(loose.Id)}}], "spawnChance": 1 }
+              ]
+            }
+            """;
+
+        LootRules rules = Load(text).LootRules(Data, Definitions);
+
+        Assert.Equal(1, rules.SpawnChance(loose.Id, [loose.Tag]));
+        Assert.Equal(0.25, rules.SpawnChance("/NotListed", [loose.Tag]));
+        Assert.Same(rules.Rules[1], rules.LootOf(loose.Id, loose.Tag));
+        Assert.Null(rules.SpawnChance(LootContainerIds.Of(Dam.LootSockets[0]), [Dam.LootSockets[0].ContainerTag]));
+    }
+
+    [RealDataFact]
     public void Tags_and_ids_are_checked_by_the_game_data_but_tags_ignore_case()
     {
         LootRules rules = Load($$"""{ "rules": [{ "tags": [{{Json(ParentTag.ToLowerInvariant())}}], "spawnChance": 0 }] }""").LootRules(Data, Definitions);
@@ -175,10 +200,12 @@ public sealed class LootRulesContentTests : IDisposable
     }
 
     [RealDataTheory]
-    [InlineData("""{ "rules": [{ "tags": ["Socket.LootContainer.NoSuchTag"], "spawnChance": 1 }] }""", "rule #1: no container has the tag Socket.LootContainer.NoSuchTag or a tag below it")]
-    [InlineData("""{ "rules": [{ "tags": ["Socket.LootCont"], "spawnChance": 1 }] }""", "no container has the tag Socket.LootCont or")]
-    [InlineData("""{ "rules": [{ "name": "ids", "containers": ["NoCell/NoActor"], "spawnChance": 1 }] }""", "ids: no map has the container NoCell/NoActor")]
+    [InlineData("""{ "rules": [{ "tags": ["Socket.LootContainer.NoSuchTag"], "spawnChance": 1 }] }""", "rule #1: no container or loose item socket has the tag Socket.LootContainer.NoSuchTag or a tag below it")]
+    [InlineData("""{ "rules": [{ "tags": ["Socket.LootCont"], "spawnChance": 1 }] }""", "no container or loose item socket has the tag Socket.LootCont or")]
+    [InlineData("""{ "rules": [{ "tags": ["Socket.Loot.NoSuchTag"], "spawnChance": 1 }] }""", "no container or loose item socket has the tag Socket.Loot.NoSuchTag or")]
+    [InlineData("""{ "rules": [{ "name": "ids", "containers": ["NoCell/NoActor"], "spawnChance": 1 }] }""", "ids: no map has the container or loose item socket NoCell/NoActor")]
     [InlineData("""{ "rules": [{ "containers": ["{socket}/Extra"], "spawnChance": 1 }] }""", "no map has the container")]
+    [InlineData("""{ "rules": [{ "containers": ["{loose}/Extra"], "spawnChance": 1 }] }""", "no map has the container or loose item socket {loose}/Extra")]
     [InlineData("""{ "rules": [{ "spawnChance": 1.5 }] }""", "rule #1: spawnChance must be from 0 to 1")]
     [InlineData("""{ "rules": [{ "spawnChance": -0.1 }] }""", "spawnChance must be from 0 to 1")]
     [InlineData("""{ "rules": [{ "spawnChance": 1 }, { "name": "idle", "tags": ["{tag}"] }] }""", "idle: sets none of spawnChance, groupFill, loot and revealDelaySeconds")]
@@ -259,6 +286,7 @@ public sealed class LootRulesContentTests : IDisposable
         .Replace("{augment}", Data.Names.CombatMk1.TechnicalName, StringComparison.Ordinal)
         .Replace("{outside}", Outside.TechnicalName, StringComparison.Ordinal)
         .Replace("{socket}", LootContainerIds.Of(Dam.LootSockets[0]), StringComparison.Ordinal)
+        .Replace("{loose}", LootContainerIds.Of(Dam.LooseItemSockets[0]), StringComparison.Ordinal)
         .Replace("{tag}", ParentTag, StringComparison.Ordinal);
 
     private AresContent Load(string text)

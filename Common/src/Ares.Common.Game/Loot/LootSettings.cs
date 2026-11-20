@@ -17,29 +17,33 @@ namespace Ares.Common.Game.Loot;
 /// <param name="GroupCaps">Whether the game's most containers per group (<see cref="LootContainerType.MaxPerGroup"/>) apply.</param>
 /// <param name="Limiters">Whether the map's placement limiters cap the sockets they cover.</param>
 /// <param name="SpawnerClasses">Container classes (class paths) dynamic loot spawners may place.</param>
+/// <param name="LooseChances">
+/// Chance from 0 to 1 that a loose item socket gets an item, by socket tag; a tag without an entry uses its nearest
+/// parent's, else 0. The area multipliers and the limiters apply as for container sockets.
+/// </param>
 public sealed record LootSpawnSettings(
     IReadOnlyDictionary<string, double> Chances,
     IReadOnlyDictionary<PointOfInterestLootValue, double> AreaMultipliers,
     bool GroupCaps,
     bool Limiters,
-    IReadOnlySet<string> SpawnerClasses)
+    IReadOnlySet<string> SpawnerClasses,
+    IReadOnlyDictionary<string, double> LooseChances)
 {
     /// <summary>The chance of a container tag: its own entry, else its nearest parent's, else 0.</summary>
     /// <param name="tag">The container tag.</param>
     /// <returns>The chance from 0 to 1.</returns>
-    public double Chance(string tag)
-    {
-        ArgumentNullException.ThrowIfNull(tag);
-        for (string current = tag; current.Length > 0; current = current.LastIndexOf('.') is var dot and > 0 ? current[..dot] : string.Empty)
-        {
-            if (Chances.TryGetValue(current, out double chance))
-            {
-                return chance;
-            }
-        }
+    public double Chance(string tag) => Nearest(Chances, tag);
 
-        return 0;
-    }
+    /// <summary>The chance of a loose item socket tag: its own entry, else its nearest parent's, else 0.</summary>
+    /// <param name="tag">The loose item socket's tag.</param>
+    /// <returns>The chance from 0 to 1.</returns>
+    public double LooseChance(string tag) => Nearest(LooseChances, tag);
+
+    /// <summary>The chance of a loose item socket tag in an area of a loot value: the tag's chance times the value's factor, at most 1.</summary>
+    /// <param name="tag">The loose item socket's tag.</param>
+    /// <param name="value">The loot value of the area around the socket.</param>
+    /// <returns>The chance from 0 to 1.</returns>
+    public double LooseChance(string tag, PointOfInterestLootValue value) => Math.Min(1, LooseChance(tag) * Multiplier(value));
 
     /// <summary>The factor of a loot value: its own entry, else the one of an area without a loot value, else 1.</summary>
     /// <param name="value">The loot value of the area around a container.</param>
@@ -52,6 +56,21 @@ public sealed record LootSpawnSettings(
     /// <param name="value">The loot value of the area around the container.</param>
     /// <returns>The chance from 0 to 1.</returns>
     public double Chance(string tag, PointOfInterestLootValue value) => Math.Min(1, Chance(tag) * Multiplier(value));
+
+    // The entry of a tag, else of its nearest parent, else 0.
+    private static double Nearest(IReadOnlyDictionary<string, double> chances, string tag)
+    {
+        ArgumentNullException.ThrowIfNull(tag);
+        for (string current = tag; current.Length > 0; current = current.LastIndexOf('.') is var dot and > 0 ? current[..dot] : string.Empty)
+        {
+            if (chances.TryGetValue(current, out double chance))
+            {
+                return chance;
+            }
+        }
+
+        return 0;
+    }
 }
 
 /// <summary>A tier of loot items: how often a container's next stack comes from it.</summary>
@@ -107,10 +126,32 @@ public sealed record LootExtraStack(double Chance, IReadOnlyList<LootTypeEntry> 
 /// <param name="TablePools">Table pools by container category.</param>
 /// <param name="ExtraStack">The extra stack.</param>
 /// <param name="TypePools">Type pools.</param>
+/// <param name="LooseItems">What loose item sockets hold.</param>
 public sealed record LootContentSettings(
     IReadOnlyList<string> ExcludedDropTags,
     IReadOnlyList<LootTier> Tiers,
     string? FirstStackTier,
     IReadOnlyList<LootTablePool> TablePools,
     LootExtraStack ExtraStack,
-    IReadOnlyList<LootTypePool> TypePools);
+    IReadOnlyList<LootTypePool> TypePools,
+    LooseItemSettings LooseItems);
+
+/// <summary>
+/// Items a loose item socket of some tags may hold besides the table items: the pool's entries, drawn against the
+/// table items by weight.
+/// </summary>
+/// <param name="Name">Name of the pool, as logs show it.</param>
+/// <param name="Tags">Loose item socket tags that use the pool: the tag itself and every tag below it that no other pool lists.</param>
+/// <param name="TableWeight">Weight of a table item against the entries' weights.</param>
+/// <param name="Entries">Items chosen by drop tag, with no placement check.</param>
+public sealed record LooseItemPool(string Name, IReadOnlyList<string> Tags, double TableWeight, IReadOnlyList<LootTypeEntry> Entries);
+
+/// <summary>
+/// What loose item sockets hold: one stack each. The stack is a table item (an item the tables select whose own
+/// placement list accepts the socket's tag, picked by tier weight scaled by the area's loot value, then evenly) or,
+/// when the socket's pool has entries, an entry's item, chosen by weight. Items with an excluded drop tag never appear.
+/// </summary>
+/// <param name="Tables">Value loot table asset names the table items come from.</param>
+/// <param name="Amount">Items in a table item's stack, drawn uniformly and capped at the item's largest stack.</param>
+/// <param name="Pools">Pools by socket tag; a socket no pool covers holds a table item.</param>
+public sealed record LooseItemSettings(IReadOnlyList<string> Tables, LootRange Amount, IReadOnlyList<LooseItemPool> Pools);

@@ -106,6 +106,7 @@ internal static class SyntheticHost
             groupCaps = true,
             limiters = true,
             spawnerClasses = Array.Empty<string>(),
+            looseChances = new Dictionary<string, double>(),
         });
         Write(directory, AresContent.LootContentsFile, new
         {
@@ -115,6 +116,7 @@ internal static class SyntheticHost
             tablePools = Array.Empty<object>(),
             extraStack = new { chance = 0, entries = Array.Empty<object>() },
             typePools = Array.Empty<object>(),
+            looseItems = new { tables = Array.Empty<string>(), amount = new { min = 1, max = 1 }, pools = Array.Empty<object>() },
         });
         Write(directory, AresContent.LootRulesFile, new { rules = Array.Empty<object>() });
         return AresContent.Load(directory);
