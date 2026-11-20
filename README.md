@@ -45,8 +45,8 @@ availability still need review.
   an unmodified game and [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher).
   Connection and raid compatibility still need a stock-client test.
 - Operators must supply the game's [archive keys](#archive-keys). ARES includes no game keys or game files.
-- For this trial, Host and Raid require [game data](#game-data) previously extracted from build 26439197.
-  Fresh extraction from the 2.6.0 install stops at the wrapped script cache.
+- For this trial, extract the [game data](#game-data) from the 2.6.0 install. Its files still carry data build
+  26439197, the build Host and Raid check for.
 - Developed and tested on Linux. Support for every ARC Raiders platform is a goal; Windows has not been tested yet.
 
 ## Archive keys
@@ -65,12 +65,12 @@ ARES-GameDataExtract reads it from the operator's own game installation and writ
 from the game: keep them on your own servers and never distribute them.
 
 The manifest and collision header identify the source game build. Run the extractor at first setup
-and whenever the required **data build** changes. For the 2.6.0 client trial, point `game-data-dir`
-at your existing 2.4.1 extract.
+and whenever the required **data build** changes. For the 2.6.0 client trial, run it on the 2.6.0 install (see
+[Requirements](#requirements)); an extract made by an earlier ARES version does not load.
 
 **What it needs:**
 
-- **Game folder:** an installed copy of the required data build (the folder holding `PioneerGame/`).
+- **Game folder:** an installed copy of the game, 2.6.0 for this trial (the folder holding `PioneerGame/`).
   It is only read, never changed.
 - **Archive keys file:** the same `archive-keys.txt` Host uses (see [Archive keys](#archive-keys)).
 - **TOC key file:** the key of the game's archive index (the `.utoc` files). Only ARES-GameDataExtract needs
