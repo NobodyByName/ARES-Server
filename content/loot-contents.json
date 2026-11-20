@@ -573,6 +573,277 @@
       ]
     }
   ],
+  "profiles": [
+    {
+      "name": "Houses",
+      "tag": "Socket.LootContainer.Residential",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0.2
+        }
+      ],
+      "tiers": {
+        "Trinkets": 1.5
+      }
+    },
+    {
+      "name": "Fridges",
+      "tag": "Socket.LootContainer.Residential.Refrigerator_01",
+      "only": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Trinket"
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Recyclables"
+        },
+        {
+          "item": "DA_Item_Salvage_Seeds"
+        }
+      ],
+      "tiers": {
+        "Common": 0.4,
+        "Recyclables": 0.3,
+        "Trinkets": 3
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Commercial fridges",
+      "tag": "Socket.LootContainer.Commercial.Fridge",
+      "only": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Trinket"
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Recyclables"
+        },
+        {
+          "item": "DA_Item_Salvage_Seeds"
+        }
+      ],
+      "tiers": {
+        "Common": 0.4,
+        "Recyclables": 0.3,
+        "Trinkets": 3
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Commercial freezers",
+      "tag": "Socket.LootContainer.Commercial.Freezer",
+      "only": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Trinket"
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.Recyclables"
+        },
+        {
+          "item": "DA_Item_Salvage_Seeds"
+        }
+      ],
+      "tiers": {
+        "Common": 0.4,
+        "Recyclables": 0.3,
+        "Trinkets": 3
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Kitchen benches",
+      "tag": "Socket.LootContainer.Residential.KitchenBench",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.ResearchItems",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Trinkets": 3,
+        "Rare": 0.5,
+        "Epic": 0
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Kitchen cupboards",
+      "tag": "Socket.LootContainer.Residential.CupboardKitchen",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.ResearchItems",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Trinkets": 3,
+        "Rare": 0.5,
+        "Epic": 0
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "House trash bins",
+      "tag": "Socket.LootContainer.Residential.Trashbin",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Recyclables": 3,
+        "Rare": 0.5,
+        "Epic": 0
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Offices",
+      "tag": "Socket.LootContainer.Commercial",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0.2
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.ResearchItems",
+          "multiplier": 2
+        }
+      ],
+      "tiers": {
+        "Trinkets": 1.5
+      }
+    },
+    {
+      "name": "Office trash bins",
+      "tag": "Socket.LootContainer.Commercial.Gvt.Trashbin",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Recyclables": 3,
+        "Rare": 0.5,
+        "Epic": 0
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Street trash bins",
+      "tag": "Socket.LootContainer.Commercial.TrashBin",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Recyclables": 3,
+        "Rare": 0.5,
+        "Epic": 0
+      },
+      "firstStackTier": null
+    },
+    {
+      "name": "Medical cabinets",
+      "tag": "Socket.LootContainer.Medical",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Consumable.Healing",
+          "multiplier": 4
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Other": 2,
+        "Trinkets": 0.3
+      },
+      "extraStack": {
+        "chance": 0.35,
+        "entries": [
+          {
+            "dropTag": "Item.Drop.Type.Consumable.Healing",
+            "amount": {
+              "min": 1,
+              "max": 3
+            },
+            "weight": 1
+          }
+        ]
+      }
+    },
+    {
+      "name": "Lockers",
+      "tag": "Socket.LootContainer.Industrial.Lockers",
+      "weights": [
+        {
+          "item": "DA_Item_Salvage_Seeds",
+          "multiplier": 0.2
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 1.5
+        }
+      ],
+      "extraStack": {
+        "chance": 0.3
+      }
+    },
+    {
+      "name": "Loose: medical beds",
+      "tag": "Socket.Loot.Medical",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Consumable.Healing",
+          "multiplier": 3
+        },
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ]
+    },
+    {
+      "name": "Loose: kitchens",
+      "tag": "Socket.Loot.KitchenModules",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Trinkets": 2
+      }
+    },
+    {
+      "name": "Loose: sofas",
+      "tag": "Socket.Loot.Sofa",
+      "weights": [
+        {
+          "dropTag": "Item.Drop.Type.Salvage.GunParts",
+          "multiplier": 0
+        }
+      ],
+      "tiers": {
+        "Trinkets": 2
+      }
+    }
+  ],
   "looseItems": {
     "tables": [
       "StaticValueLootTable_ElectricalTechMixedMaterialsAll",
