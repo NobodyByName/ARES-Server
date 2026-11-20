@@ -1,50 +1,23 @@
 using Ares.GameDataExtract.Packages;
-using Ares.GameDataExtract.Scripts;
-using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Movement;
-using static Ares.GameDataExtract.Tests.SyntheticScriptCache;
 
 namespace Ares.GameDataExtract.Tests;
 
 /// <summary>
-/// Made-up movement assets for an extraction run: the script classes the movement readers check, and the packages of
-/// <see cref="MovementAssets"/> with one roll animation (shared by every dodge roll) and one landing animation (every
+/// Made-up movement assets for an extraction run: the packages of <see cref="MovementAssets"/> with one roll animation
+/// (shared by every dodge roll, whose metrics set nothing but the animation) and one landing animation (every
 /// heavy-landing level). Vault sets are empty and the graph tracks <see cref="TagCount"/> tags.
 /// </summary>
 internal static class SyntheticMovementGame
 {
-    /// <summary>Distance the dodge-roll constructor stores.</summary>
-    public const double RollDistance = 400;
-
     /// <summary>Number of tracked graph tags.</summary>
     public const int TagCount = 56;
 
     private const string RollAnimation = "/Game/Anims/Roll";
     private const string LandingAnimation = "/Game/Anims/Land";
     private const int InputTags = 8;
-    private const uint Reflected = ScriptProperty.ReflectedFlag;
 
     private static readonly PackageObjectIndex s_firstImport = new((ulong)PackageObjectKind.PackageImport << 62);
-
-    /// <summary>Adds the movement classes and structs to a precompiled script cache.</summary>
-    public static void AddScripts(SyntheticScriptCache cache)
-    {
-        uint[] constructor = Code(
-            Op("SetV8", 2, Quad(RollDistance)), Op("LoadThisR", 0, 11), Op("WRTV8", 2),
-            Op("SetV8", 2, Quad(1.0)), Op("LoadThisR", 8, 11), Op("WRTV8", 2),
-            Op("SetV8", 2, Quad(20.0)), Op("LoadThisR", 16, 11), Op("WRTV8", 2),
-            Op("SetV8", 2, Quad(0.4)), Op("LoadThisR", 24, 11), Op("WRTV8", 2),
-            Op("RET"));
-        cache.Classes.Add(Class("UDodgeRollMetrics", MovementAssetSchemas.DodgeRollMetrics.Members));
-        cache.Classes.Add(Class("FDodgeRollSequenceData", MovementAssetSchemas.DodgeRollSequenceData.Members) with
-        {
-            Constructors = [new TestFunction("FDodgeRollSequenceData", constructor)],
-        });
-        cache.Classes.Add(Class("UHeavyLandingAnimations", MovementAssetSchemas.HeavyLandingAnimations.Members));
-        cache.Classes.Add(Class("UVaultDefinitionsDataAsset", [.. MovementAssetSchemas.VaultDefinitionsDataAsset.Members.Select(member => member ?? new PropertyField("AllAnimSequences", PropertyType.Object))]));
-        cache.Classes.Add(Class("USnaphookItem",
-            [.. Enumerable.Range(0, MovementAssetSchemas.SnaphookItemChain.ChainLength).Select(i => MovementAssetSchemas.SnaphookItemChain.At(i).Field ?? new PropertyField($"Unknown{i}", PropertyType.Int32))]));
-    }
 
     /// <summary>The movement packages by path.</summary>
     public static IEnumerable<(string Path, byte[] Data)> Packages()
@@ -67,11 +40,6 @@ internal static class SyntheticMovementGame
         byte[] keys = [.. Enumerable.Range(0, 3).SelectMany(key => (byte[])[2, 0, 3, .. AnimationReaderTests.Floats(key, key / 2f, 0, 1, 0, 1)])];
         yield return (MovementAssets.SprintBurstCurvePackage, SyntheticArchives.Package(MovementAssets.SprintBurstCurvePackage,
             [(ShortName(MovementAssets.SprintBurstCurvePackage), PackageObjectIndex.Null, PackageObjectIndex.Null, 0, [0x00, 0x03, 0x00, 0x03, .. BitConverter.GetBytes(3), .. keys, 0, 0, 0, 0])]));
-    }
-
-    private static TestClass Class(string name, IEnumerable<PropertyField?> members)
-    {
-        return new TestClass(name, null, [.. members.Select(member => new TestProperty(member!.Name, new ScriptDataType(0, 0), Reflected))]);
     }
 
     /// <summary>A one-export data asset importing <paramref name="imported"/>'s export as reference −1, then the zero trailer.</summary>

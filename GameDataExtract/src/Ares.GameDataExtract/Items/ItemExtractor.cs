@@ -27,11 +27,11 @@ internal static class ItemExtractor
     /// <summary>Extracts the tables.</summary>
     /// <param name="packages">The game's packages.</param>
     /// <param name="registry">The game's asset registry.</param>
-    /// <param name="scripts">The game's script cache.</param>
+    /// <param name="layouts">The script layouts.</param>
     /// <exception cref="InvalidDataException">An asset the tables need does not decode or breaks a rule the tables rely on.</exception>
-    public static ItemTables Extract(PackageCache packages, AssetRegistry registry, ScriptCache scripts)
+    public static ItemTables Extract(PackageCache packages, AssetRegistry registry, ScriptLayouts layouts)
     {
-        ItemSources sources = new(packages, registry, scripts);
+        ItemSources sources = new(packages, registry, layouts);
         ItemClasses classes = new(sources, sources.AssetsOf(InventoryStructures.ModSlotClass).Select(asset => asset.PackageName));
         ImmutableArray<ItemAsset> items = UsableItemReader.Read(sources, classes);
         InventoryStructures structures = new(sources, items);

@@ -5,13 +5,14 @@ using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Scripts;
 
 namespace Ares.GameDataExtract.Items;
 
 /// <summary>
-/// The install readers the item tables share: the packages, the asset registry, the script cache and the property
-/// chains of item data assets (<see cref="ItemAssetSchemas"/> for the item asset classes it lists, the script cache
-/// for other script classes, over the native item data asset bases), and object defaults along archetype chains.
+/// The install readers the item tables share: the packages, the asset registry, the script layouts, the property chains
+/// of item data assets (the script layouts' chains over the native item data asset bases,
+/// <see cref="ItemAssetSchemas.Natives"/>) and object defaults along archetype chains.
 /// </summary>
 internal sealed class ItemSources
 {
@@ -19,26 +20,19 @@ internal sealed class ItemSources
     public const int ExportTrailer = 4;
 
     /// <summary>Registry class of persistence assets, whose <see cref="AssetIdTag"/> tag is an item's asset id.</summary>
-    private const string PersistenceDataAssetClass = ScriptSchemas.ScriptPackage + "PersistenceDataAsset";
+    private const string PersistenceDataAssetClass = ScriptLayouts.ScriptPackage + "PersistenceDataAsset";
 
     /// <summary>Registry tag of a persistence asset holding its asset id.</summary>
     private const string AssetIdTag = "AssetId";
 
     private readonly Dictionary<string, long> _persistenceIds;
-    private readonly Dictionary<string, ScriptClassDefaults> _scriptDefaults = new(StringComparer.Ordinal);
 
-    public ItemSources(PackageCache packages, AssetRegistry registry, ScriptCache scripts)
+    public ItemSources(PackageCache packages, AssetRegistry registry, ScriptLayouts layouts)
     {
         Packages = packages;
         Registry = registry;
-        Scripts = scripts;
-        Schemas = new ScriptSchemas(scripts, new Dictionary<string, StructSchema>(StringComparer.Ordinal)
-        {
-            ["UItemDataAssetBaseNative"] = ItemAssetSchemas.ItemDataAssetBaseNative,
-            ["UOptionalPrimaryDataAsset"] = ItemAssetSchemas.OptionalPrimaryDataAsset,
-            ["UDataAsset"] = ItemAssetSchemas.DataAsset,
-            ["FWeaponStatModifier"] = ItemAssetSchemas.WeaponStatModifier,
-        });
+        Layouts = layouts;
+        Schemas = layouts.Schemas(ItemAssetSchemas.Natives);
         Classes = new ClassSchemas(packages, Schemas.ForPath);
         Defaults = new ObjectDefaults(packages, Classes.ForObject);
         _persistenceIds = registry.Assets
@@ -46,16 +40,16 @@ internal sealed class ItemSources
             .Select(asset => (asset.PackageName, Id: registry.Tags(asset).GetValueOrDefault(AssetIdTag)))
             .Where(entry => entry.Id is not null)
             .ToDictionary(entry => entry.PackageName, entry => long.Parse(entry.Id!, CultureInfo.InvariantCulture), StringComparer.Ordinal);
-        CheckItemAssetSchemas();
     }
 
     public PackageCache Packages { get; }
 
     public AssetRegistry Registry { get; }
 
-    public ScriptCache Scripts { get; }
+    /// <summary>The script classes, structs and enums cooked blocks are laid out by.</summary>
+    public ScriptLayouts Layouts { get; }
 
-    private ScriptSchemas Schemas { get; }
+    private ScriptTypeSchemas Schemas { get; }
 
     private ClassSchemas Classes { get; }
 
@@ -82,7 +76,7 @@ internal sealed class ItemSources
     /// <summary>The property chain of script class <paramref name="classPath"/>.</summary>
     /// <exception cref="InvalidDataException">The class has no known chain.</exception>
     private StructSchema SchemaOf(string classPath) =>
-        ItemAssetSchemas.ByClassPath.GetValueOrDefault(classPath) ?? Schemas.ForPath(classPath) ?? throw new InvalidDataException($"No property chain is known for {classPath}");
+        Schemas.ForPath(classPath) ?? throw new InvalidDataException($"No property chain is known for {classPath}");
 
     /// <summary>The package an object reference of <paramref name="package"/> imports from.</summary>
     /// <exception cref="InvalidDataException">The reference is not a package import.</exception>
@@ -108,37 +102,49 @@ internal sealed class ItemSources
     public long? PersistenceIdOf(string packageName) => _persistenceIds.TryGetValue(packageName, out long id) ? id : null;
 
     /// <summary>
-    /// A floating-point member's value from <paramref name="values"/>, or the literal the constructors along script class
-    /// <paramref name="scriptClass"/>'s chain store into it when the block does not hold it.
+    /// A floating-point member's value from <paramref name="values"/>, or <paramref name="fallback"/> (the class default)
+    /// when the block does not hold it.
     /// </summary>
-    /// <exception cref="InvalidDataException">The block does not hold the member and the script sets no literal default.</exception>
-    public double Number(PropertyBag values, string scriptClass, string member)
+    /// <exception cref="InvalidDataException">The member holds no number, or script class <paramref name="scriptClass"/>'s chain has no such member.</exception>
+    public double Number(PropertyBag values, string scriptClass, string member, double fallback)
     {
-        if (values.Contains(member))
-        {
-            return values.Get<object>(member) switch
-            {
-                double value => value,
-                float value => value,
-                { } other => throw new InvalidDataException($"{scriptClass}.{member} holds a {other.GetType().Name}, not a number"),
-            };
-        }
-
-        return ScriptDefault(scriptClass, member) switch
-        {
-            { Size: sizeof(double) } constant => constant.AsDouble,
-            { Size: sizeof(float) } constant => constant.AsSingle,
-            _ => throw new InvalidDataException($"{scriptClass}.{member} has no floating-point literal default in the script cache"),
-        };
+        ExpectMember(scriptClass, member);
+        return values.Contains(member) ? NumberOf(values, scriptClass, member) : fallback;
     }
 
-    /// <summary>An <see cref="int"/> member's value from <paramref name="values"/>, or its script literal default (see <see cref="Number"/>).</summary>
-    /// <exception cref="InvalidDataException">The block does not hold the member and the script sets no literal default.</exception>
+    /// <summary>A floating-point member's value from <paramref name="values"/>, which must hold it.</summary>
+    /// <exception cref="InvalidDataException">The block does not hold a number for it, or script class <paramref name="scriptClass"/>'s chain has no such member.</exception>
+    public double Number(PropertyBag values, string scriptClass, string member)
+    {
+        ExpectMember(scriptClass, member);
+        return values.Contains(member) ? NumberOf(values, scriptClass, member) : throw NotSet(scriptClass, member);
+    }
+
+    /// <summary>An <see cref="int"/> member's value from <paramref name="values"/>, which must hold it.</summary>
+    /// <exception cref="InvalidDataException">The block does not hold the member, or script class <paramref name="scriptClass"/>'s chain has no such member.</exception>
     public int Integer(PropertyBag values, string scriptClass, string member)
     {
-        return values.Contains(member) ? values.Get<int>(member)
-            : ScriptDefault(scriptClass, member) is { Size: sizeof(int) } constant ? constant.AsInt32
-            : throw new InvalidDataException($"{scriptClass}.{member} has no integer literal default in the script cache");
+        ExpectMember(scriptClass, member);
+        return values.Contains(member) ? values.Get<int>(member) : throw NotSet(scriptClass, member);
+    }
+
+    private static double NumberOf(PropertyBag values, string scriptClass, string member) => values.Get<object>(member) switch
+    {
+        double value => value,
+        float value => value,
+        { } other => throw new InvalidDataException($"{scriptClass}.{member} holds a {other.GetType().Name}, not a number"),
+    };
+
+    private static InvalidDataException NotSet(string scriptClass, string member) => new($"{scriptClass}.{member} is not set, and no class default is known for it");
+
+    /// <summary>Checks that script class <paramref name="scriptClass"/>'s reflected chain declares <paramref name="member"/>.</summary>
+    /// <exception cref="InvalidDataException">No class of the chain declares it.</exception>
+    private void ExpectMember(string scriptClass, string member)
+    {
+        if (Layouts.ReflectedChain(scriptClass, out _).All(declared => declared.Name != member))
+        {
+            throw new InvalidDataException($"The script class chain of {scriptClass} has no member {member}");
+        }
     }
 
     /// <summary>
@@ -160,49 +166,6 @@ internal sealed class ItemSources
         return null;
     }
 
-    /// <summary>The literal the constructors along <paramref name="scriptClass"/>'s chain store last into <paramref name="member"/>.</summary>
-    private ScriptConstant? ScriptDefault(string scriptClass, string member)
-    {
-        ScriptClass? declaring = Scripts.Chain(scriptClass, out _).FirstOrDefault(type => type.ReflectedProperties.Any(property => property.Name == member));
-        if (declaring is null || !Scripts.MemberOffsets(declaring.Name).TryGetValue(member, out int offset))
-        {
-            return null;
-        }
-
-        if (_scriptDefaults.TryGetValue(scriptClass, out ScriptClassDefaults? defaults))
-        {
-            return defaults.Constant(offset);
-        }
-
-        defaults = ScriptClassDefaults.Of(Scripts, scriptClass);
-        _scriptDefaults[scriptClass] = defaults;
-        return defaults.Constant(offset);
-    }
-
     /// <summary>Whether script class <paramref name="name"/> is <paramref name="ancestor"/> or derives from it.</summary>
-    public bool Derives(string name, string ancestor) => Scripts.Chain(name, out string? native).Any(type => type.Name == ancestor) || native == ancestor;
-
-    /// <summary>
-    /// Checks that the script members of the item asset chains in <see cref="ItemAssetSchemas"/> are the script cache's
-    /// reflected members, in order (the native bases are not in the cache).
-    /// </summary>
-    private void CheckItemAssetSchemas()
-    {
-        foreach ((string path, StructSchema schema) in ItemAssetSchemas.ByClassPath)
-        {
-            string name = "U" + path[ScriptSchemas.ScriptPackage.Length..];
-            string[] expected = [.. Scripts.ReflectedChain(name, out _).Select(property => property.Name)];
-            List<string> actual = [];
-            for (StructSchema? type = schema; type is not null && actual.Count < expected.Length; type = type.Super)
-            {
-                actual.AddRange(type.Members.Select(member => member?.Name ?? "?"));
-            }
-
-            // The UI metadata item is read only up to its last needed member.
-            if (!expected.Take(actual.Count).SequenceEqual(actual, StringComparer.Ordinal) || (actual.Count < expected.Length && path != ItemAssetSchemas.UiGameplayItemMetaDataItemClass))
-            {
-                throw new InvalidDataException($"The script members of {name} differ from ItemAssetSchemas: [{string.Join(", ", expected)}]");
-            }
-        }
-    }
+    public bool Derives(string name, string ancestor) => Layouts.Derives(name, ancestor);
 }

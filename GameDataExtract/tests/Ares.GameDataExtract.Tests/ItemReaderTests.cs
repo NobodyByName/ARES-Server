@@ -1,25 +1,15 @@
 using Ares.GameDataExtract.Items;
+using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
+using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
+using Ares.Structs.Game.Inventory;
 
 namespace Ares.GameDataExtract.Tests;
 
 public sealed class ItemReaderTests
 {
-    private const uint Reflected = ScriptProperty.ReflectedFlag;
-    private const long ArrayType = 0x7000;
-    private const long MapType = 0x7001;
-    private const long StructType = 0x7002;
-    private const long ObjectType = 0x7003;
-    private const long EnumType = 0x7004;
-    private const long NameType = 0x7005;
-    private const long VectorType = 0x7006;
-    private const long NativeType = 0x7007;
-    private const long UnknownType = 0x7008;
-    private static readonly ScriptDataType s_int64 = new(0, 71);
-    private static readonly ScriptDataType s_double = new(0, 81);
-
     [Fact]
     public void Tag_queries_match_tags_and_tags_under_them()
     {
@@ -51,63 +41,33 @@ public sealed class ItemReaderTests
     }
 
     [Fact]
-    public void Script_schemas_map_member_types_and_end_at_known_native_supers()
+    public void A_member_the_block_does_not_hold_takes_the_class_default()
     {
-        SyntheticScriptCache cache = new()
-        {
-            Classes =
-            {
-                new TestClass("UThing", "UBase",
-                [
-                    new TestProperty("Id", s_int64, Reflected),
-                    new TestProperty("Hidden", s_double, 0),
-                    new TestProperty("Entries", new ScriptDataType(ArrayType, 5), Reflected),
-                    new TestProperty("Values", new ScriptDataType(MapType, 5), Reflected),
-                    new TestProperty("Owner", new ScriptDataType(ObjectType, 5), Reflected),
-                    new TestProperty("Kind", new ScriptDataType(EnumType, 5), Reflected),
-                    new TestProperty("Label", new ScriptDataType(NameType, 5), Reflected),
-                    new TestProperty("Where", new ScriptDataType(VectorType, 5), Reflected),
-                    new TestProperty("Native", new ScriptDataType(NativeType, 5), Reflected),
-                    new TestProperty("Unknown", new ScriptDataType(UnknownType, 5), Reflected),
-                ]),
-                new TestClass("UBase", "UNativeBase", [new TestProperty("Weight", s_double, Reflected)]),
-                new TestClass("FEntry", null, [new TestProperty("Amount", s_double, Reflected)]),
-            },
-            Types =
-            {
-                [ArrayType] = ("TArray", [new ScriptDataType(StructType, 5)]),
-                [MapType] = ("TMap", [s_int64, s_double]),
-                [StructType] = ("FEntry", []),
-                [ObjectType] = ("UItemDataAsset", []),
-                [EnumType] = ("EItemCategory", []),
-                [NameType] = ("FName", []),
-                [VectorType] = ("FVector", []),
-                [NativeType] = ("FNativeThing", []),
-                [UnknownType] = ("FMystery", []),
-            },
-        };
-        StructSchema native = new("NativeBase", [new PropertyField("Flags", PropertyType.Int32)]);
-        StructSchema nativeStruct = new("NativeThing", [new PropertyField("X", PropertyType.Float)]);
-        ScriptSchemas schemas = new(cache.Parse(), new Dictionary<string, StructSchema> { ["UNativeBase"] = native, ["FNativeThing"] = nativeStruct });
+        ItemSources sources = Sources();
+        PropertyBag stored = new(EngineStructs.GameplayTag, new Dictionary<string, object> { ["EquipTime"] = 1.25, ["BaseClipSize"] = 30f });
+        PropertyBag empty = new(EngineStructs.GameplayTag, []);
 
-        StructSchema thing = schemas.ForPath(ScriptSchemas.ScriptPackage + "Thing")!;
-
-        Assert.Equal(["Id", "Entries", "Values", "Owner", "Kind", "Label", "Where", "Native", "Unknown"], thing.Members.Select(member => member!.Name));
-        PropertyType[] types = [.. thing.Members.Select(member => member!.Type)];
-        Assert.Equal(PropertyKind.Int64, types[0].Kind);
-        Assert.Equal(["Amount"], types[1].Inner!.Struct!.Members.Select(member => member!.Name));
-        Assert.Equal((PropertyKind.Int64, PropertyKind.Double), (types[2].Inner!.Kind, types[2].Value!.Kind));
-        Assert.Equal([PropertyKind.Object, PropertyKind.Enum, PropertyKind.Name], types[3..6].Select(type => type.Kind));
-        Assert.Same(EngineStructs.Vector, types[6].Struct);
-        Assert.Same(nativeStruct, types[7].Struct);
-        Assert.Equal(NativeLayout.Unknown, types[8].Struct!.Native);
-        Assert.Equal("Base", thing.Super!.Name);
-        Assert.Same(native, thing.Super.Super);
-        Assert.Equal(11, thing.ChainLength);
-        Assert.Same(thing, schemas.Of("UThing"));
-        Assert.Null(schemas.ForPath(ScriptSchemas.ScriptPackage + "Missing"));
-        Assert.Same(EngineStructs.GameplayTag, schemas.ForPath("/Script/GameplayTags.GameplayTag"));
+        Assert.Equal(1.25, sources.Number(stored, "UItemDataAsset", "EquipTime", ItemDataRules.DefaultEquipSeconds));
+        Assert.Equal(ItemDataRules.DefaultEquipSeconds, sources.Number(empty, "UItemDataAsset", "EquipTime", ItemDataRules.DefaultEquipSeconds));
+        Assert.Equal(30.0, sources.Number(stored, "UFirearmItem", "BaseClipSize", WeaponItemDefaults.ClipSize));
+        Assert.Equal(WeaponItemDefaults.ClipSize, sources.Number(empty, "UFirearmItem", "BaseClipSize", WeaponItemDefaults.ClipSize));
     }
+
+    [Fact]
+    public void A_member_the_class_chain_lacks_or_without_a_known_default_does_not_read()
+    {
+        ItemSources sources = Sources();
+        PropertyBag empty = new(EngineStructs.GameplayTag, []);
+
+        Assert.Contains("has no member NoSuchMember",
+            Assert.Throws<InvalidDataException>(() => sources.Number(empty, "UItemDataAsset", "NoSuchMember", 1.0)).Message, StringComparison.Ordinal);
+        Assert.Contains("is not set",
+            Assert.Throws<InvalidDataException>(() => sources.Number(empty, "UItemDataAsset", "EquipTime")).Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>Item sources over the current script layouts, without packages or registry assets.</summary>
+    private static ItemSources Sources() =>
+        new(new PackageCache(_ => null, _ => null), AssetRegistry.Parse(SyntheticLootScripts.EmptyRegistry()), ScriptLayouts.Current);
 
     private static GameplayTagQuery Query(string[] tags, byte[] tokens)
     {

@@ -127,8 +127,10 @@ internal sealed class ExtractCommand
     /// Whether to extract the item tables and the map gameplay tables; tests with a synthetic game leave them out, since
     /// they need the game's whole item catalogue and its gameplay assets (game mode, rounds, lighting, extraction).
     /// </param>
-    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error, bool gameAssetTables = true)
+    /// <param name="layouts">The script layouts cooked blocks are read by; <see cref="ScriptLayouts.Current"/> by default.</param>
+    internal int Run(ArchiveKeys keys, TocKey tocKey, TextWriter output, TextWriter error, bool gameAssetTables = true, ScriptLayouts? layouts = null)
     {
+        layouts ??= ScriptLayouts.Current;
         if (IsInside(OutputDirectory, GameDirectory))
         {
             error.WriteLine($"ARES-GameDataExtract: error: the output folder {OutputDirectory} is inside the game folder");
@@ -157,16 +159,14 @@ internal sealed class ExtractCommand
             {
                 CollisionProfiles profiles;
                 AssetRegistry registry;
-                ScriptCache scripts;
 
-                // The collision config pak is the main pak: it also holds the asset registry and the script cache, read
-                // once and shared by the item, movement, loot, loot area and gameplay tables.
+                // The collision config pak is the main pak: it also holds the asset registry, read once and shared by the
+                // tables that need it.
                 using (PakFile configPak = PakFile.Open(Path.Combine(GameDirectory, CollisionProfileConfig.ConfigPak), keys))
                 {
                     profiles = CollisionProfiles.Load(configPak);
                     long sharedStart = Stopwatch.GetTimestamp();
                     registry = AssetRegistry.Load(configPak);
-                    scripts = ScriptCache.Read(configPak);
                     sharedTime = Stopwatch.GetElapsedTime(sharedStart);
                 }
 
@@ -178,25 +178,25 @@ internal sealed class ExtractCommand
                 if (gameAssetTables)
                 {
                     long itemStart = Stopwatch.GetTimestamp();
-                    items = ItemExtractor.Extract(packages, registry, scripts);
+                    items = ItemExtractor.Extract(packages, registry, layouts);
                     itemTime = Stopwatch.GetElapsedTime(itemStart);
                 }
 
                 long movementStart = Stopwatch.GetTimestamp();
-                movement = MovementExtractor.Extract(packages, scripts);
+                movement = MovementExtractor.Extract(packages);
                 movementTime = Stopwatch.GetElapsedTime(movementStart);
                 long lootStart = Stopwatch.GetTimestamp();
-                loot = LootDefinitionExtractor.Extract(packages, registry, scripts, [mapPackage, .. cells]);
+                loot = LootDefinitionExtractor.Extract(packages, registry, layouts, [mapPackage, .. cells]);
                 lootTime = Stopwatch.GetElapsedTime(lootStart);
                 long lootAreaStart = Stopwatch.GetTimestamp();
-                lootAreas = MapWorldExtractor.ExtractLootAreas(packages, scripts, mapPackage, cells, DamDataLayers.All);
+                lootAreas = MapWorldExtractor.ExtractLootAreas(packages, layouts, mapPackage, cells, DamDataLayers.All);
                 lootAreaTime = Stopwatch.GetElapsedTime(lootAreaStart);
                 if (gameAssetTables)
                 {
                     long rulesStart = Stopwatch.GetTimestamp();
-                    rules = MapRulesExtractor.Extract(packages, scripts, mapPackage, world.World, cells, RoundConfigurationAssets.Dam);
+                    rules = MapRulesExtractor.Extract(packages, layouts, mapPackage, world.World, cells, RoundConfigurationAssets.Dam);
                     rulesTime = Stopwatch.GetElapsedTime(rulesStart);
-                    animations = InteractionAnimationReader.Read(packages, scripts,
+                    animations = InteractionAnimationReader.Read(packages, layouts,
                         loot.ContainerClasses.Select(row => row.SearchAnimation).OfType<string>(),
                         rules.Extraction.Buttons.Select(button => button.AnimationContainer).OfType<string>());
                 }
@@ -253,7 +253,7 @@ internal sealed class ExtractCommand
                 $"Loot area tables: {lootAreas.PointsOfInterest.Length:N0} points of interest, {lootAreas.LootLimiters.Length:N0} loot limiters, {lootAreas.DynamicLootSpawners.Length:N0} dynamic loot spawners in {lootAreas.DynamicLootGroups.Length:N0} groups (read in {lootAreaTime.TotalSeconds:F1} s)"));
             string tables = gameAssetTables ? "the world, gameplay, item, movement, interaction animation, loot and loot area tables" : "the world, movement, loot and loot area tables";
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), {tables} and {manifest} in {watch.Elapsed.TotalSeconds:F1} s (asset registry and script cache read once in {sharedTime.TotalSeconds:F1} s)"));
+                $"Wrote {path} ({new FileInfo(path).Length / (1024.0 * 1024.0):F1} MB), {tables} and {manifest} in {watch.Elapsed.TotalSeconds:F1} s (asset registry read once in {sharedTime.TotalSeconds:F1} s)"));
             return Success;
         }
         catch (WrongTocKeyException)
@@ -324,10 +324,8 @@ internal sealed class ExtractCommand
         GameDataJsonContext json = GameDataJsonContext.Default;
         writer.WriteTable(GameTables.LootContainerTypes, loot.ContainerTypes, json.LootContainerType);
         writer.WriteTable(GameTables.LootContainerClasses, loot.ContainerClasses, json.LootContainerClass);
-        writer.WriteTable(GameTables.LootContainerDefaults, [loot.ContainerDefaults], json.LootContainerDefaults);
         writer.WriteTable(GameTables.StaticValueLootTables, loot.ValueTables, json.StaticValueLootTable);
         writer.WriteTable(GameTables.SkillLootTables, loot.SkillTables, json.SkillLootTable);
-        writer.WriteTable(GameTables.StaticLootSpawnTweakables, [loot.Tweakables], json.LootSpawnTweakables);
     }
 
     private static void WriteLootSummary(TextWriter output, LootDefinitionData loot, TimeSpan time)

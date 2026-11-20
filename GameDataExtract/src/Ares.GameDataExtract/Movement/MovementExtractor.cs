@@ -1,5 +1,4 @@
 using Ares.GameDataExtract.Packages;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Game.Movement;
 
 namespace Ares.GameDataExtract.Movement;
@@ -21,21 +20,20 @@ internal sealed record MovementData(
 
 /// <summary>
 /// Extracts the movement tuning tables from the movement data assets, their animations, the character graph's logic
-/// object, the snap hook Blueprint and the sprint curve (see <see cref="MovementAssets"/>), with script defaults and
-/// member checks from the script cache.
+/// object, the snap hook Blueprint and the sprint curve (see <see cref="MovementAssets"/>).
 /// </summary>
 internal static class MovementExtractor
 {
     /// <summary>Extracts the tables.</summary>
     /// <exception cref="InvalidDataException">An asset or animation is missing or not laid out as expected.</exception>
-    public static MovementData Extract(PackageCache packages, ScriptCache scripts)
+    public static MovementData Extract(PackageCache packages)
     {
         return new MovementData(
-            DodgeRollReader.Read(packages, scripts),
-            VaultReader.Read(packages, scripts),
-            HeavyLandingReader.Read(packages, scripts),
+            DodgeRollReader.Read(packages),
+            VaultReader.Read(packages),
+            HeavyLandingReader.Read(packages),
             GraphTagReader.Read(packages),
-            SnapHookReader.Read(packages, scripts),
+            SnapHookReader.Read(packages),
             SprintCurveReader.Read(packages));
     }
 }

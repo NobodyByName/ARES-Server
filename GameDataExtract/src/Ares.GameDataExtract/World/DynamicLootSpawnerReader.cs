@@ -13,8 +13,8 @@ namespace Ares.GameDataExtract.World;
 /// Reads a map's spawners of free-standing loot containers (<see cref="DynamicLootSpawner"/>): the
 /// <c>AActorSpawner</c> actors of the persistent level and the cells whose weighted classes are all
 /// <c>BP_SocketContainer_*</c> Blueprints. A spawner's points are its component's point list (each point composed over
-/// the root component's world transform), or the root's own transform without one; <c>RandomActorCount</c> takes the
-/// script constructor default when a block does not store it. Locations are rounded to 2 decimal places and rotations
+/// the root component's world transform), or the root's own transform without one; <c>RandomActorCount</c> stays unset
+/// when a block does not store it. Locations are rounded to 2 decimal places and rotations
 /// to 3. Read every cell with <see cref="ReadCell"/>, then <see cref="Build"/>.
 /// </summary>
 internal sealed class DynamicLootSpawnerReader
@@ -30,7 +30,6 @@ internal sealed class DynamicLootSpawnerReader
     private const string PlacementEnum = "EActorSpawnerPlacementMethod";
     private const string RotationEnum = "EActorSpawnerRotationMethod";
     private const string ModeEnum = "EActorSpawnerMode";
-    private const double FullTurn = 360.0;
     private const int LocationDigits = 2;
     private const int RotationDigits = 3;
     private const int PlacedActorChainLength = 3;
@@ -48,44 +47,29 @@ internal sealed class DynamicLootSpawnerReader
     private readonly int _pointListPlacement;
     private readonly int _volumesPlacement;
     private readonly int _randomRotation;
-    private readonly int _defaultCount;
     private readonly List<Row> _rows = [];
 
-    /// <summary>A reader for the cells of map package <paramref name="mapPackage"/>, with the chains and defaults of the script cache.</summary>
-    /// <exception cref="InvalidDataException">A class, struct, enum or default the reader needs changed.</exception>
-    public DynamicLootSpawnerReader(SceneResolver scenes, ScriptCache cache, string mapPackage)
+    /// <summary>
+    /// A reader for the cells of map package <paramref name="mapPackage"/>, with the member chains of <paramref name="layouts"/>.
+    /// </summary>
+    /// <exception cref="InvalidDataException">A class, struct or enum the reader needs changed.</exception>
+    public DynamicLootSpawnerReader(SceneResolver scenes, ScriptLayouts layouts, string mapPackage)
     {
         _scenes = scenes;
         _mapPackage = mapPackage;
-        _spawner = ScriptMemberChain.OfLeading(cache, SpawnerClass, "Root", ComponentName, "PlacementMethod", "RotationMethod", "bSpawnOnBeginPlay",
+        _spawner = ScriptMemberChain.OfLeading(layouts, SpawnerClass, "Root", ComponentName, "PlacementMethod", "RotationMethod", "bSpawnOnBeginPlay",
             "bUseRoundConfiguration", "SpawnerMode", "RandomActorCount", "ActorType", "ActorTypes", "WeightedActorTypes");
-        _component = ScriptMemberChain.OfLeading(cache, ComponentClass, "PlacementMethod", "PlacementPointList");
-        _point = ScriptMemberChain.OfLeading(cache, PointStruct, "Transform", "Weight", "bIsLocked");
-        _weighted = ScriptMemberChain.OfLeading(cache, WeightedStruct, "ActorType", "Weight");
+        _component = ScriptMemberChain.OfLeading(layouts, ComponentClass, "PlacementMethod", "PlacementPointList");
+        _point = ScriptMemberChain.OfLeading(layouts, PointStruct, "Transform", "Weight", "bIsLocked");
+        _weighted = ScriptMemberChain.OfLeading(layouts, WeightedStruct, "ActorType", "Weight");
         string[] placements = ["SpawnerLocation", "PointList", "Volumes"];
         string[] rotations = ["SpawnerRotation", "Random"];
-        ScriptMemberChain.ExpectEnum(cache, PlacementEnum, placements);
-        ScriptMemberChain.ExpectEnum(cache, RotationEnum, rotations);
-        ScriptMemberChain.ExpectEnum(cache, ModeEnum, "RandomActor", "AllActors", "AllActorsAtOneLocation");
+        ScriptMemberChain.ExpectEnum(layouts, PlacementEnum, placements);
+        ScriptMemberChain.ExpectEnum(layouts, RotationEnum, rotations);
+        ScriptMemberChain.ExpectEnum(layouts, ModeEnum, "RandomActor", "AllActors", "AllActorsAtOneLocation");
         _pointListPlacement = Array.IndexOf(placements, "PointList");
         _volumesPlacement = Array.IndexOf(placements, "Volumes");
         _randomRotation = Array.IndexOf(rotations, "Random");
-        IReadOnlyList<ScriptConstant> stores = ScriptConstructorStores.Of(cache, SpawnerClass, [1, 1, 1, sizeof(int)],
-            ["bSpawnOnBeginPlay", "bUseRoundConfiguration", "SpawnerMode", "RandomActorCount"], exact: false);
-        if (stores.Take(3).Any(store => store.Bits != 0))
-        {
-            throw new InvalidDataException($"The {SpawnerClass} constructor sets a flag or the spawner mode");
-        }
-
-        _defaultCount = stores[3].AsInt32;
-        ulong fullTurn = (ulong)BitConverter.DoubleToInt64Bits(FullTurn);
-        bool turn = cache.Class(SpawnerClass).MethodsNamed(ScriptClass.InitDefaults).Take(1)
-            .SelectMany(ScriptDisassembler.Disassemble)
-            .Any(instruction => instruction.Name == "PshC8" && instruction.QuadWord == fullTurn);
-        if (!turn)
-        {
-            throw new InvalidDataException($"The {SpawnerClass}.RandomRotationRange default changed (no full turn)");
-        }
     }
 
     /// <summary>Reads the loot spawners placed in <paramref name="cell"/>.</summary>
@@ -116,14 +100,14 @@ internal sealed class DynamicLootSpawnerReader
     }
 
     /// <summary>The spawners ordered by cell and actor name (ordinal).</summary>
-    /// <exception cref="InvalidDataException">Two spawners share an actor name, or a count does not fit the points.</exception>
+    /// <exception cref="InvalidDataException">Two spawners share an actor name, or a stored count does not fit the points.</exception>
     public ImmutableArray<DynamicLootSpawner> Build()
     {
         DynamicLootSpawner[] spawners = [.. _rows
             .OrderBy(row => row.Cell, StringComparer.Ordinal)
             .ThenBy(row => row.Actor, StringComparer.Ordinal)
-            .Select(row => new DynamicLootSpawner(row.Cell, row.Actor, row.DataLayer, row.Classes, row.Points, row.Count ?? _defaultCount, row.RandomRotation))];
-        if (spawners.FirstOrDefault(spawner => spawner.Count < 1 || spawner.Count > spawner.Points.Count) is { } wrong)
+            .Select(row => new DynamicLootSpawner(row.Cell, row.Actor, row.DataLayer, row.Classes, row.Points, row.Count, row.RandomRotation))];
+        if (spawners.FirstOrDefault(spawner => spawner.Count is { } count && (count < 1 || count > spawner.Points.Count)) is { } wrong)
         {
             throw new InvalidDataException($"{wrong.Actor}: {wrong.Count} actors from {wrong.Points.Count} points");
         }

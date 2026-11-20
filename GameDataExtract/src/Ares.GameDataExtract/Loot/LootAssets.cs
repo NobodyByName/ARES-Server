@@ -1,9 +1,9 @@
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
 using Ares.GameDataExtract.Registry;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Loot;
+using Ares.Structs.Game.Scripts;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.GameplayTags;
 
@@ -98,7 +98,7 @@ internal static class LootAssets
 
     /// <summary>The name of value <paramref name="value"/> of a script enum, as the C# enum of the same names.</summary>
     /// <exception cref="InvalidDataException">The value is out of range or its name is not one of <typeparamref name="T"/>.</exception>
-    public static T EnumValue<T>(ScriptEnum type, byte value, string where)
+    public static T EnumValue<T>(ScriptEnumDefinition type, byte value, string where)
         where T : struct, Enum
     {
         return value < type.Names.Count && Enum.TryParse(type.Names[value], ignoreCase: false, out T parsed) && Enum.IsDefined(parsed)

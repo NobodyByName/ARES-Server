@@ -7,7 +7,9 @@ using Ares.GameDataExtract.Properties;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game;
 using Ares.Structs.Game.Collision;
+using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 
@@ -22,29 +24,27 @@ internal sealed record ExtractionData(ExtractionElevator Elevator, ImmutableArra
 /// <summary>
 /// Reads the elevator extraction points of a map's persistent level: the placed elevators (actors of
 /// <see cref="ExtractionClasses.Elevator"/>) with their data asset and root transform, the buttons and the zone trigger
-/// of the elevator Blueprint, the timings of the settings asset it names, the length of its door animation and the
-/// script defaults the server needs.
+/// of the elevator Blueprint, the settings asset it names (which must store nothing over its class defaults; the hold
+/// times are those of <see cref="ExtractionDefaults"/>), the length of its door animation and the class defaults the
+/// server needs.
 /// </summary>
 internal static class ExtractionReader
 {
     private const string SceneComponentClass = "USceneComponent";
-    private const string ScriptGlobalSeparator = "_";
-    private const string TagSeparator = ".";
     private const double MaxCoordinate = 1e7;
     private const double MaxLevelAngle = 1e-6;
     private const string SingleDigits = "G7";
     private const int TracksIndex = 0;
     private const int PlaySpeedIndex = 1;
     private const string AudioFolder = "/Game/Pioneer/Audio/";
-    private const double MaxPlaySpeed = 100;
 
     /// <summary>The extraction tables of map package <paramref name="mapPackage"/>.</summary>
-    /// <exception cref="InvalidDataException">An elevator, the Blueprint, an asset or a script default does not decode as expected.</exception>
+    /// <exception cref="InvalidDataException">An elevator, the Blueprint or an asset does not decode as expected.</exception>
     public static ExtractionData Read(MapRuleSources sources, SceneResolver scenes, string mapPackage, MapWorldObjects world)
     {
         sources.CheckEnum(ExtractionClasses.StateEnum);
         sources.CheckEnum(new EnumDefinition(
-            ScriptSchemasPath(ExtractionClasses.InteractionTypeEnum), Enum.GetValues<StandardInteractionType>().Length, Enum.GetNames<StandardInteractionType>()));
+            ScriptEnumPath(ExtractionClasses.InteractionTypeEnum), Enum.GetValues<StandardInteractionType>().Length, Enum.GetNames<StandardInteractionType>()));
         string blueprintDefault = ExtractionClasses.Elevator.Archetype[(ExtractionClasses.Elevator.Archetype.LastIndexOf('.') + 1)..];
         ExportRef classDefault = sources.Export(ExtractionClasses.ElevatorPackage, "." + blueprintDefault);
         ExtractionElevator elevator = Elevator(sources, scenes, classDefault, blueprintDefault);
@@ -64,7 +64,11 @@ internal static class ExtractionReader
         }
 
         (_, string settingsClass) = sources.ScriptClassOf(settings.Package, settings.Export.Class, settings.Path);
-        double[] timings = [.. ExtractionMembers.Settings.Select(member => Number(sources.Default(settingsClass, member)))];
+        if (settingsClass != ExtractionDefaults.SettingsClass)
+        {
+            throw new InvalidDataException($"{settings.Path} is a {settingsClass}, not a {ExtractionDefaults.SettingsClass}");
+        }
+
         ExportRef zone = sources.Export(ExtractionClasses.ElevatorPackage, $".{blueprintDefault}:{ExtractionMembers.ExtractionZoneTrigger}");
         SceneMembers zoneScene = scenes.Scene(zone.Package, zone.Export);
         if (zoneScene is not { Location: { } zoneLocation, Rotation: null, Scale: null })
@@ -73,35 +77,29 @@ internal static class ExtractionReader
         }
 
         return new ExtractionElevator(
-            ExtractionType(sources),
+            ScriptWiring.ElevatorExtractionType,
             settings.Package.Name,
-            new ExtractionSettings(timings[0], timings[1], timings[2], timings[3], timings[4]),
+            new ExtractionSettings(ExtractionDefaults.SummonHoldSeconds, ExtractionDefaults.ExtractionHoldSeconds),
             BoxExtent(zone),
             new Vector3D(zoneLocation.X + 0.0, zoneLocation.Y + 0.0, zoneLocation.Z + 0.0),
             new Rotator(0.0, 0.0, 0.0),
-            sources.Default(ExtractionMembers.StandardInteractionClass, ExtractionMembers.InteractionServerHoldStartedTime).AsDouble,
-            sources.Default(ExtractionMembers.ExtractionInfoStruct, ExtractionMembers.ExtractionStartedTs).AsDouble,
+            StandardInteractionDefaults.NoHoldStartedTime,
+            ExtractionDefaults.NoExtractionStartedTime,
             DoorsSeconds(sources, blueprintDefault));
     }
 
     /// <summary>
     /// The doors' open or close time: the latest key of the curve assets the door animation's tracks refer to, as a
-    /// float, over the animation class's script default play speed. The template sets its tracks but not its play speed.
+    /// float, over the animation class's default play speed. The template sets its tracks but not its play speed.
     /// The tracks hold a native struct of unknown layout, so the curves are the packages the tracks' bytes refer to
     /// (four-byte package import references), audio left out; each must be a rich-curve asset.
     /// </summary>
     private static double DoorsSeconds(MapRuleSources sources, string blueprintDefault)
     {
-        string[] reflected = [.. sources.Scripts.Class(ExtractionMembers.AnimationComponentClass).ReflectedProperties.Take(2).Select(member => member.Name)];
+        string[] reflected = [.. sources.Layouts.Type(ExtractionMembers.AnimationComponentClass).Members.Take(2).Select(member => member.Name)];
         if (!reflected.SequenceEqual([ExtractionMembers.AnimationTracks, ExtractionMembers.StandardPlaySpeed], StringComparer.Ordinal))
         {
             throw new InvalidDataException($"{ExtractionMembers.AnimationComponentClass} members start ({string.Join(", ", reflected)})");
-        }
-
-        double speed = sources.Default(ExtractionMembers.AnimationComponentClass, ExtractionMembers.StandardPlaySpeed).AsDouble;
-        if (speed is not (> 0 and <= MaxPlaySpeed))
-        {
-            throw new InvalidDataException($"Unexpected {ExtractionMembers.AnimationComponentClass} play speed {speed}");
         }
 
         ExportRef doors = sources.Export(ExtractionClasses.ElevatorPackage, $".{blueprintDefault}:{ExtractionMembers.DoorAnimation}");
@@ -137,7 +135,7 @@ internal static class ExtractionReader
                 : throw new InvalidDataException($"{name}: expected one curve export, found {curve.Exports.Count}");
         }
 
-        return Single(latest) / speed;
+        return Single(latest) / ExtractionDefaults.AnimationPlaySpeed;
     }
 
     /// <summary>The package a reference value of <paramref name="package"/> imports, when it is a package import.</summary>
@@ -146,20 +144,6 @@ internal static class ExtractionReader
         return package.IsImportReference(value) && package.Header.Imports[-value - 1] is { Kind: PackageObjectKind.PackageImport } import
             ? package.Header.ImportedPackageNames[import.ImportedPackageIndex]
             : null;
-    }
-
-    /// <summary>The extraction type tag the elevator's default statements assign last (a tag global, named with <c>_</c> for <c>.</c>).</summary>
-    private static string ExtractionType(MapRuleSources sources)
-    {
-        int offset = sources.Offset(ExtractionMembers.ExtractionPointBaseClass, ExtractionMembers.ExtractionType);
-        string[] globals =
-        [
-            .. ScriptPatterns.DefaultFunctions(sources.Scripts, ExtractionClasses.ScriptClass)
-                .SelectMany(function => ScriptPatterns.GlobalsAssignedTo(sources.Scripts, function, offset)),
-        ];
-        return globals.Length > 0
-            ? globals[^1].Replace(ScriptGlobalSeparator, TagSeparator, StringComparison.Ordinal)
-            : throw new InvalidDataException($"The script defaults of {ExtractionClasses.ScriptClass} assign no extraction type");
     }
 
     /// <summary>The box extent a zone trigger template stores first (<see cref="BoxComponentMembers.BoxExtent"/>).</summary>
@@ -171,48 +155,31 @@ internal static class ExtractionReader
             : throw new InvalidDataException($"{zone.Path}: the zone trigger template sets no box extent");
     }
 
-    /// <summary>The elevator buttons: start state and prompt from the elevator's default statements, interaction settings from the Blueprint's templates.</summary>
+    /// <summary>The elevator buttons, with the interaction settings of the Blueprint's templates over the standard interaction's class defaults.</summary>
     private static ImmutableArray<ExtractionButton> Buttons(MapRuleSources sources, string blueprintDefault)
     {
-        Dictionary<int, byte> enabled = [];
-        Dictionary<int, string> prompts = [];
-        int startEnabled = sources.Offset(ExtractionMembers.BaseInteractionClass, ExtractionMembers.StartEnabled);
-        foreach (ScriptFunction function in ScriptPatterns.DefaultFunctions(sources.Scripts, ExtractionClasses.ScriptClass))
-        {
-            foreach ((int member, byte value) in ScriptPatterns.BytesStoredInMembers(function, startEnabled))
-            {
-                enabled[member] = value;
-            }
-
-            foreach ((int member, string prompt) in ScriptPatterns.GlobalArguments(sources.Scripts, function, ExtractionMembers.SetPromptText))
-            {
-                prompts[member] = prompt;
-            }
-        }
-
         ImmutableArray<ExtractionButton>.Builder rows = ImmutableArray.CreateBuilder<ExtractionButton>(ExtractionClasses.Buttons.Count);
         foreach ((string component, ExtractionButtonRole role) in ExtractionClasses.Buttons)
         {
             ExportRef template = sources.Export(ExtractionClasses.ElevatorPackage, $".{blueprintDefault}:{component}");
-            (string classPath, string scriptClass) = sources.ScriptClassOf(template.Package, template.Export.Class, template.Path);
-            int member = sources.Offset(ExtractionClasses.ScriptClass, component);
-            bool start = enabled.TryGetValue(member, out byte value) ? value != 0 : sources.Default(scriptClass, ExtractionMembers.StartEnabled).AsByte != 0;
-            string? prompt = prompts.GetValueOrDefault(member);
+            (string classPath, _) = sources.ScriptClassOf(template.Package, template.Export.Class, template.Path);
             if (role == ExtractionButtonRole.Repair)
             {
-                rows.Add(new ExtractionButton(component, role, classPath, start, prompt, null, 0.0, 0.0, null));
+                rows.Add(new ExtractionButton(component, role, classPath, null, 0.0, 0.0, null));
                 continue;
             }
 
             PropertyBag settings = sources.Members(template,
                 ExtractionMembers.InteractionType, ExtractionMembers.HoldDuration, ExtractionMembers.AlignmentTime, ExtractionMembers.AnimationContainer);
-            StandardInteractionType type = (StandardInteractionType)settings.Get(ExtractionMembers.InteractionType, sources.Default(scriptClass, ExtractionMembers.InteractionType).AsByte);
-            float hold = settings.Get(ExtractionMembers.HoldDuration, sources.Default(scriptClass, ExtractionMembers.HoldDuration).AsSingle);
-            float alignment = settings.Get(ExtractionMembers.AlignmentTime, sources.Default(scriptClass, ExtractionMembers.AlignmentTime).AsSingle);
+            StandardInteractionType type = (StandardInteractionType)settings.Get(ExtractionMembers.InteractionType, (byte)StandardInteractionDefaults.InteractionType);
+            double hold = settings.Contains(ExtractionMembers.HoldDuration) ? Single(settings.Get<float>(ExtractionMembers.HoldDuration)) : StandardInteractionDefaults.HoldSeconds;
+            double alignment = settings.Contains(ExtractionMembers.AlignmentTime)
+                ? Single(settings.Get<float>(ExtractionMembers.AlignmentTime))
+                : InteractionMovementParameters.DefaultAlignmentSeconds;
             string? container = settings.Get(ExtractionMembers.AnimationContainer, default(ObjectReference)) is { IsNull: false } reference
                 ? (sources.Packages.Reference(template.Package, reference.Value) ?? throw new InvalidDataException($"{template.Path}: the animation container is a script object")).Package.Name
                 : null;
-            rows.Add(new ExtractionButton(component, role, classPath, start, prompt, type, Single(hold), Single(alignment), container));
+            rows.Add(new ExtractionButton(component, role, classPath, type, hold, alignment, container));
         }
 
         return rows.MoveToImmutable();
@@ -295,7 +262,7 @@ internal static class ExtractionReader
     private static bool SetsOnlyAttachParent(MapRuleSources sources, ExportRef button)
     {
         (_, string scriptClass) = sources.ScriptClassOf(button.Package, button.Export.Class, button.Path);
-        int scenePart = sources.Scripts.ReflectedChain(scriptClass, out string? native).Count;
+        int scenePart = sources.Layouts.ReflectedChain(scriptClass, out string? native).Count;
         return native == SceneComponentClass
             && UnversionedHeader.Read(button.Package.Data, CookedPackage.StartOf(button.Export)).Members
                 is [{ IsNonZero: true } member] && member.Index == scenePart + SceneComponentMembers.AttachParent;
@@ -308,11 +275,8 @@ internal static class ExtractionReader
             : throw new InvalidDataException($"{asset.Path}: {member} is not a string-table entry");
     }
 
-    /// <summary>A settings literal: a double as stored, a float as <see cref="Single"/> gives it.</summary>
-    private static double Number(ScriptConstant constant) => constant.Size == sizeof(float) ? Single(constant.AsSingle) : constant.AsDouble;
-
     /// <summary>A float read from the game as the shortest double with the same seven significant digits (0.2, not 0.20000000298…).</summary>
     private static double Single(float value) => double.Parse(((double)value).ToString(SingleDigits, CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
 
-    private static string ScriptSchemasPath(string enumName) => ScriptSchemas.ScriptPackage + enumName;
+    private static string ScriptEnumPath(string enumName) => ScriptLayouts.ScriptPackage + enumName;
 }

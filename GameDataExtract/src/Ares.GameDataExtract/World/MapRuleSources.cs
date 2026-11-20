@@ -2,6 +2,7 @@ using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
+using Ares.Structs.Game.Scripts;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using PropertyKind = Ares.Structs.Core.Assets.PropertyKind;
@@ -9,7 +10,7 @@ using PropertyKind = Ares.Structs.Core.Assets.PropertyKind;
 namespace Ares.GameDataExtract.World;
 
 /// <summary>
-/// What the map rule readers share: the packages, the compiled scripts, the property chains of script and Blueprint
+/// What the map rule readers share: the packages, the script layouts, the property chains of script and Blueprint
 /// classes (with the native chains the tables know) and the archetype chains of cooked objects. Members are read up to
 /// the last one a reader asks for, so members after it (often of native or unknown types) need not be understood.
 /// </summary>
@@ -20,12 +21,12 @@ internal sealed class MapRuleSources
     private readonly ClassSchemas _classes;
     private readonly ObjectDefaults _defaults;
 
-    /// <summary>Sources over <paramref name="packages"/> and <paramref name="scripts"/>.</summary>
-    public MapRuleSources(PackageCache packages, ScriptCache scripts)
+    /// <summary>Sources over <paramref name="packages"/> and <paramref name="layouts"/>.</summary>
+    public MapRuleSources(PackageCache packages, ScriptLayouts layouts)
     {
         Packages = packages;
-        Scripts = scripts;
-        ScriptSchemas schemas = new(scripts, new Dictionary<string, StructSchema>(StringComparer.Ordinal)
+        Layouts = layouts;
+        ScriptTypeSchemas schemas = layouts.Schemas(new Dictionary<string, StructSchema>(StringComparer.Ordinal)
         {
             [RoundConfigurationMembers.NativeBase] = RoundConfigurationMembers.PersistenceDataAsset,
             [WorldSettingsMembers.NativeBase] = WorldSettingsMembers.Schema,
@@ -37,8 +38,8 @@ internal sealed class MapRuleSources
     /// <summary>The game's packages.</summary>
     public PackageCache Packages { get; }
 
-    /// <summary>The game's compiled scripts.</summary>
-    public ScriptCache Scripts { get; }
+    /// <summary>The script classes, structs and enums cooked blocks are laid out by.</summary>
+    public ScriptLayouts Layouts { get; }
 
     /// <summary>The package at <paramref name="path"/>.</summary>
     /// <exception cref="InvalidDataException">No container has it.</exception>
@@ -109,34 +110,12 @@ internal sealed class MapRuleSources
     /// <exception cref="InvalidDataException">A member is not in the chain, or the object stores an unknown member before one of them.</exception>
     public PropertyBag Own(ExportRef target, IReadOnlyList<string> names) => SchemaPrefix.Read(target.Package, target.Export, _classes.ForObject(target), names);
 
-    /// <summary>
-    /// The literal the script default statements of <paramref name="scriptClass"/>'s chain store last into
-    /// <paramref name="member"/>, declared by that class or one of its script super classes.
-    /// </summary>
-    /// <exception cref="InvalidDataException">The member is unknown, or no literal is stored into it.</exception>
-    public ScriptConstant Default(string scriptClass, string member)
-    {
-        return ScriptClassDefaults.Of(Scripts, scriptClass).Constant(Offset(scriptClass, member))
-            ?? throw new InvalidDataException($"The script defaults of {scriptClass} store no literal into {member}");
-    }
-
-    /// <summary>Byte offset of <paramref name="member"/>, declared by script type <paramref name="scriptClass"/> or one of its script super classes.</summary>
-    /// <exception cref="InvalidDataException">No class of the chain declares the member, or the bytecode does not refer to it.</exception>
-    public int Offset(string scriptClass, string member)
-    {
-        ScriptClass declaring = Scripts.Chain(scriptClass, out _).FirstOrDefault(type => type.Properties.Any(property => property.Name == member))
-            ?? throw new InvalidDataException($"No class of the script chain of {scriptClass} declares {member}");
-        return Scripts.MemberOffsets(declaring.Name).TryGetValue(member, out int offset)
-            ? offset
-            : throw new InvalidDataException($"The scripts do not refer to {declaring.Name}.{member}");
-    }
-
     /// <summary>Checks that the script enum <paramref name="expected"/> describes has its names, in order, with values 0, 1, 2, ….</summary>
     /// <exception cref="InvalidDataException">The enum differs.</exception>
     public void CheckEnum(EnumDefinition expected)
     {
-        ScriptEnum found = Scripts.Enum(expected.Path[(expected.Path.LastIndexOf('.') + 1)..]);
-        if (!found.IsSequential || found.Names.Count != expected.MaxValue || !found.Names.SequenceEqual(expected.Names, StringComparer.Ordinal))
+        ScriptEnumDefinition found = Layouts.Enum(expected.Path[(expected.Path.LastIndexOf('.') + 1)..]);
+        if (!ScriptLayouts.IsSequential(found) || found.Names.Count != expected.MaxValue || !found.Names.SequenceEqual(expected.Names, StringComparer.Ordinal))
         {
             throw new InvalidDataException($"The script enum {found.Name} is [{string.Join(", ", found.Names)}], not [{string.Join(", ", expected.Names)}]");
         }
@@ -144,12 +123,12 @@ internal sealed class MapRuleSources
 
     /// <summary>
     /// The first script class of the class chain from <paramref name="index"/> (the class itself, or a Blueprint's first
-    /// script super class): its script path and the name (with its prefix) the script cache gives it.
+    /// script super class): its script path and its script type name (with its prefix).
     /// </summary>
     /// <param name="package">The package <paramref name="index"/> belongs to.</param>
     /// <param name="index">The class.</param>
     /// <param name="what">What the class belongs to, for errors.</param>
-    /// <exception cref="InvalidDataException">The chain reaches no script class of the script cache.</exception>
+    /// <exception cref="InvalidDataException">The chain reaches no script class.</exception>
     public (string Path, string Name) ScriptClassOf(CookedPackage package, PackageObjectIndex index, string what)
     {
         for (int depth = 0; depth < MaxClassDepth; depth++)
@@ -167,23 +146,9 @@ internal sealed class MapRuleSources
         throw new InvalidDataException($"{what}: the class chain is too long");
     }
 
-    /// <summary>The script cache's name (with its prefix) of the script class at <paramref name="path"/>.</summary>
-    /// <exception cref="InvalidDataException">The cache has no such class.</exception>
-    public string ScriptName(string path)
-    {
-        string name = path.StartsWith(ScriptSchemas.ScriptPackage, StringComparison.Ordinal)
-            ? path[ScriptSchemas.ScriptPackage.Length..]
-            : throw new InvalidDataException($"{path} is not a script class");
-        foreach (string prefix in (ReadOnlySpan<string>)["A", "U", "F"])
-        {
-            if (Scripts.TryGetClass(prefix + name, out _))
-            {
-                return prefix + name;
-            }
-        }
-
-        throw new InvalidDataException($"No script class {name} in the script cache");
-    }
+    /// <summary>The script type name (with its prefix) of the script class at <paramref name="path"/>.</summary>
+    /// <exception cref="InvalidDataException">No script class is at that path.</exception>
+    private string ScriptName(string path) => Layouts.NameOf(path, "A", "U", "F") ?? throw new InvalidDataException($"{path} is not a script class");
 
     /// <summary>The package and public export hash of the asset a stored reference names.</summary>
     /// <exception cref="InvalidDataException">The reference names no public export of another package.</exception>

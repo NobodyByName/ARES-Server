@@ -4,6 +4,7 @@ using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Loot;
+using Ares.Structs.Game.Scripts;
 using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract.Loot;
@@ -15,17 +16,18 @@ internal sealed record LootContainerTypeData(IReadOnlyList<LootContainerType> Ty
 
 /// <summary>
 /// Reads the loot container types (<see cref="LootContainerType"/>) from the loot container data assets the asset
-/// registry lists (<see cref="LootContainerDataAssetMembers"/>): each asset's properties over the class's script
-/// defaults. Only assets the repository registers outside development mode become types; two of them may not share a tag.
+/// registry lists (<see cref="LootContainerDataAssetMembers"/>): each asset's properties over the class defaults of
+/// <see cref="LootContainerDataAssetMembers"/>; <see cref="LootContainerType.MaxPerGroup"/> stays unset when the asset
+/// does not store <see cref="LootContainerDataAssetMembers.MaxContainersPerGroup"/>. Only assets the repository
+/// registers outside development mode become types; two of them may not share a tag.
 /// </summary>
 internal static class LootContainerTypeReader
 {
     /// <summary>Reads the types.</summary>
     /// <exception cref="InvalidDataException">An asset or a class it names does not decode, or two registered assets share a tag.</exception>
-    public static LootContainerTypeData Read(PackageCache packages, AssetRegistry registry, ScriptCache cache, ScriptSchemas schemas)
+    public static LootContainerTypeData Read(PackageCache packages, AssetRegistry registry, ScriptLayouts layouts, ScriptTypeSchemas schemas)
     {
-        LootContainerDataAssetDefaults defaults = LootScriptDefaults.DataAsset(cache);
-        ScriptEnum availability = cache.Enum(LootContainerDataAssetMembers.AvailabilityEnum);
+        ScriptEnumDefinition availability = layouts.Enum(LootContainerDataAssetMembers.AvailabilityEnum);
         StructSchema schema = schemas.ForPath(LootContainerDataAssetMembers.ClassPath)
             ?? throw new InvalidDataException($"No script class {LootContainerDataAssetMembers.ClassPath}");
         List<LootContainerType> types = [];
@@ -33,7 +35,7 @@ internal static class LootContainerTypeReader
         foreach (RegistryAsset asset in LootAssets.OfClass(registry, LootContainerDataAssetMembers.ClassPath, LootContainerDataAssetMembers.AssetPrefix))
         {
             (CookedPackage package, PropertyBag bag) = LootAssets.Read(packages, asset, schema);
-            byte registered = bag.Get(LootContainerDataAssetMembers.DevelopmentAvailability, defaults.DevelopmentAvailability);
+            byte registered = bag.Get(LootContainerDataAssetMembers.DevelopmentAvailability, LootContainerDataAssetMembers.DefaultAvailability);
             if (registered >= availability.Names.Count)
             {
                 throw new InvalidDataException($"{asset.PackageName}: availability {registered}");
@@ -64,12 +66,12 @@ internal static class LootContainerTypeReader
             }
 
             classes.UnionWith(own.Concat(variants.SelectMany(variant => variant.Classes)).Select(type => type.Class));
-            bool ignore = bag.Get(LootContainerDataAssetMembers.IgnoreMaterialOverrides, defaults.IgnoreMaterialOverrides);
+            bool ignore = bag.Get(LootContainerDataAssetMembers.IgnoreMaterialOverrides, LootContainerDataAssetMembers.DefaultIgnoreMaterialOverrides);
             types.Add(new LootContainerType(
                 tag,
                 own,
                 ignore ? [] : [.. variants.OrderBy(variant => variant.Material, StringComparer.Ordinal)],
-                bag.Get(LootContainerDataAssetMembers.MaxContainersPerGroup, defaults.MaxContainersPerGroup)));
+                bag.Contains(LootContainerDataAssetMembers.MaxContainersPerGroup) ? bag.Get<int>(LootContainerDataAssetMembers.MaxContainersPerGroup) : null));
         }
 
         string? shared = types.GroupBy(type => type.Tag, StringComparer.Ordinal).FirstOrDefault(group => group.Count() > 1)?.Key;

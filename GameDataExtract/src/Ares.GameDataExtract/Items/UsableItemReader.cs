@@ -14,8 +14,7 @@ internal sealed record ItemAsset(RegistryAsset Asset, CookedPackage Package, Pro
 /// <c>AugmentItemDataAsset</c> name of the asset registry, ordered by its lower-case form (ordinal); the position is the
 /// usable index. Each item's id is its persistence asset's; items with quality redirectors use their quality-0
 /// redirector's id in menus. Rarity is the <c>QualityLevel</c> of the item's UI metadata item. Weight, durability,
-/// stack size and uniqueness follow the script rules of <see cref="ItemDataRules"/>; equip times fall back to the
-/// <c>UItemDataAsset</c> script defaults.
+/// stack size, uniqueness and equip times follow the rules and class defaults of <see cref="ItemDataRules"/>.
 /// </summary>
 internal static class UsableItemReader
 {
@@ -104,10 +103,10 @@ internal static class UsableItemReader
             [.. values.Get<object[]>("StaticLootPlacement", []).Select(placement => Placement(name, (PropertyBag)placement))],
             values.Get<string[]>("StaticLootAvoidGroups", []),
             type.Path,
-            sources.Number(values, ScriptClassOf(asset), "EquipTime"),
-            sources.Number(values, ScriptClassOf(asset), "UnequipTime"),
-            sources.Number(values, ScriptClassOf(asset), "UnequipTimeToItems"),
-            sources.Number(values, ScriptClassOf(asset), "ReEquipTimeFromItem"));
+            sources.Number(values, ScriptClassOf(asset), "EquipTime", ItemDataRules.DefaultEquipSeconds),
+            sources.Number(values, ScriptClassOf(asset), "UnequipTime", ItemDataRules.DefaultUnequipSeconds),
+            sources.Number(values, ScriptClassOf(asset), "UnequipTimeToItems", ItemDataRules.DefaultUnequipToItemsSeconds),
+            sources.Number(values, ScriptClassOf(asset), "ReEquipTimeFromItem", ItemDataRules.DefaultReEquipFromItemSeconds));
     }
 
     /// <summary>The script class of an item data asset, for example <c>UItemDataAsset</c>.</summary>

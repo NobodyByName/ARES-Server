@@ -37,25 +37,25 @@ internal sealed partial class PointOfInterestReader
     private readonly HashSet<int> _oneByteMarkerMembers;
     private readonly int _pingInformationMembers;
 
-    /// <summary>A reader with the member chains of the script cache.</summary>
+    /// <summary>A reader with the member chains of <paramref name="layouts"/>.</summary>
     /// <exception cref="InvalidDataException">A class, struct or enum the reader needs changed.</exception>
-    public PointOfInterestReader(SceneResolver scenes, ScriptCache cache)
+    public PointOfInterestReader(SceneResolver scenes, ScriptLayouts layouts)
     {
         _scenes = scenes;
-        _volume = ScriptMemberChain.Of(cache, VolumeClass, "MapMarkerComponent", "AreaAnnouncementComponent");
-        ScriptMemberChain.ExpectReflected(cache, "APointOfInterestVolume", "PingInfo", "bDebug", "ParentPointOfInterest", "bConsiderForLocationPing");
-        ScriptMemberChain.ExpectReflected(cache, "AHierarchicalAreaVolume", "ParentVolume", "CachedHierarchyDepth");
-        _marker = ScriptMemberChain.Of(cache, MarkerClass, "MarkerVisibilityType", "MapLayer", "LootThemes", "bCenterMapMarkerInVolume", "bDynamicThreatLevel",
+        _volume = ScriptMemberChain.Of(layouts, VolumeClass, "MapMarkerComponent", "AreaAnnouncementComponent");
+        ScriptMemberChain.ExpectReflected(layouts, "APointOfInterestVolume", "PingInfo", "bDebug", "ParentPointOfInterest", "bConsiderForLocationPing");
+        ScriptMemberChain.ExpectReflected(layouts, "AHierarchicalAreaVolume", "ParentVolume", "CachedHierarchyDepth");
+        _marker = ScriptMemberChain.Of(layouts, MarkerClass, "MarkerVisibilityType", "MapLayer", "LootThemes", "bCenterMapMarkerInVolume", "bDynamicThreatLevel",
             "EnemyThreatLevel", "LocationImage", "DialogueTag");
-        ScriptMemberChain.ExpectReflected(cache, "UClientMapMarkerComponent", "Tag", "bIsVisible");
-        ScriptMemberChain ping = ScriptMemberChain.Of(cache, PingClass, "PingInformation", "PingVisible_Server", "bAlwaysAttachToRoot", "bSkipPingAttachment",
+        ScriptMemberChain.ExpectReflected(layouts, "UClientMapMarkerComponent", "Tag", "bIsVisible");
+        ScriptMemberChain ping = ScriptMemberChain.Of(layouts, PingClass, "PingInformation", "PingVisible_Server", "bAlwaysAttachToRoot", "bSkipPingAttachment",
             "bKeepRelativePositionWhenAttachingToRoot", "FluffyTrackedPrimitiveComponent");
         if (ping.Index("PingInformation") != 0)
         {
             throw new InvalidDataException($"{PingClass}.PingInformation is not the first member");
         }
 
-        string[] information = [.. cache.Class(PingInformationStruct).ReflectedProperties.Select(member => member.Name)];
+        string[] information = [.. layouts.Type(PingInformationStruct).Members.Select(member => member.Name)];
         _pingInformationMembers = information.Length;
         information = information[..Math.Min(information.Length, PingInformationLeadingMembers)];
         if (!information.SequenceEqual(["DescriptionCategory", "PingDescription"], StringComparer.Ordinal))
@@ -63,7 +63,7 @@ internal sealed partial class PointOfInterestReader
             throw new InvalidDataException($"{PingInformationStruct} members are ({string.Join(", ", information)})");
         }
 
-        ScriptMemberChain.ExpectEnum(cache, LootValueEnum, nameof(PointOfInterestLootValue.Unknown), nameof(PointOfInterestLootValue.Low),
+        ScriptMemberChain.ExpectEnum(layouts, LootValueEnum, nameof(PointOfInterestLootValue.Unknown), nameof(PointOfInterestLootValue.Low),
             nameof(PointOfInterestLootValue.Medium), nameof(PointOfInterestLootValue.High));
         if (_volume.Count != _volume.Index("CachedHierarchyDepth") + 1)
         {

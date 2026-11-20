@@ -37,15 +37,15 @@ internal sealed class ActivityTreeReader
     private readonly ScriptMemberChain _container;
     private readonly ScriptMemberChain _config;
 
-    /// <summary>A reader with the member chains of the script cache.</summary>
+    /// <summary>A reader with the member chains of <paramref name="layouts"/>.</summary>
     /// <exception cref="InvalidDataException">A class or struct the reader needs changed.</exception>
-    public ActivityTreeReader(ScriptCache cache)
+    public ActivityTreeReader(ScriptLayouts layouts)
     {
-        _node = ScriptMemberChain.OfLeading(cache, NodeClass, "Title", "LocationTags", "ContentTags", "bInheritParentNodeLocationTags", "bForceNoDelayedActivation",
+        _node = ScriptMemberChain.OfLeading(layouts, NodeClass, "Title", "LocationTags", "ContentTags", "bInheritParentNodeLocationTags", "bForceNoDelayedActivation",
             "DelayedActivationEvent", "SubnodesMin", "SubnodesMax", "bUseWeightingForChildNodeSelection", "Weight", "NumSubnodesAvailable", "Subnodes", "Archetypes",
             "Activities");
-        _container = ScriptMemberChain.OfLeading(cache, ContainerClass, "SpawnersMin", "SpawnersMax", "SpawnerConfigs");
-        _config = ScriptMemberChain.OfLeading(cache, ConfigStruct, "Spawner");
+        _container = ScriptMemberChain.OfLeading(layouts, ContainerClass, "SpawnersMin", "SpawnersMax", "SpawnerConfigs");
+        _config = ScriptMemberChain.OfLeading(layouts, ConfigStruct, "Spawner");
     }
 
     /// <summary>

@@ -9,38 +9,27 @@ namespace Ares.GameDataExtract.World;
 /// <see cref="DoorClasses.Blueprints"/> class named after it (actors of the class placed under another name are puzzle
 /// doors), each with both <see cref="DoorClasses.InteractionComponents"/>. A door's
 /// start flags (<see cref="DoorStartFlagMembers"/>) are the ones its header or its Blueprint defaults' headers list,
-/// then the door script's constructor values. Read every cell with <see cref="ReadCell"/>, then <see cref="Build"/>.
+/// then the class defaults (<see cref="DoorStartFlagMembers.Defaults"/>). Read every cell with <see cref="ReadCell"/>,
+/// then <see cref="Build"/>.
 /// </summary>
 internal sealed class DoorReader
 {
-    private static readonly string[] s_flags =
-    [
-        DoorStartFlagMembers.StartAsOpened,
-        DoorStartFlagMembers.StartAsLocked,
-        DoorStartFlagMembers.StartAsSealed,
-        DoorStartFlagMembers.StartAsPowered,
-        DoorStartFlagMembers.BreachOpensDoor,
-    ];
-
     private const char NameSeparator = '_';
 
     private static readonly HashSet<string> s_packages = [.. DoorClasses.Blueprints.Select(path => path[..path.LastIndexOf('.')])];
 
+    private static readonly string[] s_flags = [.. DoorStartFlagMembers.Defaults.Select(flag => flag.Member)];
+
+    private static readonly Dictionary<string, bool> s_defaults = DoorStartFlagMembers.Defaults.ToDictionary(flag => flag.Member, flag => flag.Default, StringComparer.Ordinal);
+
     private readonly MapRuleSources _sources;
-    private readonly Dictionary<string, bool> _defaults = new(StringComparer.Ordinal);
     private readonly List<DoorPlacement> _doors = [];
 
-    /// <summary>A reader with the door script's constructor values from <paramref name="sources"/>.</summary>
-    /// <exception cref="InvalidDataException">The door script sets no literal for a start flag, or its interaction-state enum differs.</exception>
+    /// <summary>A reader over <paramref name="sources"/>.</summary>
+    /// <exception cref="InvalidDataException">The door script's interaction-state enum differs.</exception>
     public DoorReader(MapRuleSources sources)
     {
         _sources = sources;
-        string script = sources.ScriptName(DoorClasses.ActorClass);
-        foreach (string flag in s_flags)
-        {
-            _defaults[flag] = sources.Default(script, flag).AsByte != 0;
-        }
-
         sources.CheckEnum(DoorClasses.InteractionState);
     }
 
@@ -86,7 +75,7 @@ internal sealed class DoorReader
     public ImmutableArray<DoorPlacement> Build() =>
         [.. _doors.OrderBy(door => door.Cell, StringComparer.Ordinal).ThenBy(door => door.Actor, StringComparer.Ordinal)];
 
-    private bool Flag(IReadOnlyDictionary<string, bool> flags, string name) => flags.GetValueOrDefault(name, _defaults[name]);
+    private static bool Flag(IReadOnlyDictionary<string, bool> flags, string name) => flags.GetValueOrDefault(name, s_defaults[name]);
 
     /// <summary>The regular door class <paramref name="index"/> names, or <see langword="null"/>.</summary>
     private string? DoorClass(CookedPackage package, PackageObjectIndex index)

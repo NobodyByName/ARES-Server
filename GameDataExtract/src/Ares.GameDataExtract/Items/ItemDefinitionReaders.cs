@@ -46,7 +46,7 @@ internal static class ItemDefinitionReaders
             item.Row.TechnicalName,
             item.Row.AssetId,
             structures.Referenced(item.Package, item.Values, "LoadoutFrameDataAsset").AssetId,
-            sources.Number(item.Values, AugmentScriptClass, "MaxWeight")))];
+            sources.Number(item.Values, AugmentScriptClass, "MaxWeight", ItemDataRules.DefaultAugmentMaxWeight)))];
     }
 
     /// <summary>Every loadout frame of the registry, ordered by technical name (ordinal).</summary>
@@ -71,12 +71,12 @@ internal static class ItemDefinitionReaders
         PropertyBag values = classes.Defaults(type);
         string script = type.ScriptClass;
         return new FirearmDefinition(type.Path,
-            sources.Number(values, script, "BaseClipSize"),
-            sources.Number(values, script, "BaseFireRate"),
-            sources.Number(values, script, "BaseReloadTime"),
+            sources.Number(values, script, "BaseClipSize", WeaponItemDefaults.ClipSize),
+            sources.Number(values, script, "BaseFireRate", WeaponItemDefaults.FireRate),
+            sources.Number(values, script, "BaseReloadTime", WeaponItemDefaults.BaseReloadSeconds),
             ReloadModifiers(sources, type),
-            sources.Number(values, script, "BaseCameraZoomTime"),
-            sources.Number(values, script, "PartialReloadDuration"),
+            sources.Number(values, script, "BaseCameraZoomTime", WeaponItemDefaults.ZoomSeconds),
+            sources.Number(values, script, "PartialReloadDuration", WeaponItemDefaults.PartialReloadSeconds),
             ModSlots(sources, structures, type));
     }
 

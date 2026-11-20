@@ -7,6 +7,9 @@ using Ares.Structs.Core.Assets;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Collision;
 using Ares.Structs.Game.Loot;
+using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.Replication;
+using Ares.Structs.Game.Scripts;
 using Ares.Structs.Game.World;
 using B = Ares.Structs.Game.Loot.LootContainerBlueprintMembers;
 
@@ -15,7 +18,8 @@ namespace Ares.GameDataExtract.Loot;
 /// <summary>
 /// Reads how a loot container class is searched (<see cref="LootContainerClass"/>) from its Blueprint chain, from
 /// <see cref="LootContainerBlueprintMembers.BaseBlueprint"/> down to the class. Each Blueprint's class default holds its
-/// component templates as differences from its parent's; they are applied parent first over the script defaults:
+/// component templates as differences from its parent's; they are applied parent first over the class defaults
+/// (<see cref="LootInteractionDefaults"/>):
 /// <list type="bullet">
 /// <item>the search interaction and the item container, script components decoded against their script chains (scene
 /// part included);</item>
@@ -48,8 +52,6 @@ internal sealed class LootContainerClassReader
     };
 
     private readonly PackageCache _packages;
-    private readonly LootInteractionDefaults _defaults;
-    private readonly LootOpenDelayDefaults _openDelay;
     private readonly ClassSchemas _classes;
     private readonly StructSchema _animation;
     private readonly StructSchema _interaction;
@@ -59,28 +61,33 @@ internal sealed class LootContainerClassReader
     private readonly IReadOnlyList<string> _presets;
     private readonly string _scriptActor;
 
-    /// <summary>A reader over <paramref name="packages"/> with the script chains and defaults of <paramref name="cache"/>.</summary>
-    /// <exception cref="InvalidDataException">A script class, enum or default the reader needs is missing.</exception>
-    public LootContainerClassReader(PackageCache packages, ScriptCache cache, ScriptSchemas schemas)
+    /// <summary>
+    /// A reader over <paramref name="packages"/> with the script chains of <paramref name="schemas"/> and the enums and
+    /// classes of <paramref name="layouts"/>.
+    /// </summary>
+    /// <exception cref="InvalidDataException">A script class or enum the reader needs is missing.</exception>
+    public LootContainerClassReader(PackageCache packages, ScriptLayouts layouts, ScriptTypeSchemas schemas)
     {
         _packages = packages;
-        _defaults = LootScriptDefaults.Interaction(cache);
-        _openDelay = LootScriptDefaults.OpenDelay(cache);
         _classes = new ClassSchemas(packages, schemas.ForPath);
         _animation = schemas.Of(B.AnimationScriptClass);
         _interaction = schemas.Of(B.InteractionScriptClass);
         _container = schemas.Of(ItemContainerComponentMembers.ScriptClass);
         _quest = schemas.Of(B.QuestScriptClass);
-        _interactionTypes = cache.Enum(B.InteractionTypeEnum).Names;
-        _presets = cache.Enum(B.PromptDistancePresetEnum).Names;
-        _scriptActor = ScriptSchemas.ScriptPackage + B.ScriptActor[1..];
-        ScriptClass replicated = cache.Chain(B.ScriptActor, out _).FirstOrDefault(type => type.Properties.Any(property => property.IsReplicated))
-            ?? throw new InvalidDataException($"No class of the chain of {B.ScriptActor} declares replicated members");
-        ActorClass = ScriptSchemas.ScriptPackage + replicated.Name[1..];
+        _interactionTypes = layouts.Enum(B.InteractionTypeEnum).Names;
+        _presets = layouts.Enum(B.PromptDistancePresetEnum).Names;
+        _scriptActor = ScriptLayouts.ScriptPackage + B.ScriptActor[1..];
+        ActorClass = ReplicatedActorClass(layouts);
     }
 
     /// <summary>The replication layout every container actor uses.</summary>
     private string ActorClass { get; }
+
+    /// <summary>The nearest script class of the container actor's chain that declares replicated members.</summary>
+    private static string ReplicatedActorClass(ScriptLayouts layouts) => layouts.Chain(B.ScriptActor, out _)
+        .Select(type => ScriptLayouts.ScriptPackage + type.Name[1..])
+        .FirstOrDefault(path => GameReplication.Catalog.Classes.GetValueOrDefault(path) is { OwnProperties.Count: > 0 })
+        ?? throw new InvalidDataException($"No class of the chain of {B.ScriptActor} declares replicated members");
 
     /// <summary>Reads the container class at <paramref name="classPath"/> (<c>Package.Name_C</c>).</summary>
     /// <exception cref="InvalidDataException">The class is not a container Blueprint, or a template the row needs does not decode.</exception>
@@ -131,7 +138,7 @@ internal sealed class LootContainerClassReader
             [B.RootComponent] = templates.Meshes[B.RootComponent],
             [B.SocketMeshComponent] = templates.Meshes[B.SocketMeshComponent],
         };
-        Dictionary<string, string?> parents = values.ToDictionary(pair => pair.Key, pair => pair.Value.GetValueOrDefault(ScriptSchemas.AttachParent) as string, StringComparer.Ordinal);
+        Dictionary<string, string?> parents = values.ToDictionary(pair => pair.Key, pair => pair.Value.GetValueOrDefault(ScriptTypeSchemas.AttachParent) as string, StringComparer.Ordinal);
         if (parents[B.RootComponent] is { } rootParent)
         {
             throw new InvalidDataException($"{classPath}: the root is attached to {rootParent}");
@@ -144,7 +151,7 @@ internal sealed class LootContainerClassReader
 
         foreach (string part in (string[])[B.InteractionComponent, B.ItemContainerComponent])
         {
-            if (values[part].GetValueOrDefault(ScriptSchemas.AttachSocketName) is string { Length: > 0 } socket && socket != CookedPackage.NoneName)
+            if (values[part].GetValueOrDefault(ScriptTypeSchemas.AttachSocketName) is string { Length: > 0 } socket && socket != CookedPackage.NoneName)
             {
                 throw new InvalidDataException($"{classPath}: {part} is attached to a socket");
             }
@@ -169,21 +176,24 @@ internal sealed class LootContainerClassReader
         }
 
         Dictionary<string, object?> interaction = templates.Interaction;
-        byte preset = Value(interaction, B.PromptDistancePreset, _defaults.PromptDistancePreset);
-        if (preset >= _presets.Count || _presets[preset] != B.StandardPreset)
+        string preset = interaction.ContainsKey(B.PromptDistancePreset)
+            ? EnumName(_presets, Value<byte>(interaction, B.PromptDistancePreset, 0))
+            : LootInteractionDefaults.PromptDistancePreset;
+        if (preset != B.StandardPreset)
         {
             throw new InvalidDataException($"{classPath}: prompt distance preset {preset}");
         }
 
-        byte type = Value(interaction, B.InteractionType, _defaults.InteractionType);
-        double hold = Seconds(interaction, B.HoldDuration, _defaults.HoldSeconds);
-        bool useLid = Value(templates.Actor, B.UseLidAnimationForOpenDelay, _openDelay.UseLidAnimation);
+        byte type = Value(interaction, B.InteractionType, (byte)LootInteractionDefaults.InteractionType);
+        double hold = Seconds(interaction, B.HoldDuration, LootInteractionDefaults.HoldSeconds);
+        bool useLid = Value(templates.Actor, B.UseLidAnimationForOpenDelay, LootInteractionDefaults.UsesLidAnimationForOpenDelay);
         float? lidEnd = useLid && templates.LidCurve is { } curve
             ? CurveKeyReader.LatestKeyTime(curve.Package, curve.Export, AnimationFormats.TranslateRotateCurveTrailer)
             : null;
-        double openDelay = LootOpenDelay.Seconds(useLid, Value(templates.Actor, B.MinOpenDelay, _openDelay.MinSeconds), lidEnd,
-            Value(interaction, B.WaitDelayOnFirstOpen, _defaults.OpenDelaySeconds));
-        bool immobilized = Value(interaction, B.ForceImmobilize, _defaults.ForceImmobilize) || (type < _interactionTypes.Count && _interactionTypes[type] == B.ContinuousInteraction);
+        double openDelay = LootOpenDelay.Seconds(useLid, Value(templates.Actor, B.MinOpenDelay, LootInteractionDefaults.MinOpenDelaySeconds), lidEnd,
+            Value(interaction, B.WaitDelayOnFirstOpen, LootInteractionDefaults.OpenDelaySeconds));
+        bool immobilized = Value(interaction, B.ForceImmobilize, InteractionMovementParameters.LootSearchImmobilizes)
+            || (type < _interactionTypes.Count && _interactionTypes[type] == B.ContinuousInteraction);
         string package = classPath[..classPath.LastIndexOf('.')];
         return new LootContainerClass(
             new ArchetypeClass(classPath, $"{package}.{DefaultPrefix}{classPath[(classPath.LastIndexOf('.') + 1)..]}"),
@@ -192,13 +202,13 @@ internal sealed class LootContainerClassReader
             new Vector3D(PositiveZero(point.X), PositiveZero(point.Y), PositiveZero(point.Z)),
             new Vector3D(Floor(point.X), Floor(point.Y), Floor(point.Z)),
             interaction.GetValueOrDefault(B.AnimationContainer) as string,
-            Seconds(interaction, B.AlignmentTime, _defaults.AlignmentSeconds),
+            Seconds(interaction, B.AlignmentTime, InteractionMovementParameters.DefaultAlignmentSeconds),
             hold,
             openDelay,
-            Value(interaction, B.EquipRaiderTool, _defaults.EquipsRaiderTool),
-            immobilized || hold > 0 ? _defaults.StationaryPromptDistance : _defaults.StandardPromptDistance,
-            immobilized ? _defaults.StationaryPromptDistance : _defaults.StandardPromptDistance,
-            Value(templates.Container, ItemContainerComponentMembers.ItemLimit, _defaults.SlotCount));
+            Value(interaction, B.EquipRaiderTool, LootInteractionDefaults.EquipsRaiderTool),
+            immobilized || hold > 0 ? InteractionMovementParameters.StationaryPromptDistance : InteractionMovementParameters.StandardPromptDistance,
+            immobilized ? InteractionMovementParameters.StationaryPromptDistance : InteractionMovementParameters.StandardPromptDistance,
+            Value(templates.Container, ItemContainerComponentMembers.ItemLimit, LootInteractionDefaults.SlotCount));
     }
 
     /// <summary>
@@ -306,7 +316,7 @@ internal sealed class LootContainerClassReader
             object value = own.Get<object>(name);
             values[name] = name switch
             {
-                ScriptSchemas.AttachParent => AttachName(package, (ObjectReference)value),
+                ScriptTypeSchemas.AttachParent => AttachName(package, (ObjectReference)value),
                 B.AnimationContainer => _packages.Reference(package, ((ObjectReference)value).Value)?.Path,
                 _ => value,
             };
@@ -334,22 +344,22 @@ internal sealed class LootContainerClassReader
 
         if (scene.Location is { } location)
         {
-            values[ScriptSchemas.RelativeLocation] = location;
+            values[ScriptTypeSchemas.RelativeLocation] = location;
         }
 
         if (scene.Rotation is { } rotation)
         {
-            values[ScriptSchemas.RelativeRotation] = rotation;
+            values[ScriptTypeSchemas.RelativeRotation] = rotation;
         }
 
         if (scene.Scale is { } scale)
         {
-            values[ScriptSchemas.RelativeScale3D] = scale;
+            values[ScriptTypeSchemas.RelativeScale3D] = scale;
         }
 
         if (scene.Parent is { } reference)
         {
-            values[ScriptSchemas.AttachParent] = AttachName(package, new ObjectReference(reference));
+            values[ScriptTypeSchemas.AttachParent] = AttachName(package, new ObjectReference(reference));
         }
     }
 
@@ -370,9 +380,9 @@ internal sealed class LootContainerClassReader
 
     private static (Vector3D Location, Rotator Rotation, Vector3D Scale) Relative(Dictionary<string, object?> values)
     {
-        return (values.GetValueOrDefault(ScriptSchemas.RelativeLocation) as Vector3D? ?? default,
-            values.GetValueOrDefault(ScriptSchemas.RelativeRotation) as Rotator? ?? default,
-            values.GetValueOrDefault(ScriptSchemas.RelativeScale3D) as Vector3D? ?? Vector3D.One);
+        return (values.GetValueOrDefault(ScriptTypeSchemas.RelativeLocation) as Vector3D? ?? default,
+            values.GetValueOrDefault(ScriptTypeSchemas.RelativeRotation) as Rotator? ?? default,
+            values.GetValueOrDefault(ScriptTypeSchemas.RelativeScale3D) as Vector3D? ?? Vector3D.One);
     }
 
     /// <summary><paramref name="point"/> scaled, rotated (pitch, yaw, roll in degrees) and moved by a relative transform.</summary>
@@ -405,7 +415,10 @@ internal sealed class LootContainerClassReader
     /// <summary>The value with a zero always positive (the tables never hold −0).</summary>
     private static double PositiveZero(double value) => value == 0 ? 0.0 : value;
 
-    /// <summary>The value a template set for <paramref name="name"/>, or the script default <paramref name="fallback"/>.</summary>
+    /// <summary>The name of entry <paramref name="value"/> of an enum with the entry names <paramref name="names"/>, or the number when it has none.</summary>
+    private static string EnumName(IReadOnlyList<string> names, byte value) => value < names.Count ? names[value] : $"{value}";
+
+    /// <summary>The value a template set for <paramref name="name"/>, or the class default <paramref name="fallback"/>.</summary>
     private static T Value<T>(Dictionary<string, object?> values, string name, T fallback)
     {
         if (!values.TryGetValue(name, out object? value))

@@ -1,6 +1,5 @@
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
-using Ares.GameDataExtract.Scripts;
 
 namespace Ares.GameDataExtract.Items;
 
@@ -78,16 +77,7 @@ internal sealed class ItemClasses
         return result;
     }
 
-    private string? ScriptClassName(string path)
-    {
-        if (!path.StartsWith(ScriptSchemas.ScriptPackage, StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        string name = path[ScriptSchemas.ScriptPackage.Length..];
-        return _sources.Scripts.TryGetClass("U" + name, out _) ? "U" + name : _sources.Scripts.TryGetClass("A" + name, out _) ? "A" + name : null;
-    }
+    private string? ScriptClassName(string path) => _sources.Layouts.NameOf(path, "U", "A");
 
     private static ZenExport Single(CookedPackage package, string name)
     {

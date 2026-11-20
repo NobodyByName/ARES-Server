@@ -15,10 +15,9 @@ namespace Ares.GameDataExtract.World;
 /// Reads a map's loot placement limiters (<see cref="LootLimiter"/>): the <c>ALootPlacementLimiter</c> actors of the
 /// persistent level and the cells. An actor gives its <c>Limits</c> (gameplay tag to <c>FLootContainerLimitConfig</c>)
 /// and its label; its gatherer component (<c>ULootPlacementLimiterComponent</c>, attached to the actor's <c>Root</c>)
-/// the gathering method, radius and volumes, with the script constructor defaults for members a block does not store,
-/// and the world transform. The volumes are persistent-level actors read as hulls (see <see cref="LootVolumeReader"/>).
-/// Locations are rounded to 2 decimal places and rotations to 3. Read every cell with <see cref="ReadCell"/>, then
-/// <see cref="Build"/>.
+/// the gathering method, radius and volumes, and the world transform. A member a block does not store stays unset.
+/// The volumes are persistent-level actors read as hulls (see <see cref="LootVolumeReader"/>). Locations are rounded to
+/// 2 decimal places and rotations to 3. Read every cell with <see cref="ReadCell"/>, then <see cref="Build"/>.
 /// </summary>
 internal sealed partial class LootLimiterReader
 {
@@ -51,32 +50,20 @@ internal sealed partial class LootLimiterReader
     private readonly ScriptMemberChain _limiter;
     private readonly ScriptMemberChain _component;
     private readonly ScriptMemberChain _config;
-    private readonly byte _defaultMethod;
-    private readonly double _defaultRadius;
-    private readonly bool _defaultUnlimited;
-    private readonly int _defaultLimit;
     private readonly List<Row> _rows = [];
 
-    /// <summary>A reader for the cells of map package <paramref name="mapPackage"/>, with the chains and defaults of the script cache.</summary>
-    /// <exception cref="InvalidDataException">A class, struct, enum or constructor the reader needs changed.</exception>
-    public LootLimiterReader(SceneResolver scenes, ScriptCache cache, string mapPackage)
+    /// <summary>
+    /// A reader for the cells of map package <paramref name="mapPackage"/>, with the member chains of <paramref name="layouts"/>.
+    /// </summary>
+    /// <exception cref="InvalidDataException">A class, struct or enum the reader needs changed.</exception>
+    public LootLimiterReader(SceneResolver scenes, ScriptLayouts layouts, string mapPackage)
     {
         _scenes = scenes;
         _mapPackage = mapPackage;
-        _limiter = ScriptMemberChain.Of(cache, LimiterClass, "Root", "LootContainerLimiterSocketGatherer", "Limits");
-        _component = ScriptMemberChain.Of(cache, ComponentClass, "SocketGatheringMethod", "SocketGatheringRadius", "Volumes");
-        _config = ScriptMemberChain.Of(cache, ConfigStruct, "bUnlimited", "Limit", "NumSpawned");
-        ScriptMemberChain.ExpectEnum(cache, MethodEnum, [.. s_methods.Select(method => method.Method)]);
-        IReadOnlyList<ScriptConstant> component = ScriptConstructorStores.Of(cache, ComponentClass, [1, sizeof(double)], ["SocketGatheringMethod", "SocketGatheringRadius"], exact: true);
-        _defaultMethod = component[0].AsByte;
-        _defaultRadius = component[1].AsDouble;
-        IReadOnlyList<ScriptConstant> config = ScriptConstructorStores.Of(cache, ConfigStruct, [1, sizeof(int), sizeof(int)], ["bUnlimited", "Limit", "NumSpawned"], exact: true);
-        _defaultUnlimited = config[0].AsByte != 0;
-        _defaultLimit = config[1].AsInt32;
-        if (config[2].AsInt32 != 0)
-        {
-            throw new InvalidDataException($"{ConfigStruct}.NumSpawned defaults to {config[2].AsInt32}");
-        }
+        _limiter = ScriptMemberChain.Of(layouts, LimiterClass, "Root", "LootContainerLimiterSocketGatherer", "Limits");
+        _component = ScriptMemberChain.Of(layouts, ComponentClass, "SocketGatheringMethod", "SocketGatheringRadius", "Volumes");
+        _config = ScriptMemberChain.Of(layouts, ConfigStruct, "bUnlimited", "Limit", "NumSpawned");
+        ScriptMemberChain.ExpectEnum(layouts, MethodEnum, [.. s_methods.Select(method => method.Method)]);
     }
 
     /// <summary>Reads the limiters placed in <paramref name="cell"/>.</summary>
@@ -147,15 +134,15 @@ internal sealed partial class LootLimiterReader
             throw new InvalidDataException($"unexpected components ({string.Join(", ", own)})");
         }
 
-        (byte method, double radius, string[] volumes, int? parent) = ReadComponent(package, component);
+        (byte? method, double? radius, string[] volumes, int? parent) = ReadComponent(package, component);
         if (parent != rootValue)
         {
             throw new InvalidDataException("the gatherer component is not attached to Root");
         }
 
-        LootLimiterShape shape = s_methods[method].Shape;
+        LootLimiterShape? shape = method is { } stored ? s_methods[stored].Shape : null;
         SceneMembers scene = _scenes.Scene(package, root);
-        if (scene.Parent is { } rootParent && (rootParent != 0 || shape is LootLimiterShape.Sphere or LootLimiterShape.Box))
+        if (scene.Parent is { } rootParent && (rootParent != 0 || shape is not (LootLimiterShape.None or LootLimiterShape.Volumes)))
         {
             throw new InvalidDataException(rootParent != 0 ? "Root has an attach parent" : "a sphere or box limiter lost its attach parent in the cook");
         }
@@ -168,14 +155,14 @@ internal sealed partial class LootLimiterReader
 
         if ((shape == LootLimiterShape.Volumes) != (volumes.Length > 0))
         {
-            throw new InvalidDataException($"method {s_methods[method].Method} with {volumes.Length} volumes");
+            throw new InvalidDataException($"method {method} with {volumes.Length} volumes");
         }
 
         return new Row(cell, actor, label, dataLayer, shape, DecimalRounding.Round(world.Translation, LocationDigits),
             DecimalRounding.Round(TransformMath.ToRotator(world.Rotation), RotationDigits), radius, volumes, limits);
     }
 
-    /// <summary>The <c>Limits</c> map: per gameplay tag, the struct defaults overridden by the members the entry stores.</summary>
+    /// <summary>The <c>Limits</c> map: per gameplay tag, the members the entry stores (the others unset).</summary>
     private LootLimit[] ReadLimits(PlacedActorValues values)
     {
         int removed = values.Int32();
@@ -203,17 +190,17 @@ internal sealed partial class LootLimiterReader
                 throw new InvalidDataException($"limit config members ({string.Join(", ", config.Members.Select(member => member.Index))})");
             }
 
-            // A member missing from the header keeps the struct default; a zero-masked one is zero (false).
-            bool unlimited = config.Contains(unlimitedIndex) ? config.IsNonZero(unlimitedIndex) && Bool(values.Byte()) : _defaultUnlimited;
-            int limit = config.Contains(limitIndex) ? config.IsNonZero(limitIndex) ? values.Int32() : 0 : _defaultLimit;
-            limits[i] = limit >= 0 ? new LootLimit(name, unlimited, limit) : throw new InvalidDataException($"limit {limit}");
+            // A member missing from the header stays unset; a zero-masked one is zero (false).
+            bool? unlimited = config.Contains(unlimitedIndex) ? config.IsNonZero(unlimitedIndex) && Bool(values.Byte()) : null;
+            int? limit = config.Contains(limitIndex) ? config.IsNonZero(limitIndex) ? values.Int32() : 0 : null;
+            limits[i] = limit is not < 0 ? new LootLimit(name, unlimited, limit) : throw new InvalidDataException($"limit {limit}");
         }
 
         return limits;
     }
 
-    /// <summary>Gathering method, radius, volume actor names and attach parent of a gatherer component.</summary>
-    private (byte Method, double Radius, string[] Volumes, int? Parent) ReadComponent(CookedPackage package, ZenExport export)
+    /// <summary>Gathering method and radius (null when not stored), volume actor names and attach parent of a gatherer component.</summary>
+    private (byte? Method, double? Radius, string[] Volumes, int? Parent) ReadComponent(CookedPackage package, ZenExport export)
     {
         UnversionedHeader header = UnversionedHeader.Read(package.Data, CookedPackage.StartOf(export));
         int methodIndex = _component.Index("SocketGatheringMethod");
@@ -226,8 +213,8 @@ internal sealed partial class LootLimiterReader
         }
 
         PlacedActorValues values = new(package, export, header);
-        byte method = header.Contains(methodIndex) ? header.IsNonZero(methodIndex) ? values.Byte() : (byte)0 : _defaultMethod;
-        double radius = header.Contains(radiusIndex) ? header.IsNonZero(radiusIndex) ? values.Double() : 0.0 : _defaultRadius;
+        byte? method = header.Contains(methodIndex) ? header.IsNonZero(methodIndex) ? values.Byte() : (byte)0 : null;
+        double? radius = header.Contains(radiusIndex) ? header.IsNonZero(radiusIndex) ? values.Double() : 0.0 : null;
         List<string> volumes = [];
         if (header.IsNonZero(volumesIndex))
         {
@@ -248,7 +235,7 @@ internal sealed partial class LootLimiterReader
         }
 
         int? parent = header.IsNonZero(parentIndex) ? values.Reference() : null;
-        return values.Remaining == ComponentNativeData.HeadSize && method < s_methods.Length
+        return values.Remaining == ComponentNativeData.HeadSize && (method is null || method < s_methods.Length)
             ? (method, radius, [.. volumes], parent)
             : throw new InvalidDataException("the component block does not end where expected");
     }
@@ -293,10 +280,10 @@ internal sealed partial class LootLimiterReader
         string Actor,
         string Label,
         string? DataLayer,
-        LootLimiterShape Shape,
+        LootLimiterShape? Shape,
         Vector3D Location,
         Rotator Rotation,
-        double Radius,
+        double? Radius,
         string[] Volumes,
         LootLimit[] Limits);
 }

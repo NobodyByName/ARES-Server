@@ -1,7 +1,6 @@
 using Ares.GameDataExtract.Animations;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Movement;
 
@@ -19,15 +18,13 @@ internal sealed record HeavyLandingTables(IReadOnlyList<HeavyLandingLevel> Heavy
 /// </summary>
 internal static class HeavyLandingReader
 {
-    private const string AnimationsClass = "UHeavyLandingAnimations";
     private const int MaxLevels = 64;
     private static readonly string[] s_directions = ["NoDirection", "Forward", "Left", "Right", "Backward"];
 
     /// <summary>Reads the tables.</summary>
     /// <exception cref="InvalidDataException">The asset or an animation does not have the expected layout.</exception>
-    public static HeavyLandingTables Read(PackageCache packages, ScriptCache scripts)
+    public static HeavyLandingTables Read(PackageCache packages)
     {
-        ScriptSchemaCheck.OwnMembers(scripts, AnimationsClass, MovementAssetSchemas.HeavyLandingAnimations);
         CookedPackage package = MovementPackages.Load(packages, MovementAssets.HeavyLandingAnimationsPackage);
         PropertyBag asset = MovementPackages.ReadAsset(package, MovementPackages.OnlyExport(package), MovementAssetSchemas.HeavyLandingAnimations, [0, 1, 2]);
         IReadOnlyList<PropertyField> arrays = [.. MovementAssetSchemas.HeavyLandingAnimations.Members.Select(member => member!)];

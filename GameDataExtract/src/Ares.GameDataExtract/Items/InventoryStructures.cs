@@ -10,7 +10,7 @@ namespace Ares.GameDataExtract.Items;
 internal sealed record InventoryStructure(RegistryAsset Asset, CookedPackage Package, PropertyBag Values, long AssetId)
 {
     /// <summary>The asset's script class name without package, for example <c>ModSlotAsset</c>.</summary>
-    public string Kind => Asset.ClassPath[ScriptSchemas.ScriptPackage.Length..];
+    public string Kind => Asset.ClassPath[ScriptLayouts.ScriptPackage.Length..];
 }
 
 /// <summary>
@@ -22,11 +22,11 @@ internal sealed record InventoryStructure(RegistryAsset Asset, CookedPackage Pac
 /// </summary>
 internal sealed class InventoryStructures
 {
-    public const string LoadoutFrameClass = ScriptSchemas.ScriptPackage + "LoadoutFrameItemDataAsset";
-    private const string ContainerSlotClass = ScriptSchemas.ScriptPackage + "InventoryContainerSlotDataAsset";
-    private const string ContainerClass = ScriptSchemas.ScriptPackage + "InventoryContainerItemDataAsset";
-    private const string ContentSlotClass = ScriptSchemas.ScriptPackage + "InventoryContentSlotDataAsset";
-    public const string ModSlotClass = ScriptSchemas.ScriptPackage + "ModSlotAsset";
+    public const string LoadoutFrameClass = ScriptLayouts.ScriptPackage + "LoadoutFrameItemDataAsset";
+    private const string ContainerSlotClass = ScriptLayouts.ScriptPackage + "InventoryContainerSlotDataAsset";
+    private const string ContainerClass = ScriptLayouts.ScriptPackage + "InventoryContainerItemDataAsset";
+    private const string ContentSlotClass = ScriptLayouts.ScriptPackage + "InventoryContentSlotDataAsset";
+    public const string ModSlotClass = ScriptLayouts.ScriptPackage + "ModSlotAsset";
 
     private static readonly string[] s_classes = [LoadoutFrameClass, ContainerSlotClass, ContainerClass, ContentSlotClass, ModSlotClass];
 

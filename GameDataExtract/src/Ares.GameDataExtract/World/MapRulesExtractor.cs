@@ -26,28 +26,29 @@ internal sealed record MapRulesData(
     PlayerStartCapsule PlayerStartCapsule);
 
 /// <summary>
-/// Extracts a map's gameplay tables, which also need the compiled scripts: the game mode, the regular doors, the round
-/// configurations, the lighting, the extraction points, the zipline defaults and the group spawn point capsule.
+/// Extracts a map's gameplay tables: the game mode, the regular doors, the round configurations, the lighting, the
+/// extraction points, the zipline defaults and the group spawn point
+/// capsule (<see cref="PlayerStartCapsule.Group"/>).
 /// </summary>
 internal static class MapRulesExtractor
 {
     /// <summary>The gameplay tables of map package <paramref name="mapPackage"/>.</summary>
     /// <param name="packages">The game's packages.</param>
-    /// <param name="scripts">The game's compiled scripts.</param>
+    /// <param name="layouts">The script layouts.</param>
     /// <param name="mapPackage">The map package.</param>
     /// <param name="world">The map's persistent world objects.</param>
     /// <param name="cellPackages">The map's generated cell packages.</param>
     /// <param name="rounds">The map's round configuration packages, in table order.</param>
-    /// <exception cref="InvalidDataException">An object or a script default the tables need does not decode.</exception>
+    /// <exception cref="InvalidDataException">An object the tables need does not decode.</exception>
     public static MapRulesData Extract(
         PackageCache packages,
-        ScriptCache scripts,
+        ScriptLayouts layouts,
         string mapPackage,
         MapWorldObjects world,
         IReadOnlyList<string> cellPackages,
         IReadOnlyList<string> rounds)
     {
-        MapRuleSources sources = new(packages, scripts);
+        MapRuleSources sources = new(packages, layouts);
         SceneResolver scenes = new ComponentReader(packages).Scenes;
         (MapGameMode gameMode, ExportRef lighting, ExportRef roundLighting) = MapGameModeReader.Read(sources, mapPackage, world);
         DoorReader doors = new(sources);
@@ -64,6 +65,6 @@ internal static class MapRulesExtractor
             LightingReader.Groups(sources, roundLighting),
             ExtractionReader.Read(sources, scenes, mapPackage, world),
             ZiplineDefaultsReader.Read(sources),
-            ZiplineDefaultsReader.Capsule(sources));
+            PlayerStartCapsule.Group);
     }
 }

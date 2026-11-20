@@ -4,6 +4,7 @@ using Ares.GameDataExtract.Registry;
 using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Game.Loot;
+using Ares.Structs.Game.Scripts;
 using Ares.Structs.Net.GameplayTags;
 using M = Ares.Structs.Game.Loot.StaticValueLootTableMembers;
 using S = Ares.Structs.Game.Loot.SkillLootTableMembers;
@@ -20,15 +21,15 @@ internal sealed class LootTableReader
 {
     private readonly PackageCache _packages;
     private readonly AssetRegistry _registry;
-    private readonly ScriptCache _cache;
-    private readonly ScriptSchemas _schemas;
+    private readonly ScriptLayouts _layouts;
+    private readonly ScriptTypeSchemas _schemas;
     private readonly Dictionary<string, string> _items;
 
-    public LootTableReader(PackageCache packages, AssetRegistry registry, ScriptCache cache, ScriptSchemas schemas)
+    public LootTableReader(PackageCache packages, AssetRegistry registry, ScriptLayouts layouts, ScriptTypeSchemas schemas)
     {
         _packages = packages;
         _registry = registry;
-        _cache = cache;
+        _layouts = layouts;
         _schemas = schemas;
         _items = registry.Assets.Where(asset => LootItemAssetClasses.ClassPaths.Contains(asset.ClassPath))
             .ToDictionary(asset => asset.PackageName, asset => asset.AssetName, StringComparer.Ordinal);
@@ -39,8 +40,8 @@ internal sealed class LootTableReader
     public IReadOnlyList<StaticValueLootTable> ValueTables()
     {
         StructSchema schema = Schema(M.ClassPath);
-        ScriptEnum queryTypes = _cache.Enum(M.QueryTypeEnum);
-        ScriptEnum distributions = _cache.Enum(M.DistributionEnum);
+        ScriptEnumDefinition queryTypes = _layouts.Enum(M.QueryTypeEnum);
+        ScriptEnumDefinition distributions = _layouts.Enum(M.DistributionEnum);
         List<StaticValueLootTable> tables = [];
         foreach (RegistryAsset asset in LootAssets.OfClass(_registry, M.ClassPath, M.AssetPrefix))
         {
@@ -82,7 +83,7 @@ internal sealed class LootTableReader
     public IReadOnlyList<SkillLootTable> SkillTables()
     {
         StructSchema schema = Schema(S.ClassPath);
-        ScriptEnum entryTypes = _cache.Enum(S.EntryTypeEnum);
+        ScriptEnumDefinition entryTypes = _layouts.Enum(S.EntryTypeEnum);
         List<SkillLootTable> tables = [];
         foreach (RegistryAsset asset in LootAssets.OfClass(_registry, S.ClassPath, prefix: ""))
         {

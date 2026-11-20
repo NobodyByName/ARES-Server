@@ -6,11 +6,9 @@ using Ares.Common.Maps;
 using Ares.GameDataExtract.Archives;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Registry;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core;
 using Ares.Structs.Game;
 using Ares.Structs.Game.Collision;
-using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
 using Ares.Structs.Game.World;
 using Vector3D = Ares.Structs.Core.Geometry.Vector3D;
@@ -66,8 +64,7 @@ public sealed class ExtractionTests : IDisposable
             MapTables.DynamicLootSpawners(GameNames.Maps.Dam), MapTables.DynamicLootGroups(GameNames.Maps.Dam),
             GameTables.DodgeRolls, GameTables.VaultDefinitions, GameTables.HeavyLandingLevels, GameTables.RecoveryLandingLevels,
             GameTables.GraphStateTags, GameTables.SnapHookItem, GameTables.SprintBurstCurve,
-            GameTables.LootContainerTypes, GameTables.LootContainerClasses, GameTables.LootContainerDefaults, GameTables.StaticValueLootTables,
-            GameTables.SkillLootTables, GameTables.StaticLootSpawnTweakables,
+            GameTables.LootContainerTypes, GameTables.LootContainerClasses, GameTables.StaticValueLootTables, GameTables.SkillLootTables,
         ];
         Assert.Equal(
             tables.Append(collision).Append(GameDataFiles.ManifestFileName).Order(StringComparer.Ordinal),
@@ -89,16 +86,12 @@ public sealed class ExtractionTests : IDisposable
         Assert.Empty(data.ReadTable(MapTables.LadderLogic(GameNames.Maps.Dam), GameDataJsonContext.Default.ArchetypeClass));
         Assert.Empty(data.ReadTable(MapTables.ZiplineLines(GameNames.Maps.Dam), GameDataJsonContext.Default.ZiplinePlacement));
         Assert.Empty(data.ReadTable(MapTables.ZiplineLaunchers(GameNames.Maps.Dam), GameDataJsonContext.Default.ActivatableZiplinePlacement));
-        Assert.All(data.ReadTable(GameTables.DodgeRolls, GameDataJsonContext.Default.DodgeRollSequence), roll => Assert.Equal(SyntheticMovementGame.RollDistance, roll.Distance));
+        Assert.All(data.ReadTable(GameTables.DodgeRolls, GameDataJsonContext.Default.DodgeRollSequence), roll => Assert.Equal(
+            (DodgeRollParameters.DefaultDistance, DodgeRollParameters.DefaultSpeed, DodgeRollParameters.DefaultStaminaCost, DodgeRollParameters.DefaultContactAnimationSeconds),
+            (roll.Distance, roll.Speed, roll.StaminaCost, roll.ContactAnimationSeconds)));
         Assert.Equal(new SnapHookItemDefaults(MovementAssets.SnapHookDataAsset, 1800, 60), Assert.Single(data.ReadTable(GameTables.SnapHookItem, GameDataJsonContext.Default.SnapHookItemDefaults)));
         Assert.Equal(SyntheticMovementGame.TagCount, data.ReadTable(GameTables.GraphStateTags, GameDataJsonContext.Default.String).Length);
         Assert.Empty(data.ReadTable(GameTables.LootContainerClasses, GameDataJsonContext.Default.LootContainerClass));
-        LootContainerDefaults defaults = Assert.Single(data.ReadTable(GameTables.LootContainerDefaults, GameDataJsonContext.Default.LootContainerDefaults));
-        Assert.Equal(SyntheticLootScripts.CullDistance, defaults.NetCullDistance);
-        Assert.Equal(SyntheticLootScripts.TargetStacks, defaults.TargetStacks);
-        Assert.Equal(
-            SyntheticLootScripts.Tweakables.ContainerContentsWeights,
-            Assert.Single(data.ReadTable(GameTables.StaticLootSpawnTweakables, GameDataJsonContext.Default.LootSpawnTweakables)).ContainerContentsWeights);
         Assert.Empty(data.ReadTable(MapTables.PointsOfInterest(GameNames.Maps.Dam), GameDataJsonContext.Default.PointOfInterest));
         Assert.Empty(data.ReadTable(MapTables.LootLimiters(GameNames.Maps.Dam), GameDataJsonContext.Default.LootLimiter));
         Assert.Empty(data.ReadTable(MapTables.DynamicLootSpawners(GameNames.Maps.Dam), GameDataJsonContext.Default.DynamicLootSpawner));
@@ -193,20 +186,8 @@ public sealed class ExtractionTests : IDisposable
             ["--game", Game, "--keys", Path.Combine(_directory, "keys.txt"), "--toc-key", Path.Combine(_directory, "toc-key.txt"), "--out", output]);
         StringWriter standardOutput = new();
         StringWriter standardError = new();
-        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError, gameAssetTables: false);
+        int code = command.Run(ArchiveTests.Keys(), tocKey ?? ArchiveTests.TableKey(), standardOutput, standardError, gameAssetTables: false, layouts: SyntheticLootScripts.Layouts());
         return (code, standardOutput.ToString(), standardError.ToString());
-    }
-
-    /// <summary>
-    /// The script cache of the synthetic game: the loot scripts (see <see cref="SyntheticLootScripts"/>), the movement
-    /// classes and structs, and the loot area classes (see <see cref="SyntheticLootAreaScripts"/>).
-    /// </summary>
-    private static byte[] ScriptCache()
-    {
-        SyntheticScriptCache cache = SyntheticLootScripts.Cache();
-        SyntheticMovementGame.AddScripts(cache);
-        SyntheticLootAreaScripts.AddScripts(cache);
-        return cache.Write();
     }
 
     private static string Cell(string name) => $"{MapPackage}/{RuntimeCellMembers.GeneratedFolder}/{name}";
@@ -215,7 +196,7 @@ public sealed class ExtractionTests : IDisposable
     /// A game folder with the collision config pak and one container: the map's persistent level listing a base-map cell
     /// and a layered cell, the base cell (a landscape proxy at <paramref name="landscapeHeight"/>, a static mesh component that uses its mesh's default
     /// collision and a blocking box component), the layered cell (no collision), the mesh, and the movement assets (see
-    /// <see cref="SyntheticMovementGame"/>), an empty asset registry and the loot, movement and loot area script cache.
+    /// <see cref="SyntheticMovementGame"/>) and an empty asset registry.
     /// </summary>
     private void WriteGame(double landscapeHeight = 300)
     {
@@ -226,7 +207,6 @@ public sealed class ExtractionTests : IDisposable
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[0], Encoding.UTF8.GetBytes(CollisionProfilesTests.Base)),
             new SyntheticPakEntry(CollisionProfileConfig.ConfigFiles[1], Encoding.UTF8.GetBytes(CollisionProfilesTests.Default)),
             new SyntheticPakEntry(AssetRegistry.PakPath, SyntheticLootScripts.EmptyRegistry()),
-            new SyntheticPakEntry(ScriptCacheReader.CachePath, ScriptCache()),
         ]);
 
         byte[] scriptObjects = SyntheticArchives.ScriptObjects(

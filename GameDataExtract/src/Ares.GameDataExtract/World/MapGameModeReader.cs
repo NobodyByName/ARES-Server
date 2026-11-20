@@ -1,13 +1,14 @@
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
 using Ares.GameDataExtract.Scripts;
+using Ares.Structs.Game;
 using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract.World;
 
 /// <summary>
 /// Reads a map's game mode (<see cref="MapGameMode"/>) and its level script's lighting assets: the game mode class its
-/// world settings name, the game state class that game mode's script default statements assign, and the location tag
+/// world settings name, the game state class that game mode creates (<see cref="ScriptWiring"/>), and the location tag
 /// and lighting asset references of its level script class default.
 /// </summary>
 internal static class MapGameModeReader
@@ -50,36 +51,32 @@ internal static class MapGameModeReader
     private static bool IsWorldSettings(MapRuleSources sources, PackageObjectIndex index)
     {
         if (index.Kind != PackageObjectKind.ScriptImport || sources.Packages.ScriptPath(index) is not { } path
-            || !path.StartsWith(ScriptSchemas.ScriptPackage, StringComparison.Ordinal)
-            || !sources.Scripts.TryGetClass(ActorPrefix + path[ScriptSchemas.ScriptPackage.Length..], out ScriptClass? type))
+            || sources.Layouts.NameOf(path, ActorPrefix) is not { } name)
         {
             return false;
         }
 
-        _ = sources.Scripts.Chain(type.Name, out string? native);
+        _ = sources.Layouts.Chain(name, out string? native);
         return native == WorldSettingsMembers.NativeBase;
     }
 
     /// <summary>
-    /// The game state class the script default statements of <paramref name="gameModeClass"/>'s script class chain assign
-    /// last to <see cref="GameModeMembers.GameStateClassOffset"/>, with its class default object.
+    /// The game state class <paramref name="gameModeClass"/> creates, with its class default object: the first script
+    /// class of the game mode's chain must be <see cref="ScriptWiring.SalvageGameMode"/>, which creates
+    /// <see cref="ScriptWiring.SalvageGameState"/>.
     /// </summary>
     private static ArchetypeClass GameState(MapRuleSources sources, string gameModeClass)
     {
         int split = gameModeClass.LastIndexOf('.');
         ExportRef type = sources.Export(gameModeClass[..split], gameModeClass[split..]);
         (_, string script) = sources.ScriptClassOf(type.Package, PackageObjectIndex.FromExport(type.Export.Index), gameModeClass);
-        string? global = ScriptPatterns.DefaultFunctions(sources.Scripts, script)
-            .SelectMany(function => ScriptPatterns.GlobalsAssignedTo(sources.Scripts, function, GameModeMembers.GameStateClassOffset))
-            .LastOrDefault();
-        if (global is null || !global.StartsWith(GameModeMembers.StaticTypePrefix, StringComparison.Ordinal)
-            || global[GameModeMembers.StaticTypePrefix.Length..] is not ['A', _, ..] stateName || !sources.Scripts.TryGetClass(stateName, out _))
+        if (script != ScriptWiring.SalvageGameMode || !sources.Layouts.Contains(ScriptWiring.SalvageGameState))
         {
-            throw new InvalidDataException($"The script defaults of {script} assign no script game state class");
+            throw new InvalidDataException($"No game state class is known for the game mode {gameModeClass} (script class {script})");
         }
 
-        string name = stateName[1..];
-        return new ArchetypeClass(ScriptSchemas.ScriptPackage + name, ScriptSchemas.ScriptPackage + ClassDefaultPrefix + name);
+        string name = ScriptWiring.SalvageGameState[1..];
+        return new ArchetypeClass(ScriptLayouts.ScriptPackage + name, ScriptLayouts.ScriptPackage + ClassDefaultPrefix + name);
     }
 
     private static ExportRef Referenced(MapRuleSources sources, CookedPackage map, PropertyBag bag, string member)

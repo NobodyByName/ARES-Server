@@ -1,16 +1,14 @@
 using Ares.GameDataExtract.Components;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract.World;
 
 /// <summary>
-/// Reads what every rideable zipline shares (<see cref="ZiplineLineDefaults"/>) and the capsule of generated group spawn
-/// points (<see cref="PlayerStartCapsule"/>): the placed line Blueprint's class default, the lines' attachment
-/// information asset, the player character Blueprint's mesh template and the group player start's script constructor.
+/// Reads what every rideable zipline shares (<see cref="ZiplineLineDefaults"/>): the placed line Blueprint's class
+/// default, the lines' attachment information asset and the player character Blueprint's mesh template.
 /// </summary>
 internal static class ZiplineDefaultsReader
 {
@@ -51,20 +49,5 @@ internal static class ZiplineDefaultsReader
         }
 
         return new ZiplineLineDefaults(threshold, attachment, new Vector3D(location.X + 0.0, location.Y + 0.0, location.Z + 0.0), meshRotation.Yaw + 0.0);
-    }
-
-    /// <summary>The capsule the group player start's script constructor sets.</summary>
-    /// <exception cref="InvalidDataException">The constructor stores no double into a capsule member.</exception>
-    public static PlayerStartCapsule Capsule(MapRuleSources sources)
-    {
-        return new PlayerStartCapsule(
-            Double(sources, PlayerStartCapsuleMembers.CapsuleHalfHeight),
-            Double(sources, PlayerStartCapsuleMembers.CapsuleRadius));
-    }
-
-    private static double Double(MapRuleSources sources, string member)
-    {
-        ScriptConstant value = sources.Default(PlayerStartCapsuleMembers.ScriptClass, member);
-        return value.Size == sizeof(double) ? value.AsDouble : throw new InvalidDataException($"{PlayerStartCapsuleMembers.ScriptClass}.{member} is not set to a double");
     }
 }

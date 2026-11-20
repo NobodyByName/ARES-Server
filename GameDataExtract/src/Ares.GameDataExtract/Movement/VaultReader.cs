@@ -1,7 +1,6 @@
 using Ares.GameDataExtract.Animations;
 using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
-using Ares.GameDataExtract.Scripts;
 using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Movement;
 
@@ -15,15 +14,13 @@ namespace Ares.GameDataExtract.Movement;
 /// </summary>
 internal static class VaultReader
 {
-    private const string AssetClass = "UVaultDefinitionsDataAsset";
     private const double SampleTolerance = 1e-4;
     private static readonly string[] s_tables = ["FallToVaultDefinitions", "InAirVaultDefinitions", "VaultDefinitions"];
 
     /// <summary>The sets in <see cref="MovementAssets.VaultPackages"/> order.</summary>
     /// <exception cref="InvalidDataException">An asset or an animation does not have the expected layout, or two definitions disagree on a root path.</exception>
-    public static IReadOnlyList<VaultDefinitionSet> Read(PackageCache packages, ScriptCache scripts)
+    public static IReadOnlyList<VaultDefinitionSet> Read(PackageCache packages)
     {
-        ScriptSchemaCheck.OwnMembers(scripts, AssetClass, MovementAssetSchemas.VaultDefinitionsDataAsset);
         Dictionary<string, RootPath> paths = new(StringComparer.Ordinal);
         SetRows[] sets = [.. MovementAssets.VaultPackages.Select(path => Asset(MovementPackages.Load(packages, path), paths))];
         Dictionary<string, VaultSequence> sequences = Sequences(packages, paths);

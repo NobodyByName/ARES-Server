@@ -49,7 +49,7 @@ public sealed class WorldItemClassTests
         LootCatalog catalog = new ScriptedPlayer(lootRules: LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn)).Raid.Loot;
 
         Assert.Equal(TestGameData.Data.WorldItems.WordCount, catalog.WorldItemClassBits.Count);
-        Assert.Equal(12, TestGameData.Data.WorldItems.WordCount);
+        Assert.Equal(13, TestGameData.Data.WorldItems.WordCount);
         Assert.All(catalog.Containers, container => Assert.True(IsFlagged(catalog.WorldItemClassBits, container.Class.Container.Class)));
         Assert.Contains(catalog.Containers, container => container.Source == LootContainerSource.Spawner);
         Assert.All(TestGameData.Dam.PlacedLoot.Where(placed => LootSocketClasses.Served(TestGameData.Loot, placed.Class) is not null), placed => Assert.True(IsFlagged(catalog.WorldItemClassBits, placed.Class)));

@@ -23,23 +23,23 @@ internal static partial class MapWorldExtractor
 {
     /// <summary>
     /// Extracts the loot area tables of map package <paramref name="mapPackage"/>: points of interest, loot placement
-    /// limiters and dynamic loot spawners with their activity groups. Member chains and defaults of the script classes
-    /// come from <paramref name="scripts"/>.
+    /// limiters and dynamic loot spawners with their activity groups. Member chains of the script classes come from
+    /// <paramref name="layouts"/>.
     /// </summary>
     /// <param name="packages">The game's packages.</param>
-    /// <param name="scripts">The game's compiled scripts.</param>
+    /// <param name="layouts">The script layouts.</param>
     /// <param name="mapPackage">The map package.</param>
     /// <param name="cellPackages">The map's generated cell packages.</param>
     /// <param name="dataLayers">The map's data layers; every layer a cell names must be one of them.</param>
     /// <exception cref="InvalidDataException">The map, a cell, an actor or a script class the tables need does not decode.</exception>
-    public static MapLootAreaData ExtractLootAreas(PackageCache packages, ScriptCache scripts, string mapPackage, IReadOnlyList<string> cellPackages,
+    public static MapLootAreaData ExtractLootAreas(PackageCache packages, ScriptLayouts layouts, string mapPackage, IReadOnlyList<string> cellPackages,
         IReadOnlyList<DataLayer> dataLayers)
     {
         CookedPackage level = packages.Load(mapPackage) ?? throw new InvalidDataException($"The map package {mapPackage} is not in the game archives");
         IReadOnlyList<MapCell> cells = MapCellReader.ReadCells(level, [mapPackage, .. cellPackages], dataLayers);
         SceneResolver scenes = new ComponentReader(packages).Scenes;
-        LootLimiterReader limiters = new(scenes, scripts, mapPackage);
-        DynamicLootSpawnerReader spawners = new(scenes, scripts, mapPackage);
+        LootLimiterReader limiters = new(scenes, layouts, mapPackage);
+        DynamicLootSpawnerReader spawners = new(scenes, layouts, mapPackage);
         List<CookedPackage> cellPackagesRead = [];
         foreach (MapCell cell in cells)
         {
@@ -54,9 +54,9 @@ internal static partial class MapWorldExtractor
 
         ImmutableArray<DynamicLootSpawner> spawnerRows = spawners.Build();
         return new MapLootAreaData(
-            new PointOfInterestReader(scenes, scripts).Read(level),
+            new PointOfInterestReader(scenes, layouts).Read(level),
             limiters.Build(level),
             spawnerRows,
-            new ActivityTreeReader(scripts).Read(level, cellPackagesRead, spawnerRows));
+            new ActivityTreeReader(layouts).Read(level, cellPackagesRead, spawnerRows));
     }
 }
