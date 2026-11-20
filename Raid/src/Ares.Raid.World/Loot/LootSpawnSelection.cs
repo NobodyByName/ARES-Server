@@ -69,8 +69,12 @@ public static class LootLimiterRules
 /// Null for none.
 /// </param>
 /// <param name="GroupCaps">Whether the game's most containers per group (<see cref="LootContainerType.MaxPerGroup"/>) apply.</param>
+/// <param name="LooseChance">
+/// Chance from 0 to 1 that a loose item socket of a tag gets an item, given the loot value of the area around it; null
+/// for no loose items.
+/// </param>
 public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls,
-    FreeStandingLoot? FreeStanding = null, bool GroupCaps = true)
+    FreeStandingLoot? FreeStanding = null, bool GroupCaps = true, Func<string, PointOfInterestLootValue, double>? LooseChance = null)
 {
     /// <summary>A map's rules with the content's spawn settings: their chances, and limiters and group caps when they enable them.</summary>
     /// <param name="map">The map's data.</param>
@@ -80,10 +84,10 @@ public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOn
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(spawn);
-        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps);
+        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps, spawn.LooseChance);
     }
 
-    /// <summary>A container on every socket, and none off the sockets.</summary>
+    /// <summary>A container on every socket, none off the sockets, and no loose items.</summary>
     public static LootSpawnRules EverySocket { get; } = new([], [], (_, _) => 1, false);
 }
 
@@ -119,9 +123,42 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
         ArgumentNullException.ThrowIfNull(loot);
         ArgumentNullException.ThrowIfNull(sockets);
         ArgumentNullException.ThrowIfNull(rules);
+        Placement[] placements = [.. sockets.Select(socket => new Placement(socket.ContainerTag, socket.Location, (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant()),
+            loot.FindContainerType(socket.ContainerTag) ?.MaxPerGroup ?? int.MaxValue))];
+        return Select(placements, rules, rules.Chance, activeDataLayers, random, setChances);
+    }
+
+    /// <summary>
+    /// Rolls the loose item sockets of a raid like container sockets (<see cref="Select(LootData, IReadOnlyList{LootSocket}, LootSpawnRules, IReadOnlyCollection{string}, Random, IReadOnlyList{double?})"/>)
+    /// with the rules' loose item chances: in a random order each rolls its tag's chance scaled by the area's loot value,
+    /// and a successful roll spawns unless a limiter of an active data layer covering the socket has reached the cap of a
+    /// limited entry matching its tag. Loose item sockets have no group cap, and their spawns count apart from the
+    /// container sockets'.
+    /// </summary>
+    /// <param name="sockets">The loose item sockets that may get an item.</param>
+    /// <param name="rules">Chances and limiters; no loose item chance gives no item.</param>
+    /// <param name="activeDataLayers">Names of the raid's active data layers.</param>
+    /// <param name="random">The raid's random numbers for loose items.</param>
+    /// <param name="setChances">
+    /// Per socket, in the order given: the chance an operator rule sets, or null. A socket with a set chance rolls only
+    /// that chance: no limiter stops it, and it does not count towards them.
+    /// </param>
+    /// <returns>The selection; its group cap count is 0.</returns>
+    public static LootSpawnSelection SelectLoose(IReadOnlyList<LooseItemSocket> sockets, LootSpawnRules rules, IReadOnlyCollection<string> activeDataLayers, Random random,
+        IReadOnlyList<double?>? setChances = null)
+    {
+        ArgumentNullException.ThrowIfNull(sockets);
+        ArgumentNullException.ThrowIfNull(rules);
+        Placement[] placements = [.. sockets.Select(socket => new Placement(socket.Tag, socket.Location, (socket.Cell, socket.Actor, socket.Component, socket.Socket), int.MaxValue))];
+        return Select(placements, rules, rules.LooseChance ?? ((_, _) => 0), activeDataLayers, random, setChances);
+    }
+
+    private static LootSpawnSelection Select(Placement[] sockets, LootSpawnRules rules, Func<string, PointOfInterestLootValue, double> chance, IReadOnlyCollection<string> activeDataLayers,
+        Random random, IReadOnlyList<double?>? setChances)
+    {
         ArgumentNullException.ThrowIfNull(activeDataLayers);
         ArgumentNullException.ThrowIfNull(random);
-        bool[] spawns = new bool[sockets.Count];
+        bool[] spawns = new bool[sockets.Length];
         LootValueAreas areas = new(rules.Areas);
         PointOfInterestLootValue[] values = [.. sockets.Select(socket => areas.At(socket.Location))];
         if (!rules.Rolls)
@@ -133,15 +170,15 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
         HashSet<string> active = new(activeDataLayers, StringComparer.Ordinal);
         List<LootLimiter> limiters = [.. rules.Limiters.Where(limiter => limiter.DataLayer is null || active.Contains(limiter.DataLayer))];
         int[][] spawned = [.. limiters.Select(limiter => new int[limiter.Limits.Count])];
-        Dictionary<(string Cell, string Actor, string Component, string Tag), int> groups = [];
+        Dictionary<(string, string, string, string), int> groups = [];
         (int rolls, int groupCaps, int limiterCaps) = (0, 0, 0);
-        int[] order = [.. Enumerable.Range(0, sockets.Count)];
+        int[] order = [.. Enumerable.Range(0, sockets.Length)];
         random.Shuffle(order);
         foreach (int index in order)
         {
-            LootSocket socket = sockets[index];
+            Placement socket = sockets[index];
             double? set = setChances?[index];
-            if (random.NextDouble() >= (set ?? rules.Chance(socket.ContainerTag, values[index])))
+            if (random.NextDouble() >= (set ?? chance(socket.Tag, values[index])))
             {
                 rolls++;
                 continue;
@@ -153,9 +190,8 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
                 continue;
             }
 
-            (string, string, string, string) group = (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant());
-            int inGroup = groups.GetValueOrDefault(group);
-            if (rules.GroupCaps && inGroup >= (loot.FindContainerType(socket.ContainerTag)?.MaxPerGroup ?? int.MaxValue))
+            int inGroup = groups.GetValueOrDefault(socket.Group);
+            if (rules.GroupCaps && inGroup >= socket.GroupCap)
             {
                 groupCaps++;
                 continue;
@@ -169,7 +205,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
             }
 
             spawns[index] = true;
-            groups[group] = inGroup + 1;
+            groups[socket.Group] = inGroup + 1;
             foreach ((int limiter, int entry) in entries)
             {
                 spawned[limiter][entry]++;
@@ -188,20 +224,20 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
     }
 
     // The limited entries that apply to a socket: of every limiter covering it, those matching its tag.
-    private static List<(int Limiter, int Entry)> Entries(List<LootLimiter> limiters, LootSocket socket)
+    private static List<(int Limiter, int Entry)> Entries(List<LootLimiter> limiters, Placement socket)
     {
         List<(int Limiter, int Entry)> entries = [];
         for (int limiter = 0; limiter < limiters.Count; limiter++)
         {
             IReadOnlyList<LootLimit> limits = limiters[limiter].Limits;
-            if (!limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) || !LootLimiterRules.IsPointInside(limiters[limiter], socket.Location))
+            if (!limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.Tag)) || !LootLimiterRules.IsPointInside(limiters[limiter], socket.Location))
             {
                 continue;
             }
 
             for (int entry = 0; entry < limits.Count; entry++)
             {
-                if (!limits[entry].Unlimited && LootLimiterRules.Matches(limits[entry].Tag, socket.ContainerTag))
+                if (!limits[entry].Unlimited && LootLimiterRules.Matches(limits[entry].Tag, socket.Tag))
                 {
                     entries.Add((limiter, entry));
                 }
@@ -210,4 +246,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
 
         return entries;
     }
+
+    // A socket as the rolls see it: its tag, where it is, its group and the most spawns its group takes.
+    private sealed record Placement(string Tag, Vector3D Location, (string, string, string, string) Group, int GroupCap);
 }

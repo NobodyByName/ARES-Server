@@ -169,6 +169,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
                 ["seed"] = raid.Loot.Seed,
                 ["free_standing"] = FreeStanding(raid.Loot.FreeStanding),
                 ["placeholder_classes"] = Placeholders(raid.Loot.Placeholders),
+                ["loose"] = Loose(raid.LooseLoot.Counts),
             },
         });
     }
@@ -330,6 +331,25 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
 
         return entries;
     }
+
+    private static JsonObject Loose(LooseLootCounts counts) => new()
+    {
+        ["sockets"] = counts.Sockets,
+        ["spawned"] = counts.Spawned,
+        ["grounded"] = counts.Grounded,
+        ["skipped_inactive_layer"] = counts.InactiveLayer,
+        ["skipped_nothing_to_hold"] = counts.NothingToHold,
+        ["skipped_by_roll"] = counts.SkippedByRoll,
+        ["skipped_by_limiter"] = counts.SkippedByLimiter,
+        ["decided_by_rule"] = counts.DecidedByRule,
+        ["spawned_by_loot_value"] = new JsonObject
+        {
+            ["untiered"] = counts.SpawnedByLootValue[PointOfInterestLootValue.Unknown],
+            ["low"] = counts.SpawnedByLootValue[PointOfInterestLootValue.Low],
+            ["medium"] = counts.SpawnedByLootValue[PointOfInterestLootValue.Medium],
+            ["high"] = counts.SpawnedByLootValue[PointOfInterestLootValue.High],
+        },
+    };
 
     private static JsonObject Placed(LootPlacedCounts counts) => new()
     {

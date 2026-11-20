@@ -23,7 +23,9 @@ public sealed class RaidGameData
         Map = data.Names.Dam;
         Items = new RaidItems(data, content);
         LootSpawn = content.LootSpawn(data);
-        LootRolls = new LootContentRolls(Items.Definitions, data.Loot, content.LootContents(data));
+        LootContentSettings contents = content.LootContents(data);
+        LootRolls = new LootContentRolls(Items.Definitions, data.Loot, contents);
+        LooseRolls = new LooseItemRolls(Items.Definitions.PlainItems.Where(item => Items.Carried.ContainsKey(checked((ushort)item.UsableIndex))), data.Loot, contents);
         LootRules = content.LootRules(data, Items.Definitions);
     }
 
@@ -41,6 +43,9 @@ public sealed class RaidGameData
 
     /// <summary>How a loot container's contents are drawn.</summary>
     public LootContentRolls LootRolls { get; }
+
+    /// <summary>What a loose item socket can hold, and how its stack is drawn.</summary>
+    public LooseItemRolls LooseRolls { get; }
 
     /// <summary>The operator's loot rules: spawn chances and contents of chosen containers.</summary>
     public LootRules LootRules { get; }

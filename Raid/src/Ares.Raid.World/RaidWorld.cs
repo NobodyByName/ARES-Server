@@ -13,7 +13,7 @@ using Ares.Structs.Net.Replication;
 
 namespace Ares.Raid.World;
 
-/// <summary>A prepared Dam raid: its seed, round, lighting, players, actors, doors, ladders, loot and elevators.</summary>
+/// <summary>A prepared Dam raid: its seed, round, lighting, players, actors, doors, ladders, loot, loose items and elevators.</summary>
 public sealed class RaidWorld
 {
     private readonly Lock _lock = new();
@@ -53,6 +53,8 @@ public sealed class RaidWorld
         Pickups = new WorldPickups(replication, State, GameData.Items, lootEnd + 2);
         Arcs = new WorldArcs(replication, Imports);
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
+        LooseLoot = LooseLoot.Roll(GameData.LooseRolls, map.LooseItemSockets, worlds.LootRules, GameData.LootRules, ActiveDataLayers, seed, Collision);
+        LooseLoot.Place(Pickups);
         Channels = new ChannelLayout(Imports.GlobalActors.Count, Doors.Doors.Count, Ladders.Ladders.Count, Extraction.Points.Count, MaxPlayers);
         StaticActors =
         [
@@ -163,6 +165,9 @@ public sealed class RaidWorld
 
     /// <summary>Loot container contents of this raid.</summary>
     public LootStates LootStates { get; }
+
+    /// <summary>The loose items the raid placed on the map's sockets at its start (the first pickups).</summary>
+    public LooseLoot LooseLoot { get; }
 
     /// <summary>The item stacks lying in this raid.</summary>
     public WorldPickups Pickups { get; }

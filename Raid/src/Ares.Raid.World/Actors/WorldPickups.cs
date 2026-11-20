@@ -20,9 +20,9 @@ namespace Ares.Raid.World.Actors;
 /// <param name="Item">The stack lying there; its amount is 0 once the whole stack was picked up.</param>
 /// <param name="Location">Where the actor stands.</param>
 /// <param name="Rotation">The actor's rotation.</param>
-/// <param name="DroppedBy">User id of the player who dropped the item.</param>
-/// <param name="DroppingPlayerId">Player id (of the player state) of the player who dropped the item.</param>
-/// <param name="DroppedAt">Raid world time of the drop, in seconds.</param>
+/// <param name="DroppedBy">User id of the player who dropped the item; 0 for a map pickup.</param>
+/// <param name="DroppingPlayerId">Player id (of the player state) of the player who dropped the item; 0 for a map pickup.</param>
+/// <param name="DroppedAt">Raid world time of the drop, in seconds; 0 for a map pickup.</param>
 public sealed record WorldPickup(int Index, ulong Guid, ulong DataAsset, ContainerItem Item, Vector3D Location, Rotator Rotation, long DroppedBy, int DroppingPlayerId, double DroppedAt)
 {
     /// <summary>The pickup's interaction component (the "Pickup" prompt).</summary>
@@ -33,6 +33,9 @@ public sealed record WorldPickup(int Index, ulong Guid, ulong DataAsset, Contain
 
     /// <summary>Changes since the spawn (merges and pickups); clients that have an older revision get the pickup again.</summary>
     public int Revision { get; init; }
+
+    /// <summary>The map placed the item at the start of the raid (a loose item); no player dropped it.</summary>
+    public bool FromMap { get; init; }
 
     /// <summary>The character that picked the whole stack up, once one has.</summary>
     public ulong? PickedUpBy { get; init; }
@@ -45,9 +48,9 @@ public sealed record WorldPickup(int Index, ulong Guid, ulong DataAsset, Contain
 }
 
 /// <summary>
-/// The item stacks lying in a raid. A drop joins the same player's nearby pickup of the item when it can, or spawns a
-/// pickup actor; a pickup is taken whole or in part, first come first served; a pickup taken whole floats to its
-/// picker on the clients and is destroyed shortly after.
+/// The item stacks lying in a raid: the loose items the map places at the start, and player drops. A drop joins the
+/// same player's nearby pickup of the item when it can, or spawns a pickup actor; a pickup is taken whole or in part,
+/// first come first served; a pickup taken whole floats to its picker on the clients and is destroyed shortly after.
 /// </summary>
 public sealed class WorldPickups
 {
@@ -155,7 +158,7 @@ public sealed class WorldPickups
 
         int maximum = _items.MaxAmount(item.AssetIndex);
         if (maximum > Pickups.MergeStackSizeThreshold
-            && _pickups.Find(pickup => pickup is { PickedUpBy: null, Destroyed: false } && pickup.DroppedBy == player
+            && _pickups.Find(pickup => pickup is { PickedUpBy: null, Destroyed: false, FromMap: false } && pickup.DroppedBy == player
                 && pickup.Item.AssetIndex == item.AssetIndex && pickup.Item.Amount + item.Amount <= maximum
                 && Distance(pickup.Location, location) <= Pickups.MergeDistance) is { } target)
         {
@@ -169,6 +172,24 @@ public sealed class WorldPickups
         _pickups.Add(spawned);
         _events.Add($"drop #{spawned.Index} {Describe(item)} by {player} at {Describe(location)} guid 0x{spawned.Guid:x}");
         return spawned;
+    }
+
+    /// <summary>Places an item stack of the map (a loose item) in the world: a pickup no player dropped, which never takes merges.</summary>
+    /// <param name="item">The stack.</param>
+    /// <param name="location">Where the pickup stands.</param>
+    /// <param name="rotation">The pickup's rotation.</param>
+    /// <returns>The pickup.</returns>
+    public WorldPickup Place(ContainerItem item, Vector3D location, Rotator rotation)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        if (!_dataAssets.TryGetValue(item.AssetIndex, out ulong dataAsset))
+        {
+            throw new InvalidOperationException("The item has no data asset to show in the world");
+        }
+
+        WorldPickup placed = new(_pickups.Count, _firstGuid + (GuidStride * (ulong)_pickups.Count), dataAsset, item, location, rotation, 0, 0, 0) { FromMap = true };
+        _pickups.Add(placed);
+        return placed;
     }
 
     /// <summary>
@@ -242,7 +263,8 @@ public sealed class WorldPickups
 
     /// <summary>
     /// Opens a pickup's channel: spawns the actor where it lies with all its properties, or, for a client that keeps
-    /// it dormant, names the actor it already has and brings it up to date.
+    /// it dormant, names the actor it already has and brings it up to date. A map pickup sends no rounds in the clip,
+    /// drop time or dropping player.
     /// </summary>
     /// <param name="pickup">The pickup.</param>
     /// <param name="channel">Channel index.</param>
@@ -258,9 +280,9 @@ public sealed class WorldPickups
             RemoteRole = NetRole.SimulatedProxy,
             Movement = new RepMovement(pickup.Location, pickup.Rotation),
             DataAsset = pickup.DataAsset,
-            Item = Item(pickup.Item),
-            DropServerWorldTime = pickup.DroppedAt,
-            DroppingPlayerId = pickup.DroppingPlayerId,
+            Item = Item(pickup.Item, clip: !pickup.FromMap),
+            DropServerWorldTime = pickup.FromMap ? null : pickup.DroppedAt,
+            DroppingPlayerId = pickup.FromMap ? null : pickup.DroppingPlayerId,
             PickedUpBy = pickup.PickedUpBy,
         };
         ActorContentBlock actor = _replication.Encode(Pickups.ActorClass, properties.ToValues(), Objects(pickup));
@@ -344,8 +366,9 @@ public sealed class WorldPickups
         return new ChannelBunch(channel, writer.ToArray(), writer.Length) { Name = ChannelName.Actor, Opened = true, CloseReason = Bunches.Destroyed };
     }
 
-    // The stack as a pickup replicates it. Durability goes only when below full, as with items that have none.
-    private static PickupItem Item(ContainerItem item)
+    // The stack as a pickup replicates it. Durability goes only when below full, as with items that have none; the
+    // rounds in the clip only with a clip.
+    private static PickupItem Item(ContainerItem item, bool clip)
     {
         int durability = (int)Math.Round(item.Durability * InventoryBlackboard.DurabilityScale);
         return new PickupItem
@@ -354,7 +377,7 @@ public sealed class WorldPickups
             Quality = 0,
             Amount = item.Amount,
             QuantizedDurability = durability < InventoryBlackboard.DurabilityScale ? (sbyte)durability : null,
-            AmmoInClip = checked((ushort)item.AmmoInClip),
+            AmmoInClip = clip ? checked((ushort)item.AmmoInClip) : null,
             Guid = item.Id,
         };
     }
