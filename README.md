@@ -3,6 +3,7 @@
 Independent replacement servers for ARC Raiders: the backend a stock game client signs in to, and
 the game-session server that runs its raids. Players connect with
 [ARES-Launcher](https://github.com/NobodyByName/ARES-Launcher) (a separate repository) and their own, unmodified game.
+Operators can view and edit the loot content with [ARES-Editor](https://github.com/NobodyByName/ARES-Editor), also a separate repository.
 
 > **Unofficial project.** ARES is independent and is not affiliated with, endorsed by or sponsored
 > by Embark Studios. ARC Raiders and all related names and trademarks belong to their respective
@@ -229,6 +230,9 @@ when it lists neither. It can set a spawn chance, a group fill, the contents, a 
 
 Host and Raid refuse to start when a loot file names a tag, container, loose item socket, class, table, item or
 drop tag the game data does not have.
+
+[ARES-Editor](https://github.com/NobodyByName/ARES-Editor) shows a map's loot containers, loose item sockets and placement limiters in 3D, estimates
+what each one holds, and edits these three files.
 
 ## Contributing
 
