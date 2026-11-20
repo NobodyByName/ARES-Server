@@ -69,11 +69,15 @@ it (two-player use not yet tried with the stock client). Each container is fille
 creates it, usually with two or three stacks drawn from the game's loot tables for its category; rarer
 items are more likely in the medium- and high-value areas, and a container sometimes holds one more
 ammo or healing stack. Weapon cases hold weapon mods and ammo, medical bags hold healing
-items, and the other free-standing containers follow their type. How much loot each area gets and the
+items, and the other free-standing containers follow their type. Loose items also lie on tables, shelves,
+consoles, car seats, trolleys and under trees: at the start of each raid a couple of hundred of the map's
+loose item spots get one stack each (salvage, trinkets, and ammo or healing on cabinets, consoles, racks,
+medical beds and tables), picked up like dropped items; fruit and other nature items rest on the ground
+below their spot when the raid has collision (not yet tried with the stock client). How much loot each area gets and the
 chances for ammo, grenades, mods and blueprints are ARES defaults, so drop rates are provisional.
 All of it is operator content (`content/loot-spawn.json`, `loot-contents.json`, `loot-rules.json`):
 spawn chances, pools and tiers, and per-container or per-group rules that set whether a container
-spawns and exactly what it holds. The shipped content places no weapons; a rule can put the Ferro I or
+spawns and exactly what it holds (rules can also cover loose item spots by tag or id). The shipped content places no weapons; a rule can put the Ferro I or
 the Light Shield in containers, where players take, carry and bring them home (automated coverage only). In the Raid inventory, stacks can also be split and merged up
 to their stack limit. Searching several kinds of containers, taking items, splitting and bringing the
 loot home by extraction are stock-client verified with one player.
