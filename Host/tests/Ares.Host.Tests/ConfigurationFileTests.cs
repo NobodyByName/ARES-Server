@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Ares.Common.CommandLine;
+using Ares.Common.Game;
 using Ares.Common.Game.Content;
 using Ares.Common.Testing;
 using Ares.Host.Services;
@@ -130,7 +131,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Equal(2, configuration.Settings.RaidCapacity);
         Assert.Equal(new byte[32], configuration.Settings.IdentityKey);
         Assert.Equal(new RaidLaunch(Path.Combine(_directory, "ARES-Raid"), Path.Combine(_directory, "operator-token"), new string('a', 64), IPAddress.Any,
-            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", Path.Combine(_directory, "gamedata"), Path.Combine(_directory, "content")), configuration.Raids);
+            "192.0.2.4", 7000, 17000, 4, 45, "Lighting.GreyMorning", RaidSettings.Default, Path.Combine(_directory, "gamedata"), Path.Combine(_directory, "content")), configuration.Raids);
         Assert.Equal([1L, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0], configuration.Settings.StashUpgrades.Coins);
         Assert.Equal("json", configuration.ConsoleMode);
         Assert.Equal(Path.Combine(_directory, "logs/host.log"), configuration.LogFile);
@@ -193,6 +194,8 @@ public sealed class ConfigurationFileTests : IDisposable
     [InlineData("session-control-token-file = operator-token", "requires both")]
     [InlineData("raid-players = 0", "--raid-players must be at least 1")]
     [InlineData("raid-fill-seconds = 601", "--raid-fill-seconds must be from 0 to 600")]
+    [InlineData("loot-cull-distance = 0", "--loot-cull-distance must be at least 1")]
+    [InlineData("extraction-ready-seconds = -1", "--extraction-seconds and --extraction-ready-seconds must be 0 or more")]
     [InlineData("raid-control-port = 18079\nraid-capacity = 2", "must not include the Host --port")]
     [InlineData("raid-port = 65535\nraid-capacity = 2", "one port from 1 to 65535")]
     [InlineData("archive-keys-file =", "must not be empty")]

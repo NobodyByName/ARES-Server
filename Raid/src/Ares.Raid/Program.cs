@@ -48,7 +48,7 @@ try
 {
     gameData = GameDataStartup.Load(configuration.GameDataDirectory, out gameDataLoaded);
     content = AresContent.Load(configuration.ContentDirectory);
-    raidData = new RaidGameData(gameData, content);
+    raidData = new RaidGameData(gameData, content, configuration.Settings);
 }
 catch (Exception error) when (error is GameDataException or AresContentException)
 {

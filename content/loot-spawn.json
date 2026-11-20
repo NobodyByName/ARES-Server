@@ -8,12 +8,20 @@
     "High": 3.0
   },
   "groupCaps": true,
+  "maxPerGroup": 2,
   "limiters": true,
+  "limiterDefaults": {
+    "shape": "Sphere",
+    "radius": 1000,
+    "unlimited": true,
+    "limit": 0
+  },
   "spawnerClasses": [
     "/Game/Pioneer/Environment/Props/Raider/AmmoBox_01/BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier.BP_SocketContainer_Raider_AmmoBox_01_Lid_A_DynamicHighTier_C",
     "/Game/Pioneer/Environment/Props/Raider/WeaponCase_01/BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh.BP_SocketContainer_Raider_WeaponCase_01_Lid_A_01_DynamicHigh_C",
     "/Game/Pioneer/Environment/Props/Research/WeaponsRack_01/BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic.BP_SocketContainer_Rsr_WeaponsRack_01_Dynamic_C"
   ],
+  "spawnerCount": 1,
   "looseChances": {
     "Socket.Loot": 0.082,
     "Socket.Loot.Nature": 0.004

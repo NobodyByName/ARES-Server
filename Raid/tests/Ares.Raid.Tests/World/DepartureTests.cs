@@ -185,7 +185,7 @@ public sealed class DepartureTests
     private static double LeavesAt(ScriptedPlayer session, double at)
     {
         Assert.True(session.Raid.ExtractionStates.Call(0, session.Principal.UserId, session.Raid.WorldSeconds(at)));
-        return at + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds + TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds
+        return at + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds + TestGameData.Raid.Settings.ExtractionSeconds
             + TestGameData.Dam.ExtractionElevator.DoorsSeconds;
     }
 

@@ -22,8 +22,11 @@ public sealed class LootSpawnSettingsTests
             [PointOfInterestLootValue.High] = 3,
         },
         GroupCaps: true,
+        MaxPerGroup: 2,
         Limiters: true,
+        new LootLimiterDefaults(LootLimiterShape.Sphere, 1000, true, 0),
         new HashSet<string>(StringComparer.Ordinal),
+        SpawnerCount: 1,
         new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
         {
             ["Socket.Loot"] = 0.1,

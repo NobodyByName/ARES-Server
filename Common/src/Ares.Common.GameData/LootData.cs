@@ -3,7 +3,7 @@ using Ares.Structs.Game.Loot;
 
 namespace Ares.Common.GameData;
 
-/// <summary>The loot definitions: container types and classes, value and skill loot tables, spawn tweakables.</summary>
+/// <summary>The loot definitions: container types and classes, value and skill loot tables.</summary>
 public sealed class LootData
 {
     private readonly Dictionary<string, LootContainerType> _typesByTag;
@@ -16,13 +16,11 @@ public sealed class LootData
         _typesByTag = GameDataIndex.Unique(ContainerTypes.Select(type => (type.Tag, type)), "loot container type", StringComparer.OrdinalIgnoreCase);
         ContainerClasses = content.LootContainerClasses;
         _classesByPath = GameDataIndex.Unique(ContainerClasses.Select(type => (type.Container.Class, type)), "loot container class", StringComparer.Ordinal);
-        ContainerDefaults = content.LootContainerDefaults;
         StaticValueTables = content.StaticValueLootTables;
         _valueTablesByName = StaticValueTables.GroupBy(table => table.Name, StringComparer.OrdinalIgnoreCase)
             .Where(group => group.Count() == 1)
             .ToDictionary(group => group.Key, group => group.Single(), StringComparer.OrdinalIgnoreCase);
         SkillTables = content.SkillLootTables;
-        SpawnTweakables = content.StaticLootSpawnTweakables;
     }
 
     /// <summary>The loot container types the game registers, ordered by tag.</summary>
@@ -34,19 +32,11 @@ public sealed class LootData
     /// </summary>
     public ImmutableArray<LootContainerClass> ContainerClasses { get; }
 
-    /// <summary>
-    /// What every container class shares: its net cull distance and target stacks.
-    /// </summary>
-    public LootContainerDefaults ContainerDefaults { get; }
-
     /// <summary>The value loot tables, ordered by package.</summary>
     public ImmutableArray<StaticValueLootTable> StaticValueTables { get; }
 
     /// <summary>The skill loot tables, ordered by package.</summary>
     public ImmutableArray<SkillLootTable> SkillTables { get; }
-
-    /// <summary>The static loot spawn manager's tweakables.</summary>
-    public LootSpawnTweakables SpawnTweakables { get; }
 
     /// <summary>The container type of a socket tag (compared like the game compares tag names: ignoring case), or null.</summary>
     public LootContainerType? FindContainerType(string tag) => _typesByTag.GetValueOrDefault(tag);

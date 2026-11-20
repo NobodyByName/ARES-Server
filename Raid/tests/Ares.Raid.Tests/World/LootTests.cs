@@ -76,10 +76,10 @@ public sealed class LootTests
 
         IReadOnlyList<LootContainer> near = session.Raid.Loot.Relevant(at);
         Assert.Same(cabinet, near[0]);
-        Assert.All(near, container => Assert.True(Distance(container.Location, at) <= TestGameData.Loot.ContainerDefaults.NetCullDistance));
-        Assert.Equal(session.Raid.Loot.Containers.Count(container => Distance(container.Location, at) <= TestGameData.Loot.ContainerDefaults.NetCullDistance), near.Count);
-        Assert.DoesNotContain(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Loot.ContainerDefaults.NetCullDistance + 1 }));
-        Assert.Contains(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Loot.ContainerDefaults.NetCullDistance - 1 }));
+        Assert.All(near, container => Assert.True(Distance(container.Location, at) <= TestGameData.Raid.Settings.LootCullDistance));
+        Assert.Equal(session.Raid.Loot.Containers.Count(container => Distance(container.Location, at) <= TestGameData.Raid.Settings.LootCullDistance), near.Count);
+        Assert.DoesNotContain(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Raid.Settings.LootCullDistance + 1 }));
+        Assert.Contains(cabinet, session.Raid.Loot.Relevant(at with { X = at.X + TestGameData.Raid.Settings.LootCullDistance - 1 }));
     }
 
     [Fact]

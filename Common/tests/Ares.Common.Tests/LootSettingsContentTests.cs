@@ -4,6 +4,7 @@ using Ares.Common.Game.Content;
 using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Common.Testing;
+using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.World;
 
 namespace Ares.Common.Tests;
@@ -120,6 +121,25 @@ public sealed class LootSettingsContentTests : IDisposable
     [InlineData(AresContent.LootContentsFile, "typePools[0]/entries[0]/weight", "-1", "type pool RaiderAmmo: the weight of Item.Drop.Type.Ammo must be 0 or more")]
     [InlineData(AresContent.LootContentsFile, "typePools[3]/entries[0]/excludedDropTags[0]", "\"Item.Drop.Nope\"", "type pool RaiderWeaponsHigh: no item has the drop tag Item.Drop.Nope or a tag below it")]
     [InlineData(AresContent.LootContentsFile, "typePools[3]/entries[0]/excludedDropTags[0]", "null", "type pool RaiderWeaponsHigh must not hold null")]
+    [InlineData(AresContent.LootSpawnFile, "maxPerGroup", "-1", "maxPerGroup must be 0 or more")]
+    [InlineData(AresContent.LootSpawnFile, "spawnerCount", "0", "spawnerCount must be 1 or more")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults/shape", "\"Cone\"", "limiterDefaults: Cone is not a limiter shape")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults/shape", "\"1\"", "limiterDefaults: 1 is not a limiter shape")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults/radius", "-1", "limiterDefaults: radius and limit must be 0 or more")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults/limit", "-1", "limiterDefaults: radius and limit must be 0 or more")]
+    [InlineData(AresContent.LootContentsFile, "targetStacks", "[]", "targetStacks must list at least one target")]
+    [InlineData(AresContent.LootContentsFile, "targetStacks[0]/target", "0", "targetStacks must list at least one target, each of 1 or more stacks")]
+    [InlineData(AresContent.LootContentsFile, "targetStacks[0]/weight", "-1", "the weight of 2 target stacks must be 0 or more")]
+    [InlineData(AresContent.LootContentsFile, "targetStacks[0]", "null", "targetStacks must not hold null")]
+    [InlineData(AresContent.LootSpawnFile, "looseChances/Socket.LootContainer", "0.1", "looseChances: no loose item socket has the tag Socket.LootContainer or a tag below it")]
+    [InlineData(AresContent.LootSpawnFile, "looseChances/Socket.Loot", "2", "the chance of Socket.Loot must be from 0 to 1")]
+    [InlineData(AresContent.LootSpawnFile, "looseChances/socket.loot", "0.5", "looseChances lists socket.loot twice")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/tables[0]", "\"StaticValueLootTable_Nope\"", "looseItems: the game data has no loot table StaticValueLootTable_Nope")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/amount", """{ "min": 0, "max": 2 }""", "looseItems amount must have 1 <= min <= max")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/pools[0]/tags[0]", "\"Socket.LootContainer.Tech\"", "loose item pool Supplies: no loose item socket has the tag Socket.LootContainer.Tech or a tag below it")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/pools[1]/tags[0]", "\"socket.loot.console\"", "loose item pools list the tag socket.loot.console twice")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/pools[0]/tableWeight", "-1", "loose item pool Supplies: tableWeight must be 0 or more")]
+    [InlineData(AresContent.LootContentsFile, "looseItems/pools[0]/entries[0]/dropTag", "\"Item.Drop.Nope\"", "loose item pool Supplies: no item has the drop tag Item.Drop.Nope or a tag below it")]
     public void An_edit_the_game_data_or_the_file_itself_contradicts_is_refused_naming_the_problem(string file, string path, string value, string expected)
     {
         AresContent content = Load(file, path, value);
@@ -136,6 +156,9 @@ public sealed class LootSettingsContentTests : IDisposable
     [Theory]
     [InlineData(AresContent.LootSpawnFile, "extra", "1")]
     [InlineData(AresContent.LootSpawnFile, "groupCaps", "null")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults", "null")]
+    [InlineData(AresContent.LootSpawnFile, "limiterDefaults/shape", "1")]
+    [InlineData(AresContent.LootContentsFile, "targetStacks", "null")]
     [InlineData(AresContent.LootSpawnFile, "chances/Socket.LootContainer", "\"0.5\"")]
     [InlineData(AresContent.LootContentsFile, "extra", "1")]
     [InlineData(AresContent.LootContentsFile, "tiers", "null")]

@@ -95,17 +95,11 @@ public static class GameTables
     /// </summary>
     public const string LootContainerClasses = "loot-container-classes.json";
 
-    /// <summary>The defaults every loot container class shares (<see cref="LootContainerDefaults"/>), one row.</summary>
-    public const string LootContainerDefaults = "loot-container-defaults.json";
-
     /// <summary>The value loot tables (<see cref="StaticValueLootTable"/>), ordered by package (ordinal).</summary>
     public const string StaticValueLootTables = "static-value-loot-tables.json";
 
     /// <summary>The skill loot tables (<see cref="SkillLootTable"/>), ordered by package (ordinal).</summary>
     public const string SkillLootTables = "skill-loot-tables.json";
-
-    /// <summary>The static loot spawn manager's tweakables (<see cref="LootSpawnTweakables"/>), one row.</summary>
-    public const string StaticLootSpawnTweakables = "static-loot-spawn-tweakables.json";
 
     /// <summary>
     /// The interaction animation containers that change character movement (<see cref="InteractionAnimationContainer"/>):

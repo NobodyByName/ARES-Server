@@ -5,6 +5,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
+using Ares.Common.Game;
 using Ares.Common.Logging;
 using Ares.Host.Services.Matchmaking;
 
@@ -21,6 +22,7 @@ namespace Ares.Host;
 /// <param name="Players">Most players in one raid, across every party.</param>
 /// <param name="FillSeconds">Seconds after a raid's first party during which other parties may join.</param>
 /// <param name="Lighting">Lighting of every raid, or null for the map's weighted pick.</param>
+/// <param name="Settings">The plain raid values every raid gets.</param>
 /// <param name="GameDataDirectory">Absolute path of the game data folder, or null when none is configured.</param>
 /// <param name="ContentDirectory">Absolute path of the ARES content folder.</param>
 public sealed record RaidLaunch(
@@ -34,6 +36,7 @@ public sealed record RaidLaunch(
     int Players,
     int FillSeconds,
     string? Lighting,
+    RaidSettings Settings,
     string? GameDataDirectory,
     string ContentDirectory);
 
@@ -58,6 +61,8 @@ internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaid
             "--port", Text(gamePort), "--bind", launch.Bind.ToString(), "--advertise-host", launch.AdvertiseHost,
             "--control-port", Text(controlPort), "--control-token-file", launch.TokenFile, "--max-players", Text(launch.Players),
             "--fill-seconds", Text(launch.FillSeconds),
+            "--loot-cull-distance", Text(launch.Settings.LootCullDistance), "--extraction-seconds", Text(launch.Settings.ExtractionSeconds),
+            "--extraction-ready-seconds", Text(launch.Settings.ExtractionReadySeconds),
             "--console", "json", "--stop-on-input-close",
         ];
         foreach (string argument in arguments)
@@ -101,7 +106,7 @@ internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaid
         return new RaidProcess(process, new SessionAllocatorClient(new Uri($"http://127.0.0.1:{Text(controlPort)}"), launch.OperatorToken));
     }
 
-    private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
+    private static string Text(double value) => value.ToString(CultureInfo.InvariantCulture);
 
     private void Forward(int slot, string? line)
     {

@@ -59,8 +59,7 @@ public sealed class ExtractionTests
         ExtractionPointState start = session.Raid.ExtractionStates.Get(point.Index);
         Assert.Equal(new ExtractionPointState(ExtractionState.Closed, null, null), start);
         IReadOnlyList<CurrentInteractionState> buttons = session.Raid.ExtractionStates.Buttons(point.Index);
-        Assert.Equal(TestGameData.Dam.ExtractionButtons.Select(button => button.StartEnabled ? CurrentInteractionState.Idle : CurrentInteractionState.Disabled), buttons);
-        Assert.Equal(CurrentInteractionState.Idle, buttons[TestGameData.Dam.ExtractionButtons.ToList().FindIndex(button => button.Role == ExtractionButtonRole.Summon)]);
+        Assert.Equal(TestGameData.Dam.ExtractionButtons.Select(button => button.Role == ExtractionButtonRole.Summon ? CurrentInteractionState.Idle : CurrentInteractionState.Disabled), buttons);
 
         ChannelBunch bunch = session.Raid.Extraction.OpenBunch(point, 300, 1, start, 42.5);
         Assert.True(bunch is { Opened: true, MustBeMapped: false, Channel: 300 });
@@ -144,7 +143,7 @@ public sealed class ExtractionTests
     [Fact]
     public void A_call_runs_the_press_then_the_elevator_arrives_and_is_ready_after_the_settings_times()
     {
-        ExtractionStates states = new(TestGameData.Dam, 2);
+        ExtractionStates states = new(TestGameData.Dam, TestGameData.Raid.Settings, 2);
         const double Pressed = 512.666;
         Assert.True(states.Call(0, 42, Pressed));
         Assert.False(states.Call(0, 43, Pressed + 0.05));
@@ -162,26 +161,26 @@ public sealed class ExtractionTests
         ExtractionPointState arrived = states.Get(0);
         Assert.Equal(new ExtractionPointState(ExtractionState.Arriving, arriving, 42), arrived);
         Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), arrived.Buttons(TestGameData.Dam));
-        Assert.Equal((false, (ExtractionTimer?)null), (arrived.CanExtract, arrived.Timer(TestGameData.Dam)));
+        Assert.Equal((false, (ExtractionTimer?)null), (arrived.CanExtract, arrived.Timer(TestGameData.Dam, TestGameData.Raid.Settings)));
         Assert.False(states.Call(0, 43, arriving + 1));
 
         // Ready exactly the time to extract ready later, whenever the server looks.
-        double ready = arriving + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
+        double ready = arriving + TestGameData.Raid.Settings.ExtractionReadySeconds;
         states.Advance(ready - 0.01);
         Assert.Equal(arrived, states.Get(0));
         states.Advance(ready + 3);
         ExtractionPointState open = states.Get(0);
         Assert.Equal(new ExtractionPointState(ExtractionState.Ready, ready, 42), open);
         Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Idle), open.Buttons(TestGameData.Dam));
-        Assert.Equal((true, new ExtractionTimer(ready, TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (open.CanExtract, open.Timer(TestGameData.Dam)));
+        Assert.Equal((true, new ExtractionTimer(ready, TestGameData.Raid.Settings.ExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (open.CanExtract, open.Timer(TestGameData.Dam, TestGameData.Raid.Settings)));
         Assert.False(states.Call(0, 43, ready + 4));
         Assert.Equal(new ExtractionPointState(ExtractionState.Closed, null, null), states.Get(1));
 
         // A late look passes both changes at once with their exact times.
-        ExtractionStates late = new(TestGameData.Dam, 1);
+        ExtractionStates late = new(TestGameData.Dam, TestGameData.Raid.Settings, 1);
         Assert.True(late.Call(0, 42, 10.0));
         late.Advance(100.0);
-        Assert.Equal(new ExtractionPointState(ExtractionState.Ready, 10.0 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds, 42), late.Get(0));
+        Assert.Equal(new ExtractionPointState(ExtractionState.Ready, 10.0 + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds, 42), late.Get(0));
     }
 
     [Fact]
@@ -210,7 +209,7 @@ public sealed class ExtractionTests
         {
             [PropertyNames.CanExtract] = true,
             [StartedAtPath] = 55.2,
-            [ExtractionTimePath] = TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds,
+            [ExtractionTimePath] = TestGameData.Raid.Settings.ExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds,
             [PropertyNames.State] = (ulong)ExtractionState.Ready,
             [PropertyNames.StateChangeTimestamp] = 55.2,
         };
@@ -271,7 +270,7 @@ public sealed class ExtractionTests
         Assert.Equal(ExtractionState.Arriving, session.Raid.ExtractionStates.Get(point.Index).State);
 
         // A second raider gets the elevator ready, with the time it became ready.
-        double readyAt = 123.5 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
+        double readyAt = 123.5 + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds;
         ScriptedPlayer second = new(session, 43);
         second.Possess();
         foreach (double at in (double[])[readyAt, readyAt + 6, readyAt + 21, readyAt + 21.5, readyAt + 22, readyAt + 22.5, readyAt + 23])
@@ -284,7 +283,7 @@ public sealed class ExtractionTests
         Assert.Equal(point.Guid, NetGuid.Read(reader));
         Dictionary<string, object?> content = Codec.Decode(ActorLayout, ActorContentBlock.Read(reader), swapActorRoles: false);
         Assert.Equal((ulong)ExtractionState.Ready, content[PropertyNames.State]);
-        Assert.Equal(pressed + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds, content[PropertyNames.StateChangeTimestamp]);
+        Assert.Equal(pressed + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds, content[PropertyNames.StateChangeTimestamp]);
 
         // The first raider gets the change on its open channel.
         session.Sent.Clear();
@@ -360,7 +359,7 @@ public sealed class ExtractionTests
         states.Advance(closing + 0.02, index => index == 0 ? [42, 43] : []);
         ExtractionPointState doors = states.Get(0);
         Assert.Equal((ExtractionState.Closing, (double?)closing, true), (doors.State, doors.ChangedAt, doors.CanExtract));
-        Assert.Equal(new ExtractionTimer(Ready, closing - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(Ready, closing - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam, TestGameData.Raid.Settings));
         Assert.Equal((CurrentInteractionState.SuccessDisabled, CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled),
             (doors.Buttons(TestGameData.Dam)[s_summon], doors.Buttons(TestGameData.Dam)[a], doors.Buttons(TestGameData.Dam)[b]));
         Assert.Equal((TestGameData.Dam.ExtractionElevator.NoHoldStartedTime, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), (doors.HoldStarts(TestGameData.Dam)[a], doors.HoldStarts(TestGameData.Dam)[b]));
@@ -376,17 +375,17 @@ public sealed class ExtractionTests
         Assert.Equal(new ExtractionDeparture(closing, [43]), states.Departure(0), new DepartureComparer());
         ExtractionPointState left = states.Get(0);
         Assert.Equal((ExtractionState.Closed, (double?)(closing + TestGameData.Dam.ExtractionElevator.DoorsSeconds), (long?)null, false), (left.State, left.ChangedAt, left.CalledBy, left.CanExtract));
-        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam)!.Value.Seconds), left.Timer(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam, TestGameData.Raid.Settings)!.Value.Seconds), left.Timer(TestGameData.Dam, TestGameData.Raid.Settings));
         Assert.Equal((CurrentInteractionState.Idle, CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled),
             (left.Buttons(TestGameData.Dam)[s_summon], left.Buttons(TestGameData.Dam)[a], left.Buttons(TestGameData.Dam)[b]));
 
         // The next cycle starts over: both switches usable again, no hold running.
         Assert.True(states.Call(0, 43, 600.0));
-        states.Advance(600.0 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds);
+        states.Advance(600.0 + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds);
         ExtractionPointState again = states.Get(0);
         Assert.Equal((ExtractionState.Ready, CurrentInteractionState.Idle, CurrentInteractionState.Idle), (again.State, again.Buttons(TestGameData.Dam)[a], again.Buttons(TestGameData.Dam)[b]));
         Assert.Equal((TestGameData.Dam.ExtractionElevator.NoHoldStartedTime, TestGameData.Dam.ExtractionElevator.NoHoldStartedTime), (again.HoldStarts(TestGameData.Dam)[a], again.HoldStarts(TestGameData.Dam)[b]));
-        Assert.Equal(new ExtractionTimer(again.ChangedAt!.Value, TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds), again.Timer(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(again.ChangedAt!.Value, TestGameData.Raid.Settings.ExtractionSeconds + TestGameData.Dam.ExtractionElevator.DoorsSeconds), again.Timer(TestGameData.Dam, TestGameData.Raid.Settings));
     }
 
     [Fact]
@@ -395,7 +394,7 @@ public sealed class ExtractionTests
         const double Ready = 175.716;
         ExtractionStates states = ReadyStates(Ready);
         int a = IndexOf(ExtractionButtonRole.Descend);
-        double timeout = Ready + TestGameData.Dam.ExtractionElevator.Settings.DefaultExtractionSeconds;
+        double timeout = Ready + TestGameData.Raid.Settings.ExtractionSeconds;
 
         // A hold that would end after the extraction time does not keep the elevator: the doors close on time.
         Assert.True(states.Descend(0, a, 42, timeout - 2));
@@ -404,7 +403,7 @@ public sealed class ExtractionTests
         states.Advance(timeout + 1, _ => []);
         ExtractionPointState doors = states.Get(0);
         Assert.Equal((ExtractionState.Closing, (double?)timeout, (ExtractionDescent?)null, (ExtractionDescent?)null), (doors.State, doors.ChangedAt, doors.Descent, doors.Departed));
-        Assert.Equal(new ExtractionTimer(Ready, timeout - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(Ready, timeout - Ready + TestGameData.Dam.ExtractionElevator.DoorsSeconds), doors.Timer(TestGameData.Dam, TestGameData.Raid.Settings));
         Assert.Equal(ByRole(CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), doors.Buttons(TestGameData.Dam));
         Assert.Null(states.Departure(0));
 
@@ -413,7 +412,7 @@ public sealed class ExtractionTests
         ExtractionPointState left = states.Get(0);
         Assert.Equal((ExtractionState.Closed, (double?)(timeout + TestGameData.Dam.ExtractionElevator.DoorsSeconds)), (left.State, left.ChangedAt));
         Assert.Equal(ByRole(CurrentInteractionState.Idle, CurrentInteractionState.Disabled), left.Buttons(TestGameData.Dam));
-        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam)!.Value.Seconds), left.Timer(TestGameData.Dam));
+        Assert.Equal(new ExtractionTimer(TestGameData.Dam.ExtractionElevator.NoExtractionStartedTime, doors.Timer(TestGameData.Dam, TestGameData.Raid.Settings)!.Value.Seconds), left.Timer(TestGameData.Dam, TestGameData.Raid.Settings));
 
         // A late look passes Closing and Closed at once with their exact times.
         ExtractionStates late = ReadyStates(Ready);
@@ -521,7 +520,7 @@ public sealed class ExtractionTests
         int a = IndexOf(ExtractionButtonRole.Descend);
         ulong descend = point.Buttons[a];
         int channel = 64 + session.Raid.Doors.Doors.Count + session.Raid.Ladders.Ladders.Count + ChannelLayout.LootChannels + point.Index;
-        double ready = 123.5 + TestGameData.CallSeconds + TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds;
+        double ready = 123.5 + TestGameData.CallSeconds + TestGameData.Raid.Settings.ExtractionReadySeconds;
         Assert.True(session.Raid.ExtractionStates.Call(point.Index, 43, session.Raid.WorldSeconds(123.5)));
         session.Service(ready + 0.1);
         Assert.Equal(ExtractionState.Ready, session.Raid.ExtractionStates.Get(point.Index).State);
@@ -579,8 +578,8 @@ public sealed class ExtractionTests
 
     private static ExtractionStates ReadyStates(double ready)
     {
-        ExtractionStates states = new(TestGameData.Dam, 2);
-        double called = ready - TestGameData.Dam.ExtractionElevator.Settings.TimeToExtractReadySeconds - TestGameData.CallSeconds;
+        ExtractionStates states = new(TestGameData.Dam, TestGameData.Raid.Settings, 2);
+        double called = ready - TestGameData.Raid.Settings.ExtractionReadySeconds - TestGameData.CallSeconds;
         Assert.True(states.Call(0, 42, called));
         states.Advance(ready);
         Assert.Equal(new ExtractionPointState(ExtractionState.Ready, ready, 42), states.Get(0));

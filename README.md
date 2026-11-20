@@ -147,10 +147,15 @@ official game as known:
   a multiplier per area loot value (`Unknown` is outside every valued area), whether the game's per-group caps
   (`groupCaps`) and placement limiters (`limiters`) apply, the container classes dynamic spawners may place
   (`spawnerClasses`), and the chance per loose item socket tag (`looseChances`, nearest parent tag like `chances`;
-  the area multipliers and limiters apply to loose items too).
+  the area multipliers and limiters apply to loose items too). It also holds what the game data leaves unset (the
+  game's own defaults are not in its files): the per-group cap of a container type that sets none (`maxPerGroup`,
+  2), what a placement limiter and its caps use when the map leaves a member out (`limiterDefaults`: `shape`
+  `Sphere`, `radius` 1000 cm, `unlimited` true, `limit` 0), and how many containers a dynamic spawner places per run
+  when it sets no number (`spawnerCount`, 1).
 - `loot-contents.json`: item drop tags no container gets, the item tiers (drop tag, weight, per-area
   multipliers; the tier without a drop tag takes every other item) and the tier of a container's first stack,
-  the loot tables each container category draws from (`tablePools`), the extra stack some containers get, and
+  the weighted number of stacks of a container whose pool sets none (`targetStacks`: 2 stacks with weight 2, 3 with
+  weight 3), the loot tables each container category draws from (`tablePools`), the extra stack some containers get, and
   the item pools of containers without tables (`typePools`), and what loose item sockets hold (`looseItems`):
   one stack each, either an item of the listed `tables` whose own placement list accepts the socket's tag (by tier,
   `amount` per stack) or, for the tags a `pools` entry lists (with the tags below them), an item of its `entries`
@@ -209,7 +214,7 @@ when it lists neither. It can set a spawn chance, a group fill, the contents, a 
   2 filled doors and 2.6 % of 5 become 20.8 % and 13.3 %; ×3 High: 10.9 % and 23.4 %). The containers a rule lists form one group;
   otherwise each group is the game's own (the sockets of one placed prop with the same tag). Placed containers,
   spawners and loose item sockets ignore it.
-- **`loot`** replaces the rolled contents: `stacks` (default: the game's usual 2 or 3, always capped by the
+- **`loot`** replaces the rolled contents: `stacks` (default: `targetStacks` of `loot-contents.json`, 2 or 3 as shipped, always capped by the
   container's slots) items drawn by `weight` (default 1; an item can come up more than once), each with an
   `amount` in its range (default 1, at most the item's stack size), at full durability. Items are named by
   technical name; any item players can carry in a raid is allowed. A loose item socket gets one stack instead

@@ -1,4 +1,5 @@
 using Ares.Common.CommandLine;
+using Ares.Common.Game;
 
 namespace Ares.Raid.Tests;
 
@@ -24,7 +25,7 @@ public sealed class CommandLineTests
     }
 
     [Fact]
-    public void Game_data_and_content_directories_are_optional_and_made_absolute()
+    public void Game_data_and_content_directories_are_optional_and_made_absolute_and_the_raid_settings_default()
     {
         string directory = Directory.CreateTempSubdirectory("ares-raid-config-").FullName;
         try
@@ -36,6 +37,9 @@ public sealed class CommandLineTests
             Assert.Equal(Path.GetFullPath("gamedata"), RaidConfiguration.Parse([.. required, "--game-data-dir", "gamedata"]).GameDataDirectory);
             Assert.Null(RaidConfiguration.Parse(required).ContentDirectory);
             Assert.Equal(Path.GetFullPath("content"), RaidConfiguration.Parse([.. required, "--content-dir", "content"]).ContentDirectory);
+            Assert.Equal(RaidSettings.Default, RaidConfiguration.Parse(required).Settings);
+            Assert.Equal(new RaidSettings(5000, 60, 10),
+                RaidConfiguration.Parse([.. required, "--loot-cull-distance", "5000", "--extraction-seconds", "60", "--extraction-ready-seconds", "10"]).Settings);
         }
         finally
         {
@@ -63,5 +67,14 @@ public sealed class CommandLineTests
     {
         Assert.Contains("--fill-seconds", Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse(["--fill-seconds", value])).Message,
             StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("--loot-cull-distance", "0")]
+    [InlineData("--extraction-seconds", "-1")]
+    [InlineData("--extraction-ready-seconds", "-1")]
+    public void Raid_settings_out_of_range_are_rejected(string option, string value)
+    {
+        Assert.Contains(option, Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse([option, value])).Message, StringComparison.Ordinal);
     }
 }

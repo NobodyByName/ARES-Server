@@ -57,6 +57,12 @@ raid-port = 7777
 raid-control-port = 17778
 # Lighting of every raid, e.g. Lighting.GreyMorning. Empty: picked by the map's weights.
 raid-lighting =
+# Distance within which a loot container is relevant to a player, in centimetres: at least 1.
+loot-cull-distance = 20000
+# Seconds an elevator stays ready (doors open) before it leaves on its own: 0 or more.
+extraction-seconds = 120
+# Seconds from the end of an elevator's call to its doors opening: 0 or more.
+extraction-ready-seconds = 45
 # Folder with the game data written by ARES-GameDataExtract (see "Game data" in the README).
 # Required: Host and every raid refuse to start without it.
 game-data-dir =

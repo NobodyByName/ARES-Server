@@ -61,7 +61,7 @@ public sealed record LootListItem(ItemDefinition Item, double Weight, LootRange 
 /// once) with an amount in its range, at full durability. A loose item socket gets one stack, drawn by weight among the
 /// items that can lie in the world as a pickup; with none of those it keeps its default roll.
 /// </summary>
-/// <param name="Stacks">How many stacks, or null for the game's usual target (2 or 3); loose item sockets ignore it.</param>
+/// <param name="Stacks">How many stacks, or null for the content's weighted targets (2 or 3 by default); loose item sockets ignore it.</param>
 /// <param name="Items">The items to draw from; never empty.</param>
 public sealed record LootList(LootRange? Stacks, IReadOnlyList<LootListItem> Items);
 

@@ -65,7 +65,7 @@ public sealed class LootSpawnSelectionTests
             Limiter(LootLimiterShape.Sphere, new Rotator(0, 0, 0), 1e300, []),
             Limiter(LootLimiterShape.Box, new Rotator(10, 20, 30), 1e300, []),
             Limiter(LootLimiterShape.Volumes, new Rotator(0, 0, 0), 0, [new LootLimiterVolume("Volume", [Cube(-1e300, 1e300)])]),
-            .. TestGameData.Dam.LootLimiters,
+            .. TestGameData.DamLimiters,
         ];
         Vector3D[] points =
         [
@@ -76,7 +76,7 @@ public sealed class LootSpawnSelectionTests
         ];
 
         Assert.All(limiters, limiter => Assert.All(points[..3], point => Assert.False(LootLimiterRules.IsPointInside(limiter, point))));
-        Assert.All(TestGameData.Dam.LootLimiters, limiter => Assert.False(LootLimiterRules.IsPointInside(limiter, points[3])));
+        Assert.All(TestGameData.DamLimiters, limiter => Assert.False(LootLimiterRules.IsPointInside(limiter, points[3])));
     }
 
     [Fact]
@@ -93,10 +93,10 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void A_group_gets_no_more_than_its_types_most_containers()
     {
-        int most = TestGameData.Loot.FindContainerType(Tag)!.MaxPerGroup;
+        int most = TestGameData.GroupCap(Tag);
         LootSocket[] rack = [.. Enumerable.Range(0, most + 3).Select(index => Socket("Rack", $"Door_{index}", Tag, new Vector3D(0, 0, 0)))];
         LootSocket[] otherRack = [.. rack.Select(socket => socket with { Component = "Other" })];
-        LootSpawnRules always = new([], [], (_, _) => 1, true);
+        LootSpawnRules always = new([], [], (_, _) => 1, true, MaxPerGroup: TestGameData.Raid.LootSpawn.MaxPerGroup);
 
         LootSpawnSelection selection = LootSpawnSelection.Select(TestGameData.Loot, [.. rack, .. otherRack], always, [], new Random(3));
         Assert.Equal(most, selection.Spawns.Take(rack.Length).Count(spawns => spawns));
@@ -148,12 +148,12 @@ public sealed class LootSpawnSelectionTests
             LootSocket[] spawned = [.. s_damSockets.Value.Where((_, index) => selection.Spawns[index])];
             Assert.All(
                 spawned.GroupBy(socket => (socket.Cell, socket.Actor, socket.Component, Tag: socket.ContainerTag.ToUpperInvariant())),
-                group => Assert.True(group.Count() <= TestGameData.Loot.FindContainerType(group.Key.Tag)!.MaxPerGroup, $"{group.Key} has {group.Count()}"));
-            foreach (LootLimiter limiter in TestGameData.Dam.LootLimiters)
+                group => Assert.True(group.Count() <= TestGameData.GroupCap(group.Key.Tag), $"{group.Key} has {group.Count()}"));
+            foreach (LootLimiter limiter in TestGameData.DamLimiters)
             {
                 LootSocket[] inside = [.. spawned.Where(socket => LootLimiterRules.IsPointInside(limiter, socket.Location))];
                 Assert.All(
-                    limiter.Limits.Where(limit => !limit.Unlimited),
+                    limiter.Limits.Where(limit => limit.Unlimited == false),
                     limit => Assert.True(inside.Count(socket => LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) <= limit.Limit, $"{limiter.Name} {limit.Tag}"));
             }
         }
@@ -212,7 +212,7 @@ public sealed class LootSpawnSelectionTests
     [Fact]
     public void Dam_sockets_roll_their_chance_and_group_caps_take_at_most_two_fifths_of_the_hits_outside_limiters()
     {
-        bool[] limited = [.. s_damSockets.Value.Select(socket => TestGameData.Dam.LootLimiters.Any(limiter => limiter.Limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location)))];
+        bool[] limited = [.. s_damSockets.Value.Select(socket => TestGameData.DamLimiters.Any(limiter => limiter.Limits.Any(limit => LootLimiterRules.Caps(limit, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location)))];
         foreach (IGrouping<double, int> sameChance in Enumerable.Range(0, s_damSockets.Value.Length).GroupBy(index => TestGameData.Raid.LootSpawn.Chance(s_damSockets.Value[index].ContainerTag, s_damSelections.Value[0].Values[index])))
         {
             double chance = sameChance.Key;

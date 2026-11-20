@@ -60,7 +60,7 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         MapPaths paths = new(gameData.Map);
         Doors = new DoorCatalog(Replication, paths, gameData.Map);
         Ladders = new LadderCatalog(Replication, paths, gameData.Map);
-        Extraction = new ExtractionCatalog(Replication, paths, gameData.Map);
+        Extraction = new ExtractionCatalog(Replication, paths, gameData.Map, gameData.Settings);
     }
 
     /// <summary>Lightings a raid can use: those of the map's location with a weight.</summary>

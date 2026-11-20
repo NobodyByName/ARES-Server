@@ -1,4 +1,5 @@
 using System.Globalization;
+using Ares.Common.Game;
 using Ares.Host.Services;
 using Ares.Structs.Core;
 
@@ -50,6 +51,12 @@ internal static class HostOptions
     internal static HostOption RaidPort { get; } = new("raid-port", "<n>", "UDP game port of the first raid; each further raid uses the next port", "7777");
     internal static HostOption RaidControlPort { get; } = new("raid-control-port", "<n>", "Loopback allocation API port of the first raid, counted the same way", "17778");
     internal static HostOption RaidLighting { get; } = new("raid-lighting", "<tag>", "Lighting of every raid", DefaultNote: "picked by the map's weights");
+    internal static HostOption LootCullDistance { get; } = new("loot-cull-distance", "<cm>", "Distance within which a loot container is relevant to a player",
+        Text(RaidSettings.DefaultLootCullDistance));
+    internal static HostOption ExtractionSeconds { get; } = new("extraction-seconds", "<n>", "Seconds an elevator stays ready before it leaves on its own",
+        Text(RaidSettings.DefaultExtractionSeconds));
+    internal static HostOption ExtractionReadySeconds { get; } = new("extraction-ready-seconds", "<n>", "Seconds from the end of an elevator's call to its doors opening",
+        Text(RaidSettings.DefaultExtractionReadySeconds));
     internal static HostOption GameDataDirectory { get; } = new("game-data-dir", "<dir>",
         "Folder with the game data written by ARES-GameDataExtract; required, Host and every raid load it");
     internal static HostOption ContentDirectory { get; } = new("content-dir", "<dir>",
@@ -73,12 +80,14 @@ internal static class HostOptions
     internal static IReadOnlyList<HostOption> Settings { get; } =
     [
         Port, Bind, PublicOrigin, AllowNetworkClients, MongoDbUri, MongoDbUriFile, MongoDbDatabase, RaidExecutable, SessionControlTokenFile,
-        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, GameDataDirectory, ContentDirectory, StashUpgradeCoins, AuthKeyFile,
+        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, LootCullDistance, ExtractionSeconds, ExtractionReadySeconds, GameDataDirectory, ContentDirectory, StashUpgradeCoins, AuthKeyFile,
         ArchiveKeysFile, ServerName, Motd, GameBuildId, RaidCapacity, LogFile, Console,
     ];
 
     /// <summary>Options that take no argument.</summary>
     internal static IReadOnlySet<string> Flags { get; } = new HashSet<string>([.. Settings.Append(Help).Append(Version).Where(option => option.IsFlag).Select(option => option.Key)]);
+
+    private static string Text(int value) => value.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>Command-line help.</summary>
     internal static string Usage { get; } = $"""

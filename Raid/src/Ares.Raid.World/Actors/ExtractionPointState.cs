@@ -1,3 +1,4 @@
+using Ares.Common.Game;
 using Ares.Common.GameData;
 using Ares.Structs.Game.World;
 
@@ -57,19 +58,21 @@ public readonly record struct ExtractionPointState(ExtractionState State, double
     public bool CanExtract => State is ExtractionState.Ready or ExtractionState.Closing;
 
     /// <summary>
-    /// The extraction timer: it starts when the elevator is ready and lasts the settings' extraction time plus the
+    /// The extraction timer: it starts when the elevator is ready and lasts the raid settings' extraction time plus the
     /// doors' closing; once the doors start closing it ends when they are closed, and after that it keeps its length
     /// with no start.
     /// </summary>
     /// <param name="map">The map's data: what its elevators share.</param>
+    /// <param name="raid">The raid settings: the extraction time.</param>
     /// <returns>The timer, or null.</returns>
-    public ExtractionTimer? Timer(MapData map)
+    public ExtractionTimer? Timer(MapData map, RaidSettings raid)
     {
         ArgumentNullException.ThrowIfNull(map);
+        ArgumentNullException.ThrowIfNull(raid);
         ExtractionElevator elevator = map.ExtractionElevator;
         return (State, ChangedAt, ReadyAt, ClosingAt) switch
         {
-            (ExtractionState.Ready, { } readyAt, _, _) => new ExtractionTimer(readyAt, elevator.Settings.DefaultExtractionSeconds + elevator.DoorsSeconds),
+            (ExtractionState.Ready, { } readyAt, _, _) => new ExtractionTimer(readyAt, raid.ExtractionSeconds + elevator.DoorsSeconds),
             (ExtractionState.Closing, _, { } readyAt, { } closingAt) => new ExtractionTimer(readyAt, closingAt - readyAt + elevator.DoorsSeconds),
             (ExtractionState.Closed, _, { } readyAt, { } closingAt) => new ExtractionTimer(elevator.NoExtractionStartedTime, closingAt - readyAt + elevator.DoorsSeconds),
             _ => null,

@@ -47,6 +47,16 @@
     }
   ],
   "firstStackTier": "Common",
+  "targetStacks": [
+    {
+      "target": 2,
+      "weight": 2
+    },
+    {
+      "target": 3,
+      "weight": 3
+    }
+  ],
   "tablePools": [
     {
       "name": "Tech",

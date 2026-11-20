@@ -104,8 +104,11 @@ internal static class SyntheticHost
             chances = new Dictionary<string, double>(),
             areaMultipliers = new Dictionary<string, double>(),
             groupCaps = true,
+            maxPerGroup = 2,
             limiters = true,
+            limiterDefaults = new { shape = "Sphere", radius = 1000, unlimited = true, limit = 0 },
             spawnerClasses = Array.Empty<string>(),
+            spawnerCount = 1,
             looseChances = new Dictionary<string, double>(),
         });
         Write(directory, AresContent.LootContentsFile, new
@@ -113,6 +116,7 @@ internal static class SyntheticHost
             excludedDropTags = Array.Empty<string>(),
             tiers = new[] { new { name = "Other", weight = 1 } },
             firstStackTier = (string?)null,
+            targetStacks = new[] { new { target = 1, weight = 1 } },
             tablePools = Array.Empty<object>(),
             extraStack = new { chance = 0, entries = Array.Empty<object>() },
             typePools = Array.Empty<object>(),

@@ -87,13 +87,13 @@ public sealed class FreeStandingLootTests
         DynamicLootSpawner fixedTurn = Spawner("Fixed", s_enabled.Value, points: 3);
         for (int seed = 1; seed <= Seeds; seed++)
         {
-            IReadOnlyList<DynamicLootPlacement> placements = DynamicLootRuns.Run(cluster, new Random(seed));
+            IReadOnlyList<DynamicLootPlacement> placements = DynamicLootRuns.Run(cluster, TestGameData.Raid.LootSpawn.SpawnerCount, new Random(seed));
             Assert.Equal(5, placements.Count);
             Assert.Equal(5, placements.Select(placement => placement.Location).Distinct().Count());
             Assert.All(placements, placement => Assert.InRange(placement.Rotation.Yaw, 0, 360));
             Assert.All(placements, placement => Assert.Equal((0.0, 0.0), (placement.Rotation.Pitch, placement.Rotation.Roll)));
 
-            DynamicLootPlacement single = Assert.Single(DynamicLootRuns.Run(fixedTurn, new Random(seed)));
+            DynamicLootPlacement single = Assert.Single(DynamicLootRuns.Run(fixedTurn, TestGameData.Raid.LootSpawn.SpawnerCount, new Random(seed)));
             Assert.Contains(fixedTurn.Points, point => point.Location == single.Location && point.Rotation == single.Rotation);
         }
     }
@@ -103,7 +103,7 @@ public sealed class FreeStandingLootTests
     {
         DynamicLootSpawner[] spawners = [Spawner("Enabled", s_enabled.Value), Spawner("Disabled", s_disabled.Value), Spawner("Unsupported", s_unsupported.Value), Spawner("Layered", s_enabled.Value) with { DataLayer = "DataLayer_Inactive" }, Spawner("Elsewhere", s_enabled.Value)];
         DynamicLootGroup[] groups = [Group("All/0", ["Root"], 4, 4, spawners[..4]), Group("Other/0", ["Root"], 1, 1, spawners[4..], rounds: ["Coldsnap"])];
-        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], TestGameData.Raid.LootSpawn.SpawnerClasses.Contains), LootSpawnRules.EverySocket);
+        LootCatalog catalog = Catalog(new FreeStandingLoot(groups, [], TestGameData.Raid.LootSpawn.SpawnerClasses.Contains, TestGameData.Raid.LootSpawn.SpawnerCount), LootSpawnRules.EverySocket);
 
         LootSpawnerCounts counts = catalog.Counts.Spawners;
         Assert.Equal(new LootSpawnerCounts(5, 3, 1, 1, 1, 1, 1), counts);

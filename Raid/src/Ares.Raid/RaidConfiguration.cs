@@ -1,6 +1,7 @@
 using System.Net;
 using Ares.Common.CommandLine;
 using Ares.Common.Endpoints;
+using Ares.Common.Game;
 using Ares.Common.Security;
 
 namespace Ares.Raid;
@@ -27,6 +28,10 @@ public sealed record RaidConfiguration
           --fill-seconds <n>          Seconds after the first party during which other parties may join (0 to 600, default 60)
           --stop-on-input-close       Stop when standard input closes (ARES-Host keeps it open while it runs)
           --lighting <tag>            Lighting of the raid (default: picked by the map's weights)
+          --loot-cull-distance <cm>   Distance within which a loot container is relevant to a player (default {RaidSettings.DefaultLootCullDistance})
+          --extraction-seconds <n>    Seconds an elevator stays ready before it leaves on its own (default {RaidSettings.DefaultExtractionSeconds})
+          --extraction-ready-seconds <n>
+                                      Seconds from the end of an elevator's call to its doors opening (default {RaidSettings.DefaultExtractionReadySeconds})
           --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (required to start)
           --content-dir <dir>         Folder with the ARES content files (required to start; ARES-Host passes its
                                       content-dir)
@@ -62,6 +67,9 @@ public sealed record RaidConfiguration
 
     /// <summary>Lighting of the raid, or null for a weighted pick; checked against the map's lightings once the game data is loaded.</summary>
     public string? Lighting { get; private init; }
+
+    /// <summary>The plain raid values Host passes on from its configuration.</summary>
+    public RaidSettings Settings { get; private init; } = RaidSettings.Default;
 
     /// <summary>Folder with the game data, or null when none is configured.</summary>
     public string? GameDataDirectory { get; private init; }
@@ -102,6 +110,9 @@ public sealed record RaidConfiguration
         string? contentDirectory = arguments.GetString("content-dir");
         int maxPlayers = arguments.GetInt32("max-players", 1);
         int fillSeconds = arguments.GetInt32("fill-seconds", 60);
+        int lootCullDistance = arguments.GetInt32("loot-cull-distance", RaidSettings.DefaultLootCullDistance);
+        int extractionSeconds = arguments.GetInt32("extraction-seconds", RaidSettings.DefaultExtractionSeconds);
+        int extractionReadySeconds = arguments.GetInt32("extraction-ready-seconds", RaidSettings.DefaultExtractionReadySeconds);
         bool stopOnInputClose = arguments.Has("stop-on-input-close");
         string consoleMode = arguments.GetString("console", "auto")!;
         string? logFile = arguments.GetString("log-file");
@@ -119,6 +130,16 @@ public sealed record RaidConfiguration
         if (fillSeconds is < 0 or > 600)
         {
             throw new CommandLineException("--fill-seconds must be from 0 to 600");
+        }
+
+        if (lootCullDistance < 1)
+        {
+            throw new CommandLineException("--loot-cull-distance must be at least 1");
+        }
+
+        if (extractionSeconds < 0 || extractionReadySeconds < 0)
+        {
+            throw new CommandLineException("--extraction-seconds and --extraction-ready-seconds must be 0 or more");
         }
 
         if (port is < 1 or > 65535 || controlPort is < 1 or > 65535 || port == controlPort)
@@ -148,6 +169,7 @@ public sealed record RaidConfiguration
                 ControlPort = controlPort,
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
+                Settings = new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds),
                 GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
                 ContentDirectory = contentDirectory is null ? null : Path.GetFullPath(contentDirectory),
                 MaxPlayers = maxPlayers,

@@ -21,7 +21,7 @@ public sealed record LootContents(string? Pool, IReadOnlyList<LootStack> Stacks)
 /// <summary>
 /// Draws the contents of a loot container from the content's loot settings (<see cref="LootContentSettings"/>). A table
 /// pool offers the carried items its tables select whose own placement list accepts the container's tag; the container
-/// gets 2 or 3 stacks (the game's weighted targets, or the pool's own range), at most one per slot: one of the first
+/// gets 2 or 3 stacks (the content's weighted targets, or the pool's own range), at most one per slot: one of the first
 /// stack's tier first when there is one, then by tier weight (scaled by the loot value of the area), each item at most
 /// once and never next to an item of a group either one avoids. Some containers then get the extra stack. A type pool
 /// draws its stacks from its entries. Only items any slot holds as plain stacks qualify (see <see cref="LoadoutDefinitions.PlainItems"/>).
@@ -358,10 +358,10 @@ public sealed class LootContentRolls
         return _otherTier;
     }
 
-    // The game's weighted target number of stacks.
+    // The weighted target number of stacks of the content.
     private int Target(Random random)
     {
-        IReadOnlyList<LootTargetStacks> targets = _loot.ContainerDefaults.TargetStacks;
+        IReadOnlyList<LootTargetStacks> targets = _settings.TargetStacks;
         double roll = random.NextDouble() * targets.Sum(target => target.Weight);
         foreach (LootTargetStacks target in targets)
         {

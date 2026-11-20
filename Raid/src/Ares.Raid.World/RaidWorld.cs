@@ -41,7 +41,7 @@ public sealed class RaidWorld
         Doors = worlds.Doors;
         Ladders = worlds.Ladders;
         Extraction = worlds.Extraction;
-        ExtractionStates = new ExtractionStates(map, Extraction.Points.Count);
+        ExtractionStates = new ExtractionStates(map, GameData.Settings, Extraction.Points.Count);
         Clock = worlds.Clock;
         StartedAt = Clock();
         State = new WorldState(worlds.Replication, Imports, GameData, matchId, seed);

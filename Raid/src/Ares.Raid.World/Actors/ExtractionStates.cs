@@ -1,3 +1,4 @@
+using Ares.Common.Game;
 using Ares.Common.GameData;
 using Ares.Structs.Game.World;
 
@@ -11,28 +12,29 @@ public sealed record ExtractionDeparture(double At, IReadOnlyList<long> Players)
 /// <summary>
 /// Elevator state of one raid, shared by its connections. Every elevator starts closed with only its call button
 /// usable. A press on the call button of a closed elevator calls it: once the press has run (the button's alignment
-/// and the settings' summon hold) the elevator arrives, and it is ready (doors open, descend switches usable) the
-/// settings' time to extract ready later. A held descend switch (its alignment, then the settings' extraction hold)
-/// closes the doors; so does the end of the settings' extraction time with nobody descending. The elevator has left
+/// and the settings' summon hold) the elevator arrives, and it is ready (doors open, descend switches usable) the raid
+/// settings' extraction ready time later. A held descend switch (its alignment, then the settings' extraction hold)
+/// closes the doors; so does the end of the raid settings' extraction time with nobody descending. The elevator has left
 /// (closed, callable again) once the doors have closed.
 /// </summary>
 public sealed class ExtractionStates
 {
     private readonly MapData _map;
-    private readonly ExtractionSettings _settings;
+    private readonly RaidSettings _raid;
     private readonly ExtractionPointState[] _states;
     private readonly ExtractionDeparture?[] _departures;
 
     /// <summary>Sets each elevator to its start state.</summary>
     /// <param name="map">The map's data: its elevator buttons and what its elevators share.</param>
+    /// <param name="raid">The raid settings: the extraction ready and extraction times.</param>
     /// <param name="count">Number of elevators.</param>
-    public ExtractionStates(MapData map, int count)
+    public ExtractionStates(MapData map, RaidSettings raid, int count)
     {
         _map = map ?? throw new ArgumentNullException(nameof(map));
+        _raid = raid ?? throw new ArgumentNullException(nameof(raid));
         ArgumentOutOfRangeException.ThrowIfNegative(count);
-        _settings = map.ExtractionElevator.Settings;
         ExtractionButton summon = map.ExtractionButtons.Single(button => button.Role == ExtractionButtonRole.Summon);
-        CallSeconds = summon.AlignmentSeconds + _settings.SummonHoldSeconds;
+        CallSeconds = summon.AlignmentSeconds + map.ExtractionElevator.Settings.SummonHoldSeconds;
         _states = [.. Enumerable.Repeat(new ExtractionPointState(ExtractionState.Closed, null, null), count)];
         _departures = new ExtractionDeparture?[count];
     }
@@ -129,14 +131,14 @@ public sealed class ExtractionStates
                 state = state with { State = ExtractionState.Arriving, ChangedAt = called + CallSeconds, CalledAt = null, ReadyAt = null, ClosingAt = null };
             }
 
-            if (state is { State: ExtractionState.Arriving, ChangedAt: { } arriving } && at >= arriving + _settings.TimeToExtractReadySeconds)
+            if (state is { State: ExtractionState.Arriving, ChangedAt: { } arriving } && at >= arriving + _raid.ExtractionReadySeconds)
             {
-                state = state with { State = ExtractionState.Ready, ChangedAt = arriving + _settings.TimeToExtractReadySeconds, Departed = null };
+                state = state with { State = ExtractionState.Ready, ChangedAt = arriving + _raid.ExtractionReadySeconds, Departed = null };
             }
 
             if (state is { State: ExtractionState.Ready, ChangedAt: { } ready })
             {
-                double timeout = ready + _settings.DefaultExtractionSeconds;
+                double timeout = ready + _raid.ExtractionSeconds;
                 ExtractionDescent? descent = state.Descent;
                 double closing = descent is { } held && held.EndsAt(_map) < timeout ? held.EndsAt(_map) : timeout;
                 if (at >= closing)

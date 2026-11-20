@@ -222,7 +222,7 @@ public sealed class LootRuleTests : IDisposable
         Assert.NotEmpty(ran);
         // Only the round's groups can run a spawner, a set chance included.
         HashSet<DynamicLootSpawner> inRound = [.. TestGameData.Dam.DynamicLootGroups.Where(group => group.Rounds.Contains(s_round.Value, StringComparer.Ordinal)).SelectMany(group => group.Spawners)];
-        DynamicLootSpawner idle = inRound.First(spawner => spawner.DataLayer is null && spawner.Count > 0
+        DynamicLootSpawner idle = inRound.First(spawner => spawner.DataLayer is null && (spawner.Count ?? TestGameData.Raid.LootSpawn.SpawnerCount) > 0
             && !ran.Contains(LootContainerIds.Of(spawner)) && spawner.Classes.All(entry => LootSocketClasses.Served(TestGameData.Loot, entry.Class) is not null));
         string idleId = LootContainerIds.Of(idle);
         string otherRoundId = LootContainerIds.Of(FreeStandingLoot.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn).Spawners.First(spawner => !inRound.Contains(spawner)));
@@ -378,7 +378,7 @@ public sealed class LootRuleTests : IDisposable
         // A tag whose props hold more sockets than its group cap allows.
         const string Tag = "Socket.LootContainer.Tech.Server.Door";
         LootSocket[] racks = [.. ServableSockets().Where(socket => string.Equals(socket.ContainerTag, Tag, StringComparison.OrdinalIgnoreCase))];
-        Assert.Contains(racks.GroupBy(socket => (socket.Cell, socket.Actor, socket.Component)), rack => rack.Count() > TestGameData.Loot.FindContainerType(Tag)!.MaxPerGroup);
+        Assert.Contains(racks.GroupBy(socket => (socket.Cell, socket.Actor, socket.Component)), rack => rack.Count() > TestGameData.GroupCap(Tag));
 
         LootCatalog after = Catalog(Raid($$"""
             { "rules": [{ "tags": [{{Json(Tag)}}], "groupFill": { "99": 1 } }, { "containers": [{{Json(limitedId)}}], "groupFill": { "1": 1 } }] }
@@ -389,8 +389,8 @@ public sealed class LootRuleTests : IDisposable
         Assert.Contains(limitedId, filled);
     }
 
-    private static bool InLimiter(LootSocket socket) => TestGameData.Dam.LootLimiters.Any(limiter => limiter.DataLayer is null
-        && limiter.Limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location));
+    private static bool InLimiter(LootSocket socket) => TestGameData.DamLimiters.Any(limiter => limiter.DataLayer is null
+        && limiter.Limits.Any(limit => LootLimiterRules.Caps(limit, socket.ContainerTag)) && LootLimiterRules.IsPointInside(limiter, socket.Location));
 
     private static LootCatalog Catalog(RaidGameData data, int seed = Seed, LootSpawnRules? rules = null) =>
         new(data, s_replication.Value, s_round.Value, [], seed, rules ?? LootSpawnRules.Of(TestGameData.Dam, TestGameData.Raid.LootSpawn));

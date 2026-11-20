@@ -3,6 +3,7 @@ using System.Net;
 using Ares.Common.Archives;
 using Ares.Common.CommandLine;
 using Ares.Common.Endpoints;
+using Ares.Common.Game;
 using Ares.Common.Game.Content;
 using Ares.Common.Security;
 using Ares.Host.Services;
@@ -91,6 +92,9 @@ public sealed record HostConfiguration
         int raidPort = file.GetInt32(HostOptions.RaidPort);
         int raidControlPort = file.GetInt32(HostOptions.RaidControlPort);
         string? raidLighting = EmptyToNull(file.GetString(HostOptions.RaidLighting));
+        int lootCullDistance = file.GetInt32(HostOptions.LootCullDistance);
+        int extractionSeconds = file.GetInt32(HostOptions.ExtractionSeconds);
+        int extractionReadySeconds = file.GetInt32(HostOptions.ExtractionReadySeconds);
         string? gameDataDirectory = file.GetPath(HostOptions.GameDataDirectory);
         string? contentDirectory = file.GetPath(HostOptions.ContentDirectory);
         string? authKeyFile = file.GetPath(HostOptions.AuthKeyFile);
@@ -173,8 +177,9 @@ public sealed record HostConfiguration
         }
 
         AresContent content = AresContent.Load(contentDirectory);
+        RaidSettings raidSettings = ReadRaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds);
         RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
-            gameDataDirectory, content.Directory, bind, originUri.Host, port);
+            raidSettings, gameDataDirectory, content.Directory, bind, originUri.Host, port);
         StashUpgradePrices stashUpgrades = stashUpgradeCoins is null ? StashUpgradePrices.Of(content.Stash) : ReadStashUpgrades(content.Stash, stashUpgradeCoins);
         byte[]? identityKey = authKeyFile is null ? null : ReadIdentityKey(authKeyFile);
         ArchiveKeys archiveKeys = ReadArchiveKeys(archiveKeysFile, archiveKeysSha256);
@@ -218,8 +223,20 @@ public sealed record HostConfiguration
             : throw new CommandLineException($"--stash-upgrade-coins expects {expected} comma-separated coin prices of zero or more");
     }
 
+    private static RaidSettings ReadRaidSettings(int lootCullDistance, int extractionSeconds, int extractionReadySeconds)
+    {
+        if (lootCullDistance < 1)
+        {
+            throw new CommandLineException("--loot-cull-distance must be at least 1");
+        }
+
+        return extractionSeconds >= 0 && extractionReadySeconds >= 0
+            ? new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds)
+            : throw new CommandLineException("--extraction-seconds and --extraction-ready-seconds must be 0 or more");
+    }
+
     private static RaidLaunch? ReadRaidLaunch(string? executable, string? tokenFile, int capacity, int players, int fillSeconds, int gamePort,
-        int controlPort, string? lighting, string? gameDataDirectory, string contentDirectory, IPAddress bind, string advertiseHost, int hostPort)
+        int controlPort, string? lighting, RaidSettings settings, string? gameDataDirectory, string contentDirectory, IPAddress bind, string advertiseHost, int hostPort)
     {
         if (players < 1)
         {
@@ -262,7 +279,7 @@ public sealed record HostConfiguration
         {
             string fullTokenFile = Path.GetFullPath(tokenFile);
             return new RaidLaunch(fullExecutable, fullTokenFile, SecretFiles.ReadOperatorToken(fullTokenFile), bind,
-                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting,
+                ConnectionHost.Validate(advertiseHost), gamePort, controlPort, players, fillSeconds, lighting, settings,
                 gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory), contentDirectory);
         }
         catch (Exception error) when (error is IOException or ArgumentException or UnauthorizedAccessException)

@@ -9,12 +9,14 @@ namespace Ares.Raid.World.Loot;
 /// <param name="Groups">Dynamic loot groups: each picks some of its spawners when its round runs.</param>
 /// <param name="Placed">Container actors the map places.</param>
 /// <param name="SpawnerClassEnabled">Whether a spawner may place a container of a class (by class path).</param>
+/// <param name="SpawnerCount">Containers a spawner places per run when it does not set its own <see cref="DynamicLootSpawner.Count"/>.</param>
 public sealed record FreeStandingLoot(
     IReadOnlyList<DynamicLootGroup> Groups,
     IReadOnlyList<PlacedLootContainer> Placed,
-    Func<string, bool> SpawnerClassEnabled)
+    Func<string, bool> SpawnerClassEnabled,
+    int SpawnerCount)
 {
-    /// <summary>A map's spawners and placed containers, with the spawner classes the spawn settings enable.</summary>
+    /// <summary>A map's spawners and placed containers, with the spawner classes and spawner count of the spawn settings.</summary>
     /// <param name="map">The map's data.</param>
     /// <param name="spawn">The spawn settings.</param>
     /// <returns>The containers.</returns>
@@ -22,11 +24,11 @@ public sealed record FreeStandingLoot(
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(spawn);
-        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, spawn.SpawnerClasses.Contains);
+        return new FreeStandingLoot(map.DynamicLootGroups, map.PlacedLoot, spawn.SpawnerClasses.Contains, spawn.SpawnerCount);
     }
 
     /// <summary>No free-standing containers.</summary>
-    public static FreeStandingLoot None { get; } = new([], [], _ => false);
+    public static FreeStandingLoot None { get; } = new([], [], _ => false, 0);
 
     /// <summary>Every spawner of the groups, each once, in group order.</summary>
     public IReadOnlyList<DynamicLootSpawner> Spawners => [.. Groups.SelectMany(group => group.Spawners).Distinct()];
@@ -116,20 +118,22 @@ public static class DynamicLootRuns
     }
 
     /// <summary>
-    /// What a spawner places when it runs: <see cref="DynamicLootSpawner.Count"/> containers, each with a class drawn by
-    /// weight and a point drawn by weight among the points this run has not used, turned to a random yaw when the
-    /// spawner randomises the rotation.
+    /// What a spawner places when it runs: <see cref="DynamicLootSpawner.Count"/> containers (at most one per point),
+    /// each with a class drawn by weight and a point drawn by weight among the points this run has not used, turned to a
+    /// random yaw when the spawner randomises the rotation.
     /// </summary>
     /// <param name="spawner">The spawner.</param>
+    /// <param name="defaultCount">Containers it places when it does not set its own count.</param>
     /// <param name="random">The raid's random numbers.</param>
     /// <returns>The placements.</returns>
-    public static IReadOnlyList<DynamicLootPlacement> Run(DynamicLootSpawner spawner, Random random)
+    public static IReadOnlyList<DynamicLootPlacement> Run(DynamicLootSpawner spawner, int defaultCount, Random random)
     {
         ArgumentNullException.ThrowIfNull(spawner);
         ArgumentNullException.ThrowIfNull(random);
+        int count = spawner.Count ?? defaultCount;
         List<DynamicLootPoint> points = [.. spawner.Points];
         List<DynamicLootPlacement> placements = [];
-        for (int actor = 0; actor < spawner.Count && points.Count > 0; actor++)
+        for (int actor = 0; actor < count && points.Count > 0; actor++)
         {
             DynamicLootClass type = spawner.Classes[Weighted(spawner.Classes.Select(entry => entry.Weight), random)];
             int index = Weighted(points.Select(point => point.Weight), random);

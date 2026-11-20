@@ -1,3 +1,4 @@
+using Ares.Common.Game;
 using Ares.Common.GameData;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Replication;
@@ -16,6 +17,7 @@ public sealed class ExtractionCatalog
 {
     private readonly ReplicationContext _replication;
     private readonly MapData _map;
+    private readonly RaidSettings _raid;
     private readonly ObjectExports _exports;
     private readonly Dictionary<ulong, (ExtractionPoint Point, ExtractionButton Button)> _buttons = [];
     private readonly ulong[] _animations;
@@ -24,11 +26,13 @@ public sealed class ExtractionCatalog
     /// <param name="replication">Replication context (knows the extraction and interaction-state enums).</param>
     /// <param name="paths">Map path ids.</param>
     /// <param name="map">The map's data: its elevators and their buttons.</param>
-    public ExtractionCatalog(ReplicationContext replication, MapPaths paths, MapData map)
+    /// <param name="raid">The raid settings: the extraction time.</param>
+    public ExtractionCatalog(ReplicationContext replication, MapPaths paths, MapData map, RaidSettings raid)
     {
         _replication = replication ?? throw new ArgumentNullException(nameof(replication));
         ArgumentNullException.ThrowIfNull(paths);
         _map = map ?? throw new ArgumentNullException(nameof(map));
+        _raid = raid ?? throw new ArgumentNullException(nameof(raid));
         ulong level = paths.Level(map.MapPackage);
         List<ExtractionPoint> points = [];
         foreach (ExtractionPoint point in map.ExtractionPoints.Select((placement, index) => Create(index, placement)))
@@ -157,7 +161,7 @@ public sealed class ExtractionCatalog
             values[PropertyNames.CanExtract] = state.CanExtract;
         }
 
-        if (state.Timer(_map) is not { } timer)
+        if (state.Timer(_map, _raid) is not { } timer)
         {
             return values;
         }

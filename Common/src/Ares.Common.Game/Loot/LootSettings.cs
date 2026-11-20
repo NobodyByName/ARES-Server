@@ -16,8 +16,11 @@ namespace Ares.Common.Game.Loot;
 /// <see cref="PointOfInterestLootValue.Unknown"/> (outside every area with a loot value), else 1.
 /// </param>
 /// <param name="GroupCaps">Whether the game's most containers per group (<see cref="LootContainerType.MaxPerGroup"/>) apply.</param>
+/// <param name="MaxPerGroup">Most containers of a type per group when the type does not set its own <see cref="LootContainerType.MaxPerGroup"/>.</param>
 /// <param name="Limiters">Whether the map's placement limiters cap the sockets they cover.</param>
+/// <param name="LimiterDefaults">What a placement limiter and its limit entries use for the members the map leaves unset.</param>
 /// <param name="SpawnerClasses">Container classes (class paths) dynamic loot spawners may place.</param>
+/// <param name="SpawnerCount">Containers a dynamic loot spawner places per run when it does not set its own <see cref="DynamicLootSpawner.Count"/>.</param>
 /// <param name="LooseChances">
 /// Chance from 0 to 1 that a loose item socket gets an item, by socket tag; a tag without an entry uses its nearest
 /// parent's, else 0. The area multipliers and the limiters apply as for container sockets.
@@ -26,8 +29,11 @@ public sealed record LootSpawnSettings(
     IReadOnlyDictionary<string, double> Chances,
     IReadOnlyDictionary<PointOfInterestLootValue, double> AreaMultipliers,
     bool GroupCaps,
+    int MaxPerGroup,
     bool Limiters,
+    LootLimiterDefaults LimiterDefaults,
     IReadOnlySet<string> SpawnerClasses,
+    int SpawnerCount,
     IReadOnlyDictionary<string, double> LooseChances)
 {
     /// <summary>The chance of a container tag: its own entry, else its nearest parent's, else 0.</summary>
@@ -74,6 +80,28 @@ public sealed record LootSpawnSettings(
     }
 }
 
+/// <summary>What a loot placement limiter uses for the members its map leaves unset (<see cref="LootLimiter"/>, <see cref="LootLimit"/>).</summary>
+/// <param name="Shape">Which points the limiter covers.</param>
+/// <param name="Radius">Sphere radius, or twice the box's half extent, in centimetres.</param>
+/// <param name="Unlimited">Whether a limit entry caps nothing.</param>
+/// <param name="Limit">Placements a limit entry allows for its tag.</param>
+public sealed record LootLimiterDefaults(LootLimiterShape Shape, double Radius, bool Unlimited, int Limit)
+{
+    /// <summary>The limiter with every member it leaves unset, and every such member of its limit entries, set to these defaults.</summary>
+    /// <param name="limiter">A limiter of the map's data.</param>
+    /// <returns>The limiter with every member set.</returns>
+    public LootLimiter Apply(LootLimiter limiter)
+    {
+        ArgumentNullException.ThrowIfNull(limiter);
+        return limiter with
+        {
+            Shape = limiter.Shape ?? Shape,
+            Radius = limiter.Radius ?? Radius,
+            Limits = [.. limiter.Limits.Select(limit => limit with { Unlimited = limit.Unlimited ?? Unlimited, Limit = limit.Limit ?? Limit })],
+        };
+    }
+}
+
 /// <summary>A tier of loot items: how often a container's next stack comes from it.</summary>
 /// <param name="Name">Name of the tier.</param>
 /// <param name="DropTag">Drop tag of its items (an item with this tag or one below it); null for the tier of every other item.</param>
@@ -88,7 +116,7 @@ public sealed record LootTier(string Name, string? DropTag, double Weight, IRead
 /// <param name="Name">Name of the pool, as logs show it.</param>
 /// <param name="Tag">Container tag of the category: the tag itself and every tag below it that has no pool of its own.</param>
 /// <param name="Tables">Value loot table asset names; an item's stack size and durability come from the first entry that selects it.</param>
-/// <param name="Stacks">Number of stacks, drawn uniformly; null for the game's weighted container targets.</param>
+/// <param name="Stacks">Number of stacks, drawn uniformly; null for the weighted targets (<see cref="LootContentSettings.TargetStacks"/>).</param>
 /// <param name="ExtraStack">Whether the container may get the extra stack (<see cref="LootContentSettings.ExtraStack"/>).</param>
 public sealed record LootTablePool(string Name, string Tag, IReadOnlyList<string> Tables, LootRange? Stacks, bool ExtraStack);
 
@@ -124,6 +152,7 @@ public sealed record LootExtraStack(double Chance, IReadOnlyList<LootTypeEntry> 
 /// <param name="ExcludedDropTags">Items with one of these drop tags (or one below it) go in no container.</param>
 /// <param name="Tiers">The tiers, in order: an item belongs to the first whose drop tag it carries, else to the one without a drop tag.</param>
 /// <param name="FirstStackTier">Name of the tier of a container's first stack, or null for none.</param>
+/// <param name="TargetStacks">Weighted numbers of stacks of a table pool's container that sets no number of its own; never empty.</param>
 /// <param name="TablePools">Table pools by container category.</param>
 /// <param name="ExtraStack">The extra stack.</param>
 /// <param name="TypePools">Type pools.</param>
@@ -133,6 +162,7 @@ public sealed record LootContentSettings(
     IReadOnlyList<string> ExcludedDropTags,
     IReadOnlyList<LootTier> Tiers,
     string? FirstStackTier,
+    IReadOnlyList<LootTargetStacks> TargetStacks,
     IReadOnlyList<LootTablePool> TablePools,
     LootExtraStack ExtraStack,
     IReadOnlyList<LootTypePool> TypePools,

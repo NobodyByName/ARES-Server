@@ -139,8 +139,6 @@ public sealed class SyntheticGameData
                 new LootContainerClass(new ArchetypeClass(ContainerClass, "/Game/Synthetic/BP_Container.Default__BP_Container_C"), "/Script/Angelscript.LootContainer",
                     [], new Vector3D(0, 0, 50), new Vector3D(0, 0, 50), null, 0.5, 1.0, 0.4, false, 200, 150, 8),
             ],
-            LootContainerDefaults = new LootContainerDefaults(20000, [new LootTargetStacks(2, 1.0)]),
-            StaticLootSpawnTweakables = new LootSpawnTweakables(0.5, 1.0, 0.5, 0.4, 0.025, 0.022, new Dictionary<int, double> { [1] = 1.0 }),
             InteractionAnimationContainers =
             [
                 new InteractionAnimationContainer(GameNames.InteractionAnimations.DoorBreach, InteractionAlignment.LookAtMatrixComponentUp, true, false, false, 50, false, false),
@@ -204,7 +202,7 @@ public sealed class SyntheticGameData
             ZiplineDefaults = new ZiplineLineDefaults(500, new Transform(Quaternion.Identity, new Vector3D(0, 0, 225), Vector3D.One), new Vector3D(0, 0, -95), 270),
             Doors = [new DoorPlacement(Cell, "Door_1")],
             ExtractionElevator = new ExtractionElevator("GameMode.Salvage.ExtractionPoint.Elevator", "/Game/Synthetic/DA_ExtractionPointSettings",
-                new ExtractionSettings(10, 20, 30, 2, 5), new Vector3D(500, 400, 160), new Vector3D(0, 0, 60), new Rotator(0, 0, 0), -1, -1, 5),
+                new ExtractionSettings(2, 5), new Vector3D(500, 400, 160), new Vector3D(0, 0, 60), new Rotator(0, 0, 0), -1, -1, 5),
         };
     }
 }

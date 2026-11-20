@@ -79,17 +79,11 @@ public sealed record GameDataContent
     /// <summary><see cref="GameTables.LootContainerClasses"/>.</summary>
     public ImmutableArray<LootContainerClass> LootContainerClasses { get; init; } = [];
 
-    /// <summary>The one row of <see cref="GameTables.LootContainerDefaults"/>.</summary>
-    public required LootContainerDefaults LootContainerDefaults { get; init; }
-
     /// <summary><see cref="GameTables.StaticValueLootTables"/>.</summary>
     public ImmutableArray<StaticValueLootTable> StaticValueLootTables { get; init; } = [];
 
     /// <summary><see cref="GameTables.SkillLootTables"/>.</summary>
     public ImmutableArray<SkillLootTable> SkillLootTables { get; init; } = [];
-
-    /// <summary>The one row of <see cref="GameTables.StaticLootSpawnTweakables"/>.</summary>
-    public required LootSpawnTweakables StaticLootSpawnTweakables { get; init; }
 
     /// <summary><see cref="GameTables.InteractionAnimationContainers"/>.</summary>
     public ImmutableArray<InteractionAnimationContainer> InteractionAnimationContainers { get; init; } = [];

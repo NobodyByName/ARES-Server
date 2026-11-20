@@ -14,24 +14,30 @@ public static class LootLimiterRules
     /// <see cref="LootLimiter.Radius"/> / 2 on each axis) or inside any convex part of its volumes. A point with a
     /// coordinate that is not finite is never covered.
     /// </summary>
-    /// <param name="limiter">The limiter.</param>
+    /// <param name="limiter">The limiter, with its shape and radius set (<see cref="LootLimiterDefaults.Apply"/>).</param>
     /// <param name="point">World location.</param>
     /// <returns>True when the limiter covers the point.</returns>
+    /// <exception cref="ArgumentException">The limiter's shape or radius is not set.</exception>
     public static bool IsPointInside(LootLimiter limiter, Vector3D point)
     {
         ArgumentNullException.ThrowIfNull(limiter);
+        if (limiter is not { Shape: { } shape, Radius: { } radius })
+        {
+            throw new ArgumentException($"The shape or radius of limiter {limiter.Actor} is not set.", nameof(limiter));
+        }
+
         if (!double.IsFinite(point.X) || !double.IsFinite(point.Y) || !double.IsFinite(point.Z))
         {
             return false;
         }
 
         Vector3D offset = new(point.X - limiter.Location.X, point.Y - limiter.Location.Y, point.Z - limiter.Location.Z);
-        switch (limiter.Shape)
+        switch (shape)
         {
             case LootLimiterShape.Sphere:
-                return Dot(offset, offset) <= limiter.Radius * limiter.Radius;
+                return Dot(offset, offset) <= radius * radius;
             case LootLimiterShape.Box:
-                double half = limiter.Radius / 2;
+                double half = radius / 2;
                 return Math.Abs(Dot(offset, limiter.Rotation.Rotate(new Vector3D(1, 0, 0)))) <= half
                     && Math.Abs(Dot(offset, limiter.Rotation.Rotate(new Vector3D(0, 1, 0)))) <= half
                     && Math.Abs(Dot(offset, limiter.Rotation.Rotate(new Vector3D(0, 0, 1)))) <= half;
@@ -40,6 +46,19 @@ public static class LootLimiterRules
             default:
                 return false;
         }
+    }
+
+    /// <summary>Whether a limit entry caps a socket tag: it is not unlimited and its tag applies to the socket tag (<see cref="Matches"/>).</summary>
+    /// <param name="limit">The limit entry, with its members set (<see cref="LootLimiterDefaults.Apply"/>).</param>
+    /// <param name="socketTag">The socket's tag.</param>
+    /// <returns>True when the entry caps sockets of the tag.</returns>
+    /// <exception cref="ArgumentException">The entry's <see cref="LootLimit.Unlimited"/> is not set.</exception>
+    public static bool Caps(LootLimit limit, string socketTag)
+    {
+        ArgumentNullException.ThrowIfNull(limit);
+        return limit.Unlimited is { } unlimited
+            ? !unlimited && Matches(limit.Tag, socketTag)
+            : throw new ArgumentException($"Whether the limit of {limit.Tag} is unlimited is not set.", nameof(limit));
     }
 
     /// <summary>Whether a limit entry's tag applies to a socket tag: it is the tag itself or one of its parents, without case.</summary>
@@ -59,7 +78,7 @@ public static class LootLimiterRules
 }
 
 /// <summary>How a raid picks the container sockets that get a container.</summary>
-/// <param name="Limiters">The map's placement limiters.</param>
+/// <param name="Limiters">The map's placement limiters, with every member set (<see cref="LootLimiterDefaults.Apply"/>).</param>
 /// <param name="Areas">The map's points of interest; those with a loot value scale the chance of the sockets inside them.</param>
 /// <param name="Chance">Chance from 0 to 1 that a socket of a tag rolls a container, given the loot value of the area around it.</param>
 /// <param name="Rolls">False to give every socket a container, with no roll and no cap.</param>
@@ -77,16 +96,23 @@ public static class LootLimiterRules
 /// Factor of a loot value (<see cref="LootSpawnSettings.Multiplier"/>) that scales the group fills of operator rules
 /// (<see cref="LootFill.Draw"/>); null for 1 everywhere.
 /// </param>
+/// <param name="MaxPerGroup">
+/// Most containers per group of a type that does not set its own <see cref="LootContainerType.MaxPerGroup"/>
+/// (<see cref="LootSpawnSettings.MaxPerGroup"/>); no cap by default.
+/// </param>
 public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOnlyList<PointOfInterest> Areas, Func<string, PointOfInterestLootValue, double> Chance, bool Rolls,
     FreeStandingLoot? FreeStanding = null, bool GroupCaps = true, Func<string, PointOfInterestLootValue, double>? LooseChance = null,
-    Func<PointOfInterestLootValue, double>? AreaMultiplier = null)
+    Func<PointOfInterestLootValue, double>? AreaMultiplier = null, int MaxPerGroup = int.MaxValue)
 {
     /// <summary>The factor a group fill's weights get in an area of a loot value: <see cref="AreaMultiplier"/>'s, else 1.</summary>
     /// <param name="value">The loot value of the area around the group.</param>
     /// <returns>The factor.</returns>
     public double GroupFillMultiplier(PointOfInterestLootValue value) => AreaMultiplier?.Invoke(value) ?? 1;
 
-    /// <summary>A map's rules with the content's spawn settings: their chances, and limiters and group caps when they enable them.</summary>
+    /// <summary>
+    /// A map's rules with the content's spawn settings: their chances, and limiters (with the settings' defaults for what
+    /// they leave unset) and group caps when they enable them.
+    /// </summary>
     /// <param name="map">The map's data.</param>
     /// <param name="spawn">The spawn settings.</param>
     /// <returns>The rules.</returns>
@@ -94,7 +120,8 @@ public sealed record LootSpawnRules(IReadOnlyList<LootLimiter> Limiters, IReadOn
     {
         ArgumentNullException.ThrowIfNull(map);
         ArgumentNullException.ThrowIfNull(spawn);
-        return new LootSpawnRules(spawn.Limiters ? map.LootLimiters : [], map.PointsOfInterest, spawn.Chance, true, FreeStandingLoot.Of(map, spawn), spawn.GroupCaps, spawn.LooseChance, spawn.Multiplier);
+        return new LootSpawnRules(spawn.Limiters ? [.. map.LootLimiters.Select(spawn.LimiterDefaults.Apply)] : [], map.PointsOfInterest, spawn.Chance, true,
+            FreeStandingLoot.Of(map, spawn), spawn.GroupCaps, spawn.LooseChance, spawn.Multiplier, spawn.MaxPerGroup);
     }
 
     /// <summary>A container on every socket, none off the sockets, and no loose items.</summary>
@@ -113,7 +140,8 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
     /// Rolls the sockets of a raid. The sockets take turns in a random order; each rolls its tag's chance (scaled by
     /// the loot value of the area around it, see <see cref="LootValueAreas"/>), and a
     /// successful roll spawns unless the socket's group (the sockets of one placed component with the same tag)
-    /// already holds the type's <see cref="LootContainerType.MaxPerGroup"/> containers, or a limiter of an active data
+    /// already holds the type's <see cref="LootContainerType.MaxPerGroup"/> containers (else the rules'
+    /// <see cref="LootSpawnRules.MaxPerGroup"/>), or a limiter of an active data
     /// layer that covers the socket has reached the cap of a limited entry matching its tag. A spawn counts towards
     /// every such entry.
     /// </summary>
@@ -134,7 +162,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
         ArgumentNullException.ThrowIfNull(sockets);
         ArgumentNullException.ThrowIfNull(rules);
         Placement[] placements = [.. sockets.Select(socket => new Placement(socket.ContainerTag, socket.Location, (socket.Cell, socket.Actor, socket.Component, socket.ContainerTag.ToUpperInvariant()),
-            loot.FindContainerType(socket.ContainerTag) ?.MaxPerGroup ?? int.MaxValue))];
+            loot.FindContainerType(socket.ContainerTag) is { } type ? type.MaxPerGroup ?? rules.MaxPerGroup : int.MaxValue))];
         return Select(placements, rules, rules.Chance, activeDataLayers, random, setChances);
     }
 
@@ -208,7 +236,7 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
             }
 
             List<(int Limiter, int Entry)> entries = Entries(limiters, socket);
-            if (entries.Exists(entry => spawned[entry.Limiter][entry.Entry] >= limiters[entry.Limiter].Limits[entry.Entry].Limit))
+            if (entries.Exists(entry => spawned[entry.Limiter][entry.Entry] >= Limit(limiters[entry.Limiter].Limits[entry.Entry])))
             {
                 limiterCaps++;
                 continue;
@@ -240,14 +268,14 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
         for (int limiter = 0; limiter < limiters.Count; limiter++)
         {
             IReadOnlyList<LootLimit> limits = limiters[limiter].Limits;
-            if (!limits.Any(limit => !limit.Unlimited && LootLimiterRules.Matches(limit.Tag, socket.Tag)) || !LootLimiterRules.IsPointInside(limiters[limiter], socket.Location))
+            if (!limits.Any(limit => LootLimiterRules.Caps(limit, socket.Tag)) || !LootLimiterRules.IsPointInside(limiters[limiter], socket.Location))
             {
                 continue;
             }
 
             for (int entry = 0; entry < limits.Count; entry++)
             {
-                if (!limits[entry].Unlimited && LootLimiterRules.Matches(limits[entry].Tag, socket.Tag))
+                if (LootLimiterRules.Caps(limits[entry], socket.Tag))
                 {
                     entries.Add((limiter, entry));
                 }
@@ -256,6 +284,9 @@ public sealed record LootSpawnSelection(IReadOnlyList<bool> Spawns, IReadOnlyLis
 
         return entries;
     }
+
+    private static int Limit(LootLimit limit) =>
+        limit.Limit ?? throw new ArgumentException($"The limit of {limit.Tag} is not set.", nameof(limit));
 
     // A socket as the rolls see it: its tag, where it is, its group and the most spawns its group takes.
     private sealed record Placement(string Tag, Vector3D Location, (string, string, string, string) Group, int GroupCap);

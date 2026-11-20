@@ -13,20 +13,36 @@ internal sealed record LootSpawnDocument(
     [property: JsonPropertyName("chances")] IReadOnlyDictionary<string, double> Chances,
     [property: JsonPropertyName("areaMultipliers")] IReadOnlyDictionary<string, double> AreaMultipliers,
     [property: JsonPropertyName("groupCaps")] bool GroupCaps,
+    [property: JsonPropertyName("maxPerGroup")] int MaxPerGroup,
     [property: JsonPropertyName("limiters")] bool Limiters,
+    [property: JsonPropertyName("limiterDefaults")] LootLimiterDefaultsDocument LimiterDefaults,
     [property: JsonPropertyName("spawnerClasses")] IReadOnlyList<string> SpawnerClasses,
+    [property: JsonPropertyName("spawnerCount")] int SpawnerCount,
     [property: JsonPropertyName("looseChances")] IReadOnlyDictionary<string, double> LooseChances);
+
+/// <summary>What a placement limiter uses for the members its map leaves unset, in <c>loot-spawn.json</c>.</summary>
+internal sealed record LootLimiterDefaultsDocument(
+    [property: JsonPropertyName("shape")] string Shape,
+    [property: JsonPropertyName("radius")] double Radius,
+    [property: JsonPropertyName("unlimited")] bool Unlimited,
+    [property: JsonPropertyName("limit")] int Limit);
 
 /// <summary><c>loot-contents.json</c>: what loot containers hold.</summary>
 internal sealed record LootContentsDocument(
     [property: JsonPropertyName("excludedDropTags")] IReadOnlyList<string> ExcludedDropTags,
     [property: JsonPropertyName("tiers")] IReadOnlyList<LootTierDocument> Tiers,
     [property: JsonPropertyName("firstStackTier")] string? FirstStackTier,
+    [property: JsonPropertyName("targetStacks")] IReadOnlyList<LootTargetStacksDocument> TargetStacks,
     [property: JsonPropertyName("tablePools")] IReadOnlyList<LootTablePoolDocument> TablePools,
     [property: JsonPropertyName("extraStack")] LootExtraStackDocument ExtraStack,
     [property: JsonPropertyName("typePools")] IReadOnlyList<LootTypePoolDocument> TypePools,
     [property: JsonPropertyName("looseItems")] LooseItemsDocument LooseItems,
     [property: JsonPropertyName("profiles")] IReadOnlyList<LootProfileDocument>? Profiles = null);
+
+/// <summary>A weighted number of stacks, in <c>loot-contents.json</c>.</summary>
+internal sealed record LootTargetStacksDocument(
+    [property: JsonPropertyName("target")] int Target,
+    [property: JsonPropertyName("weight")] double Weight);
 
 /// <summary>What loose item sockets hold, in <c>loot-contents.json</c>.</summary>
 internal sealed record LooseItemsDocument(
@@ -150,9 +166,19 @@ internal static class LootSettingsContent
             names.ContainerClass(path, "spawnerClasses");
         }
 
+        if (document.MaxPerGroup < 0)
+        {
+            throw invalid("maxPerGroup must be 0 or more");
+        }
+
+        if (document.SpawnerCount < 1)
+        {
+            throw invalid("spawnerCount must be 1 or more");
+        }
+
         return new LootSpawnSettings(chances.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase), names.AreaFactors(document.AreaMultipliers, "areaMultipliers"),
-            document.GroupCaps, document.Limiters, document.SpawnerClasses.ToFrozenSet(StringComparer.Ordinal),
-            looseChances.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase));
+            document.GroupCaps, document.MaxPerGroup, document.Limiters, LimiterDefaults(document.LimiterDefaults, invalid), document.SpawnerClasses.ToFrozenSet(StringComparer.Ordinal),
+            document.SpawnerCount, looseChances.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>Checks the content settings.</summary>
@@ -237,8 +263,39 @@ internal static class LootSettingsContent
             typePools.Add(new LootTypePool(pool.Name, classes, tags, names.Count(pool.Stacks, $"{where} stacks"), names.Entries(pool.Entries, where)));
         }
 
-        return new LootContentSettings(document.ExcludedDropTags, tiers, document.FirstStackTier, tablePools, extra, typePools,
+        return new LootContentSettings(document.ExcludedDropTags, tiers, document.FirstStackTier, TargetStacks(document.TargetStacks, names, invalid), tablePools, extra, typePools,
             Profiles(document.Profiles ?? [], tiers, names, invalid), LooseItems(document.LooseItems, names, invalid));
+    }
+
+    private static LootLimiterDefaults LimiterDefaults(LootLimiterDefaultsDocument document, Func<string, AresContentException> invalid)
+    {
+        if (!Enum.GetNames<LootLimiterShape>().Contains(document.Shape, StringComparer.Ordinal))
+        {
+            throw invalid($"limiterDefaults: {document.Shape} is not a limiter shape ({string.Join(", ", Enum.GetNames<LootLimiterShape>())})");
+        }
+
+        if (!(double.IsFinite(document.Radius) && document.Radius >= 0) || document.Limit < 0)
+        {
+            throw invalid("limiterDefaults: radius and limit must be 0 or more");
+        }
+
+        return new LootLimiterDefaults(Enum.Parse<LootLimiterShape>(document.Shape), document.Radius, document.Unlimited, document.Limit);
+    }
+
+    private static List<LootTargetStacks> TargetStacks(IReadOnlyList<LootTargetStacksDocument> targets, Names names, Func<string, AresContentException> invalid)
+    {
+        names.NoNulls(targets, "targetStacks");
+        if (targets.Count == 0 || targets.Any(target => target.Target < 1))
+        {
+            throw invalid("targetStacks must list at least one target, each of 1 or more stacks");
+        }
+
+        foreach (LootTargetStacksDocument target in targets)
+        {
+            names.Weight(target.Weight, $"the weight of {target.Target} target stacks");
+        }
+
+        return [.. targets.Select(target => new LootTargetStacks(target.Target, target.Weight))];
     }
 
     private static List<LootProfile> Profiles(IReadOnlyList<LootProfileDocument> documents, List<LootTier> tiers, Names names, Func<string, AresContentException> invalid)

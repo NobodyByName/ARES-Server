@@ -7,6 +7,7 @@ using Ares.Raid.World.Inventory;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Game.Inventory;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.World;
 
 namespace Ares.Raid.Tests;
 
@@ -47,6 +48,14 @@ internal static class TestGameData
     /// <summary>The loot definitions.</summary>
     public static LootData Loot => Data.Loot;
 
+    /// <summary>The Dam's loot placement limiters with the shipped spawn settings' defaults for what they leave unset.</summary>
+    public static IReadOnlyList<LootLimiter> DamLimiters => [.. Dam.LootLimiters.Select(Raid.LootSpawn.LimiterDefaults.Apply)];
+
+    /// <summary>The most containers per group of a container tag's type, with the shipped spawn settings' default.</summary>
+    /// <param name="tag">The container tag.</param>
+    /// <returns>The group cap.</returns>
+    public static int GroupCap(string tag) => Loot.FindContainerType(tag)!.MaxPerGroup ?? Raid.LootSpawn.MaxPerGroup;
+
     /// <summary>The graph state tag bits.</summary>
     public static GraphTagBits Tags => Data.Names.GraphTags;
 
@@ -54,7 +63,7 @@ internal static class TestGameData
     public static GraphStateFlags Flags => Data.Names.GraphFlags;
 
     /// <summary>Seconds from a press on an elevator's call button to its arrival (<see cref="ExtractionStates.CallSeconds"/>).</summary>
-    public static double CallSeconds => new ExtractionStates(Dam, 0).CallSeconds;
+    public static double CallSeconds => new ExtractionStates(Dam, Raid.Settings, 0).CallSeconds;
 
     /// <summary>The menu asset id of a catalogue item, for theory data that names items by their technical name.</summary>
     /// <param name="technicalName">The item's technical name, or null.</param>

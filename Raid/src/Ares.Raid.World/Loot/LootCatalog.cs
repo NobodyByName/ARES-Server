@@ -118,7 +118,7 @@ public sealed class LootCatalog
         _rolls = gameData.LootRolls;
         _lootRules = gameData.LootRules;
         LootRules lootRules = _lootRules;
-        _cullDistance = _loot.ContainerDefaults.NetCullDistance;
+        _cullDistance = gameData.Settings.LootCullDistance;
         LootData loot = _loot;
         ArgumentNullException.ThrowIfNull(sockets);
         ArgumentNullException.ThrowIfNull(meshes);
@@ -230,7 +230,7 @@ public sealed class LootCatalog
             {
                 run++;
                 bool operatorSet = set.GetValueOrDefault(spawner) is not null;
-                foreach (DynamicLootPlacement placement in DynamicLootRuns.Run(spawner, random))
+                foreach (DynamicLootPlacement placement in DynamicLootRuns.Run(spawner, free.SpawnerCount, random))
                 {
                     if (!operatorSet && !free.SpawnerClassEnabled(placement.Class))
                     {
