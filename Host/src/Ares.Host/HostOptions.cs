@@ -1,6 +1,7 @@
 using System.Globalization;
 using Ares.Common.Game;
 using Ares.Host.Services;
+using Ares.Structs.Backend.Bootstrap;
 using Ares.Structs.Core;
 
 namespace Ares.Host;
@@ -63,6 +64,8 @@ internal static class HostOptions
         "Folder with the ARES content files (ARES ships content/), passed to every raid", "content");
     internal static HostOption StashUpgradeCoins { get; } = new("stash-upgrade-coins", "<list>", "Coin price of each stash upgrade, comma-separated from the first",
         DefaultNote: "the game's prices");
+    internal static HostOption ClientFeatureFlags { get; } = new("client-feature-flags", "<list>",
+        "Client feature flags turned on, comma-separated; !name turns one off", ClientFeatureFlagNames.PeriodicSyncOfInventory);
     internal static HostOption AuthKeyFile { get; } = new("auth-key-file", "<f>", "Identity signing key, 32-4096 bytes", DefaultNote: "none; tokens are not checked");
     internal static HostOption ArchiveKeysFile { get; } = new("archive-keys-file", "<f>", "Game archive keys for ARES-Launcher, required", "archive-keys.txt");
     internal static HostOption ServerName { get; } = new("server-name", "<text>", "Shown in launcher server lists", HostSettings.DefaultServerName);
@@ -80,7 +83,7 @@ internal static class HostOptions
     internal static IReadOnlyList<HostOption> Settings { get; } =
     [
         Port, Bind, PublicOrigin, AllowNetworkClients, MongoDbUri, MongoDbUriFile, MongoDbDatabase, RaidExecutable, SessionControlTokenFile,
-        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, LootCullDistance, ExtractionSeconds, ExtractionReadySeconds, GameDataDirectory, ContentDirectory, StashUpgradeCoins, AuthKeyFile,
+        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, LootCullDistance, ExtractionSeconds, ExtractionReadySeconds, GameDataDirectory, ContentDirectory, StashUpgradeCoins, ClientFeatureFlags, AuthKeyFile,
         ArchiveKeysFile, ServerName, Motd, GameBuildId, RaidCapacity, LogFile, Console,
     ];
 

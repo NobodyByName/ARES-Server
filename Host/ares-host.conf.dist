@@ -80,6 +80,12 @@ content-dir = content
 # comma-separated. Empty: 5000, 10000, 15000, 25000, 40000, 60000, 90000, 130000, 200000, 750000, 1500000.
 stash-upgrade-coins =
 
+# CLIENT
+# Game client feature flags Host turns on for every player, comma-separated; !name turns one off.
+# periodic_sync_of_inventory makes the main menu fetch the inventory again every 15 seconds, so
+# items added from this console show up without restarting the game. Empty: the game's own defaults.
+client-feature-flags = periodic_sync_of_inventory
+
 # CONSOLE AND LOGGING
 # auto, interactive, plain or json. auto selects interactive output in a terminal.
 console = auto

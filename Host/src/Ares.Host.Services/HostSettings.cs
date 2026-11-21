@@ -47,6 +47,9 @@ public sealed record HostSettings
     /// <summary>Coin price of each stash upgrade, for the tiers of the stash content Host serves.</summary>
     public required StashUpgradePrices StashUpgrades { get; init; }
 
+    /// <summary>Client feature flags the manifest overrides: flag name to enabled.</summary>
+    public IReadOnlyDictionary<string, bool> ClientFeatureFlags { get; init; } = new Dictionary<string, bool>();
+
     /// <summary>Scale factor applied to the bootstrap reply delays some routes need (tests use 0).</summary>
     public double RouteDelayScale { get; init; } = 1.0;
 }

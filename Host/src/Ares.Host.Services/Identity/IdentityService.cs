@@ -88,9 +88,9 @@ public sealed class IdentityService(HostSettings settings, AccountDirectory acco
         long now = time.GetUtcNow().ToUnixTimeSeconds();
         long id = request.ManifestId is { } manifestId and not 0 ? manifestId : BackendContent.Manifest.DefaultId;
         string buildId = request.BuildId ?? GameBuild.BuildIdentifier;
-        return new ManifestResponse(id, buildId, request.PlaytestId ?? 0,
-            contentHash, contentHash,
-            new UnknownManifestBody(), new UnknownManifestBody(), now, now - 3600, now + 86400);
+        Dictionary<string, string> body = settings.ClientFeatureFlags.ToDictionary(
+            flag => ManifestKeys.GameFlagPrefix + flag.Key, flag => flag.Value ? "true" : "false", StringComparer.Ordinal);
+        return new ManifestResponse(id, buildId, request.PlaytestId ?? 0, contentHash, contentHash, body, body, now, now - 3600, now + 86400);
     }
 
     /// <summary>Reports the requested build as current for <c>POST /v1/shared/build/v2/latest</c>.</summary>

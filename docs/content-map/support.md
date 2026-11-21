@@ -146,7 +146,9 @@ inventory add DA_Item_GrindCurrency 5000
 
 `inventory add <technical-name> [quantity]` adds a new stack; quantity defaults to one and must
 fit that item's stack limit. Existing stacks remain unchanged. Full stashes and raid reservations
-reject grants. Starter provisioning still supplies only one rubber duck.
+reject grants. Starter provisioning still supplies only one rubber duck. Clients at the main menu show granted items
+within 15 seconds without a restart while `client-feature-flags` in `ares-host.conf` turns on `periodic_sync_of_inventory`
+(the default).
 
 Limitations:
 

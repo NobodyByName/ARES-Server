@@ -17,7 +17,8 @@ namespace Ares.Host;
 /// <param name="Accounts">Account directory.</param>
 /// <param name="Players">Player registry.</param>
 /// <param name="Raids">Running raids; null when matchmaking starts none.</param>
-internal sealed record HostServices(AccountDirectory Accounts, PlayerRegistry Players, RaidFleet? Raids);
+/// <param name="MenuInventorySync">Whether clients at the main menu fetch their inventory again every 15 seconds.</param>
+internal sealed record HostServices(AccountDirectory Accounts, PlayerRegistry Players, RaidFleet? Raids, bool MenuInventorySync = false);
 
 /// <summary>The Host console's commands: account, inventory and raid administration.</summary>
 /// <param name="log">Event log, for raid replies that arrive later.</param>
@@ -294,7 +295,7 @@ internal sealed class HostCommands(JsonEventLog log)
                 ImportInventory(inventory, Remainder(line, 3).Trim('"'), reply);
                 break;
             case "add":
-                AddInventoryItem(inventory, words[3..], reply);
+                AddInventoryItem(inventory, words[3..], services.MenuInventorySync, reply);
                 break;
             default:
                 reply($"Use inventory <account> [{string.Join('|', s_inventoryCommands)}]. Type help for details.");
@@ -316,7 +317,7 @@ internal sealed class HostCommands(JsonEventLog log)
         }
     }
 
-    private static void AddInventoryItem(InventoryStore inventory, string[] parts, Action<string> reply)
+    private static void AddInventoryItem(InventoryStore inventory, string[] parts, bool menuInventorySync, Action<string> reply)
     {
         try
         {
@@ -327,7 +328,9 @@ internal sealed class HostCommands(JsonEventLog log)
             }
 
             inventory.AddItem(parts[0], DateTimeOffset.UtcNow, quantity);
-            reply($"Added {quantity} x {parts[0]}. Start a fresh client to refresh inventory.");
+            reply(menuInventorySync
+                ? $"Added {quantity} x {parts[0]}. Clients at the main menu show it within 15 seconds."
+                : $"Added {quantity} x {parts[0]}. Start a fresh client to refresh inventory.");
         }
         catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or OverflowException)
         {

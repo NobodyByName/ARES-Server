@@ -130,6 +130,7 @@ public sealed record HostConfiguration
         }
 
         string? stashUpgradeCoins = EmptyToNull(file.GetString(HostOptions.StashUpgradeCoins));
+        IReadOnlyDictionary<string, bool> clientFeatureFlags = ReadClientFeatureFlags(file.GetString(HostOptions.ClientFeatureFlags) ?? "");
         string consoleMode = file.GetString(HostOptions.Console)!;
         string? logFile = file.GetPath(HostOptions.LogFile);
         file.RejectUnknown();
@@ -200,6 +201,7 @@ public sealed record HostConfiguration
                 MongoDbUri = mongoUri,
                 MongoDbDatabase = mongoDatabase,
                 StashUpgrades = stashUpgrades,
+                ClientFeatureFlags = clientFeatureFlags,
             },
             ConsoleMode = consoleMode,
             LogFile = logFile,
@@ -213,6 +215,25 @@ public sealed record HostConfiguration
     }
 
     private static string? EmptyToNull(string? value) => value == "" ? null : value;
+
+    // "name, !other": name on, other off; the game's flag names are lowercase snake case.
+    private static Dictionary<string, bool> ReadClientFeatureFlags(string text)
+    {
+        Dictionary<string, bool> flags = new(StringComparer.Ordinal);
+        foreach (string part in text.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            bool enabled = !part.StartsWith('!');
+            string name = enabled ? part : part[1..];
+            if (name.Length is 0 or > 128 || !name.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_'))
+            {
+                throw new CommandLineException("--client-feature-flags expects flag names of lowercase letters, digits and _, each optionally prefixed with !");
+            }
+
+            flags[name] = enabled;
+        }
+
+        return flags;
+    }
 
     private static StashUpgradePrices ReadStashUpgrades(StashContent stash, string text)
     {

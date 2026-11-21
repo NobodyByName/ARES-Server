@@ -6,6 +6,7 @@ using Ares.Common.Game.Content;
 using Ares.Common.Testing;
 using Ares.Host.Services;
 using Ares.Structs.Backend;
+using Ares.Structs.Backend.Bootstrap;
 using Ares.Structs.Backend.Progression;
 using Ares.Structs.Core;
 
@@ -78,6 +79,7 @@ public sealed class ConfigurationFileTests : IDisposable
         Assert.Null(configuration.LogFile);
         Assert.Equal("auto", configuration.ConsoleMode);
         Assert.Equal(ArchiveKeysTests.DummySha256, configuration.Settings.ArchiveKeys.Fingerprint());
+        Assert.Equal(new Dictionary<string, bool> { [ClientFeatureFlagNames.PeriodicSyncOfInventory] = true }, configuration.Settings.ClientFeatureFlags);
     }
 
     [Fact]
@@ -201,11 +203,23 @@ public sealed class ConfigurationFileTests : IDisposable
     [InlineData("archive-keys-file =", "must not be empty")]
     [InlineData("stash-upgrade-coins = 1, 2, 3", "--stash-upgrade-coins expects 11 comma-separated coin prices")]
     [InlineData("stash-upgrade-coins = 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1", "--stash-upgrade-coins expects 11")]
+    [InlineData("client-feature-flags = Periodic", "--client-feature-flags expects flag names")]
+    [InlineData("client-feature-flags = !", "--client-feature-flags expects flag names")]
     [InlineData("config = another.conf", "unknown setting")]
     public void Bad_files_fail_explicitly(string content, string expected)
     {
         Write(content);
         Assert.Contains(expected, Assert.Throws<CommandLineException>(() => Parse()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Client_feature_flags_turn_flags_on_and_off_or_keep_the_game_defaults()
+    {
+        Write("client-feature-flags = periodic_sync_of_inventory, !periodic_sync_of_manifest");
+        Assert.Equal(new Dictionary<string, bool> { ["periodic_sync_of_inventory"] = true, ["periodic_sync_of_manifest"] = false },
+            Parse().Settings.ClientFeatureFlags);
+        Write("client-feature-flags =");
+        Assert.Empty(Parse().Settings.ClientFeatureFlags);
     }
 
     [Fact]
