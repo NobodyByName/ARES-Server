@@ -14,15 +14,15 @@ public sealed record ManifestRequest(
 /// <summary>Response of <c>POST /v1/shared/manifest</c>: the remote build manifest.</summary>
 public sealed record ManifestResponse(
     [property: JsonPropertyName("id")] long Id,
-    [property: JsonPropertyName("build_id")] string BuildId,
-    [property: JsonPropertyName("playtest_id")] long PlaytestId,
-    [property: JsonPropertyName("partitioning_hash")] string PartitioningHash,
-    [property: JsonPropertyName("non_partitioning_hash")] string NonPartitioningHash,
-    [property: JsonPropertyName("partitioning_body")] UnknownManifestBody PartitioningBody,
-    [property: JsonPropertyName("non_partitioning_body")] UnknownManifestBody NonPartitioningBody,
-    [property: JsonPropertyName("retrieved_at")] long RetrievedAt,
-    [property: JsonPropertyName("valid_from")] long ValidFrom,
-    [property: JsonPropertyName("valid_until")] long ValidUntil);
+    [property: JsonPropertyName("buildId")] string BuildId,
+    [property: JsonPropertyName("playtestId")] long PlaytestId,
+    [property: JsonPropertyName("partitioningHash")] string PartitioningHash,
+    [property: JsonPropertyName("nonPartitioningHash")] string NonPartitioningHash,
+    [property: JsonPropertyName("partitioningBody")] UnknownManifestBody PartitioningBody,
+    [property: JsonPropertyName("nonPartitioningBody")] UnknownManifestBody NonPartitioningBody,
+    [property: JsonPropertyName("retrievedAt")] long RetrievedAt,
+    [property: JsonPropertyName("validFrom")] long ValidFrom,
+    [property: JsonPropertyName("validUntil")] long ValidUntil);
 
 /// <summary>Manifest body; members not decoded yet.</summary>
 public sealed record UnknownManifestBody;
