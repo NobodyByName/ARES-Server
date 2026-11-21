@@ -38,6 +38,9 @@ public sealed record OutgoingBunch(ReliableKey Key, ChannelBunch Bunch, long Wir
     /// <summary>Packets carrying it that left the packet history without an acknowledgement.</summary>
     public int Evictions { get; set; }
 
+    /// <summary>When it was queued (the sender's <see cref="ReliableSender.Now"/>).</summary>
+    public double QueuedAt { get; init; }
+
     /// <summary>A short description for diagnostics.</summary>
     /// <param name="now">Current time in seconds.</param>
     /// <returns>The description.</returns>
@@ -46,6 +49,25 @@ public sealed record OutgoingBunch(ReliableKey Key, ChannelBunch Bunch, long Wir
         + $"must-be-mapped {Bunch.MustBeMapped}, close {Bunch.CloseReason?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "none"}): "
         + $"{Attempts} sends over {now - (FirstSentAt ?? now):0.0} s, {Naks} reported lost, {Evictions} unanswered";
 }
+
+/// <summary>Reliable delivery of one connection over an interval: how long completed bunches waited and what is still waiting.</summary>
+/// <param name="Delivered">Reliable bunches completed in the interval.</param>
+/// <param name="AverageSeconds">Average time from queueing to completion.</param>
+/// <param name="MaxSeconds">Longest time from queueing to completion.</param>
+/// <param name="MaxChannel">Channel of the bunch that waited longest.</param>
+/// <param name="MaxSendWaitSeconds">Longest time from queueing to the first send.</param>
+/// <param name="MaxAttempts">Most sends of one completed bunch.</param>
+/// <param name="Backlog">Reliable bunches waiting now.</param>
+/// <param name="OldestPendingSeconds">Age of the oldest waiting reliable bunch.</param>
+public sealed record DeliveryTimings(
+    int Delivered,
+    double AverageSeconds,
+    double MaxSeconds,
+    int MaxChannel,
+    double MaxSendWaitSeconds,
+    int MaxAttempts,
+    int Backlog,
+    double OldestPendingSeconds);
 
 /// <summary>Identifies a queued bunch.</summary>
 /// <param name="Channel">Channel index.</param>
@@ -82,6 +104,7 @@ public sealed class ReliableSender
     private readonly Dictionary<ReliableKey, bool> _outcomes = [];
     private readonly Queue<ReliableKey> _outcomeOrder = new();
     private int _nextUnreliable;
+    private (int Count, double Total, double Max, int MaxChannel, double MaxSendWait, int MaxAttempts) _waits;
 
     /// <summary>Creates a sender.</summary>
     /// <param name="outgoingSeed">First outgoing packet sequence (from the handshake cookie).</param>
@@ -121,6 +144,8 @@ public sealed class ReliableSender
         _outcomes = new Dictionary<ReliableKey, bool>(other._outcomes);
         _outcomeOrder = new Queue<ReliableKey>(other._outcomeOrder);
         _nextUnreliable = other._nextUnreliable;
+        _waits = other._waits;
+        Now = other.Now;
     }
 
     /// <summary>Last packet sent.</summary>
@@ -128,6 +153,9 @@ public sealed class ReliableSender
 
     /// <summary>Last packet the peer acknowledged.</summary>
     private int LastAck { get; set; }
+
+    /// <summary>Raid clock for delivery timings, set before the connection's work on each packet and poll.</summary>
+    public double Now { get; set; }
 
     /// <summary>Channels whose opening bunch was acknowledged.</summary>
     public IReadOnlySet<int> OpenAcknowledged => _openAcknowledged;
@@ -187,7 +215,7 @@ public sealed class ReliableSender
         _next[channel] = sequence;
         queue.Enqueue(key);
         _queues[channel] = queue;
-        _records[key] = new OutgoingBunch(key, bunch, writer.Length);
+        _records[key] = new OutgoingBunch(key, bunch, writer.Length) { QueuedAt = Now };
         _order.Add(key);
         if (bunch.Opened)
         {
@@ -424,6 +452,7 @@ public sealed class ReliableSender
                 OutgoingBunch record = _records[key];
                 _records.Remove(key);
                 delivered.Add(record);
+                CountWait(record);
                 if (record.Bunch.Opened)
                 {
                     _openAcknowledged.Add(channel);
@@ -456,6 +485,25 @@ public sealed class ReliableSender
         }
 
         return delivered;
+    }
+
+    /// <summary>The delivery timings since the last call, and what waits now; starts a new interval.</summary>
+    /// <returns>The timings.</returns>
+    public DeliveryTimings TakeTimings()
+    {
+        OutgoingBunch[] waiting = [.. _records.Values.Where(record => record.Key.Sequence >= 0)];
+        (int count, double total, double max, int channel, double sendWait, int attempts) = _waits;
+        _waits = default;
+        return new DeliveryTimings(count, count == 0 ? 0 : total / count, max, channel, sendWait, attempts, waiting.Length,
+            waiting.Length == 0 ? 0 : Now - waiting.Min(record => record.QueuedAt));
+    }
+
+    private void CountWait(OutgoingBunch record)
+    {
+        double wait = Now - record.QueuedAt;
+        (int count, double total, double max, int channel, double sendWait, int attempts) = _waits;
+        _waits = (count + 1, total + wait, Math.Max(max, wait), wait > max ? record.Key.Channel : channel,
+            Math.Max(sendWait, (record.FirstSentAt ?? Now) - record.QueuedAt), Math.Max(attempts, record.Attempts));
     }
 
     // An unreliable bunch's packet was answered (or forgotten): it leaves the queue and its outcome is kept a while.

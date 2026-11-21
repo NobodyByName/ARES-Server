@@ -123,6 +123,11 @@ public sealed class RaidConnections
     /// <summary>Connections with their player channels (null before Join).</summary>
     public IReadOnlyList<(IPEndPoint Peer, IPlayerChannels? Player)> Players => [.. _states.Select(entry => (entry.Key, entry.Value.Player))];
 
+    /// <summary>A connection's reliable delivery timings since the last call (see <see cref="ReliableSender.TakeTimings"/>).</summary>
+    /// <param name="peer">The connection.</param>
+    /// <returns>The timings, or null for an unknown connection.</returns>
+    public DeliveryTimings? TakeDeliveryTimings(IPEndPoint peer) => _states.TryGetValue(peer, out ConnectionState? state) ? state.Io.Sender.TakeTimings() : null;
+
     /// <summary>Handles a datagram from a peer.</summary>
     /// <param name="datagram">The datagram.</param>
     /// <param name="peer">Its sender.</param>
@@ -218,6 +223,7 @@ public sealed class RaidConnections
             try
             {
                 ConnectionState state = previous.Copy();
+                state.Io.Sender.Now = now;
                 if (state.Login is { } login)
                 {
                     _authenticator.Validate(login);
@@ -276,6 +282,7 @@ public sealed class RaidConnections
 
         ConnectionPacket incoming = ConnectionPacket.Read(new BitReader(envelope.Payload, envelope.PayloadBits), fromServer: false, MaxPacketBytes);
         ConnectionState state = previous?.Copy() ?? ConnectionState.Create(connection, _keepaliveInterval);
+        state.Io.Sender.Now = _clock();
         if (!state.Cookie.AsSpan().SequenceEqual(connection.Cookie))
         {
             return new ConnectionResult(null, ConnectionEvent.InvalidPacket, "Connection cookie changed");

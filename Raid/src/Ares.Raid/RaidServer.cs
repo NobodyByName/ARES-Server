@@ -214,14 +214,41 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
         }
 
         JsonArray players = [];
-        foreach (PlayerChannels channels in connections.Players.Select(entry => entry.Player).OfType<PlayerChannels>())
+        foreach ((IPEndPoint peer, IPlayerChannels? player) in connections.Players)
         {
-            players.Add(PlayerTraffic(channels));
+            if (player is not PlayerChannels channels)
+            {
+                continue;
+            }
+
+            JsonObject traffic = PlayerTraffic(channels);
+            if (connections.TakeDeliveryTimings(peer) is { } delivery)
+            {
+                traffic["delivery"] = DeliveryTraffic(delivery);
+            }
+
+            players.Add(traffic);
         }
 
         log.Write(new JsonObject { ["raid_traffic"] = events, ["connections"] = connections.Count, ["players"] = players });
         _counts.Clear();
     }
+
+    // Reliable delivery over the interval, in milliseconds: queued to acknowledged (average, worst and the worst one's
+    // channel), queued to first sent, most sends of one bunch, and what still waits.
+    private static JsonObject DeliveryTraffic(DeliveryTimings delivery) => new()
+    {
+        ["delivered"] = delivery.Delivered,
+        ["average_ms"] = Milliseconds(delivery.AverageSeconds),
+        ["max_ms"] = Milliseconds(delivery.MaxSeconds),
+        ["max_channel"] = delivery.MaxChannel,
+        ["max_send_wait_ms"] = Milliseconds(delivery.MaxSendWaitSeconds),
+        ["max_attempts"] = delivery.MaxAttempts,
+        ["backlog"] = delivery.Backlog,
+        ["oldest_pending_ms"] = Milliseconds(delivery.OldestPendingSeconds),
+    };
+
+    private static long Milliseconds(double seconds) => (long)Math.Round(seconds * 1000);
 
     private static JsonObject PlayerTraffic(PlayerChannels channels)
     {

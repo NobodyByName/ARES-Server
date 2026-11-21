@@ -52,6 +52,23 @@ public sealed class ReliableChannelTests
     }
 
     [Fact]
+    public void Delivery_timings_report_waits_from_queueing_to_completion_and_what_still_waits()
+    {
+        ReliableSender sender = new(10) { Now = 1 };
+        ReliableKey open = sender.Queue(Queued(3, "A", opened: true));
+        sender.Sent(10, [open], 1.5);
+        sender.Now = 2;
+        ReliableKey waiting = sender.Queue(Queued(3, "B"));
+        sender.Acknowledge(Ack(0, 10, 1));
+        sender.Now = 2.25;
+
+        // The open waited 1 s to complete (0.5 s before its send); the update waits 0.25 s so far.
+        Assert.Equal(new DeliveryTimings(1, 1, 1, 3, 0.5, 1, 1, 0.25), sender.TakeTimings());
+        Assert.True(sender.Pending(waiting));
+        Assert.Equal(new DeliveryTimings(0, 0, 0, 0, 0, 0, 1, 0.25), sender.TakeTimings());
+    }
+
+    [Fact]
     public void Unreliable_bunches_are_sent_once_and_report_whether_they_arrived()
     {
         ReliableSender sender = new(10);
