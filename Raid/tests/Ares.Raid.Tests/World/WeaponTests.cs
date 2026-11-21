@@ -483,6 +483,45 @@ public sealed class WeaponTests
     }
 
     [Fact]
+    public void An_equip_request_waits_while_movement_blocks_equipping_then_goes_through()
+    {
+        RaidInventory inventory = new(TestGameData.Items, WithWeapons());
+        RaidWeapons weapons = new(inventory, TestGameData.Data);
+        ContainerItem?[] slots = [.. inventory.Containers[inventory.Loadout].Items];
+        Dictionary<Guid, ulong> objects = new()
+        {
+            [slots[InventoryBlackboard.Firearm1Slot]!.Id] = 30,
+            [slots[InventoryBlackboard.UnarmedSlot]!.Id] = 34,
+        };
+        weapons.Apply(new WeaponInput(30, 0, 0, 0), objects);
+        uint version = weapons.Version;
+
+        // On a ladder the request is neither handled nor reported as handled: the Ferro stays in hand.
+        weapons.Apply(new WeaponInput(40, 0, 34, 1), objects, equipBlocked: true);
+        weapons.Apply(new WeaponInput(50, 0, 34, 1), objects, equipBlocked: true);
+        Expect(50, WeaponProtocol.EquipPhaseIdle, WeaponProtocol.FirstWeaponSlot, WeaponProtocol.NoItemHandle, 0);
+        Assert.Equal(version, weapons.Version);
+        Assert.True(weapons.Armed);
+
+        // The first frame without the block handles the still-pending request.
+        weapons.Apply(new WeaponInput(51, 0, 34, 1), objects);
+        Expect(51, WeaponProtocol.EquipPhaseUnequipping, WeaponProtocol.FirstWeaponSlot, WeaponProtocol.UnarmedHandle, 1);
+        Assert.NotEqual(version, weapons.Version);
+        return;
+
+        void Expect(uint frame, int phase, int current, int target, ulong change)
+        {
+            PendulumVariable node = weapons.Variables(frame, objects).Single(item => item.Slot == WeaponProtocol.InventorySlot);
+            byte[] value = PendulumCodec.Default.Value(node.DescriptorId, node.Values);
+            IReadOnlyList<PendulumField> fields = PendulumRegistry.Descriptors[node.DescriptorId].Fields;
+            Assert.Equal((ulong)phase, PendulumCodec.Integer(fields[WeaponProtocol.InventoryEquipPhaseField], value));
+            Assert.Equal((ulong)current, PendulumCodec.Integer(fields[WeaponProtocol.InventoryCurrentField], value));
+            Assert.Equal((ulong)target, PendulumCodec.Integer(fields[WeaponProtocol.InventoryTargetField], value));
+            Assert.Equal(change, PendulumCodec.Integer(fields[WeaponProtocol.InventoryEquipChangeField], value));
+        }
+    }
+
+    [Fact]
     public void Switching_puts_the_held_item_away_then_draws_the_next()
     {
         RaidInventory inventory = new(TestGameData.Items, WithWeapons());

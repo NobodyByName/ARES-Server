@@ -269,14 +269,15 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         if (Phase == DeliveryPhase.Possessed && _frames.Frame != 0 && InputFrame is { } latest)
         {
             // Late input frames revise the ticks they reach, even when no newer frame arrived. Each newly simulated frame
-            // moves with the weapon its own input left in the character's hands.
+            // moves with the weapon its own input left in the character's hands, and an equip request waits while the
+            // frame before it blocks equipping.
             _frames.Movement?.Revise(_input);
             Queue<WeaponInput> weapons = new(_weaponRequests.Where(input => input.Frame < latest).OrderBy(input => input.Frame));
             while (_frames.Movement is { } movement && movement.Frame + 1 < latest)
             {
                 while (weapons.TryPeek(out WeaponInput input) && input.Frame <= movement.Frame + 1)
                 {
-                    _member.Weapons.Apply(weapons.Dequeue(), _frames.ItemsLinked ? _player.HeldItems : null);
+                    _member.Weapons.Apply(weapons.Dequeue(), _frames.ItemsLinked ? _player.HeldItems : null, movement.EquipBlocked);
                 }
 
                 movement.Advance(_input, _member.Weapons.Armed, _member.Weapons.HeldItem);
@@ -284,7 +285,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
             foreach (WeaponInput input in weapons)
             {
-                _member.Weapons.Apply(input, _frames.ItemsLinked ? _player.HeldItems : null);
+                _member.Weapons.Apply(input, _frames.ItemsLinked ? _player.HeldItems : null, _frames.Movement?.EquipBlocked ?? false);
             }
 
             _weaponRequests.RemoveAll(input => input.Frame < latest);

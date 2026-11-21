@@ -138,7 +138,11 @@ public sealed class RaidWeapons(RaidInventory inventory, GameDataSet data)
     /// <summary>Applies each accepted input frame once; packet retries cannot duplicate a shot or reload.</summary>
     /// <param name="input">The client's weapon controls.</param>
     /// <param name="itemObjects">Network ids of the held item objects the client can name as an equip target.</param>
-    public void Apply(WeaponInput input, IReadOnlyDictionary<Guid, ulong>? itemObjects = null)
+    /// <param name="equipBlocked">
+    /// Whether the character's movement blocks equipping (ladder, roll, vault, heavy landing). The request then stays
+    /// unhandled, as the client's inventory node leaves it, and goes through on the first frame the block has ended.
+    /// </param>
+    public void Apply(WeaponInput input, IReadOnlyDictionary<Guid, ulong>? itemObjects = null, bool equipBlocked = false)
     {
         if (input.Frame <= _frame)
         {
@@ -157,7 +161,7 @@ public sealed class RaidWeapons(RaidInventory inventory, GameDataSet data)
 
         DropQuickItemsOutsideTheBelt(frame);
         StartQueuedSwitch(frame);
-        if (input.EquipChange != _handledEquipChange)
+        if (input.EquipChange != _handledEquipChange && !equipBlocked)
         {
             // The client names the item it wants in hand: a firearm, the Raider Tool, empty hands or a quick-use item
             // in the belt. Other targets keep the current item.

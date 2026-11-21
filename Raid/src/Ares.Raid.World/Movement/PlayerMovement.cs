@@ -168,6 +168,11 @@ public sealed class PlayerMovement
     /// <summary>State after the latest simulated frame.</summary>
     public CharacterState Latest => _simulation.State;
 
+    /// <summary>
+    /// Whether the latest simulated frame holds the movement's equip block, which the next frame's equip request reads.
+    /// </summary>
+    public bool EquipBlocked => (Latest.GraphFlags(_data) & _data.Names.GraphTags.AbilityBlockEquipItemPendulumMove.Mask) != 0;
+
     /// <summary>An independent copy for speculative packet processing.</summary>
     /// <returns>The copy.</returns>
     public PlayerMovement Copy()
