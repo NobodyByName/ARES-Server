@@ -48,9 +48,9 @@ public enum AdminRefusal
 /// </summary>
 public sealed partial class PlayerChannels
 {
-    // How far in front of a container's prompt a teleport to it puts the character, and the height above the
-    // container's base it starts from (it then settles on the floor).
-    private const double LootTeleportDistance = 150;
+    // How far past its prompt's depth, on a container's front, a teleport to it puts the character, and the height
+    // above the container's base it starts from (it then settles on the floor).
+    private const double LootTeleportDistance = 90;
     private const double LootTeleportLift = 50;
 
     // How far in front of the character a spawned container stands.
@@ -124,7 +124,7 @@ public sealed partial class PlayerChannels
         return AdminRefusal.None;
     }
 
-    /// <summary>Moves the character in front of a container's prompt, facing it.</summary>
+    /// <summary>Moves the character in front of a container, facing its prompt.</summary>
     /// <param name="index">Index in <see cref="LootContainers"/>.</param>
     /// <returns>Why it could not, or <see cref="AdminRefusal.None"/>.</returns>
     public AdminRefusal TeleportToLoot(int index)
@@ -135,17 +135,13 @@ public sealed partial class PlayerChannels
         }
 
         LootContainer container = _raid.Loot.Containers[index];
+        // Stand on the container's front (its +X; the prompt is often on a side), past the prompt's depth, facing the
+        // prompt so it stays within reach. Only the yaw turns it: with its pitch, a tilted container (a machine door)
+        // aims the teleport into geometry.
+        double depth = Math.Max(container.Class.PromptLocation.X, 0) + LootTeleportDistance;
+        Vector3D front = new Rotator(0, container.Rotation.Yaw, 0).Rotate(new Vector3D(depth, 0, 0));
+        Vector3D destination = new(container.Location.X + front.X, container.Location.Y + front.Y, container.Location.Z + LootTeleportLift);
         Vector3D prompt = container.Prompt;
-        (double outX, double outY) = (prompt.X - container.Location.X, prompt.Y - container.Location.Y);
-        double length = Math.Sqrt((outX * outX) + (outY * outY));
-        if (length < 1)
-        {
-            Vector3D forward = container.Rotation.Rotate(new Vector3D(1, 0, 0));
-            (outX, outY, length) = (forward.X, forward.Y, Math.Sqrt((forward.X * forward.X) + (forward.Y * forward.Y)));
-        }
-
-        Vector3D destination = new(prompt.X + (outX / length * LootTeleportDistance), prompt.Y + (outY / length * LootTeleportDistance),
-            container.Location.Z + LootTeleportLift);
         return Teleport(destination, Math.Atan2(prompt.Y - destination.Y, prompt.X - destination.X));
     }
 

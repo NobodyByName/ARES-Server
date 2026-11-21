@@ -52,7 +52,7 @@ public sealed class AdminTests
     }
 
     [Fact]
-    public void A_teleport_to_a_container_stands_the_character_in_front_of_its_prompt_facing_it()
+    public void A_teleport_to_a_container_stands_the_character_on_its_front_facing_its_prompt()
     {
         ScriptedPlayer session = new();
         Settled(session, session.Member.Spawn.Location);
@@ -60,12 +60,37 @@ public sealed class AdminTests
 
         Assert.Equal(AdminRefusal.NoSuchContainer, session.Channels.TeleportToLoot(session.Raid.Loot.Containers.Count));
         Assert.Equal(AdminRefusal.None, session.Channels.TeleportToLoot(container.Index));
+        AssertOnFront(session, container, container.Rotation.Yaw);
+    }
 
+    [Fact]
+    public void A_teleport_to_a_tilted_container_uses_its_yaw_only_and_its_front_not_the_prompt_side()
+    {
+        ScriptedPlayer session = new();
+        Settled(session, session.Member.Spawn.Location);
+
+        // A class whose prompt is on a side (+Y, the container's right): the teleport still lands on the front.
+        LootContainerClass type = LootSocketClasses.ServedClasses(TestGameData.Loot).First(item => Math.Abs(item.PromptLocation.Y) >= 30);
+        LootContainer? container = session.Raid.Loot.Spawn(type, session.Member.Spawn.Location, new Rotator(70, 30, 20));
+        Assert.NotNull(container);
+
+        Assert.Equal(AdminRefusal.None, session.Channels.TeleportToLoot(container.Index));
+        AssertOnFront(session, container, 30);
+    }
+
+    private static void AssertOnFront(ScriptedPlayer session, LootContainer container, double yaw)
+    {
+        double depth = Math.Max(container.Class.PromptLocation.X, 0) + 90;
+        double radians = yaw * Math.PI / 180;
         Vector3D at = session.Channels.CharacterPosition!.Value;
-        Vector3D prompt = container.Prompt;
-        Assert.Equal(150, Math.Sqrt(((at.X - prompt.X) * (at.X - prompt.X)) + ((at.Y - prompt.Y) * (at.Y - prompt.Y))), 3);
+        Assert.Equal(container.Location.X + (depth * Math.Cos(radians)), at.X, 3);
+        Assert.Equal(container.Location.Y + (depth * Math.Sin(radians)), at.Y, 3);
         Assert.Equal(container.Location.Z + 50, at.Z, 3);
+
+        // Facing the prompt, within its reach.
+        Vector3D prompt = container.Prompt;
         Assert.Equal(Math.Atan2(prompt.Y - at.Y, prompt.X - at.X), session.Channels.CharacterYaw!.Value, 6);
+        Assert.True(Math.Sqrt(((at.X - prompt.X) * (at.X - prompt.X)) + ((at.Y - prompt.Y) * (at.Y - prompt.Y))) < container.Class.PromptDistance);
     }
 
     [Fact]
