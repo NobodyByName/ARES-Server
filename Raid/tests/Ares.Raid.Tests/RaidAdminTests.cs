@@ -21,6 +21,7 @@ public sealed class RaidAdminTests
     [InlineData("spawn-arc", "wasp", "42")]
     [InlineData("spawn-arc", "WASP", "Alice")]
     [InlineData("despawn-arcs")]
+    [InlineData("extract", "Alice")]
     public void Valid_commands_are_read(string name, params string[] arguments)
     {
         (AdminRequest? request, IReadOnlyList<string> problem) = RaidAdmin.Parse(TestGameData.Loot, new AdminCommand(name, arguments));
@@ -40,6 +41,8 @@ public sealed class RaidAdminTests
     [InlineData("spawn-arc", "42", "wasp")]
     [InlineData("spawn-arc", "wasp")]
     [InlineData("despawn-arcs", "42")]
+    [InlineData("extract")]
+    [InlineData("extract", "42", "now")]
     [InlineData("kill", "42")]
     public void Invalid_commands_explain_themselves(string name, params string[] arguments)
     {

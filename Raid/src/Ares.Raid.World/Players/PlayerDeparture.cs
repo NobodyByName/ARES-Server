@@ -1,3 +1,4 @@
+using System.Globalization;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Replication;
@@ -7,8 +8,9 @@ using Ares.Structs.Net.GameplayTags;
 namespace Ares.Raid.World.Players;
 
 /// <summary>
-/// A player's departure with an extraction elevator: once an elevator left with the player inside, the end of their
-/// round on the controller, step by step, until the end of the round or the fallback back to the main menu.
+/// A player's departure with an extraction elevator: once an elevator left with the player inside (or an operator
+/// extracted them), the end of their round on the controller, step by step, until the end of the round or the fallback
+/// back to the main menu.
 /// </summary>
 internal sealed class PlayerDeparture
 {
@@ -16,9 +18,11 @@ internal sealed class PlayerDeparture
     // to say it is ready for the end of the round before sending it back to the main menu instead.
     private const double FallbackSeconds = 20.0;
 
-    // This player's departure with an elevator (its index and the server world time it left), the export naming the
-    // controller's end-of-round component, and the server world times of each end-of-round step.
-    private (int Elevator, double At)? _departure;
+    // This player's departure (the elevator's index, null for an operator extraction, and the server world time it
+    // left), whether an operator asked for an extraction, the export naming the controller's end-of-round component,
+    // and the server world times of each end-of-round step.
+    private (int? Elevator, double At)? _departure;
+    private bool _requested;
     private ReliableKey? _endOfRoundExport;
     private double? _transitionAt;
     private double? _readyAt;
@@ -32,12 +36,12 @@ internal sealed class PlayerDeparture
     public bool Transitioning => _transitionAt is not null;
 
     /// <summary>
-    /// The departure as elevator@server time it left, then each end-of-round step with its server time: transition (the
+    /// The departure as elevator@server time it left (operator@ for an operator extraction), then each end-of-round step with its server time: transition (the
     /// client starts its end of round), ready (the client is ready for it), end (the end of round sent) or fallback (no
     /// ready in time: sent back to the main menu). Empty before a departure.
     /// </summary>
     public string Summary => _departure is not { } departure ? string.Empty : string.Join(' ', ((string?[])[
-        $"{departure.Elevator}@{PlayerChannels.Seconds(departure.At)}",
+        $"{departure.Elevator?.ToString(CultureInfo.InvariantCulture) ?? "operator"}@{PlayerChannels.Seconds(departure.At)}",
         _transitionAt is { } transition ? $"transition@{PlayerChannels.Seconds(transition)}" : null,
         _readyAt is { } ready ? $"ready@{PlayerChannels.Seconds(ready)}" : null,
         _endAt is { } end ? $"end@{PlayerChannels.Seconds(end)}" : null,
@@ -47,6 +51,19 @@ internal sealed class PlayerDeparture
     /// <summary>Copies the departure for speculative packet processing; it holds values only.</summary>
     /// <returns>The copy.</returns>
     public PlayerDeparture Copy() => (PlayerDeparture)MemberwiseClone();
+
+    /// <summary>An operator extracts the player: the departure follows at the next tick, without an elevator.</summary>
+    /// <returns>False when the player has already departed or an extraction is already on its way.</returns>
+    public bool Request()
+    {
+        if (_departure is not null || _requested)
+        {
+            return false;
+        }
+
+        _requested = true;
+        return true;
+    }
 
     /// <summary>The client says it is ready for the end of the round; the first time counts.</summary>
     /// <param name="raid">The raid, whose clock gives the time.</param>
@@ -69,7 +86,7 @@ internal sealed class PlayerDeparture
         double at = raid.WorldSeconds(now);
         if (_departure is null)
         {
-            if (LeftWithElevator(player, at) is not { } departure)
+            if ((LeftWithElevator(player, at) ?? (_requested ? (null, at) : null)) is not { } departure)
             {
                 return;
             }
@@ -126,7 +143,7 @@ internal sealed class PlayerDeparture
     }
 
     // The elevator that left with this player inside and when it left (its doors closed), once it has.
-    private static (int Elevator, double At)? LeftWithElevator(IPlayerChannelsContext player, double at)
+    private static (int? Elevator, double At)? LeftWithElevator(IPlayerChannelsContext player, double at)
     {
         RaidWorld raid = player.Raid;
         foreach (ExtractionPoint point in raid.Extraction.Points)

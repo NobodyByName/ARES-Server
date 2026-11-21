@@ -18,7 +18,7 @@ public enum AdminRefusal
     /// <summary>The character is not possessed yet.</summary>
     NotPossessed,
 
-    /// <summary>The player has left with an elevator.</summary>
+    /// <summary>The player has extracted (an elevator left with them, or an operator extracted them).</summary>
     Departed,
 
     /// <summary>An earlier teleport has not reached the client yet.</summary>
@@ -195,6 +195,21 @@ public sealed partial class PlayerChannels
         double facing = (((yaw * 180 / Math.PI) + 180) % 360 + 360) % 360;
         arc = _raid.Arcs.Spawn(type, location, new Rotator(0, Math.Round(facing, 1), 0));
         return arc is null ? AdminRefusal.NoArcIds : AdminRefusal.None;
+    }
+
+    /// <summary>
+    /// Extracts the player on the spot: at the next tick their round ends as if an elevator had left with them inside,
+    /// so they keep their whole loadout.
+    /// </summary>
+    /// <returns>Why it could not, or <see cref="AdminRefusal.None"/>.</returns>
+    public AdminRefusal Extract()
+    {
+        if (Phase != DeliveryPhase.Possessed)
+        {
+            return AdminRefusal.NotPossessed;
+        }
+
+        return _departure.Request() ? AdminRefusal.None : AdminRefusal.Departed;
     }
 
     /// <summary>Despawns every ARC of the raid.</summary>

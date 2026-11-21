@@ -166,6 +166,30 @@ public sealed class DepartureTests
         Assert.False(first.Raid.Ended);
     }
 
+    [Fact]
+    public void An_operator_extraction_ends_the_round_without_an_elevator()
+    {
+        ScriptedPlayer session = new();
+        Assert.Equal(AdminRefusal.NotPossessed, session.Channels.Extract());
+        session.Possess();
+        (_, double at) = session.Settle(30, 101, session.Member.Spawn.Location);
+
+        Assert.Equal(AdminRefusal.None, session.Channels.Extract());
+        Assert.Equal(AdminRefusal.Departed, session.Channels.Extract());
+        Assert.False(session.Member.Departed);
+
+        session.Sent.Clear();
+        session.Service(at + 0.05);
+        Assert.Equal(FunctionNames.ClientNotifyExtracted, Assert.Single(Calls(session)).Name);
+        Assert.True(session.Member.Departed);
+        Assert.Equal(RaidOutcomes.Extracted, session.Member.End?.Outcome);
+        Assert.Matches(@"^operator@\d+\.\d{3}$", session.Channels.Departure);
+        Assert.All(session.Raid.Extraction.Points, point => Assert.Null(session.Raid.ExtractionStates.Departure(point.Index)));
+
+        session.Service(at + 0.1);
+        Assert.Matches(@"^operator@\d+\.\d{3} transition@\d+\.\d{3}$", session.Channels.Departure);
+    }
+
     // A settled player standing inside elevator 0's zone, and when that elevator leaves on its own after a call
     // (its extraction time over, then its doors closed); serviced up to just before.
     internal static (ScriptedPlayer Session, double Leaves) Departing(PlayerLoadout? loadout = null)

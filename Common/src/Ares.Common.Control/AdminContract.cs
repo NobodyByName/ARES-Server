@@ -42,6 +42,9 @@ public static class AdminApi
     /// <summary>Despawns every ARC of the raid.</summary>
     public const string DespawnArcs = "despawn-arcs";
 
+    /// <summary>Extracts a player on the spot, as if an elevator had left with them inside.</summary>
+    public const string Extract = "extract";
+
     /// <summary>The call carried no valid operator token.</summary>
     public const string AuthenticationRequired = "operator_authentication_required";
 
@@ -64,7 +67,7 @@ public static class AdminApi
     public const string Busy = "raid_busy";
 
     /// <summary>Command names.</summary>
-    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot, SpawnArc, DespawnArcs];
+    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot, SpawnArc, DespawnArcs, Extract];
 
     /// <summary>Commands that act on one player, and where the player is among their arguments.</summary>
     public static IReadOnlyDictionary<string, int> PlayerArgument { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
@@ -73,6 +76,7 @@ public static class AdminApi
         [TeleportToLoot] = 0,
         [SpawnLoot] = 0,
         [SpawnArc] = 1,
+        [Extract] = 0,
     };
 
     /// <summary>One line per command: its arguments and what it does. A player is a user id or an in-game name.</summary>
@@ -84,5 +88,6 @@ public static class AdminApi
         "spawn-loot <player> <class>  Spawn a loot container (class name or path) in front of a player",
         $"spawn-arc <arc> <player>  Spawn an ARC ({string.Join(", ", Arcs.All.Select(arc => arc.Name))}) in front of a player, at head height",
         "despawn-arcs  Despawn every ARC of the raid",
+        "extract <player>  Extract a player on the spot: they keep their whole loadout, as after an elevator",
     ];
 }

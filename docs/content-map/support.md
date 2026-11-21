@@ -83,8 +83,8 @@ to their stack limit. Searching several kinds of containers, taking items, split
 loot home by extraction are stock-client verified with one player.
 
 Operators can steer running raids from the Host console: `raid list` shows the running raids, and
-`raid <raid-id> <command>` sends `players`, `teleport`, `teleport-to-loot`, `spawn-loot`, `spawn-arc`
-or `despawn-arcs` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
+`raid <raid-id> <command>` sends `players`, `teleport`, `teleport-to-loot`, `spawn-loot`, `spawn-arc`,
+`despawn-arcs` or `extract` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
 is also shown in the game's bottom-right corner. These are development tools.
 
 With [game data](../../README.md#game-data) configured, each raid loads the map's collision when it

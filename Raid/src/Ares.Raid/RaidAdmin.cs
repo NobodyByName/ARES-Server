@@ -145,6 +145,8 @@ public sealed class RaidAdmin : IAdminService
                     : (null, [$"No supported ARC is named {words[0]}; supported: {string.Join(", ", Arcs.All.Select(item => item.Name))}."]);
             case (AdminApi.DespawnArcs, 0):
                 return (new AdminRequest(AdminApi.DespawnArcs), []);
+            case (AdminApi.Extract, 1):
+                return (new AdminRequest(AdminApi.Extract, words[0]), []);
             default:
                 return (null, Usage());
         }
@@ -208,6 +210,7 @@ public sealed class RaidAdmin : IAdminService
                 AdminApi.Teleport => Teleport(target, request.Position!.Value, request.YawDegrees),
                 AdminApi.TeleportToLoot => TeleportToLoot(target, request),
                 AdminApi.SpawnArc => SpawnArc(target, request.Arc!),
+                AdminApi.Extract => Extract(target),
                 _ => SpawnLoot(target, request.Class!),
             };
         }
@@ -261,11 +264,19 @@ public sealed class RaidAdmin : IAdminService
             : Refused(refusal);
     }
 
+    private static AdminResult Extract(PlayerChannels player)
+    {
+        AdminRefusal refusal = player.Extract();
+        return refusal == AdminRefusal.None
+            ? AdminResult.Success([$"Extracting {player.UserId}: the end-of-round screen follows, then the main menu."])
+            : Refused(refusal);
+    }
+
     private static AdminResult Refused(AdminRefusal refusal) => refusal switch
     {
         AdminRefusal.NoSuchContainer => AdminResult.Failure(StatusCodes.Status404NotFound, "no_such_container", ["No container has that index."]),
         AdminRefusal.NotPossessed => AdminResult.Failure(StatusCodes.Status409Conflict, "player_not_possessed", ["The player's character is not possessed yet."]),
-        AdminRefusal.Departed => AdminResult.Failure(StatusCodes.Status409Conflict, "player_departed", ["The player has left with an elevator."]),
+        AdminRefusal.Departed => AdminResult.Failure(StatusCodes.Status409Conflict, "player_departed", ["The player has already extracted."]),
         AdminRefusal.TeleportPending => AdminResult.Failure(StatusCodes.Status409Conflict, "teleport_pending", ["An earlier teleport has not reached the client yet."]),
         AdminRefusal.Busy => AdminResult.Failure(StatusCodes.Status409Conflict, "player_busy", ["The player is breaching, searching, looting or holding an elevator switch."]),
         AdminRefusal.OutOfRange => AdminResult.Failure(StatusCodes.Status400BadRequest, "position_out_of_range", ["The position is outside the map's range."]),
