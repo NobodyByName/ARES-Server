@@ -303,7 +303,7 @@ internal static class GameReplicationPropertiesPart0
     ];
 }
 
-/// <summary>Entries 236 to 419 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 236 to 420 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart1
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
@@ -388,6 +388,8 @@ internal static class GameReplicationPropertiesPart1
         new("/Script/Angelscript.ItemLootedEventEORD.ItemInstanceId", PropertyKind.StructProperty, "FGuid", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2, TypePath = "/Script/CoreUObject.Guid", StructFlags = (StructFlags)0x3E83BU, Children = ["/Script/CoreUObject.Guid.A", "/Script/CoreUObject.Guid.B", "/Script/CoreUObject.Guid.C", "/Script/CoreUObject.Guid.D"] },
         new("/Script/Angelscript.ItemLootedEventEORD.PickupLocation", PropertyKind.StructProperty, "FVector", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 4, TypePath = "/Script/CoreUObject.Vector", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Vector.X", "/Script/CoreUObject.Vector.Y", "/Script/CoreUObject.Vector.Z"] },
         new("/Script/Angelscript.ItemLootedEventEORD.Timestamp", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001040000205UL),
+        new("/Script/Angelscript.LockedRoomExploitPreventionArea.SystemState", PropertyKind.EnumProperty, "ELockedRoomExploitPreventionAreaState", (PropertyFlags)0x8001140000224UL) { TypePath = "/Script/Angelscript.ELockedRoomExploitPreventionAreaState", Underlying = "/Script/Angelscript.LockedRoomExploitPreventionArea.SystemState.UnderlyingType" },
+        new("/Script/Angelscript.LockedRoomExploitPreventionArea.SystemState.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.LootContainer.bIsLootable", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x8001140000225UL),
         new("/Script/Angelscript.LootContainerSingle.CurrentOpenTime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001140000220UL),
         new("/Script/Angelscript.LootInteractionComponent.FirstOpenedServerTime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x8001140000220UL) { LayoutIndex = 2 },
@@ -491,15 +493,15 @@ internal static class GameReplicationPropertiesPart1
         new("/Script/Angelscript.PioneerCharacterAttributeSet.RecoilModifier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 15, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
         new("/Script/Angelscript.PioneerCharacterAttributeSet.RevivingSpeedMultiplier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 19, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
         new("/Script/Angelscript.PioneerCharacterAttributeSet.RunSpeedModifier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 6, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
-        new("/Script/Angelscript.PioneerCharacterAttributeSet.ScavangeSpeedMultiplier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 20, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
     ];
 }
 
-/// <summary>Entries 420 to 658 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 421 to 657 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart2
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/Angelscript.PioneerCharacterAttributeSet.ScavangeSpeedMultiplier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 20, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
         new("/Script/Angelscript.PioneerCharacterAttributeSet.SpottingDistance", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
         new("/Script/Angelscript.PioneerCharacterAttributeSet.SprintSpeedModifier", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 8, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
         new("/Script/Angelscript.PioneerCharacterAttributeSet.Stamina", PropertyKind.StructProperty, "FAngelscriptGameplayAttributeData", (PropertyFlags)0x100000025UL) { LayoutIndex = 21, TypePath = "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData", StructFlags = (StructFlags)0x1001U, Children = ["/Script/GameplayAbilities.GameplayAttributeData.BaseValue", "/Script/GameplayAbilities.GameplayAttributeData.CurrentValue", "/Script/AngelscriptGAS.AngelscriptGameplayAttributeData.AttributeName"] },
@@ -736,17 +738,17 @@ internal static class GameReplicationPropertiesPart2
         new("/Script/Angelscript.QuantizedVectorInt8.MinRange", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x80010C0000201UL) { LayoutIndex = 3 },
         new("/Script/Angelscript.QuantizedVectorInt8.X", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL),
         new("/Script/Angelscript.QuantizedVectorInt8.Y", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 1 },
-        new("/Script/Angelscript.QuantizedVectorInt8.Z", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 2 },
-        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.CurrentProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 3 },
-        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.InitialProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2 },
     ];
 }
 
-/// <summary>Entries 659 to 933 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 658 to 932 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart3
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/Angelscript.QuantizedVectorInt8.Z", PropertyKind.Int8Property, "int8", (PropertyFlags)0x8001040002200UL) { LayoutIndex = 2 },
+        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.CurrentProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 3 },
+        new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.InitialProgress", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 2 },
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority", PropertyKind.EnumProperty, "EAnnouncementPriority", (PropertyFlags)0x8001040000205UL) { LayoutIndex = 4, TypePath = "/Script/Angelscript.EAnnouncementPriority", Underlying = "/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority.UnderlyingType" },
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.Priority.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Angelscript.QuestObjectiveAnnouncementInfoData.QuestId", PropertyKind.Int64Property, "int64", (PropertyFlags)0x8001040000205UL),
@@ -1019,17 +1021,17 @@ internal static class GameReplicationPropertiesPart3
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPackets", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 9 },
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPacketsLost", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
         new("/Script/EmbarkNetDriver.NetConnectionSnapshot.TotalOutOfOrderPacketsRecovered", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 11 },
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.ConnectionTimeout", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 1 },
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.CurrentNetSpeed", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 12 },
-        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalBytes", PropertyKind.Int64Property, "int64", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
     ];
 }
 
-/// <summary>Entries 934 to 1214 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 933 to 1214 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart4
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.ConnectionTimeout", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 1 },
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.CurrentNetSpeed", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 12 },
+        new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalBytes", PropertyKind.Int64Property, "int64", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 10 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.InTotalPackets", PropertyKind.IntProperty, "int32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 14 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.LastGoodPacketRealtime", PropertyKind.DoubleProperty, "double", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 3 },
         new("/Script/EmbarkNetDriver.NetworkConnectionInfo.LastProcessedFrame", PropertyKind.UInt32Property, "uint32", (PropertyFlags)0x18001040000200UL) { LayoutIndex = 15 },
@@ -1309,16 +1311,16 @@ internal static class GameReplicationPropertiesPart4
         new("/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace", PropertyKind.EnumProperty, "ECameraShakePlaySpace", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 2, TypePath = "/Script/Engine.ECameraShakePlaySpace", Underlying = "/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace.UnderlyingType" },
         new("/Script/Engine.PlayerController.ClientStartCameraShake.PlaySpace.UnderlyingType", PropertyKind.ByteProperty, "uint8", (PropertyFlags)0x8001040000200UL),
         new("/Script/Engine.PlayerController.ClientStartCameraShake.Scale", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 1 },
-        new("/Script/Engine.PlayerController.ClientStartCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
-        new("/Script/Engine.PlayerController.ClientStartCameraShake.UserPlaySpaceRot", PropertyKind.StructProperty, "FRotator", (PropertyFlags)0x10001040000280UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Rotator", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Rotator.pitch", "/Script/CoreUObject.Rotator.Yaw", "/Script/CoreUObject.Rotator.Roll"] },
     ];
 }
 
-/// <summary>Entries 1215 to 1418 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1215 to 1419 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart5
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/Engine.PlayerController.ClientStartCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
+        new("/Script/Engine.PlayerController.ClientStartCameraShake.UserPlaySpaceRot", PropertyKind.StructProperty, "FRotator", (PropertyFlags)0x10001040000280UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Rotator", StructFlags = (StructFlags)0x48EC3BU, Children = ["/Script/CoreUObject.Rotator.pitch", "/Script/CoreUObject.Rotator.Yaw", "/Script/CoreUObject.Rotator.Roll"] },
         new("/Script/Engine.PlayerController.ClientStopCameraShake.Shake", PropertyKind.ClassProperty, "TSubclassOf<UCameraShakeBase>", (PropertyFlags)0x1C001000000280UL) { TypePath = "/Script/CoreUObject.Class", MetaClassPath = "/Script/Engine.CameraShakeBase" },
         new("/Script/Engine.PlayerController.ClientStopCameraShake.bImmediately", PropertyKind.BoolProperty, "bool", (PropertyFlags)0x18001040000280UL) { LayoutIndex = 1 },
         new("/Script/Engine.PlayerController.ClientStopForceFeedback.ForceFeedbackEffect", PropertyKind.ObjectProperty, "UForceFeedbackEffect*", (PropertyFlags)0x18001000000280UL) { TypePath = "/Script/Engine.ForceFeedbackEffect" },
@@ -1522,15 +1524,15 @@ internal static class GameReplicationPropertiesPart5
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesAddedAndWhileActive_WithParams.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.EffectContext", PropertyKind.StructProperty, "FGameplayEffectContextHandle", (PropertyFlags)0x10000000000080UL) { LayoutIndex = 2, TypePath = "/Script/GameplayAbilities.GameplayEffectContextHandle", StructFlags = (StructFlags)0x1403U },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.GameplayCueTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000082UL) { TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
-        new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
     ];
 }
 
-/// <summary>Entries 1419 to 1606 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1420 to 1607 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart6
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.GameplayCueParameters", PropertyKind.StructProperty, "FGameplayCueParameters", (PropertyFlags)0x10008000000080UL) { LayoutIndex = 2, TypePath = "/Script/GameplayAbilities.GameplayCueParameters", StructFlags = (StructFlags)0x1405U, Children = ["/Script/GameplayAbilities.GameplayCueParameters.NormalizedMagnitude", "/Script/GameplayAbilities.GameplayCueParameters.RawMagnitude", "/Script/GameplayAbilities.GameplayCueParameters.EffectContext", "/Script/GameplayAbilities.GameplayCueParameters.MatchedTagName", "/Script/GameplayAbilities.GameplayCueParameters.OriginalTag", "/Script/GameplayAbilities.GameplayCueParameters.AggregatedSourceTags", "/Script/GameplayAbilities.GameplayCueParameters.AggregatedTargetTags", "/Script/GameplayAbilities.GameplayCueParameters.Location", "/Script/GameplayAbilities.GameplayCueParameters.Normal", "/Script/GameplayAbilities.GameplayCueParameters.Instigator", "/Script/GameplayAbilities.GameplayCueParameters.EffectCauser", "/Script/GameplayAbilities.GameplayCueParameters.SourceObject", "/Script/GameplayAbilities.GameplayCueParameters.PhysicalMaterial", "/Script/GameplayAbilities.GameplayCueParameters.GameplayEffectLevel", "/Script/GameplayAbilities.GameplayCueParameters.AbilityLevel", "/Script/GameplayAbilities.GameplayCueParameters.TargetAttachComponent", "/Script/GameplayAbilities.GameplayCueParameters.bReplicateLocationWhenUsingMinimalRepProxy", "/Script/GameplayAbilities.GameplayCueParameters.ServerTimestamp_Secs", "/Script/GameplayAbilities.GameplayCueParameters.AffectedPartIDs"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.GameplayCueTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000082UL) { TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
         new("/Script/GameplayAbilities.AbilitySystemComponent.NetMulticast_InvokeGameplayCuesExecuted_WithParams.PredictionKey", PropertyKind.StructProperty, "FPredictionKey", (PropertyFlags)0x18001000000080UL) { LayoutIndex = 1, TypePath = "/Script/GameplayAbilities.PredictionKey", StructFlags = (StructFlags)0x1403U, Children = ["/Script/GameplayAbilities.PredictionKey.Current", "/Script/GameplayAbilities.PredictionKey.base", "/Script/GameplayAbilities.PredictionKey.bIsServerInitiated"] },
@@ -1718,15 +1720,15 @@ internal static class GameReplicationPropertiesPart6
         new("/Script/GameplayAbilities.GameplayEventData.ContextHandle", PropertyKind.StructProperty, "FGameplayEffectContextHandle", (PropertyFlags)0x10000000000005UL) { LayoutIndex = 5, TypePath = "/Script/GameplayAbilities.GameplayEffectContextHandle", StructFlags = (StructFlags)0x1403U },
         new("/Script/GameplayAbilities.GameplayEventData.EventMagnitude", PropertyKind.FloatProperty, "float", (PropertyFlags)0x18001040000205UL) { LayoutIndex = 8 },
         new("/Script/GameplayAbilities.GameplayEventData.EventTag", PropertyKind.StructProperty, "FGameplayTag", (PropertyFlags)0x18001000000005UL) { TypePath = "/Script/GameplayTags.GameplayTag", StructFlags = (StructFlags)0x4E1401U, Children = ["/Script/GameplayTags.GameplayTag.TagName"] },
-        new("/Script/GameplayAbilities.GameplayEventData.Instigator", PropertyKind.ObjectProperty, "TObjectPtr<AActor>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 1, TypePath = "/Script/Engine.Actor" },
     ];
 }
 
-/// <summary>Entries 1607 to 1678 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 1608 to 1680 of the properties of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationPropertiesPart7
 {
     public static IReadOnlyList<PropertyDefinition> Entries { get; } =
     [
+        new("/Script/GameplayAbilities.GameplayEventData.Instigator", PropertyKind.ObjectProperty, "TObjectPtr<AActor>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 1, TypePath = "/Script/Engine.Actor" },
         new("/Script/GameplayAbilities.GameplayEventData.InstigatorTags", PropertyKind.StructProperty, "FGameplayTagContainer", (PropertyFlags)0x10000000000005UL) { LayoutIndex = 6, TypePath = "/Script/GameplayTags.GameplayTagContainer", StructFlags = (StructFlags)0x621C03U, Children = ["/Script/GameplayTags.GameplayTagContainer.GameplayTags", "/Script/GameplayTags.GameplayTagContainer.ParentTags"] },
         new("/Script/GameplayAbilities.GameplayEventData.OptionalObject", PropertyKind.ObjectProperty, "TObjectPtr<UObject>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 3, TypePath = "/Script/CoreUObject.Object" },
         new("/Script/GameplayAbilities.GameplayEventData.OptionalObject2", PropertyKind.ObjectProperty, "TObjectPtr<UObject>", (PropertyFlags)0x11C001000000205UL) { LayoutIndex = 4, TypePath = "/Script/CoreUObject.Object" },
@@ -1802,7 +1804,7 @@ internal static class GameReplicationPropertiesPart7
     ];
 }
 
-/// <summary>Entries 0 to 131 of the classes of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 0 to 132 of the classes of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationClassesPart0
 {
     public static IReadOnlyList<ClassSchema> Entries { get; } =
@@ -1908,6 +1910,7 @@ internal static class GameReplicationClassesPart0
             ], 0xD0674436U),
         new("/Script/Angelscript.ItemContainerComponent", (ClassFlags)0xE40804U, "/Script/Angelscript.ItemContainerComponentBase", ["/Script/Angelscript.ItemContainerComponent.OpenTime", "/Script/Angelscript.ItemContainerComponent.Content"], [], 0x4A9FB690U),
         new("/Script/Angelscript.ItemContainerComponentBase", (ClassFlags)0xE40804U, "/Script/Angelscript.LootComponentBase", ["/Script/Angelscript.ItemContainerComponentBase.SoundData"], [], 0x46721129U),
+        new("/Script/Angelscript.LockedRoomExploitPreventionArea", (ClassFlags)0xC40804U, "/Script/EmbarkGameplay.EmbarkActor", ["/Script/Angelscript.LockedRoomExploitPreventionArea.SystemState"], [], 0x6A35B2B1U),
         new("/Script/Angelscript.LootComponentBase", (ClassFlags)0xE40804U, "/Script/Engine.SceneComponent", [], [], 0x8318505BU),
         new("/Script/Angelscript.LootContainer", (ClassFlags)0xC40804U, "/Script/Angelscript.WorldItem", ["/Script/Angelscript.LootContainer.bIsLootable"], [], 0xA7965U),
         new("/Script/Angelscript.LootContainerSingle", (ClassFlags)0xC40804U, "/Script/Angelscript.LootContainer", ["/Script/Angelscript.LootContainerSingle.CurrentOpenTime"], [], 0xDC0B2D60U),
@@ -2108,7 +2111,7 @@ internal static class GameReplicationClassesPart0
     ];
 }
 
-/// <summary>Entries 132 to 164 of the classes of <see cref="GameReplication.Catalog"/>.</summary>
+/// <summary>Entries 133 to 165 of the classes of <see cref="GameReplication.Catalog"/>.</summary>
 internal static class GameReplicationClassesPart1
 {
     public static IReadOnlyList<ClassSchema> Entries { get; } =

@@ -921,6 +921,7 @@ public static class PropertyNames
     public const string Switch = "Switch";
     public const string SyncedAnimTag = "SyncedAnimTag";
     public const string SyncedAnimationTriggerData = "SyncedAnimationTriggerData";
+    public const string SystemState = "SystemState";
     public const string Tag = "Tag";
     public const string TagName = "TagName";
     public const string Tags = "Tags";

@@ -51,6 +51,7 @@ public static class ClassPaths
     public const string ItemContainerComponentBase = "/Script/Angelscript.ItemContainerComponentBase";
     public const string ItemDataAsset = "/Script/Angelscript.ItemDataAsset";
     public const string ItemDataAssetBase = "/Script/Angelscript.ItemDataAssetBase";
+    public const string LockedRoomExploitPreventionArea = "/Script/Angelscript.LockedRoomExploitPreventionArea";
     public const string LootComponentBase = "/Script/Angelscript.LootComponentBase";
     public const string LootContainer = "/Script/Angelscript.LootContainer";
     public const string LootContainerSingle = "/Script/Angelscript.LootContainerSingle";
@@ -376,6 +377,7 @@ public static class EnumPaths
     public const string EItemUseEffectPositionSource = "/Script/Angelscript.EItemUseEffectPositionSource";
     public const string ELatejoinState = "/Script/Angelscript.ELatejoinState";
     public const string ELoadoutSlot = "/Script/Angelscript.ELoadoutSlot";
+    public const string ELockedRoomExploitPreventionAreaState = "/Script/Angelscript.ELockedRoomExploitPreventionAreaState";
     public const string EMasteryObjectiveAnnouncementType = "/Script/Angelscript.EMasteryObjectiveAnnouncementType";
     public const string EPioneerPingBroadcastType = "/Script/Angelscript.EPioneerPingBroadcastType";
     public const string EPioneerPingIntent = "/Script/Angelscript.EPioneerPingIntent";
