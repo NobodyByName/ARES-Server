@@ -17,9 +17,6 @@ namespace Ares.Raid.World.Players;
 /// </summary>
 internal sealed class PlayerPawnFrames
 {
-    // Map actors sent before the character simulation settles crashed the client.
-    private const double MapActorStartDelay = 15.0;
-
     private ReliableKey[] _blackboardKeys = [];
     private IReadOnlyDictionary<int, PendulumSlot> _blackboardState = new Dictionary<int, PendulumSlot>();
     private ulong _blackboardFocus;
@@ -34,7 +31,6 @@ internal sealed class PlayerPawnFrames
     private uint _inventoryFrame;
     private uint _inventoryVersion = 1;
     private ContainerItem? _shield;
-    private double? _mapActorsAllowedAt;
 
     // The interaction the server runs for the character (a container search, a descend hold), times in raid world
     // seconds.
@@ -129,20 +125,6 @@ internal sealed class PlayerPawnFrames
         {
             InteractorExported = true;
         }
-    }
-
-    /// <summary>Whether map actors may be sent: the character simulation has started and settled.</summary>
-    /// <param name="now">Raid clock.</param>
-    /// <returns>True once they may.</returns>
-    public bool MapActorsAllowed(double now)
-    {
-        if (Frame == 0)
-        {
-            return false;
-        }
-
-        _mapActorsAllowedAt ??= now + MapActorStartDelay;
-        return now >= _mapActorsAllowedAt;
     }
 
     /// <summary>

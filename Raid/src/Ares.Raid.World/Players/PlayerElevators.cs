@@ -165,11 +165,6 @@ internal sealed class PlayerElevators : IPlayerFamily
         RaidWorld raid = player.Raid;
         raid.ExtractionStates.Advance(raid.WorldSeconds(now), raid.PlayersInside);
         ServiceDescent(player, sender, now);
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         foreach (ExtractionPoint point in raid.Extraction.Points)
         {
             (ElevatorChannel state, ReliableKey[] keys) = _elevators.GetValueOrDefault(point.Index, (ElevatorChannel.Closed, []));

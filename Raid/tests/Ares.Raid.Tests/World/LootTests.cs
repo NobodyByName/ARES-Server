@@ -154,7 +154,8 @@ public sealed class LootTests
     public void Relevant_containers_reach_the_client_nearest_first_a_few_at_a_time_and_go_dormant()
     {
         ScriptedPlayer session = new();
-        (_, double at) = Ready(session);
+        session.Possess();
+        double at = 100.0;
         int first = FirstLootChannel(session);
         LootContainer cabinet = Cabinet(session);
         Vector3D spawn = session.Member.Spawn.Location;

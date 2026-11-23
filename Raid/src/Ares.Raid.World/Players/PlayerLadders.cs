@@ -86,11 +86,6 @@ internal sealed class PlayerLadders : IPlayerFamily
         // Gives the client the climbable actor of each ladder in the cells it reports visible: exports the class
         // default and the placed ladder, spawns the actor attached to it, then names and enables its climb
         // interactions. The actors stay when their cell unloads, as the game's own ladder actors do.
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         RaidWorld raid = player.Raid;
         int inFlight = _ladders.Values.Count(ladder => ladder.Key is { } key && sender.Pending(key));
         foreach (Ladder ladder in raid.Ladders.Ladders)

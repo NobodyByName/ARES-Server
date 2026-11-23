@@ -80,11 +80,6 @@ internal sealed class PlayerArcs : IPlayerFamily
     /// <inheritdoc />
     public void Service(IPlayerChannelsContext player, ReliableSender sender, double now)
     {
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         RaidWorld raid = player.Raid;
         _links.Advance(sender, new ArcSteps(this, player));
         if (now < _relevantAt)

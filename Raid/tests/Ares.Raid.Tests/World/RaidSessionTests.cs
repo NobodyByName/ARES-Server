@@ -129,6 +129,24 @@ public sealed class RaidSessionTests
     }
 
     [Fact]
+    public void Doors_and_loot_reach_the_client_while_it_loads_before_possession()
+    {
+        // Map actors replicate once the HUD is assigned, not after the character settles.
+        ScriptedPlayer session = new();
+        session.Flush("start");
+        session.Call(FunctionNames.ServerNotifyHasLoadedInitialLevels, []);
+        session.ReportVisible((TestGameData.Dam.MapPackage, true, true), (session.Door.Cell, true, false));
+        session.Flush("initial levels loaded");
+        session.Service(100.0);
+        session.Service(100.5);
+
+        Assert.Equal(DeliveryPhase.PossessionPending, session.Channels.Phase);
+        int ladders = 64 + session.Raid.Doors.Doors.Count;
+        Assert.Contains(session.Sent, bunch => bunch is { Channel: >= 64, Opened: true } && bunch.Channel < ladders);
+        Assert.True(session.Channels.LootChannelsInUse + session.Channels.LootReady > 0);
+    }
+
+    [Fact]
     public void Doors_close_when_their_cell_is_hidden_and_failed_doors_are_not_offered_again()
     {
         ScriptedPlayer session = new();

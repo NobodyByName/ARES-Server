@@ -234,11 +234,6 @@ internal sealed class PlayerLoot : IPlayerFamily
         // its class, spawn it at its socket, name its components and send its state, then closes dormant while the
         // client keeps the actor. A later change (a first opening by anyone, this player's search) opens a channel
         // again for a client that has the container, wherever the player is, and sends the new state.
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         // Containers spawned during the raid extend the list; what the player knows of the others stays.
         RaidWorld raid = player.Raid;
         if (_known.Length != raid.Loot.Containers.Count)

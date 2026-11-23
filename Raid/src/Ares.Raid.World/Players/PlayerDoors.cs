@@ -155,11 +155,6 @@ internal sealed class PlayerDoors : IPlayerFamily
     {
         // Replicates the doors of the cells the client reports visible: exports each door's path, opens its
         // channel with usable buttons, sends state changes, and closes the channel when the cell unloads.
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         RaidWorld raid = player.Raid;
         raid.DoorStates.Advance(now);
         int inFlight = _doors.Values.Count(door => door.Key is { } key && sender.Pending(key));

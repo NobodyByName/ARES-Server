@@ -42,11 +42,6 @@ internal interface IPlayerChannelsContext
     /// <returns>True while it does.</returns>
     bool LevelVisible(string level);
 
-    /// <summary>Whether map actors may be sent: the character simulation has started and settled.</summary>
-    /// <param name="now">Raid clock.</param>
-    /// <returns>True once they may.</returns>
-    bool MapActorsAllowed(double now);
-
     /// <summary>Whether the player gave movement input after an input frame.</summary>
     /// <param name="frame">Input frame.</param>
     /// <returns>True when a later frame moves.</returns>

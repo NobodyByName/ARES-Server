@@ -175,8 +175,20 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     {
         ArgumentNullException.ThrowIfNull(io);
         ServiceWorldTime(io.Sender, now);
+        if (Phase < DeliveryPhase.PlayerOpensReady)
+        {
+            return;
+        }
+
         if (Phase != DeliveryPhase.Possessed)
         {
+            // Map actors (doors, loot, other players...) replicate while the client loads,
+            // once the HUD is assigned: their BeginPlay sets up screen helpers. Using them waits for possession.
+            foreach (IPlayerFamily family in Families)
+            {
+                family.Service(this, io.Sender, now);
+            }
+
             return;
         }
 
@@ -478,9 +490,6 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
     /// <inheritdoc />
     void IPlayerChannelsContext.InventoryChangedAt(uint frame) => _frames.InventoryChangedAt(frame);
-
-    /// <inheritdoc />
-    bool IPlayerChannelsContext.MapActorsAllowed(double now) => _frames.MapActorsAllowed(now);
 
     /// <inheritdoc />
     bool IPlayerChannelsContext.LevelVisible(string level) => _visibleLevels.Contains(level);

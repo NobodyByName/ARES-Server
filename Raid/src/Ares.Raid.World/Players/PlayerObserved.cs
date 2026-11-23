@@ -67,11 +67,6 @@ internal sealed class PlayerObserved : IPlayerFamily
     /// <inheritdoc />
     public void Service(IPlayerChannelsContext player, ReliableSender sender, double now)
     {
-        if (!player.MapActorsAllowed(now))
-        {
-            return;
-        }
-
         RaidWorld raid = player.Raid;
         IReadOnlyList<RaidPlayer> players = raid.Players;
         for (int index = 0; index < players.Count; index++)

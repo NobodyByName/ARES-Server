@@ -116,7 +116,7 @@ public sealed class MultiplayerTests
         (_, double at) = first.Settle(30, 101);
         (uint frame, at) = second.Settle(30, at);
 
-        // Nothing of the other player before the map actors' start delay.
+        // The other player's character waits for its movement.
         first.Sent.Clear();
         first.Service(at);
         Assert.DoesNotContain(first.Sent, bunch => OpenedActor(bunch) == second.Player.Pawn);
@@ -221,8 +221,7 @@ public sealed class MultiplayerTests
         first.PawnFrame(reset, pawn.Channel, PendulumCodec.Others);
         Assert.Equal((resetTick, second.Member.Motion!.Tick), first.LastFrameNumbers);
 
-        // The second player sees the first one too.
-        second.Sent.Clear();
+        // The second player sees the first one too (map actors reach it while it joins).
         for (int step = 0; step < 5; step++)
         {
             second.Service(at += 0.1);
