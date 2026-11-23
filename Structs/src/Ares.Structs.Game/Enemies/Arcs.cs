@@ -7,7 +7,9 @@ namespace Ares.Structs.Game.Enemies;
 /// <summary>An ARC enemy as a spawnable actor.</summary>
 /// <param name="Name">Short lower-case name.</param>
 /// <param name="Class">The Blueprint class and its class default, the archetype of the spawned actor.</param>
-public sealed record ArcClass(string Name, ArchetypeClass Class);
+/// <param name="EnemyType">Name of its enemy type, which enemy tables list.</param>
+/// <param name="Blackboard">The blackboard its actor replicates its state with.</param>
+public sealed record ArcClass(string Name, ArchetypeClass Class, string EnemyType, ArcBlackboard Blackboard);
 
 /// <summary>
 /// ARC enemies: Constructable pawns (<c>AConstructableBase</c>). A spawned ARC is the actor, then four attribute sets
@@ -19,7 +21,7 @@ public static class Arcs
     /// <summary>The Wasp, a light flying drone.</summary>
     public static ArcClass Wasp { get; } = new("wasp", new ArchetypeClass(
         "/Game/Pioneer/Enemies/LightDrone/Wasp/C_LightDrone_02.C_LightDrone_02_C",
-        "/Game/Pioneer/Enemies/LightDrone/Wasp/C_LightDrone_02.Default__C_LightDrone_02_C"));
+        "/Game/Pioneer/Enemies/LightDrone/Wasp/C_LightDrone_02.Default__C_LightDrone_02_C"), "DA_EnemyType_LightDrone_02", ArcBlackboard.Wasp);
 
     /// <summary>Every ARC the server can spawn.</summary>
     public static IReadOnlyList<ArcClass> All { get; } = [Wasp];

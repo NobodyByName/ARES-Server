@@ -89,6 +89,37 @@ public static class PendulumRotations
         return Pack([sinPitch * sinYaw, -sinPitch * cosYaw, cosPitch * sinYaw, cosPitch * cosYaw], field);
     }
 
+    /// <summary>A rotation from its heading, pitch and roll, as the engine turns a rotator into a quaternion.</summary>
+    /// <param name="yaw">Heading in radians.</param>
+    /// <param name="pitch">Pitch in radians, positive nose up.</param>
+    /// <param name="roll">Roll in radians about the forward axis.</param>
+    /// <param name="field">The quaternion field.</param>
+    /// <returns>The stored quaternion.</returns>
+    public static PendulumQuaternion FromRotation(double yaw, double pitch, double roll, PendulumQuaternionField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+        (double sinYaw, double cosYaw) = Math.SinCos(yaw / 2.0);
+        (double sinPitch, double cosPitch) = Math.SinCos(pitch / 2.0);
+        (double sinRoll, double cosRoll) = Math.SinCos(roll / 2.0);
+        return Pack(
+        [
+            (cosRoll * sinPitch * sinYaw) - (sinRoll * cosPitch * cosYaw),
+            (-cosRoll * sinPitch * cosYaw) - (sinRoll * cosPitch * sinYaw),
+            (cosRoll * cosPitch * sinYaw) - (sinRoll * sinPitch * cosYaw),
+            (cosRoll * cosPitch * cosYaw) + (sinRoll * sinPitch * sinYaw),
+        ], field);
+    }
+
+    /// <summary>The roll (rotation about the forward axis) of a rotation, as the engine reads it from a quaternion.</summary>
+    /// <param name="quaternion">The quantized rotation.</param>
+    /// <param name="field">Its field.</param>
+    /// <returns>The roll in radians.</returns>
+    public static double Roll(PendulumQuaternion quaternion, PendulumQuaternionField field)
+    {
+        (double x, double y, double z, double w) = Components(quaternion, field);
+        return Math.Atan2(-2.0 * ((w * x) + (y * z)), 1.0 - (2.0 * ((x * x) + (y * y))));
+    }
+
     /// <summary>
     /// The rotation a ground normal is stored as: the rotation whose Z axis is the normal, its X axis perpendicular to
     /// world up (world X when the normal points straight up or down).
