@@ -35,10 +35,11 @@ public static class HostApplication
         HostSettings settings = configuration.Settings;
         InventoryCatalog catalog = new(gameData, configuration.Content, settings.StashUpgrades);
 
-        // Every Raid reads the loot content; checking it here stops a bad file before the first raid.
+        // Every Raid reads the loot content and the ARC spawners; checking them here stops a bad file before the first raid.
         _ = configuration.Content.LootSpawn(gameData);
         _ = configuration.Content.LootContents(gameData);
         _ = configuration.Content.LootRules(gameData, catalog.Items);
+        _ = configuration.Content.ArcSpawners(gameData);
 
         WebApplicationBuilder builder = WebApplication.CreateSlimBuilder(new WebApplicationOptions { Args = [] });
         builder.Logging.ClearProviders();

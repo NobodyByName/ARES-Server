@@ -128,9 +128,10 @@ unusable), and raids then run without collision.
 ## ARES content
 
 Some data ARES needs is not in the installed game: the stash and loadout structures, what recycling each
-item gives, the trader offers, item quality levels, and how loot spawns and what it holds. ARES ships it in
-`content/` (`stash.json`, `loadout.json`, `item-recycling.json`, `trader-offers.json`, `item-quality-levels.json`,
-`loot-spawn.json`, `loot-contents.json`, `loot-rules.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
+item gives, the trader offers, item quality levels, how loot spawns and what it holds, and where ARCs spawn and how
+they move. ARES ships it in `content/` (`stash.json`, `loadout.json`, `item-recycling.json`, `trader-offers.json`,
+`item-quality-levels.json`, `loot-spawn.json`, `loot-contents.json`, `loot-rules.json`, `arc-spawners.json`,
+`arc-movement.json`), as close to the official game as known, and copies it next to ARES-Host. That folder is
 the server's content: to change it, edit its files and restart Host. `content-dir` in `ares-host.conf` names
 the folder (default `content`). Host passes it to every Raid it starts (`--content-dir`), and each Raid loads
 it when it starts. Host and Raid refuse to start (exit code 2, with the reason on standard error) when the
@@ -170,6 +171,19 @@ official game as known:
   the profiles of its tag and every parent tag, then of its class, the nearer one winning for each setting; weights of
   several profiles multiply. A `loot-rules.json` contents list still replaces everything.
 - `loot-rules.json`: per-container and per-loose-item-socket decisions, below.
+- `arc-spawners.json`: the ARC spawners of each map (by world name): `id`, `label`, `class`, `location`, `yaw`, the
+  `enemyTable` and the `enemyTypes` it can spawn, the `routes` (the map's spline paths) its ARCs keep to while idle,
+  `groupSearchRadius` (how far they wander around each home point) and `spawnAreaRadius`. Every route must be a spline
+  path of the map.
+- `arc-movement.json`: how each ARC (`wasp`) moves while idle. It wanders from home point to home point along its
+  spawner's route (flown as a smooth curve through the route's points) (home points `homePointSpacing` times the spawner's `groupSearchRadius` apart, at least
+  `minHomePointSpacing`): every `replanSeconds` it probes `probeAngles` (degrees) `probeDistance` ahead and heads for a
+  point `wanderShare` of the way from the home point to the clearest one, at up to `cruiseSpeed` (cm/s), gaining speed
+  at up to `acceleration` and braking to a stop at `deceleration` (cm/s², both eased in), blending its velocity by `velocityBlend` each thirtieth of a second, turning at up to
+  `turnRate` (rad/s), pitching `pitchPerSpeed` degrees nose-down per m/s, banking `bankPerTurnRate` degrees per °/s of
+  turn (at most `maxBank` degrees) and keeping `hoverHeight` above the ground
+  with a `bodyRadius` collision sphere. Within `arriveDistance` it pauses `minDwellSeconds` to `maxDwellSeconds`, then
+  moves on to the next home point, turning back with `turnBackChance`.
 
 `loot-rules.json` decides, for chosen loot containers and loose item sockets, whether they spawn and what they
 hold; every other one follows the two files above. The shipped rules set how many doors of each server rack and

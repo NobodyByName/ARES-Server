@@ -124,6 +124,33 @@ internal static class SyntheticHost
             looseItems = new { tables = Array.Empty<string>(), amount = new { min = 1, max = 1 }, pools = Array.Empty<object>() },
         });
         Write(directory, AresContent.LootRulesFile, new { rules = Array.Empty<object>() });
+        Write(directory, AresContent.ArcSpawnersFile, new { maps = new Dictionary<string, object[]>() });
+        Write(directory, AresContent.ArcMovementFile, new Dictionary<string, object>
+        {
+            ["wasp"] = new
+            {
+                cruiseSpeed = 320,
+                acceleration = 300,
+                deceleration = 200,
+                velocityBlend = 0.3,
+                turnRate = 1.2,
+                pitchPerSpeed = 5.3,
+                bankPerTurnRate = 0.2,
+                maxBank = 12,
+                hoverHeight = 200,
+                bodyRadius = 60,
+                homePointSpacing = 1.4,
+                minHomePointSpacing = 1000,
+                replanSeconds = 10,
+                probeDistance = 4000,
+                probeAngles = new[] { -50, -25, 0, 25 },
+                wanderShare = 0.3,
+                minDwellSeconds = 1,
+                maxDwellSeconds = 10,
+                turnBackChance = 0.25,
+                arriveDistance = 150,
+            },
+        });
         return AresContent.Load(directory);
     }
 

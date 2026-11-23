@@ -1,0 +1,24 @@
+{
+  "wasp": {
+    "cruiseSpeed": 320,
+    "acceleration": 300,
+    "deceleration": 200,
+    "velocityBlend": 0.3,
+    "turnRate": 1.2,
+    "pitchPerSpeed": 5.3,
+    "bankPerTurnRate": 0.2,
+    "maxBank": 12,
+    "hoverHeight": 200,
+    "bodyRadius": 60,
+    "homePointSpacing": 1.4,
+    "minHomePointSpacing": 1000,
+    "replanSeconds": 10,
+    "probeDistance": 4000,
+    "probeAngles": [-50, -25, 0, 25],
+    "wanderShare": 0.3,
+    "minDwellSeconds": 1,
+    "maxDwellSeconds": 10,
+    "turnBackChance": 0.15,
+    "arriveDistance": 150
+  }
+}
