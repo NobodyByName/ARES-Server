@@ -39,6 +39,9 @@ public static class AdminApi
     /// <summary>Spawns an ARC in front of a player's character.</summary>
     public const string SpawnArc = "spawn-arc";
 
+    /// <summary>Spawns an ARC at one of the map's spawners; it flies the spawner's route.</summary>
+    public const string SpawnArcAt = "spawn-arc-at";
+
     /// <summary>Despawns every ARC of the raid.</summary>
     public const string DespawnArcs = "despawn-arcs";
 
@@ -67,7 +70,7 @@ public static class AdminApi
     public const string Busy = "raid_busy";
 
     /// <summary>Command names.</summary>
-    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot, SpawnArc, DespawnArcs, Extract];
+    public static IReadOnlyList<string> Commands { get; } = [Players, Teleport, TeleportToLoot, SpawnLoot, SpawnArc, SpawnArcAt, DespawnArcs, Extract];
 
     /// <summary>Commands that act on one player, and where the player is among their arguments.</summary>
     public static IReadOnlyDictionary<string, int> PlayerArgument { get; } = new Dictionary<string, int>(StringComparer.Ordinal)
@@ -87,6 +90,7 @@ public static class AdminApi
         "teleport-to-loot <player> <index> | free-standing <n>  Move a player in front of a loot container",
         "spawn-loot <player> <class>  Spawn a loot container (class name or path) in front of a player",
         $"spawn-arc <arc> <player>  Spawn an ARC ({string.Join(", ", Arcs.All.Select(arc => arc.Name))}) in front of a player, at head height",
+        "spawn-arc-at <arc> <spawner>  Spawn an ARC at one of the map's spawners (its id); it flies the spawner's route",
         "despawn-arcs  Despawn every ARC of the raid",
         "extract <player>  Extract a player on the spot: they keep their whole loadout, as after an elevator",
     ];

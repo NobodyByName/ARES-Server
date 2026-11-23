@@ -23,8 +23,9 @@ namespace Ares.Raid;
 /// <param name="FreeStanding">Free-standing container number of a teleport to loot.</param>
 /// <param name="Class">Container class to spawn.</param>
 /// <param name="Arc">ARC to spawn.</param>
+/// <param name="Spawner">Id of the spawner to spawn the ARC at.</param>
 public sealed record AdminRequest(string Name, string? Player = null, Vector3D? Position = null, double? YawDegrees = null,
-    int? Container = null, int? FreeStanding = null, LootContainerClass? Class = null, ArcClass? Arc = null);
+    int? Container = null, int? FreeStanding = null, LootContainerClass? Class = null, ArcClass? Arc = null, string? Spawner = null);
 
 /// <summary>
 /// The raid's admin commands. A command is read on the caller's thread, then runs on the game loop between packets
@@ -143,6 +144,10 @@ public sealed class RaidAdmin : IAdminService
                 return Arcs.Find(words[0]) is { } arc
                     ? (new AdminRequest(AdminApi.SpawnArc, words[1], Arc: arc), [])
                     : (null, [$"No supported ARC is named {words[0]}; supported: {string.Join(", ", Arcs.All.Select(item => item.Name))}."]);
+            case (AdminApi.SpawnArcAt, 2):
+                return Arcs.Find(words[0]) is { } spawned
+                    ? (new AdminRequest(AdminApi.SpawnArcAt, Arc: spawned, Spawner: words[1]), [])
+                    : (null, [$"No supported ARC is named {words[0]}; supported: {string.Join(", ", Arcs.All.Select(item => item.Name))}."]);
             case (AdminApi.DespawnArcs, 0):
                 return (new AdminRequest(AdminApi.DespawnArcs), []);
             case (AdminApi.Extract, 1):
@@ -193,6 +198,8 @@ public sealed class RaidAdmin : IAdminService
                     return AdminResult.Success(players.Length == 0 ? ["No players connected."] : [.. players.Select(Describe)]);
                 case AdminApi.DespawnArcs:
                     return AdminResult.Success(players.Length == 0 ? ["No players connected."] : [$"Despawned {players[0].DespawnArcs()} ARCs."]);
+                case AdminApi.SpawnArcAt:
+                    return players.Length == 0 ? AdminResult.Success(["No players connected."]) : SpawnArcAt(players[0], request.Arc!, request.Spawner!);
             }
 
             PlayerChannels[] matches = [.. players.Where(player => long.TryParse(request.Player, NumberStyles.None, CultureInfo.InvariantCulture, out long id)
@@ -264,6 +271,19 @@ public sealed class RaidAdmin : IAdminService
             : Refused(refusal);
     }
 
+    private static AdminResult SpawnArcAt(PlayerChannels player, ArcClass type, string spawner)
+    {
+        AdminRefusal refusal = player.SpawnArcAt(type, spawner, out WorldArc? arc);
+        if (refusal != AdminRefusal.None || arc?.Spawner is not { } at)
+        {
+            return Refused(refusal);
+        }
+
+        string route = at.Routes.Count == 0 ? "no route (it stays around the spawner)" : $"route {string.Join(", ", at.Routes)}";
+        return AdminResult.Success([$"Spawned ARC {arc.Index} ({type.Name}) id 0x{arc.Guid:x} at spawner {at.Id} ({at.Label}), {route}.",
+            $"It starts at {Text(arc.Location)}; the spawner stands at {Text(at.Location)}."]);
+    }
+
     private static AdminResult Extract(PlayerChannels player)
     {
         AdminRefusal refusal = player.Extract();
@@ -281,6 +301,8 @@ public sealed class RaidAdmin : IAdminService
         AdminRefusal.Busy => AdminResult.Failure(StatusCodes.Status409Conflict, "player_busy", ["The player is breaching, searching, looting or holding an elevator switch."]),
         AdminRefusal.OutOfRange => AdminResult.Failure(StatusCodes.Status400BadRequest, "position_out_of_range", ["The position is outside the map's range."]),
         AdminRefusal.NoArcIds => AdminResult.Failure(StatusCodes.Status409Conflict, "no_arc_ids", ["The raid has spawned as many ARCs as it can."]),
+        AdminRefusal.NoSuchSpawner => AdminResult.Failure(StatusCodes.Status404NotFound, "no_such_spawner", ["The map has no ARC spawner with that id."]),
+        AdminRefusal.SpawnerLacksArc => AdminResult.Failure(StatusCodes.Status409Conflict, "spawner_lacks_arc", ["That spawner's enemy table has no such ARC."]),
         _ => AdminResult.Failure(StatusCodes.Status409Conflict, "no_container_ids", ["The raid has no ids left for another container."]),
     };
 

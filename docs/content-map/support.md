@@ -84,7 +84,7 @@ loot home by extraction are stock-client verified with one player.
 
 Operators can steer running raids from the Host console: `raid list` shows the running raids, and
 `raid <raid-id> <command>` sends `players`, `teleport`, `teleport-to-loot`, `spawn-loot`, `spawn-arc`,
-`despawn-arcs` or `extract` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
+`spawn-arc-at`, `despawn-arcs` or `extract` to one of them (see `help`); each raid's answer appears in the Host log. The raid id
 is also shown in the game's bottom-right corner. These are development tools.
 
 With [game data](../../README.md#game-data) configured, each raid loads the map's collision when it
@@ -162,8 +162,9 @@ Limitations:
 - A locked room's anti-exploit jets fire but do no damage, and the one Dam locked door without a key
   cannot be unlocked yet. A cancelled breach starts over instead of keeping its progress.
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
-- ARCs do not spawn by themselves. Operators can place a stationary Wasp (`spawn-arc`), not yet
-  verified in the game; it does not move, attack or take damage.
+- ARCs do not spawn by themselves. Operators can place a stationary Wasp (`spawn-arc`), or one at a
+  map spawner (`spawn-arc-at`) that flies its idle movement along the spawner's route. Neither notices
+  players, attacks or takes damage.
 - Loot drop rates are provisional, and a weapon found in a raid cannot be equipped in that raid. Plants and other nature
   containers, ARC wrecks, weapon racks (they need the Security Breach skill) and keycard rooms are not
   supported, and containers are only in Dam.

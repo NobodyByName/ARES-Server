@@ -72,7 +72,8 @@ catch (Exception error) when (error is PersistenceException or InvalidDataExcept
 
 await using WebApplication app = application;
 console.Attach(new HostServices(app.Services.GetRequiredService<AccountDirectory>(), app.Services.GetRequiredService<PlayerRegistry>(),
-    app.Services.GetService<RaidFleet>(), configuration.Settings.ClientFeatureFlags.GetValueOrDefault(ClientFeatureFlagNames.PeriodicSyncOfInventory)));
+    app.Services.GetService<RaidFleet>(), configuration.Settings.ClientFeatureFlags.GetValueOrDefault(ClientFeatureFlagNames.PeriodicSyncOfInventory),
+    configuration.Content.ArcSpawners(gameData).GetValueOrDefault(gameData.Names.Dam.WorldName, [])));
 await app.StartAsync().ConfigureAwait(false);
 log.Write(new JsonObject
 {

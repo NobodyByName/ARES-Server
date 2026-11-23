@@ -1,3 +1,4 @@
+using Ares.Common.Game.Enemies;
 using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Loot;
@@ -6,6 +7,7 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Loot;
 using Ares.Structs.Game.Movement;
+using Ares.Structs.Game.World;
 
 namespace Ares.Raid.World.Players;
 
@@ -38,6 +40,12 @@ public enum AdminRefusal
 
     /// <summary>The raid spawned as many ARCs as it can.</summary>
     NoArcIds,
+
+    /// <summary>The map has no ARC spawner with that id.</summary>
+    NoSuchSpawner,
+
+    /// <summary>The spawner's enemy table does not hold the ARC.</summary>
+    SpawnerLacksArc,
 }
 
 /// <summary>
@@ -190,6 +198,34 @@ public sealed partial class PlayerChannels
             Math.Round(feet.Z + SpawnedArcHeight));
         double facing = (((yaw * 180 / Math.PI) + 180) % 360 + 360) % 360;
         arc = _raid.Arcs.Spawn(type, location, new Rotator(0, Math.Round(facing, 1), 0));
+        return arc is null ? AdminRefusal.NoArcIds : AdminRefusal.None;
+    }
+
+    /// <summary>
+    /// Spawns an ARC at one of the map's spawners (see <see cref="WorldArcs.Spawn(ArcClass, ArcSpawner, IReadOnlyList{SplinePathPlacement}, ArcMovementProfile, Collision.CollisionWorld?, int)"/>):
+    /// it flies the spawner's route. It acts on the raid, not on the player.
+    /// </summary>
+    /// <param name="type">The ARC.</param>
+    /// <param name="spawner">The spawner's id, ignoring case.</param>
+    /// <param name="arc">The spawned ARC.</param>
+    /// <returns>Why it could not, or <see cref="AdminRefusal.None"/>.</returns>
+    public AdminRefusal SpawnArcAt(ArcClass type, string spawner, out WorldArc? arc)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(spawner);
+        arc = null;
+        RaidGameData data = _raid.GameData;
+        if (data.ArcSpawners.FirstOrDefault(item => item.Id.Equals(spawner, StringComparison.OrdinalIgnoreCase)) is not { } found)
+        {
+            return AdminRefusal.NoSuchSpawner;
+        }
+
+        if (!found.EnemyTypes.Contains(type.EnemyType, StringComparer.Ordinal))
+        {
+            return AdminRefusal.SpawnerLacksArc;
+        }
+
+        arc = _raid.Arcs.Spawn(type, found, data.Map.SplinePaths, data.ArcMovement[type], _raid.Collision, unchecked((_raid.Seed * 31) + _raid.Arcs.All.Count));
         return arc is null ? AdminRefusal.NoArcIds : AdminRefusal.None;
     }
 

@@ -649,7 +649,7 @@ globalThis.AresContent = {
           "name": "Wasp",
           "technical": "DA_EnemyType_LightDrone_02",
           "status": "partial",
-          "note": "Operators can place a stationary Wasp with the raid spawn-arc command (not yet verified in the game). It does not spawn by itself; server AI, attacks, damage and drops are not implemented."
+          "note": "Operators can place a stationary Wasp (raid spawn-arc) or one at a map spawner (raid spawn-arc-at) that flies its idle movement along the spawner's route. It does not spawn by itself; it does not notice players, and attacks, damage and drops are not implemented."
         },
         {
           "name": "Meerkat",

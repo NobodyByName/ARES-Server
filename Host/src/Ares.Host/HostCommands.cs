@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Ares.Common.Control;
+using Ares.Common.Game.Enemies;
 using Ares.Common.Logging;
 using Ares.Common.Terminal;
 using Ares.Host.Services.Accounts;
@@ -18,7 +19,9 @@ namespace Ares.Host;
 /// <param name="Players">Player registry.</param>
 /// <param name="Raids">Running raids; null when matchmaking starts none.</param>
 /// <param name="MenuInventorySync">Whether clients at the main menu fetch their inventory again every 15 seconds.</param>
-internal sealed record HostServices(AccountDirectory Accounts, PlayerRegistry Players, RaidFleet? Raids, bool MenuInventorySync = false);
+/// <param name="ArcSpawners">The map's ARC spawners, which the console completes.</param>
+internal sealed record HostServices(AccountDirectory Accounts, PlayerRegistry Players, RaidFleet? Raids, bool MenuInventorySync = false,
+    IReadOnlyList<ArcSpawner>? ArcSpawners = null);
 
 /// <summary>The Host console's commands: account, inventory and raid administration.</summary>
 /// <param name="log">Event log, for raid replies that arrive later.</param>
@@ -168,15 +171,19 @@ internal sealed class HostCommands(JsonEventLog log)
 
         string command = preceding[2].ToLowerInvariant();
         int argument = preceding.Length - 3;
-        if (command == AdminApi.SpawnArc && argument == 0)
+        return command switch
         {
-            return Arcs.All.Select(arc => arc.Name);
-        }
+            AdminApi.SpawnArc or AdminApi.SpawnArcAt when argument == 0 => Arcs.All.Select(arc => arc.Name),
 
-        return AdminApi.PlayerArgument.TryGetValue(command, out int player) && player == argument
-            && running.Where(raid => raid.MatchId?.StartsWith(preceding[1], StringComparison.OrdinalIgnoreCase) == true).ToArray() is [{ } chosen]
-            ? chosen.Players.Select(PlayerName)
-            : [];
+            // The spawners whose enemy table holds the chosen ARC.
+            AdminApi.SpawnArcAt when argument == 1 => Arcs.Find(preceding[3]) is { } spawned
+                ? (Services?.ArcSpawners ?? []).Where(spawner => spawner.EnemyTypes.Contains(spawned.EnemyType, StringComparer.Ordinal)).Select(spawner => spawner.Id)
+                : [],
+            _ => AdminApi.PlayerArgument.TryGetValue(command, out int player) && player == argument
+                && running.Where(raid => raid.MatchId?.StartsWith(preceding[1], StringComparison.OrdinalIgnoreCase) == true).ToArray() is [{ } chosen]
+                ? chosen.Players.Select(PlayerName)
+                : [],
+        };
     }
 
     private void RunGuarded(string what, Action<string> reply, Action<HostServices> command)

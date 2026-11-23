@@ -1,4 +1,5 @@
 using System.Collections;
+using Ares.Common.Game.Enemies;
 using Ares.Raid.World.Actors;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
@@ -6,7 +7,9 @@ using Ares.Structs.Core.Geometry;
 using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Enemies;
 using Ares.Structs.Game.Inventory;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
+using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -58,20 +61,24 @@ public sealed class ArcTests
         Assert.Equal(session.Raid.Imports.Classes[ClassPaths.PioneerCharacterAttributeSet], arcs.AttributeSetClasses[3]);
 
         // The opening: archetype at the spawn transform, simulated proxy of an authority, its own instigator, no owner or
-        // controller, then the four attribute sets created empty inside it.
+        // controller, its blackboard's first frame, then the four attribute sets created empty inside it.
         ChannelBunch open = Assert.Single(session.Sent, bunch => Spawns(bunch, arc));
         BitReader reader = new(open.Payload, open.PayloadBits);
         Assert.Equal([archetype, .. arcs.AttributeSetClasses], MustMapGuids.Read(reader).Guids);
         BitWriter spawn = new();
         new ActorSpawn(arc.Guid, archetype, 0, arc.Location, arc.Rotation).Write(spawn);
         Assert.Equal(spawn.ToArray(), Bits(reader, spawn.Length));
-        Dictionary<string, object?> actor = Decode(Arcs.ActorClass, ActorContentBlock.Read(reader), new Dictionary<ulong, string> { [arc.Guid] = Arcs.ActorClass });
-        Assert.Equal(new Dictionary<string, object?>
+        ActorContentBlock properties = session.Raid.State.Replication.Encode(Arcs.ActorClass, new Dictionary<string, object?>
         {
             [PropertyNames.RemoteRole] = (ulong)NetRole.SimulatedProxy,
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.Instigator] = arc.Guid,
-        }, actor);
+        }, new Dictionary<ulong, string> { [arc.Guid] = Arcs.ActorClass });
+        ActorContentBlock first = WorldArcs.Frame(arc, 0, ArcFrames.First, WorldArcs.State(arc, arcs.Pose(arc)), new Dictionary<int, PendulumSlot>());
+        ActorContentBlock actor = ActorContentBlock.Read(reader);
+        ActorContentBlock expected = WorldState.Merge(properties, first);
+        Assert.Equal((expected.PayloadBits, true), (actor.PayloadBits, actor.HasRepLayout));
+        Assert.Equal(expected.Payload, actor.Payload);
         for (int index = 0; index < Arcs.AttributeSets.Count; index++)
         {
             DynamicSubobjectContent set = DynamicSubobjectContent.Read(reader);
@@ -106,6 +113,54 @@ public sealed class ArcTests
         Stand(session, frame, time, at, 2);
         Assert.Equal(sent, session.Sent.Count(bunch => bunch.Channel == open.Channel));
         Assert.True(session.Channels.HasArc(arc.Index));
+    }
+
+    [Fact]
+    public void A_wasp_spawned_at_a_spawner_flies_its_route_and_its_client_follows_it_frame_by_frame()
+    {
+        ScriptedPlayer session = new();
+        Vector3D at = session.Member.Spawn.Location;
+        (uint frame, double time) = Ready(session, at);
+        ArcSpawner spawner = TestGameData.Raid.ArcSpawners.First(item => item is { EnemyTable: "EGT_StaticWorld_WaspSingle", Routes.Count: 1 });
+        Assert.Equal(AdminRefusal.NoSuchSpawner, session.Channels.SpawnArcAt(Arcs.Wasp, "no-such-spawner", out _));
+        Assert.Equal(AdminRefusal.SpawnerLacksArc,
+            session.Channels.SpawnArcAt(Arcs.Wasp, TestGameData.Raid.ArcSpawners.First(item => !item.EnemyTypes.Contains(Arcs.Wasp.EnemyType)).Id, out _));
+        Assert.Equal(AdminRefusal.None, session.Channels.SpawnArcAt(Arcs.Wasp, spawner.Id.ToUpperInvariant(), out WorldArc? spawned));
+        WorldArc arc = Assert.IsType<WorldArc>(spawned);
+        Assert.Same(spawner, arc.Spawner);
+        // It starts at the home point of its route nearest the spawner.
+        SplinePathPlacement route = TestGameData.Dam.SplinePaths.Single(path => path.Name == spawner.Routes[0]);
+        ArcHomePoints homes = ArcRoutes.HomePoints(spawner, route, Math.Max(1.4 * spawner.GroupSearchRadius, 1000));
+        Assert.Equal(homes.Points[homes.Nearest(spawner.Location)], arc.Location);
+
+        // The player stands next to it, so it opens on the player's client.
+        session.Raid.Arcs.Advance(time);
+        (frame, time) = Stand(session, frame, time, arc.Location, 3);
+        Assert.True(session.Channels.HasArc(arc.Index));
+        int channel = session.Sent.Single(bunch => Spawns(bunch, arc)).Channel;
+        session.Sent.Clear();
+        Vector3D start = session.Raid.Arcs.Pose(arc).Location;
+        Stand(session, frame, time, arc.Location, 6);
+        Vector3D end = session.Raid.Arcs.Pose(arc).Location;
+        Assert.True(Distance(start, end) > 100, "the wasp moved");
+
+        // Unreliable frames, each coded against an earlier one, the last at the ARC's current position.
+        ChannelBunch[] frames = [.. session.Sent.Where(bunch => bunch.Channel == channel && bunch is { Opened: false, CloseReason: null })];
+        Assert.True(frames.Length >= 10, $"{frames.Length} frames");
+        ArcBlackboard blackboard = Arcs.Wasp.Blackboard;
+        uint latest = 0;
+        foreach (ChannelBunch bunch in frames)
+        {
+            ActorContentBlock block = ActorContentBlock.Read(new BitReader(bunch.Payload, bunch.PayloadBits));
+            ActorFieldPayload payload = ActorFieldPayload.Read(new BitReader(block.Payload, block.PayloadBits), blackboard.FieldCount);
+            Assert.Equal(blackboard.Field, payload.Index);
+            BitReader reader = new(payload.Payload, payload.PayloadBits);
+            Assert.True(reader.ReadBit());
+            BlackboardUpdateHeader header = BlackboardUpdate.ReadHeader(reader);
+            Assert.Equal(PendulumFieldFlags.Others, header.Fields);
+            Assert.True(header.Latest > latest && header.Baseline < header.Latest);
+            latest = header.Latest;
+        }
     }
 
     [Fact]
@@ -187,6 +242,9 @@ public sealed class ArcTests
 
         return (frame, at);
     }
+
+    private static double Distance(Vector3D a, Vector3D b) =>
+        Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)) + ((a.Z - b.Z) * (a.Z - b.Z)));
 
     private static byte[] Bits(BitReader reader, long bits)
     {
