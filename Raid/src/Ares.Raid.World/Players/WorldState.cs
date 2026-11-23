@@ -76,6 +76,9 @@ public sealed record WorldPlayer(
 /// </summary>
 public sealed class WorldState
 {
+    // Replication id of the spawn-in effect in a character's active effects.
+    private const int SpawnInEffectId = 1;
+
     private readonly Lock _lock = new();
     private readonly WorldImports _imports;
     private readonly MapGameMode _gameMode;
@@ -796,6 +799,29 @@ public sealed class WorldState
     {
         ArgumentNullException.ThrowIfNull(player);
         return new StableSubobjectContent(player.AbilitySystem, Field(CharacterDefaults.AbilitySystem.Class, PropertyNames.ActivatableAbilities, writer => ActivatableAbilities.WriteInitial(writer, abilities)));
+    }
+
+    /// <summary>Adds the spawn-in effect to the character's active effects, which are empty before.</summary>
+    /// <param name="player">The player.</param>
+    /// <param name="effect">The effect's exported class default.</param>
+    /// <param name="startedAt">World time the character spawned at, in seconds.</param>
+    /// <returns>The content.</returns>
+    public StableSubobjectContent SpawnInEffectAdded(WorldPlayer player, ulong effect, double startedAt)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        ActiveEffect added = new(SpawnInEffectId, effect, SpawnInEffect.Seconds, (float)startedAt);
+        return new StableSubobjectContent(player.AbilitySystem, Field(CharacterDefaults.AbilitySystem.Class, PropertyNames.ActiveGameplayEffects,
+            writer => ActiveGameplayEffects.WriteAdded(writer, ActiveGameplayEffects.InitialKey + 1, 0, [added])));
+    }
+
+    /// <summary>Removes the spawn-in effect from the character's active effects.</summary>
+    /// <param name="player">The player.</param>
+    /// <returns>The content.</returns>
+    public StableSubobjectContent SpawnInEffectRemoved(WorldPlayer player)
+    {
+        ArgumentNullException.ThrowIfNull(player);
+        return new StableSubobjectContent(player.AbilitySystem, Field(CharacterDefaults.AbilitySystem.Class, PropertyNames.ActiveGameplayEffects,
+            writer => ActiveGameplayEffects.WriteRemoved(writer, ActiveGameplayEffects.InitialKey + 2, ActiveGameplayEffects.InitialKey + 1, [SpawnInEffectId])));
     }
 
     /// <summary>Exports naming the controller's input-correction component.</summary>

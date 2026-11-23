@@ -58,6 +58,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private ReliableKey[] _abilityKeys = [];
     private ulong[]? _abilityDefaults;
     private bool _abilitiesGranted;
+    private double _pawnSpawnedAt;
+    private bool _spawnInEffectRemoved;
     private ReliableKey? _worldTimeKey;
     private double? _worldTimeSentAt;
 
@@ -205,6 +207,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         }
 
         ServiceStreaming(io.Sender, now);
+        ServiceSpawnInEffect(io.Sender, now);
         ServiceAbilities(io.Sender);
         foreach (IPlayerFamily family in Families)
         {
@@ -410,6 +413,19 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _asyncLoads++;
     }
 
+    // Ends the spawn-in effect once it has lasted its time, which returns the character's input. The client has
+    // possessed the character by then, so its body stays turned to the view direction it possessed with.
+    private void ServiceSpawnInEffect(ReliableSender sender, double now)
+    {
+        if (_spawnInEffectRemoved || now - _pawnSpawnedAt < SpawnInEffect.Seconds)
+        {
+            return;
+        }
+
+        sender.Queue(Bunches.Actor(ChannelLayout.Pawn, _raid.State.SpawnInEffectRemoved(_player).Write));
+        _spawnInEffectRemoved = true;
+    }
+
     // Exports the class defaults of the Raider's abilities, then grants them.
     private void ServiceAbilities(ReliableSender sender)
     {
@@ -420,7 +436,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
 
         if (_abilityDefaults is null)
         {
-            (ObjectExports exports, ulong[] defaults) = AbilityExports();
+            (ObjectExports exports, ulong[] defaults, _) = ClassDefaultExports();
             _abilityKeys = [.. defaults.Chunk(AbilityExportsPerBunch).Select(group => sender.Queue(Bunches.Exports(exports, group)))];
             _abilityDefaults = defaults;
             return;
@@ -431,7 +447,8 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _abilitiesGranted = true;
     }
 
-    private (ObjectExports Exports, ulong[] Defaults) AbilityExports()
+    // The class defaults of the Raider's abilities and of the spawn-in effect, with the packages they are in.
+    private (ObjectExports Exports, ulong[] Abilities, ulong SpawnInEffect) ClassDefaultExports()
     {
         IReadOnlyCollection<ObjectExport> existing = _raid.Imports.Exports.Records.Values as IReadOnlyCollection<ObjectExport> ?? [.. _raid.Imports.Exports.Records.Values];
         Dictionary<string, StaticObjectExport> packages = existing.OfType<StaticObjectExport>().Where(record => record.OuterGuid == 0)
@@ -440,7 +457,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         List<StaticObjectExport> records = [];
         List<ulong> defaults = [];
         ulong guid = FirstAbilityGuid;
-        foreach (AbilityGrant grant in DefaultAbilities.Raider)
+        foreach (AbilityGrant grant in DefaultAbilities.Raider.Append(SpawnInEffect.ClassDefault))
         {
             if (!packages.TryGetValue(grant.Package, out StaticObjectExport? package))
             {
@@ -456,7 +473,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
             defaults.Add(classDefault.Guid);
         }
 
-        return (new ObjectExports(records), [.. defaults]);
+        return (new ObjectExports(records), [.. defaults[..^1]], defaults[^1]);
     }
 
     /// <inheritdoc />

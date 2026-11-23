@@ -21,7 +21,7 @@ public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization, the elevators, the
     // game state's world item classes and the first loot containers around the start.
-    private const string ReferenceTrace = "06119e442b9dff4a3fe38b54ddd56a8f10a4d8abc761702c877d37f6ac1d5dd3";
+    private const string ReferenceTrace = "36fe0e028ea685fb3f0c8b8356ebb8f275cbc31fee89e648ceadf624dd58bc0e";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -44,6 +44,23 @@ public sealed class RaidSessionTests
         Assert.Equal((1, 0, 0), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests, session.Channels.InputDecodeFailures));
         Assert.Equal(DoorOpenState.Open, session.Raid.DoorStates.Get(session.Door.Index).State.Open);
         Assert.Equal(ReferenceTrace, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', session.Trace) + "\n"))));
+    }
+
+    [Fact]
+    public void The_spawn_in_effect_ends_once_it_has_lasted_its_time()
+    {
+        ScriptedPlayer session = new();
+        session.Possess();
+        ChannelBunch removal = Bunches.Actor(ChannelLayout.Pawn, session.Raid.State.SpawnInEffectRemoved(session.Player).Write);
+
+        session.Service(100.0 + SpawnInEffect.Seconds - 0.1);
+        Assert.Equal(0, Removals());
+        session.Service(100.0 + SpawnInEffect.Seconds);
+        session.Service(100.0 + SpawnInEffect.Seconds + 1);
+        Assert.Equal(1, Removals());
+        return;
+
+        int Removals() => session.Sent.Count(bunch => bunch.Channel == ChannelLayout.Pawn && bunch.PayloadBits == removal.PayloadBits && bunch.Payload.AsSpan().SequenceEqual(removal.Payload));
     }
 
     [Fact]

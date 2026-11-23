@@ -72,6 +72,12 @@ public enum DeliveryPhase
     /// <summary>Attribute sets registered.</summary>
     AbilityRegistrationPending,
 
+    /// <summary>The spawn-in effect's class exported.</summary>
+    SpawnInEffectExportPending,
+
+    /// <summary>The spawn-in effect sent.</summary>
+    SpawnInEffectPending,
+
     /// <summary>Ability system delivered.</summary>
     AbilityDelivered,
 
@@ -210,6 +216,7 @@ public sealed partial class PlayerChannels
                 WorldActor pawn = Actor(_player.Pawn);
                 ActorSpawn pawnSpawn = new(pawn.Guid, _raid.Imports.Archetypes[pawn.ClassPath], 0, pawn.Location, pawn.Rotation);
                 _keys = [sender.Queue(new ActorInitialization(pawnSpawn, null, [_frames.SpawnFrame(this)]).ToBunch(ChannelLayout.Pawn, sender.NextSequence(ChannelLayout.Pawn), []))];
+                _pawnSpawnedAt = _raid.Clock();
                 Phase = DeliveryPhase.PawnOpenPending;
                 return true;
             case DeliveryPhase.PawnOpenPending when delivered:
@@ -270,6 +277,19 @@ public sealed partial class PlayerChannels
                 Phase = DeliveryPhase.AbilityRegistrationPending;
                 return true;
             case DeliveryPhase.AbilityRegistrationPending when delivered:
+                // The character spawns in immobile with its input disabled; the client turns its body to the view
+                // direction while it is. The effect lasts from the character's creation, so most of it passes
+                // behind the loading screen.
+                (ObjectExports classDefaults, _, ulong spawnInEffect) = ClassDefaultExports();
+                _keys = [sender.Queue(Bunches.Exports(classDefaults, [spawnInEffect]))];
+                Phase = DeliveryPhase.SpawnInEffectExportPending;
+                return true;
+            case DeliveryPhase.SpawnInEffectExportPending when delivered:
+                _keys = [sender.Queue(Bunches.Actor(ChannelLayout.Pawn,
+                    _raid.State.SpawnInEffectAdded(_player, ClassDefaultExports().SpawnInEffect, _raid.WorldSeconds(_pawnSpawnedAt)).Write))];
+                Phase = DeliveryPhase.SpawnInEffectPending;
+                return true;
+            case DeliveryPhase.SpawnInEffectPending when delivered:
                 Phase = DeliveryPhase.AbilityDelivered;
                 return true;
             case DeliveryPhase.AbilityDelivered:
