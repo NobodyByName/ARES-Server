@@ -49,6 +49,7 @@ public sealed class MapData
         DynamicLootGroups = [.. content.DynamicLootGroups.Select(group => group.Resolve(DynamicLootSpawners))];
         Doors = content.Doors;
         ExploitPreventionAreas = content.ExploitPreventionAreas;
+        SplinePaths = content.SplinePaths;
         Rounds = content.Rounds;
         LightingScenarios = content.LightingScenarios;
         RoundLightingGroups = GameDataIndex.Unique(content.RoundLightingGroups.Select(group => (group.Tag, group.Choices)), $"round lighting group of {WorldName}",
@@ -130,6 +131,9 @@ public sealed class MapData
 
     /// <summary>The locked rooms' exploit prevention areas.</summary>
     public ImmutableArray<ExploitPreventionAreaPlacement> ExploitPreventionAreas { get; }
+
+    /// <summary>The AI spline paths, ordered by name (ordinal); a path's name is how the actors that use it name it.</summary>
+    public ImmutableArray<SplinePathPlacement> SplinePaths { get; }
 
     /// <summary>The round configurations.</summary>
     public ImmutableArray<RoundConfiguration> Rounds { get; }

@@ -10,6 +10,7 @@ namespace Ares.GameDataExtract.World;
 /// <param name="GameMode">The map's game mode, game state and location tag.</param>
 /// <param name="Doors">The regular doors placed in the cells.</param>
 /// <param name="ExploitPreventionAreas">The exploit prevention areas placed in the cells.</param>
+/// <param name="SplinePaths">The AI spline paths placed in the persistent level and the cells.</param>
 /// <param name="Rounds">The map's round configurations.</param>
 /// <param name="LightingScenarios">The scenarios of the map's lighting lookup.</param>
 /// <param name="RoundLightingGroups">The round lighting groups.</param>
@@ -20,6 +21,7 @@ internal sealed record MapRulesData(
     MapGameMode GameMode,
     ImmutableArray<DoorPlacement> Doors,
     ImmutableArray<ExploitPreventionAreaPlacement> ExploitPreventionAreas,
+    ImmutableArray<SplinePathPlacement> SplinePaths,
     ImmutableArray<RoundConfiguration> Rounds,
     ImmutableArray<LightingScenario> LightingScenarios,
     ImmutableArray<RoundLightingGroup> RoundLightingGroups,
@@ -28,7 +30,7 @@ internal sealed record MapRulesData(
     PlayerStartCapsule PlayerStartCapsule);
 
 /// <summary>
-/// Extracts a map's gameplay tables: the game mode, the regular doors, the exploit prevention areas, the round configurations, the lighting, the
+/// Extracts a map's gameplay tables: the game mode, the regular doors, the exploit prevention areas, the AI spline paths, the round configurations, the lighting, the
 /// extraction points, the zipline defaults and the group spawn point
 /// capsule (<see cref="PlayerStartCapsule.Group"/>).
 /// </summary>
@@ -56,17 +58,21 @@ internal static class MapRulesExtractor
         (MapGameMode gameMode, ExportRef lighting, ExportRef roundLighting) = MapGameModeReader.Read(sources, mapPackage, world);
         DoorReader doors = new(sources);
         ExploitPreventionAreaReader areas = new(sources, components);
+        SplinePathReader paths = new(sources, scenes);
+        paths.ReadLevel(sources.Load(mapPackage));
         foreach (string cell in cellPackages)
         {
             CookedPackage package = sources.Load(cell);
             doors.ReadCell(cell, package);
             areas.ReadCell(cell, package);
+            paths.ReadLevel(package);
         }
 
         return new MapRulesData(
             gameMode,
             doors.Build(),
             areas.Build(),
+            paths.Build(),
             [.. rounds.Select(round => RoundReader.Read(sources, round))],
             LightingReader.Scenarios(sources, lighting),
             LightingReader.Groups(sources, roundLighting),

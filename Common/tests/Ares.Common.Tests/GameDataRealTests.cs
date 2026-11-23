@@ -83,6 +83,18 @@ public sealed class GameDataRealTests
     }
 
     [RealDataFact]
+    public void The_dam_spline_paths_have_unique_names_and_world_points()
+    {
+        MapData dam = Data.Map(GameNames.Maps.Dam);
+
+        Assert.Equal(157, dam.SplinePaths.Length);
+        Assert.Equal(118, dam.SplinePaths.Count(path => path.Closed));
+        Assert.Equal(dam.SplinePaths.Length, dam.SplinePaths.Select(path => path.Name).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(dam.SplinePaths, path => Assert.True(path.Points.Length >= 2, path.Name));
+        Assert.All(dam.SplinePaths.SelectMany(path => path.Points), point => Assert.True(point is { X: > 100_000, Y: > 100_000 }, point.ToString()));
+    }
+
+    [RealDataFact]
     public void The_dam_loose_item_sockets_are_apart_from_its_container_sockets()
     {
         MapData dam = Data.Map(GameNames.Maps.Dam);

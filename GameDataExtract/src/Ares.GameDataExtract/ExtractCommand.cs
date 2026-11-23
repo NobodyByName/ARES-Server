@@ -246,7 +246,7 @@ internal sealed class ExtractCommand
             if (rules is not null)
             {
                 output.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                    $"Gameplay tables: {rules.Doors.Length:N0} doors, {rules.ExploitPreventionAreas.Length:N0} exploit prevention areas, {rules.Rounds.Length:N0} round configurations, {rules.LightingScenarios.Length:N0} lighting scenarios, {rules.RoundLightingGroups.Length:N0} round lighting groups, {rules.Extraction.Points.Length:N0} extraction points (read in {rulesTime.TotalSeconds:F1} s)"));
+                    $"Gameplay tables: {rules.Doors.Length:N0} doors, {rules.ExploitPreventionAreas.Length:N0} exploit prevention areas, {rules.SplinePaths.Length:N0} spline paths, {rules.Rounds.Length:N0} round configurations, {rules.LightingScenarios.Length:N0} lighting scenarios, {rules.RoundLightingGroups.Length:N0} round lighting groups, {rules.Extraction.Points.Length:N0} extraction points (read in {rulesTime.TotalSeconds:F1} s)"));
             }
 
             output.WriteLine(string.Create(CultureInfo.InvariantCulture,
@@ -353,6 +353,7 @@ internal sealed class ExtractCommand
         writer.WriteTable(MapTables.GameMode(mapName), [rules.GameMode], json.MapGameMode);
         writer.WriteTable(MapTables.Doors(mapName), rules.Doors, json.DoorPlacement);
         writer.WriteTable(MapTables.ExploitPreventionAreas(mapName), rules.ExploitPreventionAreas, json.ExploitPreventionAreaPlacement);
+        writer.WriteTable(MapTables.SplinePaths(mapName), rules.SplinePaths, json.SplinePathPlacement);
         writer.WriteTable(MapTables.Rounds(mapName), rules.Rounds, json.RoundConfiguration);
         writer.WriteTable(MapTables.LightingScenarios(mapName), rules.LightingScenarios, json.LightingScenario);
         writer.WriteTable(MapTables.RoundLightingGroups(mapName), rules.RoundLightingGroups, json.RoundLightingGroup);

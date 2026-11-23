@@ -2,7 +2,7 @@ using Ares.Structs.Game.World;
 
 namespace Ares.Common.GameData;
 
-/// <summary>The per-map gameplay tables: game mode, doors, exploit prevention areas, rounds, lighting, extraction and shared defaults.</summary>
+/// <summary>The per-map gameplay tables: game mode, doors, exploit prevention areas, spline paths, rounds, lighting, extraction and shared defaults.</summary>
 public static partial class MapTables
 {
     /// <summary>The map's game mode, game state and location tag (<see cref="MapGameMode"/>), one row.</summary>
@@ -19,6 +19,13 @@ public static partial class MapTables
     /// </summary>
     /// <param name="mapName">The map's world name.</param>
     public static string ExploitPreventionAreas(string mapName) => GameDataFiles.MapFile(mapName, "exploit-prevention-areas.json");
+
+    /// <summary>
+    /// The AI spline paths the map's persistent level and cells place (<see cref="SplinePathPlacement"/>), ordered by name
+    /// (ordinal).
+    /// </summary>
+    /// <param name="mapName">The map's world name.</param>
+    public static string SplinePaths(string mapName) => GameDataFiles.MapFile(mapName, "spline-paths.json");
 
     /// <summary>The map's round configurations (<see cref="RoundConfiguration"/>), in <see cref="RoundConfigurationAssets"/> order.</summary>
     /// <param name="mapName">The map's world name.</param>

@@ -2,6 +2,7 @@ using Ares.GameDataExtract.Packages;
 using Ares.GameDataExtract.Properties;
 using Ares.Structs.Core.Assets;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Game.World;
 
 namespace Ares.GameDataExtract.Tests;
 
@@ -137,6 +138,35 @@ public sealed class PropertyReaderTests
         Assert.Equal(["Tag.A", "Tag.B"], bag.Get<string[]>("Tags"));
         Assert.Equal(new Rotator(10, 20, 30), bag.Get<Rotator>("Turn"));
         Assert.Equal(new Vector3D(1, 2, 3), bag.Get<Vector3D>("Small"));
+        Assert.Equal(block.Length, end);
+    }
+
+    [Fact]
+    public void Nav_agent_properties_are_stepped_over_to_the_path_points_after_them()
+    {
+        StructSchema schema = new("Path",
+        [
+            new PropertyField("Properties", PropertyType.StructOf(NavAgentPropertiesMembers.Schema)),
+            new PropertyField(SplinePathClasses.PointsMember, PropertyType.ArrayOf(PropertyType.StructOf(EngineStructs.Vector))),
+        ]);
+        byte[] block =
+        [
+            .. PropertyBlocks.Header(0, 1),
+            .. PropertyBlocks.Header(0, 1, 2, 4, 7),
+            .. BitConverter.GetBytes(500f), .. BitConverter.GetBytes(700f), .. BitConverter.GetBytes(200f),
+            .. PropertyBlocks.Name(Name("/Game/Other")), .. PropertyBlocks.Name(Name("Other")), .. BitConverter.GetBytes(0),
+            1,
+            .. BitConverter.GetBytes(2), .. PropertyBlocks.Vector(491816, 535866, -36805), .. PropertyBlocks.Vector(480816, 550666, -34605),
+        ];
+
+        PropertyBag bag = Read(block, schema, out int end);
+
+        PropertyBag agent = bag.Get<PropertyBag>("Properties");
+        Assert.Equal(700f, agent.Get<float>("AgentHeight"));
+        Assert.Equal("/Game/Other.Other", agent.Get<SoftObjectPath>("PreferredNavData").Path);
+        Assert.True(agent.Get<bool>("bCanWalk"));
+        Assert.Equal([new Vector3D(491816, 535866, -36805), new Vector3D(480816, 550666, -34605)],
+            bag.Get<object[]>(SplinePathClasses.PointsMember).Cast<Vector3D>());
         Assert.Equal(block.Length, end);
     }
 

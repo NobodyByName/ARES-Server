@@ -343,11 +343,17 @@ public static class CapsuleComponentMembers
     public const int ScenePart = 127;
 }
 
-/// <summary>Chain facts of a <c>USplineComponent</c> (a parent that spline meshes attach to).</summary>
+/// <summary>
+/// Chain facts of a <c>USplineComponent</c> (a parent that spline meshes attach to, or a path's spline): its own members
+/// come first, the scene part follows.
+/// </summary>
 public static class SplineComponentMembers
 {
     /// <summary>Script path of the class.</summary>
     public const string ClassPath = "/Script/Engine.SplineComponent";
+
+    /// <summary><c>bClosedLoop</c>: a bool, whether the spline's last point joins its first (false by default).</summary>
+    public const int ClosedLoop = 9;
 
     /// <summary>Index of the scene part.</summary>
     public const int ScenePart = 135;

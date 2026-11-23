@@ -30,6 +30,7 @@ internal sealed class MapRuleSources
         {
             [RoundConfigurationMembers.NativeBase] = RoundConfigurationMembers.PersistenceDataAsset,
             [WorldSettingsMembers.NativeBase] = WorldSettingsMembers.Schema,
+            [NavAgentPropertiesMembers.Name] = NavAgentPropertiesMembers.Schema,
         });
         _classes = new ClassSchemas(packages, path => path == LevelScriptMembers.TimerHandlePath ? LevelScriptMembers.TimerHandle : schemas.ForPath(path));
         _defaults = new ObjectDefaults(packages, _classes.ForObject);
