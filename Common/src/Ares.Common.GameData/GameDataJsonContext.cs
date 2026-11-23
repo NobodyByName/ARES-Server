@@ -58,6 +58,7 @@ namespace Ares.Common.GameData;
 [JsonSerializable(typeof(DynamicLootGroupEntry))]
 [JsonSerializable(typeof(MapGameMode))]
 [JsonSerializable(typeof(DoorPlacement))]
+[JsonSerializable(typeof(ExploitPreventionAreaPlacement))]
 [JsonSerializable(typeof(RoundConfiguration))]
 [JsonSerializable(typeof(LightingScenario))]
 [JsonSerializable(typeof(RoundLightingGroup))]

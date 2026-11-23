@@ -80,6 +80,7 @@ internal static class GameDataReader
             DynamicLootSpawners = directory.ReadTable(MapTables.DynamicLootSpawners(map), s_json.DynamicLootSpawner),
             DynamicLootGroups = directory.ReadTable(MapTables.DynamicLootGroups(map), s_json.DynamicLootGroupEntry),
             Doors = directory.ReadTable(MapTables.Doors(map), s_json.DoorPlacement),
+            ExploitPreventionAreas = directory.ReadTable(MapTables.ExploitPreventionAreas(map), s_json.ExploitPreventionAreaPlacement),
             Rounds = directory.ReadTable(MapTables.Rounds(map), s_json.RoundConfiguration),
             LightingScenarios = directory.ReadTable(MapTables.LightingScenarios(map), s_json.LightingScenario),
             RoundLightingGroups = directory.ReadTable(MapTables.RoundLightingGroups(map), s_json.RoundLightingGroup),

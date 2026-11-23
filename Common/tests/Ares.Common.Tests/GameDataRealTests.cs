@@ -70,6 +70,19 @@ public sealed class GameDataRealTests
     }
 
     [RealDataFact]
+    public void The_dam_exploit_prevention_areas_hold_the_locked_rooms_triggers()
+    {
+        MapData dam = Data.Map(GameNames.Maps.Dam);
+        HashSet<(string, string)> areas = [.. dam.ExploitPreventionAreas.Select(area => (area.Cell, area.Actor))];
+
+        Assert.Equal(10, dam.ExploitPreventionAreas.Length);
+        Assert.All(dam.ExploitPreventionAreas, area => Assert.NotEmpty(area.Triggers));
+        Assert.All(dam.ExploitPreventionAreas, area => Assert.Contains(area.Cell, dam.StreamingCells));
+        Assert.All(dam.ExploitPreventionAreas.SelectMany(area => area.Triggers), box => Assert.True(box.HalfExtent is { X: > 0, Y: > 0, Z: > 0 }));
+        Assert.All(dam.Doors.Where(door => door.ExploitPreventionArea is not null), door => Assert.Contains((door.Cell, door.ExploitPreventionArea!), areas));
+    }
+
+    [RealDataFact]
     public void The_dam_loose_item_sockets_are_apart_from_its_container_sockets()
     {
         MapData dam = Data.Map(GameNames.Maps.Dam);

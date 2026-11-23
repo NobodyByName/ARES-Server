@@ -48,6 +48,7 @@ public sealed class MapData
 
         DynamicLootGroups = [.. content.DynamicLootGroups.Select(group => group.Resolve(DynamicLootSpawners))];
         Doors = content.Doors;
+        ExploitPreventionAreas = content.ExploitPreventionAreas;
         Rounds = content.Rounds;
         LightingScenarios = content.LightingScenarios;
         RoundLightingGroups = GameDataIndex.Unique(content.RoundLightingGroups.Select(group => (group.Tag, group.Choices)), $"round lighting group of {WorldName}",
@@ -126,6 +127,9 @@ public sealed class MapData
 
     /// <summary>The regular doors.</summary>
     public ImmutableArray<DoorPlacement> Doors { get; }
+
+    /// <summary>The locked rooms' exploit prevention areas.</summary>
+    public ImmutableArray<ExploitPreventionAreaPlacement> ExploitPreventionAreas { get; }
 
     /// <summary>The round configurations.</summary>
     public ImmutableArray<RoundConfiguration> Rounds { get; }

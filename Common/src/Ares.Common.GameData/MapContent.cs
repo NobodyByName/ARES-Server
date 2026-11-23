@@ -67,6 +67,9 @@ public sealed record MapContent
     /// <summary><see cref="MapTables.Doors"/>.</summary>
     public ImmutableArray<DoorPlacement> Doors { get; init; } = [];
 
+    /// <summary><see cref="MapTables.ExploitPreventionAreas"/>.</summary>
+    public ImmutableArray<ExploitPreventionAreaPlacement> ExploitPreventionAreas { get; init; } = [];
+
     /// <summary><see cref="MapTables.Rounds"/>.</summary>
     public ImmutableArray<RoundConfiguration> Rounds { get; init; } = [];
 

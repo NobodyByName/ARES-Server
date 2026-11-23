@@ -9,6 +9,7 @@ namespace Ares.GameDataExtract.World;
 /// <summary>The gameplay tables of one map (see <see cref="MapRulesExtractor"/>).</summary>
 /// <param name="GameMode">The map's game mode, game state and location tag.</param>
 /// <param name="Doors">The regular doors placed in the cells.</param>
+/// <param name="ExploitPreventionAreas">The exploit prevention areas placed in the cells.</param>
 /// <param name="Rounds">The map's round configurations.</param>
 /// <param name="LightingScenarios">The scenarios of the map's lighting lookup.</param>
 /// <param name="RoundLightingGroups">The round lighting groups.</param>
@@ -18,6 +19,7 @@ namespace Ares.GameDataExtract.World;
 internal sealed record MapRulesData(
     MapGameMode GameMode,
     ImmutableArray<DoorPlacement> Doors,
+    ImmutableArray<ExploitPreventionAreaPlacement> ExploitPreventionAreas,
     ImmutableArray<RoundConfiguration> Rounds,
     ImmutableArray<LightingScenario> LightingScenarios,
     ImmutableArray<RoundLightingGroup> RoundLightingGroups,
@@ -26,7 +28,7 @@ internal sealed record MapRulesData(
     PlayerStartCapsule PlayerStartCapsule);
 
 /// <summary>
-/// Extracts a map's gameplay tables: the game mode, the regular doors, the round configurations, the lighting, the
+/// Extracts a map's gameplay tables: the game mode, the regular doors, the exploit prevention areas, the round configurations, the lighting, the
 /// extraction points, the zipline defaults and the group spawn point
 /// capsule (<see cref="PlayerStartCapsule.Group"/>).
 /// </summary>
@@ -49,17 +51,22 @@ internal static class MapRulesExtractor
         IReadOnlyList<string> rounds)
     {
         MapRuleSources sources = new(packages, layouts);
-        SceneResolver scenes = new ComponentReader(packages).Scenes;
+        ComponentReader components = new(packages);
+        SceneResolver scenes = components.Scenes;
         (MapGameMode gameMode, ExportRef lighting, ExportRef roundLighting) = MapGameModeReader.Read(sources, mapPackage, world);
         DoorReader doors = new(sources);
+        ExploitPreventionAreaReader areas = new(sources, components);
         foreach (string cell in cellPackages)
         {
-            doors.ReadCell(cell, sources.Load(cell));
+            CookedPackage package = sources.Load(cell);
+            doors.ReadCell(cell, package);
+            areas.ReadCell(cell, package);
         }
 
         return new MapRulesData(
             gameMode,
             doors.Build(),
+            areas.Build(),
             [.. rounds.Select(round => RoundReader.Read(sources, round))],
             LightingReader.Scenarios(sources, lighting),
             LightingReader.Groups(sources, roundLighting),
