@@ -183,6 +183,9 @@ public sealed partial class PlayerChannels
     /// <summary>ARCs whose actor and ability system this client has.</summary>
     public int ArcsReady => _arcs.Ready;
 
+    /// <summary>ARC blackboard frames sent to this client after the first ones, and how many it confirmed.</summary>
+    public (int Sent, int Confirmed) ArcFrames => _arcs.Frames;
+
     /// <summary>Whether this client has an ARC.</summary>
     /// <param name="arc">ARC index.</param>
     /// <returns>True from the ability system's content until the channel closes.</returns>

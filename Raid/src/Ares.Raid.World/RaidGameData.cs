@@ -1,9 +1,11 @@
 using Ares.Common.Game;
 using Ares.Common.Game.Content;
+using Ares.Common.Game.Enemies;
 using Ares.Common.Game.Loot;
 using Ares.Common.GameData;
 using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Loot;
+using Ares.Structs.Game.Enemies;
 
 namespace Ares.Raid.World;
 
@@ -30,6 +32,8 @@ public sealed class RaidGameData
         LootRolls = new LootContentRolls(Items.Definitions, data.Loot, contents);
         LooseRolls = new LooseItemRolls(Items.Definitions.PlainItems.Where(item => Items.Carried.ContainsKey(checked((ushort)item.UsableIndex))), data.Loot, contents);
         LootRules = content.LootRules(data, Items.Definitions);
+        ArcSpawners = content.ArcSpawners(data).GetValueOrDefault(Map.WorldName, []);
+        ArcMovement = content.ArcMovement;
         Settings = settings ?? RaidSettings.Default;
     }
 
@@ -53,6 +57,12 @@ public sealed class RaidGameData
 
     /// <summary>The operator's loot rules: spawn chances and contents of chosen containers.</summary>
     public LootRules LootRules { get; }
+
+    /// <summary>The ARC spawners of the map.</summary>
+    public IReadOnlyList<ArcSpawner> ArcSpawners { get; }
+
+    /// <summary>How each ARC moves while idle.</summary>
+    public IReadOnlyDictionary<ArcClass, ArcMovementProfile> ArcMovement { get; }
 
     /// <summary>The plain raid values of the Host's configuration.</summary>
     public RaidSettings Settings { get; }

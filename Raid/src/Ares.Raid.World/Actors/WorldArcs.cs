@@ -1,7 +1,13 @@
+using Ares.Common.Game.Enemies;
+using Ares.Raid.World.Collision;
+using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Core.Geometry;
+using Ares.Structs.Core.Serialization;
 using Ares.Structs.Game.Enemies;
+using Ares.Structs.Game.Pendulum;
 using Ares.Structs.Game.Replication;
+using Ares.Structs.Game.World;
 using Ares.Structs.Net.Replication;
 using Ares.Structs.Net.Session;
 
@@ -11,10 +17,13 @@ namespace Ares.Raid.World.Actors;
 /// <param name="Index">Index in <see cref="WorldArcs.All"/>.</param>
 /// <param name="Class">The ARC.</param>
 /// <param name="Guid">The actor (dynamic id); its attribute sets and ability system take ids after it.</param>
-/// <param name="Location">Where the actor stands.</param>
-/// <param name="Rotation">The actor's rotation.</param>
+/// <param name="Location">Where the actor was spawned.</param>
+/// <param name="Rotation">The actor's rotation at its spawn.</param>
 public sealed record WorldArc(int Index, ArcClass Class, ulong Guid, Vector3D Location, Rotator Rotation)
 {
+    /// <summary>The spawner it came from, or null for an ARC the operator placed by hand.</summary>
+    public ArcSpawner? Spawner { get; init; }
+
     /// <summary>The attribute sets, in <see cref="Arcs.AttributeSets"/> order.</summary>
     public IReadOnlyList<ulong> AttributeSets => [.. Arcs.AttributeSets.Select((_, index) => Guid + WorldArcs.FirstAttributeSetOffset + (2 * (ulong)index))];
 
@@ -26,8 +35,9 @@ public sealed record WorldArc(int Index, ArcClass Class, ulong Guid, Vector3D Lo
 }
 
 /// <summary>
-/// The ARCs of a raid. An ARC stands where it was spawned: it has no controller, movement or abilities, and stays
-/// until it is despawned or the raid ends.
+/// The ARCs of a raid. An ARC placed by hand stays where it was spawned; one spawned at a spawner flies its idle
+/// movement (<see cref="ArcFlight"/>). Neither has a controller or abilities; each stays until it is despawned or the
+/// raid ends. Clients receive an ARC's state as blackboard frames (<see cref="ArcBlackboard"/>).
 /// </summary>
 public sealed class WorldArcs
 {
@@ -50,6 +60,7 @@ public sealed class WorldArcs
     private readonly Dictionary<ArcClass, ulong> _archetypes = [];
     private readonly ulong[] _attributeSetClasses;
     private readonly List<WorldArc> _arcs = [];
+    private readonly List<ArcFlight?> _flights = [];
 
     /// <summary>Creates the raid's empty set of ARCs.</summary>
     /// <param name="replication">Replication context.</param>
@@ -135,7 +146,64 @@ public sealed class WorldArcs
 
         WorldArc spawned = new(_arcs.Count, arc, FirstGuid + (GuidStride * (ulong)_arcs.Count), location, rotation);
         _arcs.Add(spawned);
+        _flights.Add(null);
         return spawned;
+    }
+
+    /// <summary>
+    /// Spawns an ARC at a spawner: at the home point nearest the spawner (on its route, see <see cref="ArcRoutes"/>), with
+    /// no rotation, flying its idle movement. A spawner with several routes uses one of them, drawn with the seed.
+    /// </summary>
+    /// <param name="arc">The ARC.</param>
+    /// <param name="spawner">The spawner.</param>
+    /// <param name="paths">The map's spline paths.</param>
+    /// <param name="profile">How the ARC moves.</param>
+    /// <param name="collision">The map's collision, or null.</param>
+    /// <param name="seed">Seed of its route and its movement.</param>
+    /// <returns>The spawned ARC, or null when the raid spawned <see cref="MaxArcs"/> already.</returns>
+    public WorldArc? Spawn(ArcClass arc, ArcSpawner spawner, IReadOnlyList<SplinePathPlacement> paths, ArcMovementProfile profile, CollisionWorld? collision, int seed)
+    {
+        ArgumentNullException.ThrowIfNull(arc);
+        ArgumentNullException.ThrowIfNull(spawner);
+        ArgumentNullException.ThrowIfNull(paths);
+        ArgumentNullException.ThrowIfNull(profile);
+        if (_arcs.Count >= MaxArcs)
+        {
+            return null;
+        }
+
+        Random random = new(seed);
+        SplinePathPlacement[] routes = [.. spawner.Routes.Select(name => paths.FirstOrDefault(path => path.Name.Equals(name, StringComparison.Ordinal))).OfType<SplinePathPlacement>()];
+        SplinePathPlacement? route = routes.Length == 0 ? null : routes[random.Next(routes.Length)];
+        double spacing = Math.Max(profile.HomePointSpacing * spawner.GroupSearchRadius, profile.MinHomePointSpacing);
+        ArcHomePoints homes = ArcRoutes.HomePoints(spawner, route, spacing);
+        int home = homes.Nearest(spawner.Location);
+        WorldArc spawned = new(_arcs.Count, arc, FirstGuid + (GuidStride * (ulong)_arcs.Count), homes.Points[home], default) { Spawner = spawner };
+        _arcs.Add(spawned);
+        _flights.Add(new ArcFlight(profile, homes, home, spawner.GroupSearchRadius, collision, random.Next()));
+        return spawned;
+    }
+
+    /// <summary>Moves every flying ARC on to a time on the raid clock.</summary>
+    /// <param name="now">Raid clock, in seconds.</param>
+    public void Advance(double now)
+    {
+        for (int index = 0; index < _arcs.Count; index++)
+        {
+            if (!_arcs[index].Destroyed)
+            {
+                _flights[index]?.Advance(now);
+            }
+        }
+    }
+
+    /// <summary>Where an ARC is now.</summary>
+    /// <param name="arc">The ARC.</param>
+    /// <returns>Its pose; an ARC placed by hand stays at its spawn.</returns>
+    public ArcPose Pose(WorldArc arc)
+    {
+        ArgumentNullException.ThrowIfNull(arc);
+        return _flights[arc.Index]?.Pose ?? new ArcPose(arc.Location, default, arc.Rotation.Yaw * Math.PI / 180, arc.Rotation.Pitch * Math.PI / 180, false);
     }
 
     /// <summary>Despawns every ARC.</summary>
@@ -161,10 +229,10 @@ public sealed class WorldArcs
     /// <param name="arc">The ARC.</param>
     /// <param name="location">The player's location.</param>
     /// <returns>True when the player's client should have it.</returns>
-    public static bool Relevant(WorldArc arc, Vector3D location)
+    public bool Relevant(WorldArc arc, Vector3D location)
     {
         ArgumentNullException.ThrowIfNull(arc);
-        return !arc.Destroyed && Distance(arc.Location, location) <= Arcs.NetCullDistance;
+        return !arc.Destroyed && ArcRoutes.Distance(Pose(arc).Location, location) <= Arcs.NetCullDistance;
     }
 
     /// <summary>The static objects an ARC's channel needs: its class default and the attribute set classes.</summary>
@@ -182,14 +250,15 @@ public sealed class WorldArcs
     public ChannelBunch ExportBunch(IReadOnlyList<ulong> roots) => Bunches.Exports(_exports, roots);
 
     /// <summary>
-    /// Opens an ARC's channel: spawns the actor where it stands with its roles (the client simulates it, the server is
-    /// the authority) and itself as instigator, and creates its attribute sets.
+    /// Opens an ARC's channel: spawns the actor where it is with its roles (the client simulates it, the server is
+    /// the authority), itself as instigator and the first (reset) frame of its blackboard, and creates its attribute sets.
     /// </summary>
     /// <param name="arc">The ARC.</param>
     /// <param name="channel">Channel index.</param>
     /// <param name="sequence">Reliable sequence number.</param>
+    /// <param name="state">Its blackboard state (<see cref="State"/>), sent as the reset frame <see cref="ArcFrames.First"/>.</param>
     /// <returns>The bunch.</returns>
-    public ChannelBunch OpenBunch(WorldArc arc, int channel, int sequence)
+    public ChannelBunch OpenBunch(WorldArc arc, int channel, int sequence, IReadOnlyDictionary<int, PendulumSlot> state)
     {
         ArgumentNullException.ThrowIfNull(arc);
         ActorContentBlock actor = _replication.Encode(Arcs.ActorClass, new Dictionary<string, object?>
@@ -198,7 +267,9 @@ public sealed class WorldArcs
             [PropertyNames.Role] = (ulong)NetRole.Authority,
             [PropertyNames.Instigator] = arc.Guid,
         }, new Dictionary<ulong, string> { [arc.Guid] = Arcs.ActorClass });
-        ActorSpawn spawn = new(arc.Guid, Archetype(arc.Class), 0, arc.Location, arc.Rotation);
+        actor = WorldState.Merge(actor, Frame(arc, 0, ArcFrames.First, state, new Dictionary<int, PendulumSlot>()));
+        ArcPose pose = Pose(arc);
+        ActorSpawn spawn = new(arc.Guid, Archetype(arc.Class), 0, pose.Location, arc.Rotation);
         return new ActorInitialization(spawn, null, [actor])
         {
             Subobjects = [.. arc.AttributeSets.Select((guid, index) => new DynamicSubobjectContent(guid, _attributeSetClasses[index], new ActorContentBlock([], 0, false), null))],
@@ -249,6 +320,31 @@ public sealed class WorldArcs
         return (path[..dot], path[(dot + 1)..]);
     }
 
-    private static double Distance(Vector3D a, Vector3D b) =>
-        Math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)) + ((a.Z - b.Z) * (a.Z - b.Z)));
+    /// <summary>An ARC's blackboard state in a pose (see <see cref="ArcFrames.State"/>).</summary>
+    /// <param name="arc">The ARC.</param>
+    /// <param name="pose">Its pose.</param>
+    /// <returns>The slots by index.</returns>
+    public static IReadOnlyDictionary<int, PendulumSlot> State(WorldArc arc, ArcPose pose)
+    {
+        ArgumentNullException.ThrowIfNull(arc);
+        return ArcFrames.State(arc.Class.Blackboard, pose);
+    }
+
+    /// <summary>A blackboard frame of an ARC: a reset when there is no baseline, otherwise a delta from it.</summary>
+    /// <param name="arc">The ARC.</param>
+    /// <param name="baseline">Frame number the delta is coded against (0 for a reset).</param>
+    /// <param name="frame">The frame's number.</param>
+    /// <param name="state">The frame's state.</param>
+    /// <param name="previous">The baseline's state (empty for a reset).</param>
+    /// <returns>The actor content (the blackboard field).</returns>
+    public static ActorContentBlock Frame(WorldArc arc, uint baseline, uint frame, IReadOnlyDictionary<int, PendulumSlot> state, IReadOnlyDictionary<int, PendulumSlot> previous)
+    {
+        ArgumentNullException.ThrowIfNull(arc);
+        ArcBlackboard blackboard = arc.Class.Blackboard;
+        BitWriter payload = new();
+        ArcFrames.Write(payload, baseline, frame, state, previous);
+        BitWriter writer = new();
+        new ActorFieldPayload(blackboard.Field, payload.ToArray(), payload.Length).Write(writer, blackboard.FieldCount);
+        return new ActorContentBlock(writer.ToArray(), writer.Length, false);
+    }
 }

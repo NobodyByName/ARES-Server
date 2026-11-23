@@ -318,6 +318,7 @@ public sealed class RaidServer(Socket socket, RaidConnections connections, JsonE
             ["pickup_requests"] = string.Join(' ', channels.PickupRequests),
             ["arcs_ready"] = channels.ArcsReady,
             ["arc_channels"] = channels.ArcChannelsInUse,
+            ["arc_frames"] = $"{channels.ArcFrames.Sent} sent, {channels.ArcFrames.Confirmed} confirmed",
             ["arc_failures"] = string.Join(' ', channels.ArcFailures),
             ["elevators_ready"] = channels.ElevatorsReady,
             ["elevator_states"] = channels.ElevatorStates,
