@@ -71,3 +71,22 @@ public static class DoorStartFlagMembers
         (BreachOpensDoor, false),
     ];
 }
+
+/// <summary>The members a locked door's unlock items are read from (<c>ADoorBase.UnlockRequiredItems</c>, <c>FRequiredItemInfo</c>).</summary>
+public static class DoorUnlockMembers
+{
+    /// <summary>The door's unlock items (an array of <c>FRequiredItemInfo</c>).</summary>
+    public const string UnlockRequiredItems = "UnlockRequiredItems";
+
+    /// <summary>The item class.</summary>
+    public const string RequiredItem = "RequiredItem";
+
+    /// <summary>How many of the item are needed.</summary>
+    public const string RequiredAmount = "RequiredAmount";
+
+    /// <summary>Whether unlocking takes the items.</summary>
+    public const string ConsumeItemOnInteract = "bConsumeItemOnInteract";
+
+    /// <summary>The locked room's exploit prevention area (a soft reference to an actor of the door's level).</summary>
+    public const string LockedRoomExploitPreventionArea = "LockedRoomExploitPreventionArea";
+}

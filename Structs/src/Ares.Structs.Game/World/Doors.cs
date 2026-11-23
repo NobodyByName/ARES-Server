@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Ares.Structs.Game.World;
 
 /// <summary>A regular door placed in a World Partition cell's persistent level.</summary>
@@ -19,7 +21,25 @@ public readonly record struct DoorPlacement(string Cell, string Actor)
 
     /// <summary>Opens once breached (<c>bBreachOpensDoor</c>); otherwise it stays closed without its barricade.</summary>
     public bool BreachOpensDoor { get; init; }
+
+    /// <summary>
+    /// Items the unlock button asks for (<c>UnlockRequiredItems</c>); a locked door without any has no usable unlock
+    /// button.
+    /// </summary>
+    public ImmutableArray<DoorUnlockItem> UnlockItems { get; init; } = [];
+
+    /// <summary>
+    /// Actor name, in the door's cell, of the locked room's exploit prevention area (<c>LockedRoomExploitPreventionArea</c>),
+    /// or <see langword="null"/>; unlocking the door disables it.
+    /// </summary>
+    public string? ExploitPreventionArea { get; init; }
 }
+
+/// <summary>An item a locked door's unlock button asks for (<c>FRequiredItemInfo</c>).</summary>
+/// <param name="ItemClass">Item class path (<c>RequiredItem</c>), as items list it.</param>
+/// <param name="Amount">How many of the item the player must carry (<c>RequiredAmount</c>).</param>
+/// <param name="Consume">Unlocking takes the items from the player (<c>bConsumeItemOnInteract</c>).</param>
+public readonly record struct DoorUnlockItem(string ItemClass, int Amount, bool Consume);
 
 /// <summary>Replicated open state of a door (<c>EDoorOpenState</c>).</summary>
 public enum DoorOpenState : byte

@@ -106,6 +106,17 @@ internal sealed class MapRuleSources
         return flags;
     }
 
+    /// <summary>
+    /// The member <paramref name="name"/> as the object of <paramref name="target"/>'s archetype chain nearest to it that
+    /// lists the member stores it (only that object is read), or <see langword="null"/> when none lists it.
+    /// </summary>
+    /// <exception cref="InvalidDataException">The member is not in an object's chain, or that object stores an unknown member before it.</exception>
+    public PropertyBag? Nearest(ExportRef target, string name) =>
+        _defaults.Archetypes(target)
+            .Where(current => UnversionedHeader.Read(current.Package.Data, CookedPackage.StartOf(current.Export)).Contains(SchemaPrefix.IndexOf(_classes.ForObject(current), name)))
+            .Select(current => Own(current, [name]))
+            .FirstOrDefault();
+
     /// <summary>The members <paramref name="names"/> that <paramref name="target"/> itself stores (no archetype).</summary>
     /// <exception cref="InvalidDataException">A member is not in the chain, or the object stores an unknown member before one of them.</exception>
     public PropertyBag Own(ExportRef target, IReadOnlyList<string> names) => SchemaPrefix.Read(target.Package, target.Export, _classes.ForObject(target), names);
