@@ -69,6 +69,15 @@ public sealed partial class PlayerChannels
     /// <summary>Request values received on breach buttons, with their counts (a hold sends more than a press).</summary>
     public IReadOnlyDictionary<int, int> BreachRequests => _doors.BreachRequests;
 
+    /// <summary>Doors unlocked.</summary>
+    public int DoorUnlocks => _doors.Unlocks;
+
+    /// <summary>Unlock presses refused because the player lacked the unlock items.</summary>
+    public int MissingDoorKeys => _doors.MissingKeys;
+
+    /// <summary>Request values received on unlock buttons, with their counts.</summary>
+    public IReadOnlyDictionary<int, int> UnlockRequests => _doors.UnlockRequests;
+
     /// <summary>Whole-stack inventory swaps accepted.</summary>
     public int InventoryMoves { get; private set; }
 

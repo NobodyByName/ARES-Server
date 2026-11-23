@@ -38,7 +38,7 @@ Each small cell represents one content piece. Green: **Done**; blue: **Partial**
 
 | Content | Status | Details |
 | --- | --- | --- |
-| <a id="content-root-0-0-2-0"></a>Regular doors | Partial | 120 placed regular doors; door buttons work and barricaded doors can be breached (moving cancels the breach). Unlocking, door blockers and multiplayer interactions need assessment. |
+| <a id="content-root-0-0-2-0"></a>Regular doors | Partial | 120 placed regular doors; door buttons work, barricaded doors can be breached (moving cancels the breach), and the 7 locked doors that need an item unlock with it (the item is used up). A still-locked room fires its anti-exploit jets while a player is inside (no damage yet) and cannot be unlocked until they stop. The keyless locked door, door blockers and multiplayer interactions need assessment. |
 | <a id="content-root-0-0-2-1"></a>Placed ladders | Partial | 43 placed ladders; climbing is stock-client verified. Multiplayer and traversal validation remain. |
 
 <a id="content-root-0-1"></a>

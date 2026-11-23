@@ -32,6 +32,9 @@ public sealed record RaidConfiguration
           --extraction-seconds <n>    Seconds an elevator stays ready before it leaves on its own (default {RaidSettings.DefaultExtractionSeconds})
           --extraction-ready-seconds <n>
                                       Seconds from the end of an elevator's call to its doors opening (default {RaidSettings.DefaultExtractionReadySeconds})
+          --exploit-trap-reset-seconds <n>
+                                      Seconds a locked room's anti-exploit jets keep firing after the last player left,
+                                      0 turns the trap off (default {RaidSettings.DefaultExploitTrapResetSeconds})
           --game-data-dir <dir>       Folder with the game data written by ARES-GameDataExtract (required to start)
           --content-dir <dir>         Folder with the ARES content files (required to start; ARES-Host passes its
                                       content-dir)
@@ -113,6 +116,7 @@ public sealed record RaidConfiguration
         int lootCullDistance = arguments.GetInt32("loot-cull-distance", RaidSettings.DefaultLootCullDistance);
         int extractionSeconds = arguments.GetInt32("extraction-seconds", RaidSettings.DefaultExtractionSeconds);
         int extractionReadySeconds = arguments.GetInt32("extraction-ready-seconds", RaidSettings.DefaultExtractionReadySeconds);
+        int exploitTrapResetSeconds = arguments.GetInt32("exploit-trap-reset-seconds", RaidSettings.DefaultExploitTrapResetSeconds);
         bool stopOnInputClose = arguments.Has("stop-on-input-close");
         string consoleMode = arguments.GetString("console", "auto")!;
         string? logFile = arguments.GetString("log-file");
@@ -142,6 +146,11 @@ public sealed record RaidConfiguration
             throw new CommandLineException("--extraction-seconds and --extraction-ready-seconds must be 0 or more");
         }
 
+        if (exploitTrapResetSeconds < 0)
+        {
+            throw new CommandLineException("--exploit-trap-reset-seconds must be 0 or more");
+        }
+
         if (port is < 1 or > 65535 || controlPort is < 1 or > 65535 || port == controlPort)
         {
             throw new CommandLineException("--port and --control-port must be different ports from 1 to 65535");
@@ -169,7 +178,7 @@ public sealed record RaidConfiguration
                 ControlPort = controlPort,
                 OperatorToken = SecretFiles.ReadOperatorToken(tokenFile),
                 Lighting = lighting,
-                Settings = new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds),
+                Settings = new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds, exploitTrapResetSeconds),
                 GameDataDirectory = gameDataDirectory is null ? null : Path.GetFullPath(gameDataDirectory),
                 ContentDirectory = contentDirectory is null ? null : Path.GetFullPath(contentDirectory),
                 MaxPlayers = maxPlayers,

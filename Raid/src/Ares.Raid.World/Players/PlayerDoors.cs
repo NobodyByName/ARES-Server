@@ -1,5 +1,6 @@
 using Ares.Raid.Transport;
 using Ares.Raid.World.Actors;
+using Ares.Raid.World.Inventory;
 using Ares.Raid.World.Movement;
 using Ares.Raid.World.Replication;
 using Ares.Structs.Game.Pendulum;
@@ -9,7 +10,7 @@ namespace Ares.Raid.World.Players;
 
 /// <summary>
 /// The map doors as one player sees them: the doors of the cells the client reports visible, with their state
-/// changes, and the player's presses and breaches. The doors come last among the families taking interaction
+/// changes, and the player's presses, breaches and unlocks. The doors come last among the families taking interaction
 /// requests: they take every request the others left.
 /// </summary>
 internal sealed class PlayerDoors : IPlayerFamily
@@ -17,11 +18,12 @@ internal sealed class PlayerDoors : IPlayerFamily
     private const int MaxDoorsInFlight = 8;
 
     private readonly ChannelRange _channels;
-    private Dictionary<int, (DoorChannel State, ReliableKey? Key)> _doors = [];
+    private Dictionary<int, (DoorChannel State, ReliableKey[] Keys)> _doors = [];
     private Dictionary<int, int> _revisions = [];
     private Dictionary<int, ReliableKey> _updates = [];
     private HashSet<int> _failed = [];
     private Dictionary<int, int> _breachRequests = [];
+    private Dictionary<int, int> _unlockRequests = [];
     private (int Door, uint Checked)? _breach;
 
     /// <summary>Creates the doors of a connection that has none yet.</summary>
@@ -52,6 +54,15 @@ internal sealed class PlayerDoors : IPlayerFamily
     /// <summary>Request values received on breach buttons, with their counts (a hold sends more than a press).</summary>
     public IReadOnlyDictionary<int, int> BreachRequests => _breachRequests;
 
+    /// <summary>Doors unlocked.</summary>
+    public int Unlocks { get; private set; }
+
+    /// <summary>Unlock presses refused because the player lacked the unlock items.</summary>
+    public int MissingKeys { get; private set; }
+
+    /// <summary>Request values received on unlock buttons, with their counts.</summary>
+    public IReadOnlyDictionary<int, int> UnlockRequests => _unlockRequests;
+
     /// <summary>Whether this player breaches a door now.</summary>
     public bool Breaching => _breach is not null;
 
@@ -60,11 +71,12 @@ internal sealed class PlayerDoors : IPlayerFamily
     public PlayerDoors Copy()
     {
         PlayerDoors copy = (PlayerDoors)MemberwiseClone();
-        copy._doors = new Dictionary<int, (DoorChannel, ReliableKey?)>(_doors);
+        copy._doors = new Dictionary<int, (DoorChannel, ReliableKey[])>(_doors);
         copy._revisions = new Dictionary<int, int>(_revisions);
         copy._updates = new Dictionary<int, ReliableKey>(_updates);
         copy._failed = [.. _failed];
         copy._breachRequests = new Dictionary<int, int>(_breachRequests);
+        copy._unlockRequests = new Dictionary<int, int>(_unlockRequests);
         return copy;
     }
 
@@ -88,6 +100,10 @@ internal sealed class PlayerDoors : IPlayerFamily
         {
             _breachRequests[request.Request] = _breachRequests.GetValueOrDefault(request.Request) + 1;
         }
+        else if (raid.Doors.ByUnlock(request.Target) is not null)
+        {
+            _unlockRequests[request.Request] = _unlockRequests.GetValueOrDefault(request.Request) + 1;
+        }
 
         // The request is a set of flags; a press has the press flag, with the take-out-raider-tool flag when
         // the breach is pressed with the tool holstered. Other flags are not decoded yet.
@@ -104,6 +120,10 @@ internal sealed class PlayerDoors : IPlayerFamily
             Breaches++;
             _breach = (barricaded.Index, request.Frame);
         }
+        else if (UnlockableDoor(player, request.Target) is { } locked && Unlock(player, locked, request.Frame))
+        {
+            Unlocks++;
+        }
         else
         {
             IgnoredRequests++;
@@ -117,7 +137,8 @@ internal sealed class PlayerDoors : IPlayerFamily
     }
 
     /// <inheritdoc />
-    public bool Usable(IPlayerChannelsContext player, ulong target) => UsableDoor(player, target) is not null || BreachableDoor(player, target) is not null;
+    public bool Usable(IPlayerChannelsContext player, ulong target) =>
+        UsableDoor(player, target) is not null || BreachableDoor(player, target) is not null || UnlockableDoor(player, target) is not null;
 
     /// <summary>
     /// Watches the breaching player's movement axes after the start frame: the breach is a hold that movement input
@@ -157,11 +178,11 @@ internal sealed class PlayerDoors : IPlayerFamily
         // channel with usable buttons, sends state changes, and closes the channel when the cell unloads.
         RaidWorld raid = player.Raid;
         raid.DoorStates.Advance(now);
-        int inFlight = _doors.Values.Count(door => door.Key is { } key && sender.Pending(key));
+        int inFlight = _doors.Values.Count(door => door.Keys.Any(sender.Pending));
         foreach (Door door in raid.Doors.Doors)
         {
-            (DoorChannel state, ReliableKey? key) = _doors.GetValueOrDefault(door.Index, (DoorChannel.Closed, null));
-            if (key is { } waiting && sender.Pending(waiting))
+            (DoorChannel state, ReliableKey[] keys) = _doors.GetValueOrDefault(door.Index, (DoorChannel.Closed, []));
+            if (keys.Any(sender.Pending))
             {
                 continue;
             }
@@ -171,14 +192,14 @@ internal sealed class PlayerDoors : IPlayerFamily
             switch (state)
             {
                 case DoorChannel.Exporting:
-                    (state, key) = (DoorChannel.Opening, sender.Queue(raid.Doors.OpenBunch(door, channel, sender.NextSequence(channel), raid.DoorStates.Buttons(door.Index), value)));
+                    (state, keys) = (DoorChannel.Opening, [sender.Queue(raid.Doors.OpenBunch(door, channel, sender.NextSequence(channel), raid.DoorStates.Buttons(door.Index), value))]);
                     _revisions[door.Index] = revision;
                     break;
                 case DoorChannel.Opening:
-                    (state, key) = (DoorChannel.Open, null);
+                    (state, keys) = (DoorChannel.Open, []);
                     break;
                 case DoorChannel.Closing:
-                    (state, key) = (DoorChannel.Closed, null);
+                    (state, keys) = (DoorChannel.Closed, []);
                     break;
             }
 
@@ -186,11 +207,11 @@ internal sealed class PlayerDoors : IPlayerFamily
             switch (state)
             {
                 case DoorChannel.Closed when wanted && inFlight < MaxDoorsInFlight:
-                    (state, key) = (DoorChannel.Exporting, sender.Queue(raid.Doors.ExportBunch(door)));
+                    (state, keys) = (DoorChannel.Exporting, [.. raid.Doors.ExportBunches(door).Select(sender.Queue)]);
                     inFlight++;
                     break;
                 case DoorChannel.Open when !wanted:
-                    (state, key) = (DoorChannel.Closing, sender.Queue(Bunches.Close(channel, Bunches.LevelUnloaded)));
+                    (state, keys) = (DoorChannel.Closing, [sender.Queue(Bunches.Close(channel, Bunches.LevelUnloaded))]);
                     _updates.Remove(door.Index);
                     break;
                 case DoorChannel.Open when revision != _revisions.GetValueOrDefault(door.Index)
@@ -200,7 +221,7 @@ internal sealed class PlayerDoors : IPlayerFamily
                     break;
             }
 
-            _doors[door.Index] = (state, key);
+            _doors[door.Index] = (state, keys);
         }
     }
 
@@ -212,6 +233,29 @@ internal sealed class PlayerDoors : IPlayerFamily
     // The door of a breach button the client may use: replicated as above and still barricaded.
     private Door? BreachableDoor(IPlayerChannelsContext player, ulong button) =>
         player.Raid.Doors.ByBreach(button) is { } door && Replicated(player, door) && player.Raid.DoorStates.Breachable(door.Index) ? door : null;
+
+    // The door of an unlock button the client may use: replicated as above and still locked.
+    private Door? UnlockableDoor(IPlayerChannelsContext player, ulong button) =>
+        player.Raid.Doors.ByUnlock(button) is { } door && Replicated(player, door) && player.Raid.DoorStates.Unlockable(door.Index) ? door : null;
+
+    // Unlocks a door when the player carries every unlock item, then takes those the door consumes: a refused unlock
+    // takes nothing.
+    private bool Unlock(IPlayerChannelsContext player, Door door, uint frame)
+    {
+        RaidInventory inventory = player.Member.Inventory;
+        if (door.Keys.Any(key => inventory.Carrying(key.AssetIndexes) < key.Amount))
+        {
+            MissingKeys++;
+            return false;
+        }
+
+        if (door.Keys.Where(key => key.Consume).Aggregate(false, (taken, key) => inventory.Take(key.AssetIndexes, key.Amount) | taken))
+        {
+            player.InventoryChangedAt(frame);
+        }
+
+        return player.Raid.DoorStates.Unlock(door.Index);
+    }
 
     private bool Replicated(IPlayerChannelsContext player, Door door) =>
         player.Phase == DeliveryPhase.Possessed && !_failed.Contains(door.Index)

@@ -95,6 +95,7 @@ public sealed record HostConfiguration
         int lootCullDistance = file.GetInt32(HostOptions.LootCullDistance);
         int extractionSeconds = file.GetInt32(HostOptions.ExtractionSeconds);
         int extractionReadySeconds = file.GetInt32(HostOptions.ExtractionReadySeconds);
+        int exploitTrapResetSeconds = file.GetInt32(HostOptions.ExploitTrapResetSeconds);
         string? gameDataDirectory = file.GetPath(HostOptions.GameDataDirectory);
         string? contentDirectory = file.GetPath(HostOptions.ContentDirectory);
         string? authKeyFile = file.GetPath(HostOptions.AuthKeyFile);
@@ -178,7 +179,7 @@ public sealed record HostConfiguration
         }
 
         AresContent content = AresContent.Load(contentDirectory);
-        RaidSettings raidSettings = ReadRaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds);
+        RaidSettings raidSettings = ReadRaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds, exploitTrapResetSeconds);
         RaidLaunch? raids = ReadRaidLaunch(raidExecutable, controlTokenFile, raidCapacity, raidPlayers, raidFillSeconds, raidPort, raidControlPort, raidLighting,
             raidSettings, gameDataDirectory, content.Directory, bind, originUri.Host, port);
         StashUpgradePrices stashUpgrades = stashUpgradeCoins is null ? StashUpgradePrices.Of(content.Stash) : ReadStashUpgrades(content.Stash, stashUpgradeCoins);
@@ -244,15 +245,20 @@ public sealed record HostConfiguration
             : throw new CommandLineException($"--stash-upgrade-coins expects {expected} comma-separated coin prices of zero or more");
     }
 
-    private static RaidSettings ReadRaidSettings(int lootCullDistance, int extractionSeconds, int extractionReadySeconds)
+    private static RaidSettings ReadRaidSettings(int lootCullDistance, int extractionSeconds, int extractionReadySeconds, int exploitTrapResetSeconds)
     {
         if (lootCullDistance < 1)
         {
             throw new CommandLineException("--loot-cull-distance must be at least 1");
         }
 
+        if (exploitTrapResetSeconds < 0)
+        {
+            throw new CommandLineException("--exploit-trap-reset-seconds must be 0 or more");
+        }
+
         return extractionSeconds >= 0 && extractionReadySeconds >= 0
-            ? new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds)
+            ? new RaidSettings(lootCullDistance, extractionSeconds, extractionReadySeconds, exploitTrapResetSeconds)
             : throw new CommandLineException("--extraction-seconds and --extraction-ready-seconds must be 0 or more");
     }
 

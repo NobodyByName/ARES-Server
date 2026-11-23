@@ -86,6 +86,22 @@ public enum DoorLockState : byte
     Unlocked = 2,
 }
 
+/// <summary>State of a locked room's exploit prevention area (<c>ELockedRoomExploitPreventionAreaState</c>).</summary>
+public enum ExploitPreventionAreaState : byte
+{
+    /// <summary>Not set yet.</summary>
+    Uninitialized = 0,
+
+    /// <summary>Armed, its jets off.</summary>
+    Idle = 1,
+
+    /// <summary>Its jets fire.</summary>
+    Active = 2,
+
+    /// <summary>Off: its trigger volumes no longer collide.</summary>
+    Disabled = 3,
+}
+
 /// <summary>Power state of a door (<c>EDoorPowerState</c>).</summary>
 public enum DoorPowerState : byte
 {

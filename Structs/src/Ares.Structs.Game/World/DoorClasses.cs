@@ -25,6 +25,9 @@ public static class DoorClasses
     /// <summary>Names of the door button components.</summary>
     public static IReadOnlyList<string> InteractionComponents { get; } = ["OpenCloseInteraction_Exterior", "OpenCloseInteraction_Interior"];
 
+    /// <summary>Name of the unlock button component of a locked door (a press interaction).</summary>
+    public const string UnlockInteractionComponent = "UnlockingInteraction_Exterior";
+
     /// <summary>Name of the door breach button component (a hold interaction).</summary>
     public const string BreachInteractionComponent = "BreachInteraction";
 
@@ -33,6 +36,16 @@ public static class DoorClasses
 
     /// <summary>Seconds the character aligns with the breach button before the hold starts.</summary>
     public const double BreachAlignmentSeconds = 1.0;
+
+    /// <summary>Class whose replication layout the locked rooms' exploit prevention areas use.</summary>
+    public const string ExploitPreventionAreaClass = "/Script/Angelscript.LockedRoomExploitPreventionArea";
+
+    /// <summary>
+    /// The exploit prevention area state enum (<c>ELockedRoomExploitPreventionAreaState</c>) as replication needs it:
+    /// Disabled turns off the area's trigger volumes on the client.
+    /// </summary>
+    public static EnumDefinition ExploitPreventionAreaState { get; } = new("/Script/Angelscript.ELockedRoomExploitPreventionAreaState", 4,
+        ["Uninitialized", "Idle", "Active", "Disabled"]);
 
     /// <summary>The interaction-state enum (<c>ECurrentInteractionState</c>) as replication needs it.</summary>
     public static EnumDefinition InteractionState { get; } = new("/Script/Angelscript.ECurrentInteractionState", 8,

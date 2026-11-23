@@ -21,7 +21,7 @@ public sealed class RaidSessionTests
 {
     // SHA-256 of the expected bunch trace, including inventory and shield-health initialization, the elevators, the
     // game state's world item classes and the first loot containers around the start.
-    private const string ReferenceTrace = "36fe0e028ea685fb3f0c8b8356ebb8f275cbc31fee89e648ceadf624dd58bc0e";
+    private const string ReferenceTrace = "52312ccdc055996ffe7ac6297393e716c07f0d6e817b3d054526ab13b30e154f";
 
     [Fact]
     public void A_scripted_session_sends_the_reference_bunches()
@@ -209,7 +209,7 @@ public sealed class RaidSessionTests
         Assert.Contains(session.Sent, bunch => bunch is { Opened: true } && bunch.Channel == 64 + barricaded.Index);
         Assert.Equal((0, 1), (session.Channels.DoorPresses, session.Channels.IgnoredDoorRequests));
         Assert.Equal((DoorOpenState.Closed, DoorSealState.Sealed, 0), (state.Open, state.Seal, revision));
-        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle, CurrentInteractionState.Disabled), session.Raid.DoorStates.Buttons(barricaded.Index));
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public sealed class RaidSessionTests
         session.Input(30, 33, barricaded.Breach);
         session.Service(123.5);
         Assert.Equal(1, session.Channels.DoorBreaches);
-        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Ongoing), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Ongoing, CurrentInteractionState.Disabled), session.Raid.DoorStates.Buttons(barricaded.Index));
         Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);
 
         int sent = session.Sent.Count;
@@ -235,7 +235,7 @@ public sealed class RaidSessionTests
 
         DoorState state = session.Raid.DoorStates.Get(barricaded.Index).State;
         Assert.Equal((DoorOpenState.Closed, DoorSealState.Unsealed), (state.Open, state.Seal));
-        Assert.Equal(new DoorButtons(CurrentInteractionState.Idle, CurrentInteractionState.SuccessDisabled), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Idle, CurrentInteractionState.SuccessDisabled, CurrentInteractionState.Disabled), session.Raid.DoorStates.Buttons(barricaded.Index));
         Assert.Contains(session.Sent.Skip(sent), bunch => bunch.Channel == 64 + barricaded.Index);
         Assert.Equal(1, session.Channels.BreachRequests[PendulumInput.PressRequest]);
     }
@@ -260,7 +260,7 @@ public sealed class RaidSessionTests
         session.Input(36, 39, forward: 100);
         Assert.Equal(1, session.Channels.CancelledBreaches);
         Assert.False(session.Raid.DoorStates.Breaching(barricaded.Index));
-        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle), session.Raid.DoorStates.Buttons(barricaded.Index));
+        Assert.Equal(new DoorButtons(CurrentInteractionState.Disabled, CurrentInteractionState.Idle, CurrentInteractionState.Disabled), session.Raid.DoorStates.Buttons(barricaded.Index));
 
         session.Service(123.5 + DoorClasses.BreachAlignmentSeconds + DoorClasses.BreachHoldSeconds + 0.1);
         Assert.Equal(DoorSealState.Sealed, session.Raid.DoorStates.Get(barricaded.Index).State.Seal);

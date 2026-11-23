@@ -46,7 +46,8 @@ public sealed class ChannelLayout
     /// <param name="ladders">Number of map ladders.</param>
     /// <param name="elevators">Number of extraction elevators.</param>
     /// <param name="maxPlayers">Most players the raid can hold.</param>
-    public ChannelLayout(int globals, int doors, int ladders, int elevators, int maxPlayers)
+    /// <param name="exploitAreas">Number of locked rooms' exploit prevention areas.</param>
+    public ChannelLayout(int globals, int doors, int ladders, int elevators, int maxPlayers, int exploitAreas)
     {
         Globals = new ChannelRange(FirstGlobal, globals);
         Doors = new ChannelRange(FirstDoor, doors);
@@ -56,6 +57,7 @@ public sealed class ChannelLayout
         ObservedPlayers = new ChannelRange(Elevators.End, 2 * maxPlayers);
         Pickups = new ChannelRange(ObservedPlayers.End, PickupChannels);
         Arcs = new ChannelRange(Pickups.End, ArcChannels);
+        ExploitAreas = new ChannelRange(Arcs.End, exploitAreas);
     }
 
     /// <summary>The map's global actors, one channel each.</summary>
@@ -83,6 +85,9 @@ public sealed class ChannelLayout
 
     /// <summary>The channels the ARCs share.</summary>
     public ChannelRange Arcs { get; }
+
+    /// <summary>The locked rooms' exploit prevention areas, one channel each.</summary>
+    public ChannelRange ExploitAreas { get; }
 
     /// <summary>The place in the raid's player list of the player an observed-player channel belongs to.</summary>
     /// <param name="channel">Channel index.</param>

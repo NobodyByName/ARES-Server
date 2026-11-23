@@ -81,7 +81,7 @@ globalThis.AresContent = {
                   "name": "Regular doors",
                   "technical": "BreachableDoorActor",
                   "status": "partial",
-                  "note": "120 placed regular doors; door buttons work and barricaded doors can be breached (moving cancels the breach). Unlocking, door blockers and multiplayer interactions need assessment."
+                  "note": "120 placed regular doors; door buttons work, barricaded doors can be breached (moving cancels the breach), and the 7 locked doors that need an item unlock with it (the item is used up). A still-locked room fires its anti-exploit jets while a player is inside (no damage yet) and cannot be unlocked until they stop. The keyless locked door, door blockers and multiplayer interactions need assessment."
                 },
                 {
                   "name": "Placed ladders",
@@ -2132,7 +2132,7 @@ globalThis.AresContent = {
               "name": "Salvage Dam Controlled Access Zone Key",
               "technical": "DA_Item_Salvage_DamControlledAccessZoneKey",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Damaged Heat Sink",
@@ -2954,7 +2954,7 @@ globalThis.AresContent = {
               "name": "Salvage Power Rod",
               "technical": "DA_Item_Salvage_PowerRod",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Processor",
@@ -3572,25 +3572,25 @@ globalThis.AresContent = {
               "name": "Salvage The Dam Utility Key1",
               "technical": "DA_Item_Salvage_TheDamUtilityKey1",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key2",
               "technical": "DA_Item_Salvage_TheDamUtilityKey2",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key3",
               "technical": "DA_Item_Salvage_TheDamUtilityKey3",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage The Dam Utility Key4",
               "technical": "DA_Item_Salvage_TheDamUtilityKey4",
               "status": "partial",
-              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; crafting and quest uses are not implemented."
+              "note": "Can be kept in Storage, carried in a raid, taken from loot containers, brought home by extraction and granted with `inventory add`; unlocks its Dam locked door (used up). Crafting and quest uses are not implemented."
             },
             {
               "name": "Salvage Thermostat",

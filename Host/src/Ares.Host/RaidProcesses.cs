@@ -63,6 +63,7 @@ internal sealed class RaidProcesses(RaidLaunch launch, JsonEventLog log) : IRaid
             "--fill-seconds", Text(launch.FillSeconds),
             "--loot-cull-distance", Text(launch.Settings.LootCullDistance), "--extraction-seconds", Text(launch.Settings.ExtractionSeconds),
             "--extraction-ready-seconds", Text(launch.Settings.ExtractionReadySeconds),
+            "--exploit-trap-reset-seconds", Text(launch.Settings.ExploitTrapResetSeconds),
             "--console", "json", "--stop-on-input-close",
         ];
         foreach (string argument in arguments)

@@ -58,6 +58,8 @@ internal static class HostOptions
         Text(RaidSettings.DefaultExtractionSeconds));
     internal static HostOption ExtractionReadySeconds { get; } = new("extraction-ready-seconds", "<n>", "Seconds from the end of an elevator's call to its doors opening",
         Text(RaidSettings.DefaultExtractionReadySeconds));
+    internal static HostOption ExploitTrapResetSeconds { get; } = new("exploit-trap-reset-seconds", "<n>",
+        "Seconds a locked room's anti-exploit jets keep firing after the last player left, 0 to turn the trap off", Text(RaidSettings.DefaultExploitTrapResetSeconds));
     internal static HostOption GameDataDirectory { get; } = new("game-data-dir", "<dir>",
         "Folder with the game data written by ARES-GameDataExtract; required, Host and every raid load it");
     internal static HostOption ContentDirectory { get; } = new("content-dir", "<dir>",
@@ -83,7 +85,7 @@ internal static class HostOptions
     internal static IReadOnlyList<HostOption> Settings { get; } =
     [
         Port, Bind, PublicOrigin, AllowNetworkClients, MongoDbUri, MongoDbUriFile, MongoDbDatabase, RaidExecutable, SessionControlTokenFile,
-        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, LootCullDistance, ExtractionSeconds, ExtractionReadySeconds, GameDataDirectory, ContentDirectory, StashUpgradeCoins, ClientFeatureFlags, AuthKeyFile,
+        RaidPlayers, RaidFillSeconds, RaidPort, RaidControlPort, RaidLighting, LootCullDistance, ExtractionSeconds, ExtractionReadySeconds, ExploitTrapResetSeconds, GameDataDirectory, ContentDirectory, StashUpgradeCoins, ClientFeatureFlags, AuthKeyFile,
         ArchiveKeysFile, ServerName, Motd, GameBuildId, RaidCapacity, LogFile, Console,
     ];
 

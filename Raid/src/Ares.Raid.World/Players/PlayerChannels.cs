@@ -71,6 +71,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     private BoundedLog _rejectedInventory = new(InteractionRequestLog);
     private InteractionRequest? _lastLoggedRequest;
     private PlayerDoors _doors;
+    private PlayerExploitAreas _areas;
     private PlayerLadders _ladders;
     private PlayerLoot _loot;
     private PlayerPickups _pickups;
@@ -92,6 +93,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         _login = login ?? throw new ArgumentNullException(nameof(login));
         _bindings = [(ChannelLayout.Controller, player.Controller), (ChannelLayout.PlayerState, player.PlayerState), (ChannelLayout.Pawn, player.Pawn)];
         _doors = new PlayerDoors(raid.Channels.Doors);
+        _areas = new PlayerExploitAreas(raid.Channels.ExploitAreas);
         _ladders = new PlayerLadders(raid.Channels.Ladders);
         _loot = new PlayerLoot(raid.Channels.Loot);
         _pickups = new PlayerPickups(raid.Channels.Pickups);
@@ -103,7 +105,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
     public uint? InputFrame { get; private set; }
 
     // The families of world actors on this connection, in the order they are serviced.
-    private IPlayerFamily[] Families => [_doors, _ladders, _loot, _pickups, _arcs, _elevators, _observed];
+    private IPlayerFamily[] Families => [_doors, _areas, _ladders, _loot, _pickups, _arcs, _elevators, _observed];
 
     // The families in the order they take interaction requests: the doors come last and take whatever the others left.
     private IPlayerFamily[] RequestOrder => [_loot, _pickups, _ladders, _elevators, _doors];
@@ -142,6 +144,7 @@ public sealed partial class PlayerChannels : IPlayerChannels, IPlayerChannelsCon
         copy._unknownRequests = _unknownRequests.Copy();
         copy._rejectedInventory = _rejectedInventory.Copy();
         copy._doors = _doors.Copy();
+        copy._areas = _areas.Copy();
         copy._ladders = _ladders.Copy();
         copy._loot = _loot.Copy();
         copy._pickups = _pickups.Copy();

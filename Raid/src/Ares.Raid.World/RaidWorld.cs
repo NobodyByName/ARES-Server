@@ -5,6 +5,7 @@ using Ares.Raid.World.Collision;
 using Ares.Raid.World.Loot;
 using Ares.Raid.World.Players;
 using Ares.Raid.World.Replication;
+using Ares.Structs.Core.Geometry;
 using Ares.Structs.Game.Replication;
 using Ares.Structs.Game.World;
 using Ares.Structs.Net.Control;
@@ -39,6 +40,7 @@ public sealed class RaidWorld
 
         Imports = worlds.Imports;
         Doors = worlds.Doors;
+        ExploitAreas = new ExploitAreaStates(Doors.Areas, DoorStates, GameData.Settings.ExploitTrapResetSeconds);
         Ladders = worlds.Ladders;
         Extraction = worlds.Extraction;
         ExtractionStates = new ExtractionStates(map, GameData.Settings, Extraction.Points.Count);
@@ -55,7 +57,7 @@ public sealed class RaidWorld
         Collision = worlds.MapCollision is null ? null : new CollisionWorld(worlds.MapCollision, ActiveDataLayers);
         LooseLoot = LooseLoot.Roll(GameData.LooseRolls, map.LooseItemSockets, worlds.LootRules, GameData.LootRules, ActiveDataLayers, seed, Collision);
         LooseLoot.Place(Pickups);
-        Channels = new ChannelLayout(Imports.GlobalActors.Count, Doors.Doors.Count, Ladders.Ladders.Count, Extraction.Points.Count, MaxPlayers);
+        Channels = new ChannelLayout(Imports.GlobalActors.Count, Doors.Doors.Count, Ladders.Ladders.Count, Extraction.Points.Count, MaxPlayers, Doors.Areas.Count);
         StaticActors =
         [
             new StaticWorldActor(ChannelLayout.LevelScript, Imports.LevelScriptGuid, map.World.LevelScriptClass, [replication.Encode(map.World.LevelScriptClass, new Dictionary<string, object?>
@@ -160,8 +162,16 @@ public sealed class RaidWorld
         return [.. Players.Where(player => player is { Left: false, Departed: false, Motion: { } motion } && point.Contains(motion.Motion.Position)).Select(player => player.Id)];
     }
 
+    /// <summary>The current world locations of the players still in the raid.</summary>
+    /// <returns>Their last reported locations.</returns>
+    public IEnumerable<Vector3D> PlayerLocations() =>
+        Players.Where(player => player is { Left: false, Departed: false, Motion: not null }).Select(player => player.Motion!.Motion.Position);
+
     /// <summary>Door state of this raid.</summary>
     public DoorStates DoorStates { get; }
+
+    /// <summary>The locked rooms' exploit prevention areas of this raid.</summary>
+    public ExploitAreaStates ExploitAreas { get; }
 
     /// <summary>Loot container contents of this raid.</summary>
     public LootStates LootStates { get; }

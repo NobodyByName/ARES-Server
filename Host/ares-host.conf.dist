@@ -63,6 +63,9 @@ loot-cull-distance = 20000
 extraction-seconds = 120
 # Seconds from the end of an elevator's call to its doors opening: 0 or more.
 extraction-ready-seconds = 45
+# Seconds a locked room's anti-exploit jets keep firing after the last player left the still-locked room: 0 or more,
+# 0 turns the trap off.
+exploit-trap-reset-seconds = 10
 # Folder with the game data written by ARES-GameDataExtract (see "Game data" in the README).
 # Required: Host and every raid refuse to start without it.
 game-data-dir =

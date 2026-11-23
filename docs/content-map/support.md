@@ -4,9 +4,9 @@
 
 A stock client goes from a fresh launch through sign-in, the main menu and normal Dam matchmaking
 into a raid hosted by ARES-Raid: Dam loads with its lighting, the player gets the default Raider,
-moves (walk, sprint, crouch, slide, jump), climbs ladders, uses door buttons and breaches barricaded
-doors, searches loot containers, calls an extraction elevator and descends with it, then leaves back
-to the main menu.
+moves (walk, sprint, crouch, slide, jump), climbs ladders, uses door buttons, breaches barricaded
+doors and unlocks locked rooms with their key, searches loot containers, calls an extraction elevator
+and descends with it, then leaves back to the main menu.
 
 Host starts one ARES-Raid process per raid during matchmaking, up to a configured number at once,
 and each process exits when its raid is over. Host persists each account's stash and selected
@@ -159,8 +159,8 @@ Limitations:
   Experience and quests are not recorded yet.
 - Movement is still trusted from the client: where Raid's simulation and the client disagree, Raid
   follows the client's position, and it does not reject any movement yet.
-- Locked and keycard doors cannot be unlocked yet. A cancelled breach starts over instead of keeping
-  its progress.
+- A locked room's anti-exploit jets fire but do no damage, and the one Dam locked door without a key
+  cannot be unlocked yet. A cancelled breach starts over instead of keeping its progress.
 - No damage, death or end-of-round results screen yet, and no rejoin after leaving a raid.
 - ARCs do not spawn by themselves. Operators can place a stationary Wasp (`spawn-arc`), not yet
   verified in the game; it does not move, attack or take damage.

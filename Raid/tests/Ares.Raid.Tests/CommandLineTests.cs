@@ -38,7 +38,7 @@ public sealed class CommandLineTests
             Assert.Null(RaidConfiguration.Parse(required).ContentDirectory);
             Assert.Equal(Path.GetFullPath("content"), RaidConfiguration.Parse([.. required, "--content-dir", "content"]).ContentDirectory);
             Assert.Equal(RaidSettings.Default, RaidConfiguration.Parse(required).Settings);
-            Assert.Equal(new RaidSettings(5000, 60, 10),
+            Assert.Equal(new RaidSettings(5000, 60, 10, RaidSettings.DefaultExploitTrapResetSeconds),
                 RaidConfiguration.Parse([.. required, "--loot-cull-distance", "5000", "--extraction-seconds", "60", "--extraction-ready-seconds", "10"]).Settings);
         }
         finally
@@ -73,6 +73,7 @@ public sealed class CommandLineTests
     [InlineData("--loot-cull-distance", "0")]
     [InlineData("--extraction-seconds", "-1")]
     [InlineData("--extraction-ready-seconds", "-1")]
+    [InlineData("--exploit-trap-reset-seconds", "-1")]
     public void Raid_settings_out_of_range_are_rejected(string option, string value)
     {
         Assert.Contains(option, Assert.Throws<CommandLineException>(() => RaidConfiguration.Parse([option, value])).Message, StringComparison.Ordinal);

@@ -10,7 +10,11 @@ namespace Ares.Common.Game;
 /// </param>
 /// <param name="ExtractionSeconds">Seconds an elevator stays ready (doors open) before it leaves on its own.</param>
 /// <param name="ExtractionReadySeconds">Seconds from the end of an elevator's call to its doors opening.</param>
-public sealed record RaidSettings(int LootCullDistance, int ExtractionSeconds, int ExtractionReadySeconds)
+/// <param name="ExploitTrapResetSeconds">
+/// Seconds a locked room's exploit prevention area keeps firing after the last player left it (its jets fire while a
+/// player is inside the still-locked room); 0 turns the trap off.
+/// </param>
+public sealed record RaidSettings(int LootCullDistance, int ExtractionSeconds, int ExtractionReadySeconds, int ExploitTrapResetSeconds)
 {
     /// <summary>Default of <see cref="LootCullDistance"/>.</summary>
     public const int DefaultLootCullDistance = 20000;
@@ -21,6 +25,10 @@ public sealed record RaidSettings(int LootCullDistance, int ExtractionSeconds, i
     /// <summary>Default of <see cref="ExtractionReadySeconds"/>.</summary>
     public const int DefaultExtractionReadySeconds = 45;
 
+    /// <summary>Default of <see cref="ExploitTrapResetSeconds"/>: the area's own reset time (<c>TimeToReset</c>).</summary>
+    public const int DefaultExploitTrapResetSeconds = 10;
+
     /// <summary>The settings with every default.</summary>
-    public static RaidSettings Default { get; } = new(DefaultLootCullDistance, DefaultExtractionSeconds, DefaultExtractionReadySeconds);
+    public static RaidSettings Default { get; } = new(DefaultLootCullDistance, DefaultExtractionSeconds, DefaultExtractionReadySeconds,
+        DefaultExploitTrapResetSeconds);
 }

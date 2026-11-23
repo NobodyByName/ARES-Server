@@ -54,11 +54,11 @@ public sealed class DamWorlds : IWorldLifecycle, IRaidWorld
         Imports = new WorldImports(GameReplication.Catalog, gameData);
         Replication = new ReplicationContext(
             GameReplication.Catalog,
-            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DoorClasses.InteractionState, ExtractionClasses.StateEnum,
-                KnownEnums.ItemContainerSoundState],
+            [KnownEnums.NetRole, KnownEnums.GamePhase, KnownEnums.ViewTargetBlendFunction, DoorClasses.InteractionState,
+                DoorClasses.ExploitPreventionAreaState, ExtractionClasses.StateEnum, KnownEnums.ItemContainerSoundState],
             Imports.Classes.ToDictionary(entry => entry.Value, entry => entry.Key));
         MapPaths paths = new(gameData.Map);
-        Doors = new DoorCatalog(Replication, paths, gameData.Map);
+        Doors = new DoorCatalog(Replication, paths, gameData.Map, gameData.Data.Items);
         Ladders = new LadderCatalog(Replication, paths, gameData.Map);
         Extraction = new ExtractionCatalog(Replication, paths, gameData.Map, gameData.Settings);
     }
